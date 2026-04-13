@@ -6,6 +6,7 @@ Medi Vision AI is a full-stack, AI-powered medical shop ERP for billing, invento
 
 - Billing and invoice management
 - Medicine inventory tracking
+- Shelf mapping for medicine locations
 - Customer and supplier CRM
 - Doctor records
 - Face recognition support for customer handling
@@ -29,7 +30,7 @@ pip install -r requirements.txt
 3. Start the application:
 
 ```bash
-python app.py
+python run.py
 ```
 
 4. Open the app in your browser:
@@ -37,6 +38,16 @@ python app.py
 ```text
 http://127.0.0.1:5001
 ```
+
+### Project Structure
+
+- `run.py` is the local development entrypoint.
+- `wsgi.py` is the production entrypoint.
+- `backend/app_factory.py` builds the Flask app and registers routes.
+- `backend/db.py` holds database setup, migrations, and shared row helpers.
+- `backend/routes/` contains the route groups split by feature area.
+- `frontend/templates/dashboard.html` is the main UI entrypoint served at `/`.
+- `frontend/static/` holds the browser assets used by the dashboard.
 
 ### Notes
 
