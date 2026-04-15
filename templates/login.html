@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Selvam Medicals</title>
+    <link rel="stylesheet" href="/static/css/login.css?v=5" />
+</head>
+
+<body>
+
+    <div style="display:flex; height:100vh; width:100vw;">
+
+        <!-- ════ SIDEBAR ════ -->
+        <aside class="sidebar">
+
+            <!-- Logo: plain white box with SVG medical cross inside -->
+            <div class="logo-box">
+                <svg width="56" height="56" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Vertical bar of cross -->
+                    <rect x="22" y="6" width="12" height="44" rx="2" fill="#2e8b57" />
+                    <!-- Horizontal bar of cross -->
+                    <rect x="6" y="22" width="44" height="12" rx="2" fill="#2e8b57" />
+                </svg>
+            </div>
+
+            <!-- Shop name -->
+            <p class="shop-name">SELVAM<br>MEDICALS</p>
+
+            <!-- Divider -->
+            <div class="divider"></div>
+
+            <!-- Address Section -->
+            <div class="address-wrapper">
+                <p class="address-label">Address</p>
+                <p class="address-text">
+                    1266, MTP ROAD,<br>
+                    SAIBABA KOVIL,<br>
+                    COIMBATORE-43
+                </p>
+            </div>
+
+            <!-- Divider (bottom) -->
+            <div class="divider"></div>
+
+            <!-- Clock -->
+            <div class="clock-area">
+                <div class="clock-time" id="clock-time">00:00:00</div>
+                <div class="clock-day" id="clock-day">SUNDAY</div>
+                <div class="clock-date" id="clock-date">01/01/2026</div>
+            </div>
+
+        </aside>
+        <!-- ════ END SIDEBAR ════ -->
+
+        <!-- ════ MAIN PANEL ════ -->
+        <main class="main">
+
+            <p class="instruction">Enter your password to access the system</p>
+
+            <form id="login-form" novalidate>
+
+                <p class="pw-label">Password</p>
+
+                <div class="input-wrapper">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        class="lucide lucide-lock-keyhole-icon lucide-lock-keyhole">
+                        <circle cx="12" cy="16" r="1" />
+                        <rect x="3" y="10" width="18" height="12" rx="2" />
+                        <path d="M7 10V7a5 5 0 0 1 10 0v3" />
+                    </svg>
+
+                    <input type="password" id="password" placeholder="Enter..." autocomplete="current-password" />
+
+                    <!-- Eye toggle -->
+                    <button type="button" class="toggle-btn" id="toggle-pw">
+                        <svg id="eye-open" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                            stroke-linejoin="round" class="lucide lucide-eye-icon lucide-eye">
+                            <path
+                                d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0" />
+                            <circle cx="12" cy="12" r="3" />
+                        </svg>
+                        <svg id="eye-off" style="display:none" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round"
+                            class="lucide lucide-eye-off-icon lucide-eye-off">
+                            <path
+                                d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49" />
+                            <path d="M14.084 14.158a3 3 0 0 1-4.242-4.242" />
+                            <path
+                                d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143" />
+                            <path d="m2 2 20 20" />
+                        </svg>
+                    </button>
+                </div>
+
+                <p class="error-msg" id="error-msg"></p>
+
+                <button type="submit" class="btn-signin">SIGN IN</button>
+
+            </form>
+
+            <!-- Footer -->
+            <footer class="footer">
+                <p class="footer-fy">FY: 2026-2027</p>
+                <p class="footer-tag">Medical Software for Retail Shops</p>
+            </footer>
+
+        </main>
+        <!-- ════ END MAIN ════ -->
+
+    </div>
+
+    <script src="/static/js/login.js"></script>
+</body>
+
+</html>
