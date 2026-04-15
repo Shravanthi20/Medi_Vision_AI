@@ -1,0 +1,234 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background-color: #2b2b2b;
+    font-family: Arial, sans-serif;
+    height: 100vh;
+    display: flex;
+    align-items: stretch;
+    overflow: hidden;
+}
+
+/* ── SIDEBAR ── */
+.sidebar {
+    width: 35%;
+    min-width: 190px;
+    background-color: #0f8551;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    padding: 100px 20px;
+    font-family: Georgia, 'Times New Roman', Times, serif;
+}
+
+.logo-box {
+    width: 90px;
+    height: 90px;
+    background-color: #d9d9d9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.logo-box svg {
+    display: none;
+}
+
+.shop-name {
+    font-size: 22px;
+    font-weight: normal;
+    color: #ffffff;
+    text-align: center;
+    letter-spacing: 0.5px;
+    line-height: 1.4;
+}
+
+.divider {
+    width: 25%;
+    height: 1px;
+    background-color: rgba(255, 255, 255, 0.25);
+}
+
+.address-wrapper {
+    text-align: center;
+}
+
+.address-label {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.7);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 20px;
+}
+
+.address-text {
+    font-size: 15px;
+    color: #ffffff;
+    text-align: center;
+    line-height: 1.6;
+}
+
+.clock-area {
+    text-align: center;
+}
+
+.clock-time {
+    font-size: 22px;
+    font-weight: normal;
+    color: #ffffff;
+    letter-spacing: 1px;
+    margin-bottom: 30px;
+}
+
+.clock-day {
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.9);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+}
+
+.clock-date {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+/* ── MAIN PANEL ── */
+.main {
+    color: rgb(133, 131, 129);
+    flex: 1;
+    background-color: #1a1a1a;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: start;
+    padding: 0 60px;
+    position: relative;
+}
+
+.instruction {
+    font-size: 20px;
+    margin-bottom: 28px;
+}
+
+#login-form {
+    width: 100%;
+    max-width: 800px;
+}
+
+.pw-label {
+    margin-top: 50px;
+    font-size: 20px;
+    margin-bottom: 8px;
+}
+
+
+.input-wrapper {
+    display: flex;
+    align-items: center;
+    background-color: #141414;
+    border: 1px solid #333333;
+    border-radius: 10px;
+    padding: 0 14px;
+    margin-bottom: 14px;
+    height: 54px;
+    width: 100%;
+    max-width: 800px;
+}
+
+.input-wrapper svg {
+    color: #aaaaaa;
+    margin-right: 12px;
+    flex-shrink: 0;
+    width: 20px;
+    /* make icon slightly larger */
+    height: 20px;
+}
+
+.input-wrapper input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    font-size: 18px;
+    /* increased from 13px */
+    color: #cccccc;
+    font-family: Arial, sans-serif;
+}
+
+.input-wrapper input::placeholder {
+    color: #777777;
+}
+
+.toggle-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #aaaaaa;
+    display: flex;
+    align-items: center;
+    padding: 0;
+}
+
+.error-msg {
+    display: none;
+    font-size: 12px;
+    color: #e05555;
+    margin-top: -8px;
+    margin-bottom: 10px;
+    max-width: 420px;
+}
+
+.error-msg.show {
+    display: block;
+}
+
+.btn-signin {
+    width: 100%;
+    max-width: 800px;
+    height: 54px;
+    background-color: #ff9800;
+    color: #1a1a1a;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: bold;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    cursor: pointer;
+    margin-top: 50px;
+}
+
+.btn-signin:hover {
+    background-color: #d09800;
+}
+
+.btn-signin:active {
+    background-color: #b88800;
+}
+
+/* ── FOOTER ── */
+.footer {
+    position: absolute;
+    bottom: 20px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    background-color: transparent;
+}
+
+.footer-fy {
+    font-size: 13px;
+    color: #aaaaaa;
+}
+
+.footer-tag {
+    font-size: 11px;
+    color: #777777;
+    margin-top: 2px;
+}
