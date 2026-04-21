@@ -247,87 +247,144 @@
       justify-content: center;
     }
 
-    /* ── MENU CARD ── */
+    /* ── SALARY CARD ── */
     .menu-card {
-      width: 360px;
+      width: 500px;
       background: #161A1F;
-      border: 1px solid rgba(104,104,104,0.5);
-      border-radius: 20px;
+      border: 1px solid rgba(104,104,104,0.58);
+      border-radius: 24px;
       overflow: hidden;
-      padding-bottom: 20px;
     }
 
     .menu-card-title {
       text-align: center;
-      padding: 22px 20px 18px;
+      padding: 20px 24px 16px;
+      border-bottom: 1px solid rgba(108,108,108,0.53);
+    }
+
+    .menu-card-title h1 {
       font-family: Inter, sans-serif;
       font-weight: 700;
-      font-size: 22px;
+      font-size: 32px;
       color: #D58615;
+      line-height: 1.2;
     }
 
-    .menu-card-divider {
-      height: 1px;
-      background: rgba(108,108,108,0.45);
-      margin-bottom: 18px;
-    }
-
+    /* MENU ITEMS LIST */
     .menu-btn-list {
       display: flex;
       flex-direction: column;
-      gap: 12px;
-      padding: 0 24px;
+      gap: 14px;
+      padding: 22px 24px 14px;
     }
 
     .menu-btn {
       width: 100%;
-      padding: 13px 16px;
-      border-radius: 10px;
+      padding: 14px 24px;
+      border-radius: 12px;
+      border: 1px solid rgba(233,112,32,0.29);
+      background: #1C2028;
+      color: #fff;
       font-family: Inter, sans-serif;
       font-weight: 600;
-      font-size: 16px;
-      color: #fff;
-      cursor: pointer;
+      font-size: 22px;
       text-align: center;
+      cursor: pointer;
       outline: none;
       transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
     }
 
-    /* Orange variant — default */
-    .menu-btn.orange {
-      background: #1C2028;
-      border: 1px solid rgba(233,112,32,0.32);
-    }
-
-    /* Green variant — default */
-    .menu-btn.green {
-      background: #1D281C;
-      border: 1px solid rgba(55,233,32,0.32);
-    }
-
-    /* HOVER — amber glow (matches form-row hover) */
-    .menu-btn.orange:hover {
+    /* HOVER — amber glow */
+    .menu-btn:hover {
       border-color: rgba(245,158,11,0.65);
       background: #1F2430;
       box-shadow: 0 0 0 2px rgba(245,158,11,0.15);
     }
-    .menu-btn.green:hover {
-      border-color: rgba(74,222,128,0.55);
-      background: #1e2e1c;
-      box-shadow: 0 0 0 2px rgba(74,222,128,0.12);
-    }
 
-    /* FOCUS — blue border + blue glow (matches form-row focus-within) */
+    /* FOCUS — blue border + blue glow */
     .menu-btn:focus {
       border-color: #3B82F6;
       background: #1E2535;
       box-shadow: 0 0 0 3px rgba(59,130,246,0.18);
     }
 
+    /* SELECTED state — green border glow */
+    .menu-btn.selected {
+      border-color: #37e920;
+      background: #1C2028;
+      color: #fff;
+      box-shadow: 0 0 0 1px #37e920;
+    }
+
     /* ACTIVE (click) */
     .menu-btn:active {
       transform: scale(0.98);
-      box-shadow: 0 0 0 3px rgba(59,130,246,0.28);
+    }
+
+    /* CHOICE ROW */
+    .choice-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0 24px 22px;
+    }
+
+    .choice-label {
+      flex: 1;
+      border-radius: 12px;
+      background: #1C2028;
+      border: 1px solid rgba(150,150,150,0.18);
+      padding: 12px 18px;
+      color: #D58615;
+      font-family: Inter, sans-serif;
+      font-size: 22px;
+      font-weight: 600;
+    }
+
+    .choice-buttons {
+      display: flex;
+      gap: 10px;
+    }
+
+    .choice-btn {
+      width: 52px;
+      height: 52px;
+      border-radius: 12px;
+      border: 1px solid rgba(150,150,150,0.18);
+      background: #1C2028;
+      color: #D58615;
+      font-family: Inter, sans-serif;
+      font-size: 22px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      outline: none;
+      transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+    }
+
+    /* choice-btn hover */
+    .choice-btn:hover {
+      border-color: rgba(245,158,11,0.65);
+      background: #1F2430;
+      box-shadow: 0 0 0 2px rgba(245,158,11,0.15);
+    }
+
+    /* choice-btn focus */
+    .choice-btn:focus {
+      border-color: #3B82F6;
+      background: #1E2535;
+      box-shadow: 0 0 0 3px rgba(59,130,246,0.18);
+    }
+
+    /* choice-btn selected — green */
+    .choice-btn.selected {
+      border-color: #37e920;
+      background: #1D281C;
+      color: #fff;
+      box-shadow: 0 0 0 1px #37e920;
     }
 
     /* ── FOOTER ── */
@@ -444,15 +501,17 @@
       <div class="center-stage">
         <div class="menu-card">
 
-          <div class="menu-card-title">Select an option to continue</div>
+          <!-- TITLE -->
+          <div class="menu-card-title">
+            <h1>Select an option to continue</h1>
+          </div>
 
-          <div class="menu-card-divider"></div>
-
+          <!-- MENU ITEMS -->
           <div class="menu-btn-list">
-            <button class="menu-btn orange" onclick="navigate('daily-attendance')">Daily Attendance</button>
-            <button class="menu-btn orange" onclick="navigate('in-out-record')">In &amp; Out Record</button>
-            <button class="menu-btn orange" onclick="navigate('salesman-ledger')">Salesman Ledger</button>
-            <button class="menu-btn orange" onclick="navigate('advance-increments')">Advance , Increments etc</button>
+            <button class="menu-btn selected" data-page="daily-attendance">Daily Attendance</button>
+            <button class="menu-btn" data-page="in-out-record">In &amp; Out Record</button>
+            <button class="menu-btn" data-page="salesman-ledger">Salesman Ledger</button>
+            <button class="menu-btn" data-page="advance-increments">Advance , Increments etc</button>
           </div>
 
         </div>
@@ -462,15 +521,15 @@
 
     <!-- FOOTER -->
     <footer class="footer">
-      <button class="action-btn inactive"   onclick="handleAction('Add')">Add</button>
+      <button class="action-btn inactive"   >Add</button>
       <button class="action-btn inactive">Modify</button>
       <button class="action-btn inactive">Delete</button>
-      <button class="action-btn inactive"   onclick="handleAction('View')">View</button>
-      <button class="action-btn inactive"   onclick="handleAction('Go To')">Go To</button>
-      <button class="action-btn inactive"   onclick="handleAction('Next')">Next</button>
-      <button class="action-btn inactive"   onclick="handleAction('Prior')">Prior</button>
+      <button class="action-btn inactive"   >View</button>
+      <button class="action-btn inactive"  >Go To</button>
+      <button class="action-btn inactive"  >Next</button>
+      <button class="action-btn inactive"  >Prior</button>
       <button class="action-btn inactive">Options</button>
-      <button class="action-btn inactive"   onclick="handleAction('Exit')">Exit</button>
+      <button class="action-btn inactive"   >Exit</button>
     </footer>
 
   </div><!-- /main -->
@@ -491,6 +550,17 @@
   }
   setInterval(updateHeader, 1000);
   updateHeader();
+
+  /* ── Selection logic ── */
+  var menuBtns = document.querySelectorAll('.menu-btn');
+
+  menuBtns.forEach(function(btn){
+    btn.addEventListener('click', function(){
+      menuBtns.forEach(function(b){ b.classList.remove('selected'); });
+      btn.classList.add('selected');
+      navigate(btn.getAttribute('data-page'));
+    });
+  });
 
   /* ── Navigation ── */
   function navigate(page){
