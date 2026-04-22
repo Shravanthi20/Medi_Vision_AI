@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Selvam Medicals – Cancel Bill</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@700&family=Jersey+15&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; overflow: hidden; }
+    body { font-family: Inter, sans-serif; background: #000; }
+
+    /* ── APP SHELL ── */
+    .app {
+      width: 1442px;
+      height: 1034px;
+      display: flex;
+    }
+
+    /* ══════════════════════════════
+       SIDEBAR  280 × 1034
+    ══════════════════════════════ */
+    .left-panel {
+      width: 280px;
+      height: 1034px;
+      background: #0b0f17;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      margin-bottom: 40px;
+    }
+
+    .SM {
+      width: 58px;
+      height: 58px;
+      background: #FF9900;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 28px;
+      line-height: 1;
+      font-family: 'JetBrains Mono', monospace;
+      flex-shrink: 0;
+    }
+
+    .logo-text p:first-child { font-weight: bold; font-size: 18px; color: #fff; }
+    .logo-text p:last-child  { font-size: 18px; color: #BAB7B7; }
+
+    .side-bar-dropdown {
+      width: 100%;
+      padding: 12px;
+      padding-right: 36px;
+      background: #111827;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      border-radius: 10px;
+      color: #cbd5e1;
+      margin-bottom: 28px;
+      font-size: 18px;
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23cbd5e1' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-size: 16px 16px;
+      background-position: right 12px center;
+      cursor: pointer;
+    }
+
+    .sec-label {
+      font-size: 18px;
+      font-weight: 600;
+      color: #64748b;
+      margin-bottom: 32px;
+    }
+
+    .row { margin-bottom: 31px; }
+    .row.sms { margin-bottom: 76px; }
+
+    .sec-label.other {
+      font-size: 18px;
+      font-weight: 600;
+      color: #80879A;
+      margin-bottom: 40px;
+    }
+
+    .row.settings { margin-bottom: 15px; }
+    .spacer { flex: 1; }
+    .row.logout { margin-bottom: 68px; }
+
+    .opt {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .opt i {
+      width: 24px;
+      height: 24px;
+      font-size: 20px;
+      color: #80879A;
+      margin-right: 100px;
+    }
+
+    .opt-text {
+      font-size: 18px;
+      font-weight: bold;
+      color: #80879A;
+    }
+
+    .opt:hover { background: #1A2035; }
+    .opt:hover i, .opt:hover .opt-text { color: #D58615; }
+
+    /* ══════════════════════════════
+       RIGHT COLUMN  1162 × 1034
+    ══════════════════════════════ */
+    .main {
+      width: 1162px;
+      height: 1034px;
+      display: flex;
+      flex-direction: column;
+      border: 2px solid transparent;
+      transition: border-color 0.2s;
+    }
+
+    /* ── HEADER  1162 × 78 ── */
+    .header {
+      height: 78px;
+      min-height: 78px;
+      background: #1A2035;
+      border-bottom: 1px solid #595959;
+      display: flex;
+      align-items: center;
+      padding: 0 0 0 33px;
+      gap: 0;
+      flex-shrink: 0;
+    }
+
+    .search-box {
+      width: 280px;
+      height: 40px;
+      background: #12141A;
+      border-radius: 12px;
+      border: none;
+      display: flex;
+      align-items: center;
+      padding: 0 14px;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    .search-box .fa-magnifying-glass { color: #6F6868; font-size: 16px; }
+
+    .search-box input {
+      background: transparent;
+      border: none;
+      outline: none;
+      color: #6F6868;
+      font-family: Inter, sans-serif;
+      font-size: 20px;
+      font-weight: 400;
+      flex: 1;
+    }
+
+    .fy {
+      margin-left: 47px;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      font-size: 28px;
+      color: #989696;
+      flex-shrink: 0;
+    }
+
+    .divider-1 { width: 2px; height: 54px; background: rgba(152,150,150,0.32); margin-left: 28px; flex-shrink: 0; }
+    .divider-2 { width: 2px; height: 54px; background: rgba(152,150,150,0.32); margin-left: 28px; flex-shrink: 0; }
+    .divider-3 { width: 2px; height: 54px; background: rgba(152,150,150,0.32); margin-left: 16px; flex-shrink: 0; }
+
+    .date-block {
+      margin-left: 28px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      line-height: 1.1;
+      flex-shrink: 0;
+    }
+
+    .date-val { font-family: 'Jersey 15', cursive; font-size: 24px; color: #D69140; }
+    .day-val  { font-family: 'Jersey 15', cursive; font-size: 24px; color: #595959; }
+
+    .clock {
+      margin-left: 28px;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      font-size: 28px;
+      color: #fff;
+      flex-shrink: 0;
+    }
+
+    .user { margin-left: 19px; display: flex; align-items: center; gap: 15px; }
+    .user img { width: 50px; height: 50px; border-radius: 12px; object-fit: cover; }
+    .user span { font-family: Inter, sans-serif; font-size: 18px; font-weight: 700; color: #595959; }
+
+    /* ── CONTENT AREA ── */
+    .content-area {
+      flex: 1;
+      background: #0A0D11;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ══════════════════════════════
+       BREADCRUMB BAR  — own row
+    ══════════════════════════════ */
+    .breadcrumb-bar {
+      background: #0E1117;
+      border-bottom: 1px solid rgba(108,108,108,0.4);
+      padding: 12px 28px;
+      display: flex;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    .breadcrumb-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .breadcrumb-parent  { font-weight: 600; font-size: 15px; color: #9CA3AF; }
+    .breadcrumb-current { font-weight: 700; font-size: 15px; color: #4ADE80; }
+
+    /* ══════════════════════════════
+       INFO ROW  — 3-zone, own row
+    ══════════════════════════════ */
+    .info-row {
+      background: #0E1117;
+      border-bottom: 1px solid rgba(108,108,108,0.4);
+      padding: 18px 28px;
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    /* LEFT: patient info — stacked, left-aligned */
+    .left-info {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      align-items: flex-start;
+    }
+
+    .patient-line {
+      color: #fff;
+      font-size: 25px;
+      font-weight: 500;
+      line-height: 1.6;
+    }
+
+    /* CENTER: Bill No — centred in grid cell */
+    .center-info {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .bill-no {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      font-size: 25px;
+      color: #D58615;
+      letter-spacing: 0.05em;
+      white-space: nowrap;
+    }
+
+    /* RIGHT: inputs — stacked, right-aligned */
+    .right-info {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      align-items: flex-end;
+    }
+
+    .input-field {
+      display: flex;
+      align-items: center;
+      background: #1C2028;
+      border: 1px solid rgba(150,150,150,0.29);
+      border-radius: 6px;
+      padding: 0 12px;
+      height: 34px;
+      gap: 8px;
+      width: 260px;
+    }
+
+    .input-field:focus-within {
+      border-color: rgba(213,134,21,0.6);
+      box-shadow: 0 0 0 2px rgba(213,134,21,0.15);
+    }
+
+    .input-label {
+      color: #D58615;
+      font-size: 16px;
+      font-weight: 600;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .input-field input {
+      background: transparent;
+      color: #fff;
+      font-size: 16px;
+      font-weight: 400;
+      border: none;
+      outline: none;
+      flex: 1;
+      min-width: 0;
+      font-family: Inter, sans-serif;
+    }
+
+    .input-field input::placeholder { color: rgba(255,255,255,0.35); }
+
+    /* ══════════════════════════════
+       CANCEL BILL MAIN
+    ══════════════════════════════ */
+    .cancel-main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      padding: 0 28px;
+    }
+
+    /* ── TABLE ── */
+    .table-section {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      padding-top: 12px;
+    }
+
+    .table-container {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* Table Header */
+    .table-header {
+      display: grid;
+      grid-template-columns: 14.4% 28.8% 10.3% 10.9% 7.5% 10.5% 17.6%;
+      background: #111316;
+      border: 2px solid rgba(255,255,255,0.7);
+    }
+
+    .table-header-cell {
+      color: #fff;
+      font-weight: 600;
+      font-size: 25px;
+      padding: 16px 10px;
+      text-align: center;
+      border-right: 1px solid rgba(255,255,255,0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .table-header-cell:last-child { border-right: none; }
+
+    /* Table Body */
+    .table-body {
+      overflow-y: auto;
+      border-left: 1px solid rgba(255,255,255,0.2);
+      border-right: 1px solid rgba(255,255,255,0.2);
+      border-bottom: 1px solid rgba(255,255,255,0.2);
+      flex: 1;
+    }
+
+    .table-row {
+      display: grid;
+      grid-template-columns: 14.4% 28.8% 10.3% 10.9% 7.5% 10.5% 17.6%;
+      border-bottom: 1px solid rgba(255,255,255,0.15);
+      transition: background 0.15s;
+    }
+
+    .table-row:hover { background: rgba(255,255,255,0.04); }
+
+    .table-cell {
+      color: #fff;
+      font-size: 25px;
+      font-weight: 500;
+      padding: 12px 10px;
+      text-align: center;
+      border-right: 1px solid rgba(255,255,255,0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      white-space: nowrap;
+    }
+
+    .table-cell:last-child { border-right: none; }
+
+    /* Subtotal row */
+    .total-box {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 6px;
+      flex-shrink: 0;
+    }
+
+    .total-value {
+      background: #111316;
+      color: #fff;
+      padding: 8px 28px;
+      font-size: 25px;
+      font-weight: 600;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+
+    /* ── BOTTOM SUMMARY ── */
+    .bottom-summary {
+      display: flex;
+      align-items: center;
+      padding: 10px 0;
+      flex-shrink: 0;
+      border-top: 1px solid rgba(108,108,108,0.3);
+      margin-top: 8px;
+      color: #D58615;
+      font-size: 20px;
+      font-weight: 500;
+    }
+
+    .summary-items {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      flex: 1;
+    }
+
+    .summary-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+      font-size: 20px;
+    }
+
+    .orange-arrow {
+      width: 20px;
+      height: 16px;
+      flex-shrink: 0;
+      fill: #D58615;
+    }
+
+    .final-total {
+      color: #D58615;
+      font-size: 20px;
+      font-weight: 600;
+      white-space: nowrap;
+      background: #111316;
+      border: 1px solid rgba(255,153,0,0.5);
+      padding: 6px 22px;
+      flex-shrink: 0;
+    }
+
+    .final-total span {
+      color: #fff;
+    }
+
+    /* Scrollbar */
+    .table-body::-webkit-scrollbar { width: 6px; }
+    .table-body::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); }
+    .table-body::-webkit-scrollbar-thumb { background: rgba(213,134,21,0.45); border-radius: 3px; }
+    .table-body::-webkit-scrollbar-thumb:hover { background: rgba(213,134,21,0.7); }
+
+
+  </style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ════════════ SIDEBAR ════════════ -->
+  <div class="left-panel">
+    <div class="logo">
+      <div class="SM">SM</div>
+      <div class="logo-text">
+        <p>Selvam</p>
+        <p>Medicals</p>
+      </div>
+    </div>
+
+    <select class="side-bar-dropdown">
+      <option value="" disabled selected hidden>Timeline...</option>
+      <option>Daily</option>
+      <option>Weekly</option>
+      <option>Monthly</option>
+    </select>
+
+    <p class="sec-label">MENU</p>
+
+    <div class="row"><div class="opt"><i class="fa-solid fa-chart-line"></i><p class="opt-text">Sales</p></div></div>
+    <div class="row"><div class="opt"><i class="fa-solid fa-cart-shopping"></i><p class="opt-text">Purchase</p></div></div>
+    <div class="row"><div class="opt"><i class="fa-solid fa-list"></i><p class="opt-text">Item</p></div></div>
+    <div class="row"><div class="opt"><i class="fa-solid fa-users"></i><p class="opt-text">Masters</p></div></div>
+    <div class="row"><div class="opt"><i class="fa-solid fa-desktop"></i><p class="opt-text">System</p></div></div>
+    <div class="row"><div class="opt"><i class="fa-solid fa-toolbox"></i><p class="opt-text">Utilities</p></div></div>
+    <div class="row sms"><div class="opt"><i class="fa-solid fa-comment-dots"></i><p class="opt-text">SMS</p></div></div>
+
+    <p class="sec-label other">OTHER</p>
+
+    <div class="row settings"><div class="opt"><i class="fa-solid fa-gear"></i><p class="opt-text">Settings</p></div></div>
+
+    <div class="spacer"></div>
+
+    <div class="row logout"><div class="opt"><i class="fa-solid fa-right-from-bracket"></i><p class="opt-text">Logout</p></div></div>
+  </div>
+
+  <!-- ════════════ RIGHT COLUMN ════════════ -->
+  <div class="main" id="mainPanel">
+
+    <!-- HEADER -->
+    <header class="header">
+      <div class="search-box">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" placeholder="Search">
+      </div>
+
+      <div class="fy">FY: 2026-2027</div>
+
+      <div class="divider-1"></div>
+
+      <div class="date-block">
+        <span class="date-val" id="date-val"></span>
+        <span class="day-val"  id="day-val"></span>
+      </div>
+
+      <div class="divider-2"></div>
+
+      <div class="clock" id="clock">00:00:00</div>
+
+      <div class="divider-3"></div>
+
+      <div class="user">
+        <img src="https://via.placeholder.com/50" alt="User">
+        <span>Name</span>
+      </div>
+    </header>
+
+    <!-- CONTENT AREA -->
+    <div class="content-area">
+
+      <!-- ══════ BREADCRUMB BAR ══════ -->
+      <div class="breadcrumb-bar">
+        <div class="breadcrumb-left">
+          <span class="breadcrumb-parent">Sales</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 18L15 12L9 6"/>
+          </svg>
+          <span class="breadcrumb-current">Cancel Bill</span>
+        </div>
+      </div>
+
+      <!-- ══════ INFO ROW (3-zone grid) ══════ -->
+      <div class="info-row">
+
+        <!-- LEFT: patient info — stacked vertically -->
+        <div class="left-info">
+          <span class="patient-line">Dr.Name: Ashok</span>
+          <span class="patient-line">CustName: Selvam</span>
+          <span class="patient-line">Address: XXXX</span>
+        </div>
+
+        <!-- CENTER: Bill No — perfectly centred by grid -->
+        <div class="center-info">
+          <span class="bill-no">Bill No : 232</span>
+        </div>
+
+        <!-- RIGHT: Salesman + Cashbill inputs — right-aligned -->
+        <div class="right-info">
+          <div class="input-field">
+            <span class="input-label">Salesman :</span>
+            <input type="text" placeholder="Type...." id="salesman-input">
+          </div>
+          <div class="input-field">
+            <span class="input-label">Cashbill &nbsp;#</span>
+            <input type="text" placeholder="" id="cashbill-input">
+          </div>
+        </div>
+
+      </div><!-- /info-row -->
+
+      <!-- ══════ CANCEL BILL MAIN ══════ -->
+      <div class="cancel-main">
+
+        <!-- Table -->
+        <div class="table-section">
+          <div class="table-container">
+
+            <!-- Table Header -->
+            <div class="table-header">
+              <div class="table-header-cell">Item Code</div>
+              <div class="table-header-cell">Item Name</div>
+              <div class="table-header-cell">Batch</div>
+              <div class="table-header-cell">Expiry</div>
+              <div class="table-header-cell">Qty</div>
+              <div class="table-header-cell">M.R.P</div>
+              <div class="table-header-cell">Value</div>
+            </div>
+
+            <!-- Table Body -->
+            <div class="table-body" id="table-body"></div>
+
+          </div>
+        </div>
+
+        <!-- Subtotal -->
+        <div class="total-box">
+          <div class="total-value">Total : <span id="subtotal">0.00</span></div>
+        </div>
+
+        <!-- Bottom Summary -->
+        <div class="bottom-summary">
+          <div class="summary-items">
+            <span class="summary-item">Discount(%) : 0.00</span>
+            <span class="summary-item">Round Off : 0.20</span>
+            <span class="summary-item">Rounded : 0.50</span>
+            <span class="summary-item">
+              [GST 5% 2277 C:56.94 S:56.94]
+              <svg class="orange-arrow" viewBox="0 -8 23 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M22.7071 0.707107C23.0976 0.316583 23.0976 -0.316583 22.7071 -0.707107L16.3431 -7.07107C15.9526 -7.46159 15.3195 -7.46159 14.9289 -7.07107C14.5384 -6.68054 14.5384 -6.04738 14.9289 -5.65685L20.5858 0L14.9289 5.65685C14.5384 6.04738 14.5384 6.68054 14.9289 7.07107C15.3195 7.46159 15.9526 7.46159 16.3431 7.07107L22.7071 0.707107ZM0 0V1H22V0V-1H0V0Z" fill="#D58615"/>
+              </svg>
+            </span>
+          </div>
+          <div class="final-total">Total : <span id="final-total">0.00</span></div>
+        </div>
+
+      </div>
+      <!-- ══════ /CANCEL BILL MAIN ══════ -->
+
+    </div><!-- /content-area -->
+
+
+
+  </div><!-- /main -->
+
+</div><!-- /app -->
+
+<script>
+  /* ── Clock & Date ── */
+  const DAYS   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  function pad(n){ return String(n).padStart(2,'0'); }
+
+  function updateHeader(){
+    const n = new Date();
+    document.getElementById('clock').textContent    = pad(n.getHours())+':'+pad(n.getMinutes())+':'+pad(n.getSeconds());
+    document.getElementById('date-val').textContent = n.getDate()+' '+MONTHS[n.getMonth()]+' '+n.getFullYear();
+    document.getElementById('day-val').textContent  = DAYS[n.getDay()];
+  }
+  setInterval(updateHeader, 1000);
+  updateHeader();
+
+  /* ── Bill Items Data ── */
+  const billItems = [
+    { code: "TCL025",  name: "CLOPITAB 75",        batch: "61901", expiry: "07/25", qty: 30, mrp: 106.59, value: 181.20 },
+    { code: "ASP050",  name: "ASPIRIN 75MG",        batch: "72014", expiry: "01/26", qty: 20, mrp:  45.00, value:  90.00 },
+    { code: "MET500",  name: "METFORMIN 500",        batch: "83022", expiry: "12/25", qty: 60, mrp:  12.50, value: 750.00 },
+    { code: "AML05",   name: "AMLODIPINE 5MG",      batch: "91033", expiry: "03/26", qty: 30, mrp:   8.75, value: 262.50 },
+    { code: "OMEP20",  name: "OMEPRAZOLE 20MG",     batch: "10544", expiry: "06/26", qty: 30, mrp:  15.00, value: 450.00 },
+    { code: "PAR500",  name: "PARACETAMOL 500",     batch: "11205", expiry: "09/25", qty: 20, mrp:   5.50, value: 110.00 },
+    { code: "CET10",   name: "CETIRIZINE 10MG",     batch: "12366", expiry: "11/25", qty: 10, mrp:  18.00, value: 180.00 },
+    { code: "AZI500",  name: "AZITHROMYCIN 500",    batch: "13427", expiry: "04/26", qty:  6, mrp: 120.00, value: 720.00 },
+    { code: "VIT-D3",  name: "VITAMIN D3 60K",      batch: "14588", expiry: "08/26", qty:  4, mrp:  95.00, value: 380.00 },
+    { code: "GLI2",    name: "GLIBENCLAMIDE 2.5",   batch: "15649", expiry: "02/26", qty: 30, mrp:  22.00, value: 660.00 }
+  ];
+
+  /* ── Render Table ── */
+  function renderTable(){
+    const tbody = document.getElementById('table-body');
+    const frag  = document.createDocumentFragment();
+    billItems.forEach(function(item, i){
+      const row = document.createElement('div');
+      row.className = 'table-row';
+      row.innerHTML =
+        '<div class="table-cell">'+(i+1)+' '+item.code+'</div>'+
+        '<div class="table-cell">'+item.name+'</div>'+
+        '<div class="table-cell">'+item.batch+'</div>'+
+        '<div class="table-cell">'+item.expiry+'</div>'+
+        '<div class="table-cell">'+item.qty+'</div>'+
+        '<div class="table-cell">'+item.mrp.toFixed(2)+'</div>'+
+        '<div class="table-cell">'+item.value.toFixed(2)+'</div>';
+      frag.appendChild(row);
+    });
+    tbody.appendChild(frag);
+  }
+
+  /* ── Update Totals ── */
+  function updateTotals(){
+    const total = billItems.reduce(function(s,i){ return s+i.value; }, 0);
+    document.getElementById('subtotal').textContent   = total.toFixed(2);
+    document.getElementById('final-total').textContent = total.toFixed(2);
+  }
+
+  /* ── Footer Actions ── */
+  function handleAction(name){
+    if(name==='Exit'){ if(confirm('Exit?')) window.close(); }
+    console.log('Action:', name);
+  }
+
+  /* ── Init ── */
+  renderTable();
+  updateTotals();
+</script>
+</body>
+</html>
