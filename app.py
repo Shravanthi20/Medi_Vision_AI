@@ -10,7 +10,7 @@ from flask_cors import CORS
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.environ.get("PHARMACY_DB_PATH", os.path.join(BASE_DIR, "database.db"))
-DASHBOARD_PATH = os.path.join(BASE_DIR, "dashboard.html")
+DASHBOARD_PATH = os.path.join(BASE_DIR, "/templates/login.html")
 
 
 app = Flask(__name__)
