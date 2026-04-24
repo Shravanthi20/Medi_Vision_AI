@@ -1,5 +1,7 @@
-document.addEventListener("DOMContentLoaded", () => {
-    lucide.createIcons();
+function initSidebar() {
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
 
     const navItems = document.querySelectorAll('.nav-item');
     const timeline = document.getElementById('timeline');
@@ -11,13 +13,29 @@ document.addEventListener("DOMContentLoaded", () => {
             this.classList.add('active');
 
             // Re-render icons
-            lucide.createIcons();
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
         });
     });
 
     // Handle Timeline Selection
-    timeline.addEventListener('change', (e) => {
-        console.log("Selected Timeline:", e.target.value);
-        // logic to filter dashboard data
-    });
+    if (timeline) {
+        timeline.addEventListener('change', (e) => {
+            console.log("Selected Timeline:", e.target.value);
+            // logic to filter dashboard data
+        });
+    }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    // If sidebar elements already exist on load
+    if (document.querySelector('.nav-item')) {
+        initSidebar();
+    }
+});
+
+// Wait for header.js to load the sidebar component
+document.addEventListener("sidebarLoaded", () => {
+    initSidebar();
 });
