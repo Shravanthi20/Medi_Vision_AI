@@ -114,6 +114,7 @@
         <div class="ar">
           <button class="btn btn-r" style="flex:0 0 auto" onclick="cc()"><i class="fas fa-trash"></i></button>
           <button class="btn btn-out" style="flex:1" onclick="hb()"><i class="fas fa-pause"></i>Hold</button>
+          <button class="btn btn-out" style="flex:1" onclick="openSmsDraftFromBill()"><i class="fas fa-comment-dots"></i>SMS</button>
           <button class="btn btn-acc" style="flex:1" onclick="pb2()"><i class="fas fa-print"></i>Bill</button>
         </div>
       </div>
@@ -225,7 +226,7 @@
     <div class="kc bl"><div class="ki"><i class="fas fa-users"></i></div><div class="kl">Active Users</div><div class="kv" id="kpi-au">1</div><div class="ks">Logged in now</div></div>
     <div class="kc re"><div class="ki"><i class="fas fa-bell"></i></div><div class="kl">Alerts</div><div class="kv" id="kpi-al">0</div><div class="ks">Expiry + Low stock</div></div>
   </div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+  <div style="display:none;grid-template-columns:1fr 1fr;gap:14px">
     <div class="crd" style="padding:16px">
       <div class="sec-hd"><span class="sec-t">Expiry Alerts</span><span style="font-size:11px;color:var(--acc);cursor:pointer">View All</span></div>
       <div id="sys-exp"></div>
@@ -235,15 +236,60 @@
       <div id="sys-low"></div>
     </div>
   </div>
+  <div style="display:grid;grid-template-columns:1fr 1.15fr;gap:14px;align-items:start;margin-top:14px">
+    <div class="crd fm" style="padding:16px">
+      <div style="font-size:13px;font-weight:600;margin-bottom:12px">Compose Message</div>
+      <label>Recipient Customer</label>
+      <select id="sms-customer" onchange="smsPickCustomer(this.value)" style="width:100%;background:#252a40;border:1px solid var(--brd);border-radius:6px;padding:7px 10px;color:var(--tx);font-size:12px;outline:none;font-family:'Inter',sans-serif">
+        <option value="">Select customer</option>
+      </select>
+      <label>Recipient Phone</label>
+      <input type="text" id="sms-phone" placeholder="Enter phone number"/>
+      <div class="g2" style="margin-top:2px">
+        <div>
+          <label>Bill Ref</label>
+          <input type="text" id="sms-bill" placeholder="Bill ID / reference"/>
+        </div>
+        <div>
+          <label>Template</label>
+          <select id="sms-template" onchange="smsApplyTemplate(this.value)">
+            <option value="">Custom Message</option>
+          </select>
+        </div>
+      </div>
+      <label>Message</label>
+      <textarea id="sms-body" rows="7" placeholder="Type your message..."></textarea>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 12px">
+        <button class="btn btn-out" style="flex:1;min-width:120px" onclick="smsQuickTemplate('bill_ready')"><i class="fas fa-file-invoice"></i>Bill Ready</button>
+        <button class="btn btn-out" style="flex:1;min-width:120px" onclick="smsQuickTemplate('reminder')"><i class="fas fa-bell"></i>Pickup Reminder</button>
+        <button class="btn btn-out" style="flex:1;min-width:120px" onclick="smsQuickTemplate('custom')"><i class="fas fa-pen"></i>Custom</button>
+      </div>
+      <button class="btn btn-acc" style="width:100%;justify-content:center;padding:11px" onclick="sendSmsMessage()"><i class="fas fa-paper-plane"></i>Send SMS</button>
+    </div>
+    <div class="crd" style="padding:16px">
+      <div class="sec-hd" style="margin-bottom:10px">
+        <span class="sec-t" style="font-size:13px">Message History</span>
+        <span id="sms-sync-state" style="font-size:11px;color:var(--mt)">Ready</span>
+      </div>
+      <div class="tw" style="max-height:640px;overflow:auto">
+        <table>
+          <thead><tr><th>Recipient</th><th>Template</th><th>Message</th><th>Status</th><th>Time</th><th>Action</th></tr></thead>
+          <tbody id="sms-body">
+            <tr><td colspan="6" style="text-align:center;color:var(--dim)">No SMS messages yet.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
 </div></div>
 <!-- UTILITIES -->
 <div class="pn" id="p-utilities"><div class="pg">
   <div class="sec-hd"><span class="sec-t">Sales Report &amp; Utilities</span></div>
   <div class="tw" style="margin-bottom: 20px;">
     <table>
-      <thead><tr><th>Bill No.</th><th>Date</th><th>Customer</th><th>Prescription</th><th>Amount</th><th>Method</th><th>Doctor</th><th>Items</th></tr></thead>
+      <thead><tr><th>Bill No.</th><th>Date</th><th>Customer</th><th>Prescription</th><th>Amount</th><th>Method</th><th>Doctor</th><th>Items</th><th>Action</th></tr></thead>
       <tbody id="util-bills-body">
-        <tr><td colspan="8" style="text-align:center;color:var(--dim)">No bills generated yet.</td></tr>
+        <tr><td colspan="9" style="text-align:center;color:var(--dim)">No bills generated yet.</td></tr>
       </tbody>
     </table>
   </div>
@@ -327,7 +373,13 @@
 </div></div>
 <!-- SMS -->
 <div class="pn" id="p-sms"><div class="pg">
-  <div class="sec-hd"><span class="sec-t">SMS Notifications</span><button class="btn btn-acc"><i class="fas fa-paper-plane"></i>Send SMS</button></div>
+  <div class="sec-hd">
+    <span class="sec-t">SMS Center</span>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-out" onclick="refreshSmsCenter()"><i class="fas fa-rotate"></i>Refresh</button>
+      <button class="btn btn-acc" onclick="openSmsDraftFromBill()"><i class="fas fa-receipt"></i>Use Current Bill</button>
+    </div>
+  </div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
     <div>
       <div class="crd fm" style="padding:16px;margin-bottom:14px">
@@ -518,7 +570,7 @@
     <p id="face-status" style="font-size:12px; color:var(--tx); font-weight:500">Please look directly at camera.</p>
   </div>
 </div>
-<script defer src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+<script>
 let rxBase64 = '';
 function attachRx(input) {
   if (input.files && input.files[0]) {
@@ -780,6 +832,7 @@ function initBillResizer(){
 
 function clearCurrentBillUI(){
   cart={};rct();
+  editingBillId='';
   document.getElementById('cn').value='';
   document.getElementById('cp').value='';
   document.getElementById('cdr').value='';
@@ -792,6 +845,8 @@ function clearCurrentBillUI(){
   const btn=document.getElementById('btn-rx'), prev=document.getElementById('rx-preview');
   if(btn){btn.innerHTML='<i class="fas fa-paperclip"></i> Upload';btn.style.borderColor='var(--brd)';btn.style.color='var(--mt)';}
   if(prev){prev.src='';prev.style.display='none';}
+  const billBadge=document.querySelector('.rbn');
+  if(billBadge)billBadge.textContent=nextBillNo();
 }
 
 function nextBillNo(){return '#B-'+(allBills.length+heldBills.length+1);}
@@ -809,6 +864,49 @@ function newBillTab(){
   if(Object.keys(cart).length && !confirm('Current bill has items. Clear and start new bill?'))return;
   clearCurrentBillUI();
   refreshBillNo();
+}
+
+function loadBillForEdit(id){
+  const bill=allBills.find(b=>String(b.id)===String(id));
+  if(!bill){alert('Bill not found.');return;}
+  clearCurrentBillUI();
+  editingBillId=String(bill.id);
+  cart={};
+  (bill.items||[]).forEach(it=>{
+    if(!it||!it.id)return;
+    cart[it.id]={...it};
+  });
+  document.getElementById('cn').value=bill.cust||'';
+  document.getElementById('cp').value=bill.phone||'';
+  document.getElementById('cdr').value=bill.doctor||'';
+  document.getElementById('bill-type').value=bill.bill_type||'retail';
+  document.getElementById('cust-type').value=bill.customer_type||'customer';
+  const payMode=(bill.pay||'cash').toLowerCase();
+  pm=payMode; sp(payMode);
+  document.getElementById('dv').value=bill.discount_value??0;
+  document.getElementById('dt').value=bill.discount_type||'pct';
+  rxBase64=bill.prescription||'';
+  const btn=document.getElementById('btn-rx'), prev=document.getElementById('rx-preview');
+  if(btn){btn.innerHTML='<i class="fas fa-file-prescription"></i> Prescription Loaded';btn.style.borderColor='var(--acc)';btn.style.color='var(--acc)';}
+  if(prev&&bill.prescription){prev.src=bill.prescription;prev.style.display='block';}
+  rct();
+  const badge=document.querySelector('.rbn');
+  if(badge)badge.textContent=`Editing ${bill.id}`;
+  sw('sales',document.querySelector('.ni[data-panel="sales"]'));
+}
+
+function deleteBill(id){
+  if(!confirm(`Delete bill ${id}? This will restore stock and customer totals.`))return;
+  fetch(API+`/bills/${encodeURIComponent(id)}`,{method:'DELETE'})
+    .then(r=>{if(!r.ok)return r.json().then(e=>{throw new Error(e.message||'Delete failed')});return r.json();})
+    .then(()=>{
+      if(editingBillId===String(id)) clearCurrentBillUI();
+      rKpis();
+      loadInventory();
+      rMasters();
+      if(typeof refreshSmsCenter==='function') refreshSmsCenter();
+    })
+    .catch(err=>alert('Delete failed: '+err.message));
 }
 
 function loadHeldBill(){
@@ -1153,9 +1251,9 @@ function initNav(){
 }
 initNav();
 
-function rMasters(){rCustomers();rSuppliers();rDoctors();loadShelves();}
+function rMasters(){rCustomers();if(typeof renderSmsRecipients==='function')renderSmsRecipients();rSuppliers();rDoctors();loadShelves();}
 let CUSTOMERS=[];
-function rCustomers(){fetch(API+'/customers?t='+Date.now()).then(r=>r.json()).then(cs=>{CUSTOMERS=cs;const tb=document.getElementById('cust-body');const nL=document.getElementById('cust-list');const pL=document.getElementById('phone-list');if(nL&&pL){nL.innerHTML='';pL.innerHTML='';cs.forEach(x=>{nL.innerHTML+=`<option value="${x.name}">${x.phone}</option>`;pL.innerHTML+=`<option value="${x.phone}">${x.name}</option>`;});}if(!tb)return;tb.innerHTML='';if(!cs.length){tb.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--dim)">No customer records.</td></tr>';return;}cs.forEach(c=>tb.innerHTML+=`<tr><td>${c.name}</td><td>${c.phone}</td><td style="text-align:center">${c.visits}</td><td style="font-weight:600">₹${c.total_spend.toFixed(2)}</td><td style="text-align:right"><i class="fas fa-edit" style="cursor:pointer;color:var(--acc);margin-right:10px" onclick="ecust(${c.id})"></i><i class="fas fa-trash" style="cursor:pointer;color:#e74c3c" onclick="dcust(${c.id})"></i></td></tr>`)});}
+function rCustomers(){fetch(API+'/customers?t='+Date.now()).then(r=>r.json()).then(cs=>{CUSTOMERS=cs;const tb=document.getElementById('cust-body');const nL=document.getElementById('cust-list');const pL=document.getElementById('phone-list');if(nL&&pL){nL.innerHTML='';pL.innerHTML='';cs.forEach(x=>{nL.innerHTML+=`<option value="${x.name}">${x.phone}</option>`;pL.innerHTML+=`<option value="${x.phone}">${x.name}</option>`;});}if(!tb)return;tb.innerHTML='';if(!cs.length){tb.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--dim)">No customer records.</td></tr>';return;}cs.forEach(c=>tb.innerHTML+=`<tr><td>${c.name}</td><td>${c.phone}</td><td style="text-align:center">${c.visits}</td><td style="font-weight:600">₹${c.total_spend.toFixed(2)}</td><td style="text-align:right"><i class="fas fa-comment-dots" style="cursor:pointer;color:var(--acc);margin-right:10px" onclick="openSmsForCustomer(${c.id})" title="SMS Customer"></i><i class="fas fa-edit" style="cursor:pointer;color:var(--acc);margin-right:10px" onclick="ecust(${c.id})"></i><i class="fas fa-trash" style="cursor:pointer;color:#e74c3c" onclick="dcust(${c.id})"></i></td></tr>`)});}
 function rSuppliers(){fetch(API+'/suppliers?t='+Date.now()).then(r=>r.json()).then(ss=>{SUPPLIERS=ss;const tb=document.getElementById('sup-body');if(!tb)return;tb.innerHTML='';if(!ss.length){tb.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--dim)">No supplier records.</td></tr>';return;}ss.forEach(s=>tb.innerHTML+=`<tr><td>${s.name}</td><td>${s.phone}</td><td>${s.gst||'—'}</td><td><span class="bx bg">${s.status}</span></td><td style="text-align:right"><i class="fas fa-edit" style="cursor:pointer;color:var(--acc);margin-right:10px" onclick="esup(${s.id})"></i><i class="fas fa-trash" style="cursor:pointer;color:#e74c3c" onclick="dm_sup('${s.id}')"></i></td></tr>`)});}
 let DOCTORS=[];
 function rDoctors(){fetch(API+'/doctors?t='+Date.now()).then(r=>r.json()).then(ds=>{DOCTORS=ds;const tb=document.getElementById('doc-body');if(!tb)return;tb.innerHTML='';if(!ds.length){tb.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--dim)">No doctor records.</td></tr>';return;}ds.forEach(d=>tb.innerHTML+=`<tr><td>${d.name}</td><td>${d.specialty}</td><td>${d.hospital}</td><td>${d.phone}</td><td style="text-align:right"><i class="fas fa-edit" style="cursor:pointer;color:var(--acc);margin-right:10px" onclick="edoc(${d.id})"></i><i class="fas fa-trash" style="cursor:pointer;color:#e74c3c" onclick="ddoc(${d.id})"></i></td></tr>`)}); }
@@ -1275,7 +1373,8 @@ function dm(id){if(!confirm('Permanently delete this medicine?'))return;fetch(AP
 function us(id){const i=MEDS.find(x=>x.id==id);if(!i)return;let nv=prompt(`Update stock for ${i.n}:`,i.s);if(nv!==null){nv=parseInt(nv);if(!isNaN(nv)){fetch(API+'/medicines',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...i,s:nv})}).then(()=>loadInventory());}}}
 
 let allBills=[];
-function renderUtils(){const tbody=document.getElementById('util-bills-body');if(!tbody)return;if(!allBills.length){tbody.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--dim)">No bills generated yet.</td></tr>';return;}tbody.innerHTML='';allBills.slice().reverse().forEach((b)=>{const itemsTxt=(b.items&&b.items.length)?b.items.map(i=>i.n).join(', '):'—';const rxf=b.prescription?`<button class="btn btn-out" style="padding:4px 10px;font-size:10px;border-color:var(--acc);color:var(--acc);background:rgba(245,166,35,0.05)" onclick="v_rx('${b.id}')"><i class="fas fa-eye"></i> View Prescription</button>`:'<span style="color:var(--dim);font-size:11px;opacity:0.5">—</span>';tbody.innerHTML+=`<tr>
+let editingBillId='';
+function renderUtils(){const tbody=document.getElementById('util-bills-body');if(!tbody)return;if(!allBills.length){tbody.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--dim)">No bills generated yet.</td></tr>';return;}tbody.innerHTML='';allBills.slice().reverse().forEach((b)=>{const itemsTxt=(b.items&&b.items.length)?b.items.map(i=>i.n).join(', '):'—';const rxf=b.prescription?`<button class="btn btn-out" style="padding:4px 10px;font-size:10px;border-color:var(--acc);color:var(--acc);background:rgba(245,166,35,0.05)" onclick="v_rx('${b.id}')"><i class="fas fa-eye"></i> View Prescription</button>`:'<span style="color:var(--dim);font-size:11px;opacity:0.5">—</span>';tbody.innerHTML+=`<tr>
 <td style="vertical-align:middle"><span class="bx bo">#${b.id}</span></td>
 <td style="vertical-align:middle;font-size:12px">${b.date}</td>
 <td style="vertical-align:middle;font-weight:500">${b.cust}</td>
@@ -1284,6 +1383,7 @@ function renderUtils(){const tbody=document.getElementById('util-bills-body');if
 <td style="vertical-align:middle"><span style="text-transform:uppercase;font-size:10px;background:var(--brd);padding:2px 6px;border-radius:4px">${b.pay}</span></td>
 <td style="vertical-align:middle;color:var(--mt);font-size:11.5px">${b.doctor||'Self'}</td>
 <td style="vertical-align:middle;color:var(--mt);font-size:11.5px;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${itemsTxt}">${itemsTxt}</td>
+<td style="vertical-align:middle;text-align:right;white-space:nowrap"><button class="btn btn-out" style="padding:4px 8px;font-size:10px;margin-right:6px" onclick="loadBillForEdit('${b.id}')"><i class="fas fa-pen"></i></button><button class="btn btn-r" style="padding:4px 8px;font-size:10px" onclick="deleteBill('${b.id}')"><i class="fas fa-trash"></i></button></td>
 </tr>`;});}
 function v_rx(id){const b=allBills.find(x=>x.id==id);if(!b||!b.prescription)return;const isPdf=b.prescription.startsWith('data:application/pdf');const w=window.open('','_blank','width=1000,height=920');const content=isPdf?`<iframe src="${b.prescription}" style="width:95%;height:82vh;border-radius:12px;border:1px solid #334155;background:#1e293b;box-shadow:0 20px 50px rgba(0,0,0,0.5)"></iframe>`:`<video style="display:none"></video><img src="${b.prescription}" style="max-width:90%;max-height:80%;border-radius:12px;box-shadow:0 20px 50px rgba(0,0,0,0.5);border:1px solid #334155;"/><p style="margin-top:24px;font-size:14px;color:#94a3b8;letter-spacing:0.5px">Customer: <b style="color:#f1f5f9">${b.cust}</b></p>`;w.document.write(`<html><head><title>Prescription: ${b.cust}</title><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet"/><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/><style>body{margin:0;background:#0f172a;color:#fff;font-family:'Inter',sans-serif;display:flex;flex-direction:column;align-items:center;height:100vh;overflow:hidden}.hdr{width:100%;padding:20px;background:#1e293b;border-bottom:1px solid #334155;display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:30px}.hdr i{color:#f5a623;font-size:20px}.hdr h2{margin:0;font-size:18px;font-weight:600;letter-spacing:-0.5px}</style></head><body><div class="hdr"><i class="fas fa-file-prescription"></i><h2>Prescription for Bill #${b.id}</h2></div>${content}</body></html>`);}
 function rKpis(sD){
@@ -1310,7 +1410,8 @@ function rKpis(sD){
     document.getElementById('ks-tb').textContent=(b_diff>=0?'+':'')+b_diff+' vs prev day';
     const r_pct=ytr===0?0:(tr-ytr)/ytr*100;
     document.getElementById('ks-tr').textContent=(r_pct>=0?'+':'')+r_pct.toFixed(0)+'% vs prev day';
-    document.querySelector('.rbn').textContent='#B-'+(bls.length+heldBills.length+1);
+    const billBadge=document.querySelector('.rbn');
+    if(billBadge)billBadge.textContent=editingBillId?`Editing ${editingBillId}`:'#B-'+(bls.length+heldBills.length+1);
     renderUtils();
     rMasters();
     rSys(sD);
@@ -1449,19 +1550,23 @@ function pb2(){
   const da=dt==='pct'?sub*(dv/100):Math.min(dv,sub);
   const taxable=Math.max(sub-modeDisc-da,0),tax=taxable*0.05,tot=taxable+tax;
   const now=new Date(),ds=pd(now.getDate())+'/'+pd(now.getMonth()+1)+'/'+now.getFullYear()+' '+pd(now.getHours())+':'+pd(now.getMinutes());
-  const bId='B-'+(allBills.length+1);
+  const bId=editingBillId||('B-'+(allBills.length+1));
   const savedItems=ks.map(k=>({...cart[k]})); // snapshot before clearing
-  const billData={id:bId,ts:now.getTime(),date:ds,cust:cnInp,phone:cpInp,doctor:cdrInp,pay:pm,sub:sub,disc:da+modeDisc,tax:tax,total:tot,items:savedItems,prescription:rxBase64,customer_type:custType,bill_type:billType};
+  const billData={id:bId,ts:now.getTime(),date:ds,cust:cnInp,phone:cpInp,doctor:cdrInp,pay:pm,sub:sub,disc:da+modeDisc,tax:tax,total:tot,items:savedItems,prescription:rxBase64,customer_type:custType,bill_type:billType,discount_type:dt,discount_value:dv};
   console.log('Final Bill Payload prescription length:', (billData.prescription||'').length);
-  
-  fetch(API+'/bills',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(billData)})
+
+  const saveMethod=editingBillId?'PATCH':'POST';
+  const saveUrl=editingBillId?`${API}/bills/${encodeURIComponent(editingBillId)}`:`${API}/bills`;
+  fetch(saveUrl,{method:saveMethod,headers:{'Content-Type':'application/json'},body:JSON.stringify(billData)})
   .then(r=>{if(!r.ok)throw new Error('Server returned '+r.status);return r.json();})
   .then(()=>{
     // ALL UI refreshes happen AFTER server confirms save
     rKpis();
     loadInventory();
     rMasters();
+    if(typeof refreshSmsCenter === 'function') refreshSmsCenter();
     rxBase64='';
+    editingBillId='';
     const btn=document.getElementById('btn-rx'), prev=document.getElementById('rx-preview');
     if(btn){btn.innerHTML='<i class="fas fa-file-prescription"></i> Attach Prescription';btn.style.borderColor='var(--brd)';btn.style.color='var(--mt)';}
     if(prev){prev.src='';prev.style.display='none';}
@@ -1792,6 +1897,7 @@ window.onload = () => {
       if(typeof rItems === 'function') rItems(ms);
       if(typeof generateWantedList==='function')generateWantedList();
   }).catch(e=>console.log(e));
+  setTimeout(() => { if(typeof refreshSmsCenter === 'function') refreshSmsCenter(); }, 1000);
 
   // Customer Sync
   document.getElementById('cn').addEventListener('input', e => {
@@ -1809,6 +1915,224 @@ window.onload = () => {
     if(typeof loadInventory === 'function') loadInventory();
   }, 5000);
 };
+
+let SMS_MESSAGES=[];
+let SMS_TEMPLATES=[];
+
+function smsTimeLabel(ts){
+  if(!ts)return '—';
+  const d=new Date(Number(ts));
+  return Number.isNaN(d.getTime())?'—':`${pd(d.getDate())}/${pd(d.getMonth()+1)} ${pd(d.getHours())}:${pd(d.getMinutes())}`;
+}
+
+function smsStatusClass(status){
+  const s=String(status||'').toLowerCase();
+  if(['sent','delivered','queued','pending','sending'].includes(s))return 'bg';
+  if(['failed','error'].includes(s))return 'br';
+  return 'bo';
+}
+
+function smsTemplateById(id){return SMS_TEMPLATES.find(t=>String(t.id)===String(id));}
+function smsCustomerById(id){return CUSTOMERS.find(c=>String(c.id)===String(id));}
+function smsBillById(id){return allBills.find(b=>String(b.id)===String(id))||null;}
+
+function smsDraftContext(){
+  const customerId=document.getElementById('sms-customer')?.value||'';
+  const customer=smsCustomerById(customerId);
+  const phone=document.getElementById('sms-phone')?.value.trim()||customer?.phone||document.getElementById('cp')?.value.trim()||'';
+  const billId=document.getElementById('sms-bill')?.value.trim()||'';
+  const bill=smsBillById(billId);
+  return {
+    recipient_phone: phone,
+    customer_id: customer?.id||'',
+    customer_name: customer?.name||document.getElementById('cn')?.value.trim()||'',
+    bill_id: billId,
+    bill_total: bill?.total||'',
+    bill_date: bill?.date||'',
+    item_name: bill?.items?.[0]?.n||'',
+    stock_qty: bill?.items?.[0]?.qty||'',
+    due_amount: bill?.total||'',
+    store_name: 'Selvam Medicals'
+  };
+}
+
+function smsRenderTemplate(body, ctx){
+  return String(body||'').replace(/\{(\w+)\}/g,(_,key)=>ctx[key]===undefined||ctx[key]===null?'':String(ctx[key]));
+}
+
+function renderSmsRecipients(){
+  const sel=document.getElementById('sms-customer');
+  if(!sel)return;
+  const current=sel.value;
+  sel.innerHTML='<option value="">Select customer</option>'+CUSTOMERS.map(c=>`<option value="${c.id}">${c.name} · ${c.phone}</option>`).join('');
+  sel.value=current;
+}
+
+function renderSmsTemplates(){
+  const sel=document.getElementById('sms-template');
+  if(!sel)return;
+  const current=sel.value;
+  sel.innerHTML='<option value="">Custom Message</option>'+SMS_TEMPLATES.map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
+  sel.value=current;
+}
+
+function renderSmsHistory(){
+  const tb=document.getElementById('sms-body');
+  if(!tb)return;
+  if(!SMS_MESSAGES.length){tb.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--dim)">No SMS messages yet.</td></tr>';return;}
+  tb.innerHTML=SMS_MESSAGES.map(m=>{
+    const preview=(m.body||'').length>70?m.body.slice(0,67)+'...':(m.body||'');
+    return `<tr>
+      <td><div style="font-weight:600">${m.recipient_phone||'—'}</div><div style="font-size:10px;color:var(--mt)">${m.customer_name||'Walk-in'}</div></td>
+      <td>${m.template_id?((smsTemplateById(m.template_id)||{}).name||m.message_type||'Template'):(m.message_type||'Custom')}</td>
+      <td style="font-size:11px;color:var(--mt);max-width:280px">${preview||'—'}</td>
+      <td><span class="bx ${smsStatusClass(m.send_status)}">${m.send_status||'queued'}</span>${m.failure_reason?`<div style="font-size:10px;color:#ef4444;margin-top:4px;max-width:180px">${m.failure_reason}</div>`:''}</td>
+      <td style="font-size:11px">${smsTimeLabel(m.sent_ts||m.updated_ts||m.created_ts)}</td>
+      <td style="text-align:right"><button class="btn btn-out" style="padding:4px 8px;font-size:10px" onclick="retrySmsMessage('${m.id}')">Retry</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function smsPickCustomer(customerId){
+  const customer=smsCustomerById(customerId);
+  const phone=document.getElementById('sms-phone');
+  if(phone)phone.value=customer?.phone||'';
+}
+
+function smsApplyTemplate(templateId){
+  const template=smsTemplateById(templateId);
+  const bodyEl=document.getElementById('sms-body');
+  if(!bodyEl)return;
+  bodyEl.value=template?smsRenderTemplate(template.body, smsDraftContext()):'';
+}
+
+function smsQuickTemplate(mode){
+  const template=SMS_TEMPLATES.find(t=>t.message_type===mode)||smsTemplateById(mode);
+  const templateSel=document.getElementById('sms-template');
+  if(templateSel)templateSel.value=template?template.id:'';
+  const bodyEl=document.getElementById('sms-body');
+  if(bodyEl)bodyEl.value=template?smsRenderTemplate(template.body, smsDraftContext()):'';
+}
+
+function smsFillFromBill(bill){
+  const phone=document.getElementById('sms-phone');
+  const cust=document.getElementById('sms-customer');
+  const billEl=document.getElementById('sms-bill');
+  if(phone)phone.value=bill?.phone||'';
+  if(cust){
+    const match=CUSTOMERS.find(x=>x.phone===bill?.phone||x.name===bill?.cust);
+    cust.value=match?String(match.id):'';
+  }
+  if(billEl)billEl.value=bill?.id||'';
+  const template=SMS_TEMPLATES.find(t=>t.message_type==='bill_ready')||smsTemplateById('tpl-bill-ready');
+  const templateSel=document.getElementById('sms-template');
+  if(templateSel)templateSel.value=template?template.id:'';
+  const bodyEl=document.getElementById('sms-body');
+  if(bodyEl&&template){
+    bodyEl.value=smsRenderTemplate(template.body,{
+      ...smsDraftContext(),
+      bill_id: bill?.id||'',
+      bill_total: bill?.total||'',
+      bill_date: bill?.date||'',
+      customer_name: bill?.cust||document.getElementById('cn')?.value.trim()||'',
+      recipient_phone: bill?.phone||document.getElementById('cp')?.value.trim()||''
+    });
+  }
+}
+
+function openSmsForCustomer(customerId){
+  const customer=smsCustomerById(customerId);
+  sw('sms',document.querySelector('.ni[data-panel="sms"]'));
+  refreshSmsCenter().then(()=>{
+    if(customer){
+      const custSel=document.getElementById('sms-customer');
+      const phone=document.getElementById('sms-phone');
+      if(custSel)custSel.value=String(customer.id);
+      if(phone)phone.value=customer.phone||'';
+      const billEl=document.getElementById('sms-bill');
+      if(billEl)billEl.value='';
+      smsQuickTemplate('reminder');
+    }
+  });
+}
+
+function openSmsForBill(billId){
+  sw('sms',document.querySelector('.ni[data-panel="sms"]'));
+  const bill=smsBillById(billId);
+  refreshSmsCenter().then(()=>{ if(bill)smsFillFromBill(bill); });
+}
+
+function openSmsDraftFromBill(){
+  sw('sms',document.querySelector('.ni[data-panel="sms"]'));
+  const draft={
+    id: nextBillNo(),
+    cust: document.getElementById('cn')?.value.trim()||'',
+    phone: document.getElementById('cp')?.value.trim()||'',
+    total: parseFloat((document.getElementById('ttv')?.textContent||'0').replace(/[^\d.]/g,''))||0,
+    date: new Date().toLocaleDateString()
+  };
+  refreshSmsCenter().then(()=>smsFillFromBill(draft));
+}
+
+function refreshSmsCenter(){
+  const status=document.getElementById('sms-sync-state');
+  if(status)status.textContent='Loading...';
+  return Promise.all([
+    fetch(API+'/sms/templates?t='+Date.now()).then(r=>r.json()),
+    fetch(API+'/sms/messages?t='+Date.now()).then(r=>r.json())
+  ]).then(([templates,messages])=>{
+    SMS_TEMPLATES=templates||[];
+    SMS_MESSAGES=messages||[];
+    renderSmsRecipients();
+    renderSmsTemplates();
+    renderSmsHistory();
+    if(status)status.textContent=`${SMS_MESSAGES.length} message(s)`;
+  }).catch(err=>{
+    if(status)status.textContent='SMS load failed';
+    console.log('SMS load failed', err);
+  });
+}
+
+function sendSmsMessage(){
+  const recipient_phone=document.getElementById('sms-phone')?.value.trim()||'';
+  const customerId=document.getElementById('sms-customer')?.value||'';
+  const customer=smsCustomerById(customerId);
+  const body=document.getElementById('sms-body')?.value.trim()||'';
+  const templateId=document.getElementById('sms-template')?.value||'';
+  const billId=document.getElementById('sms-bill')?.value.trim()||'';
+  if(!recipient_phone){alert('Enter a recipient phone number.');return;}
+  if(!body){alert('Enter a message body or choose a template.');return;}
+  const template=smsTemplateById(templateId);
+  const payload={
+    recipient_phone,
+    customer_id: customerId,
+    customer_name: customer?.name||document.getElementById('cn')?.value.trim()||'',
+    bill_id: billId,
+    template_id: templateId,
+    message_type: template?.message_type || (billId ? 'bill_ready' : 'custom'),
+    body,
+    source: 'dashboard',
+    auto_send: true
+  };
+  fetch(API+'/sms/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
+    .then(r=>{if(!r.ok)return r.json().then(e=>{throw new Error(e.message||'Failed to send SMS')});return r.json();})
+    .then(msg=>{
+      SMS_MESSAGES=[msg,...SMS_MESSAGES.filter(x=>x.id!==msg.id)];
+      renderSmsHistory();
+      alert(`SMS ${msg.send_status||'queued'}.`);
+    })
+    .catch(err=>alert('SMS send failed: '+err.message));
+}
+
+function retrySmsMessage(messageId){
+  fetch(API+`/sms/messages/${messageId}/retry`,{method:'POST'})
+    .then(r=>{if(!r.ok)return r.json().then(e=>{throw new Error(e.message||'Retry failed')});return r.json();})
+    .then(msg=>{
+      SMS_MESSAGES=SMS_MESSAGES.map(x=>x.id===msg.id?msg:x);
+      renderSmsHistory();
+    })
+    .catch(err=>alert('Retry failed: '+err.message));
+}
 
 </script>
 </body>

@@ -53,3 +53,5 @@ http://127.0.0.1:5001
 
 - The app uses SQLite by default and creates `database.db` in the project folder.
 - You can set `PHARMACY_DB_PATH` if you want to use a different database location.
+- SMS history and templates are stored in SQLite and the bill flow will queue an SMS automatically after a bill is saved.
+- To connect a real gateway, set `SMS_PROVIDER_URL`, `SMS_PROVIDER_KEY`, `SMS_PROVIDER_SENDER`, and optionally `SMS_PROVIDER_MODE`.

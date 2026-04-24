@@ -145,7 +145,53 @@ def normalize_bill_row(row: sqlite3.Row) -> dict[str, Any]:
         "total": data.get("total"),
         "items": items,
         "doctor": data.get("doctor", "Self"),
+        "customer_type": data.get("customer_type", "customer"),
+        "bill_type": data.get("bill_type", "retail"),
+        "discount_type": data.get("discount_type", "pct"),
+        "discount_value": data.get("discount_value", 0),
         "prescription": prescription,
+    }
+
+
+def normalize_sms_template_row(row: sqlite3.Row) -> dict[str, Any]:
+    data = dict(row)
+    return {
+        "id": data.get("id"),
+        "name": data.get("name"),
+        "body": data.get("body", ""),
+        "message_type": data.get("message_type", "custom"),
+        "active": int(data.get("active", 1) or 0),
+        "created_ts": data.get("created_ts"),
+        "updated_ts": data.get("updated_ts"),
+    }
+
+
+def normalize_sms_message_row(row: sqlite3.Row) -> dict[str, Any]:
+    data = dict(row)
+    provider_response = safe_json_loads(data.get("provider_response"), {})
+    if not isinstance(provider_response, dict):
+        provider_response = {"raw": provider_response}
+    return {
+        "id": data.get("id"),
+        "created_ts": data.get("created_ts"),
+        "updated_ts": data.get("updated_ts"),
+        "recipient_phone": data.get("recipient_phone", ""),
+        "customer_id": data.get("customer_id", ""),
+        "customer_name": data.get("customer_name", ""),
+        "bill_id": data.get("bill_id", ""),
+        "template_id": data.get("template_id", ""),
+        "message_type": data.get("message_type", "custom"),
+        "body": data.get("body", ""),
+        "send_status": data.get("send_status", "queued"),
+        "provider_name": data.get("provider_name", ""),
+        "provider_message_id": data.get("provider_message_id", ""),
+        "failure_reason": data.get("failure_reason", ""),
+        "retry_count": int(data.get("retry_count", 0) or 0),
+        "last_attempt_ts": data.get("last_attempt_ts", 0),
+        "sent_ts": data.get("sent_ts", 0),
+        "delivered_ts": data.get("delivered_ts", 0),
+        "source": data.get("source", "manual"),
+        "provider_response": provider_response,
     }
 
 
@@ -166,6 +212,10 @@ def init_db() -> None:
                 total REAL,
                 items TEXT,
                 doctor TEXT,
+                customer_type TEXT DEFAULT 'customer',
+                bill_type TEXT DEFAULT 'retail',
+                discount_type TEXT DEFAULT 'pct',
+                discount_value REAL DEFAULT 0,
                 rx TEXT DEFAULT '',
                 prescription TEXT DEFAULT ''
             )
@@ -247,6 +297,45 @@ def init_db() -> None:
                 hospital TEXT,
                 phone TEXT,
                 email TEXT DEFAULT ''
+            )
+            """
+        )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS sms_templates (
+                id TEXT PRIMARY KEY,
+                name TEXT,
+                body TEXT,
+                message_type TEXT DEFAULT 'custom',
+                active INTEGER DEFAULT 1,
+                created_ts INTEGER,
+                updated_ts INTEGER
+            )
+            """
+        )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS sms_messages (
+                id TEXT PRIMARY KEY,
+                created_ts INTEGER,
+                updated_ts INTEGER,
+                recipient_phone TEXT,
+                customer_id TEXT DEFAULT '',
+                customer_name TEXT DEFAULT '',
+                bill_id TEXT DEFAULT '',
+                template_id TEXT DEFAULT '',
+                message_type TEXT DEFAULT 'custom',
+                body TEXT,
+                send_status TEXT DEFAULT 'queued',
+                provider_name TEXT DEFAULT '',
+                provider_message_id TEXT DEFAULT '',
+                provider_response TEXT DEFAULT '',
+                failure_reason TEXT DEFAULT '',
+                retry_count INTEGER DEFAULT 0,
+                last_attempt_ts INTEGER DEFAULT 0,
+                sent_ts INTEGER DEFAULT 0,
+                delivered_ts INTEGER DEFAULT 0,
+                source TEXT DEFAULT 'manual'
             )
             """
         )
@@ -334,6 +423,14 @@ def migrate_db() -> None:
             conn.execute("ALTER TABLE bills ADD COLUMN rx TEXT DEFAULT ''")
         if "prescription" not in b_cols:
             conn.execute("ALTER TABLE bills ADD COLUMN prescription TEXT DEFAULT ''")
+        if "customer_type" not in b_cols:
+            conn.execute("ALTER TABLE bills ADD COLUMN customer_type TEXT DEFAULT 'customer'")
+        if "bill_type" not in b_cols:
+            conn.execute("ALTER TABLE bills ADD COLUMN bill_type TEXT DEFAULT 'retail'")
+        if "discount_type" not in b_cols:
+            conn.execute("ALTER TABLE bills ADD COLUMN discount_type TEXT DEFAULT 'pct'")
+        if "discount_value" not in b_cols:
+            conn.execute("ALTER TABLE bills ADD COLUMN discount_value REAL DEFAULT 0")
 
         c_cols = table_columns(conn, "customers")
         if "address" not in c_cols:
@@ -342,6 +439,41 @@ def migrate_db() -> None:
             conn.execute("ALTER TABLE customers ADD COLUMN email TEXT DEFAULT ''")
         if "face_vector" not in c_cols:
             conn.execute("ALTER TABLE customers ADD COLUMN face_vector TEXT DEFAULT ''")
+
+        sms_template_cols = table_columns(conn, "sms_templates")
+        sms_template_new_cols = [
+            ("message_type", "TEXT DEFAULT 'custom'"),
+            ("active", "INTEGER DEFAULT 1"),
+            ("created_ts", "INTEGER"),
+            ("updated_ts", "INTEGER"),
+        ]
+        for col, col_type in sms_template_new_cols:
+            if col not in sms_template_cols:
+                conn.execute(f"ALTER TABLE sms_templates ADD COLUMN {col} {col_type}")
+
+        sms_message_cols = table_columns(conn, "sms_messages")
+        sms_message_new_cols = [
+            ("created_ts", "INTEGER"),
+            ("updated_ts", "INTEGER"),
+            ("customer_id", "TEXT DEFAULT ''"),
+            ("customer_name", "TEXT DEFAULT ''"),
+            ("bill_id", "TEXT DEFAULT ''"),
+            ("template_id", "TEXT DEFAULT ''"),
+            ("message_type", "TEXT DEFAULT 'custom'"),
+            ("send_status", "TEXT DEFAULT 'queued'"),
+            ("provider_name", "TEXT DEFAULT ''"),
+            ("provider_message_id", "TEXT DEFAULT ''"),
+            ("provider_response", "TEXT DEFAULT ''"),
+            ("failure_reason", "TEXT DEFAULT ''"),
+            ("retry_count", "INTEGER DEFAULT 0"),
+            ("last_attempt_ts", "INTEGER DEFAULT 0"),
+            ("sent_ts", "INTEGER DEFAULT 0"),
+            ("delivered_ts", "INTEGER DEFAULT 0"),
+            ("source", "TEXT DEFAULT 'manual'"),
+        ]
+        for col, col_type in sms_message_new_cols:
+            if col not in sms_message_cols:
+                conn.execute(f"ALTER TABLE sms_messages ADD COLUMN {col} {col_type}")
 
         d_cols = table_columns(conn, "doctors")
         if "email" not in d_cols:
@@ -373,3 +505,53 @@ def migrate_db() -> None:
         for col, col_type in med_new_cols:
             if col not in m_cols:
                 conn.execute(f"ALTER TABLE medicines ADD COLUMN {col} {col_type}")
+
+        template_count = conn.execute("SELECT COUNT(*) AS c FROM sms_templates").fetchone()["c"]
+        if template_count == 0:
+            now_ts = int(__import__("time").time() * 1000)
+            default_templates = [
+                (
+                    "tpl-bill-ready",
+                    "Bill Ready",
+                    "Dear {customer_name}, your bill #{bill_id} for Rs. {bill_total} is ready. Thank you for visiting {store_name}.",
+                    "bill_ready",
+                    1,
+                    now_ts,
+                    now_ts,
+                ),
+                (
+                    "tpl-pickup-reminder",
+                    "Pickup Reminder",
+                    "Dear {customer_name}, your medicines from bill #{bill_id} are ready for pickup at {store_name}.",
+                    "reminder",
+                    1,
+                    now_ts,
+                    now_ts,
+                ),
+                (
+                    "tpl-follow-up",
+                    "Follow Up",
+                    "Hello {customer_name}, this is a follow-up from {store_name}. Please contact us for any assistance.",
+                    "follow_up",
+                    1,
+                    now_ts,
+                    now_ts,
+                ),
+                (
+                    "tpl-low-stock",
+                    "Low Stock Alert",
+                    "Stock alert for {item_name}: current quantity is {stock_qty}. Please review the reorder level.",
+                    "stock_alert",
+                    1,
+                    now_ts,
+                    now_ts,
+                ),
+            ]
+            conn.executemany(
+                """
+                INSERT INTO sms_templates
+                (id, name, body, message_type, active, created_ts, updated_ts)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                default_templates,
+            )
