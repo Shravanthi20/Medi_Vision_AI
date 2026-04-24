@@ -1,0 +1,141 @@
+:root {
+    --header-bg: #1a1d26;
+    --search-bg: #12141a;
+    --border-soft: #2e323a;
+    --orange-text: #f39c12;
+    --muted-gray: #8a8d91;
+}
+
+body {
+    margin: 0;
+    font-family: 'Inter', sans-serif;
+}
+
+.main-header {
+    height: 60px;
+    background-color: var(--header-bg);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0;
+    border-bottom: 1px solid var(--border-soft);
+    color: #ffffff;
+}
+
+/* Header Left: Search Bar Area */
+.header-left {
+    padding-left: 20px;
+}
+
+/* Search Bar Styling */
+.search-container {
+    background: var(--search-bg);
+    border: 1px solid var(--border-soft);
+    border-radius: 6px;
+    padding: 6px 12px;
+    display: flex;
+    align-items: center;
+    width: 250px;
+    box-sizing: border-box;
+}
+
+.search-icon {
+    width: 16px;
+    height: 16px;
+    color: #6c727a;
+    margin-right: 8px;
+}
+
+.search-container input {
+    background: transparent !important;
+    border: none;
+    color: white;
+    outline: none;
+    font-size: 13px;
+    width: 100%;
+}
+
+.search-container input::placeholder {
+    color: #555c66;
+}
+
+/* Header Right: Segmented Layout */
+.header-right {
+    display: flex;
+    height: 100%;
+    align-items: center;
+}
+
+.header-segment {
+    height: 70%;
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    border-left: 3px solid var(--border-soft);
+}
+
+/* Remove line on first right-side element */
+.header-segment:first-child {
+    border-left: none;
+}
+
+/* Center Text Style (FY Display) */
+.fy-text {
+    color: var(--muted-gray);
+    font-size: 18px;
+    font-weight: 500;
+    letter-spacing: 1px;
+}
+
+/* Date/Time Styling */
+.date-stack {
+    display: flex;
+    flex-direction: column;
+    text-align: right;
+    line-height: 1.1;
+}
+
+.orange-date {
+    color: var(--orange-text);
+    font-weight: 700;
+    font-size: 13px;
+}
+
+.day-label {
+    color: var(--muted-gray);
+    font-size: 10px;
+}
+
+.clock {
+    color: #ffffff;
+    font-size: 24px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+/* User Segment Styling */
+.user-segment {
+    padding: 0 20px 0 15px;
+}
+
+.user-pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.user-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    object-fit: cover;
+    background: #444;
+}
+
+.user-chevron {
+    width: 14px;
+    height: 14px;
+    color: var(--muted-gray);
+    margin-top: 2px;
+}
