@@ -258,7 +258,7 @@
         </div>
       </div>
       <label>Message</label>
-      <textarea id="sms-body" rows="7" placeholder="Type your message..."></textarea>
+      <textarea id="sms-compose-body" rows="7" placeholder="Type your message..."></textarea>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 12px">
         <button class="btn btn-out" style="flex:1;min-width:120px" onclick="smsQuickTemplate('bill_ready')"><i class="fas fa-file-invoice"></i>Bill Ready</button>
         <button class="btn btn-out" style="flex:1;min-width:120px" onclick="smsQuickTemplate('reminder')"><i class="fas fa-bell"></i>Pickup Reminder</button>
@@ -274,7 +274,7 @@
       <div class="tw" style="max-height:640px;overflow:auto">
         <table>
           <thead><tr><th>Recipient</th><th>Template</th><th>Message</th><th>Status</th><th>Time</th><th>Action</th></tr></thead>
-          <tbody id="sms-body">
+          <tbody id="sms-history-body">
             <tr><td colspan="6" style="text-align:center;color:var(--dim)">No SMS messages yet.</td></tr>
           </tbody>
         </table>
@@ -1977,7 +1977,7 @@ function renderSmsTemplates(){
 }
 
 function renderSmsHistory(){
-  const tb=document.getElementById('sms-body');
+  const tb=document.getElementById('sms-history-body');
   if(!tb)return;
   if(!SMS_MESSAGES.length){tb.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--dim)">No SMS messages yet.</td></tr>';return;}
   tb.innerHTML=SMS_MESSAGES.map(m=>{
@@ -2001,7 +2001,7 @@ function smsPickCustomer(customerId){
 
 function smsApplyTemplate(templateId){
   const template=smsTemplateById(templateId);
-  const bodyEl=document.getElementById('sms-body');
+  const bodyEl=document.getElementById('sms-compose-body');
   if(!bodyEl)return;
   bodyEl.value=template?smsRenderTemplate(template.body, smsDraftContext()):'';
 }
@@ -2010,7 +2010,7 @@ function smsQuickTemplate(mode){
   const template=SMS_TEMPLATES.find(t=>t.message_type===mode)||smsTemplateById(mode);
   const templateSel=document.getElementById('sms-template');
   if(templateSel)templateSel.value=template?template.id:'';
-  const bodyEl=document.getElementById('sms-body');
+  const bodyEl=document.getElementById('sms-compose-body');
   if(bodyEl)bodyEl.value=template?smsRenderTemplate(template.body, smsDraftContext()):'';
 }
 
@@ -2027,7 +2027,7 @@ function smsFillFromBill(bill){
   const template=SMS_TEMPLATES.find(t=>t.message_type==='bill_ready')||smsTemplateById('tpl-bill-ready');
   const templateSel=document.getElementById('sms-template');
   if(templateSel)templateSel.value=template?template.id:'';
-  const bodyEl=document.getElementById('sms-body');
+  const bodyEl=document.getElementById('sms-compose-body');
   if(bodyEl&&template){
     bodyEl.value=smsRenderTemplate(template.body,{
       ...smsDraftContext(),
@@ -2097,7 +2097,7 @@ function sendSmsMessage(){
   const recipient_phone=document.getElementById('sms-phone')?.value.trim()||'';
   const customerId=document.getElementById('sms-customer')?.value||'';
   const customer=smsCustomerById(customerId);
-  const body=document.getElementById('sms-body')?.value.trim()||'';
+  const body=document.getElementById('sms-compose-body')?.value.trim()||'';
   const templateId=document.getElementById('sms-template')?.value||'';
   const billId=document.getElementById('sms-bill')?.value.trim()||'';
   if(!recipient_phone){alert('Enter a recipient phone number.');return;}
