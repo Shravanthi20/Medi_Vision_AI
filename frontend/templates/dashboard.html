@@ -110,6 +110,7 @@
           <button class="pb sel" id="pm-cash" onclick="sp('cash')">Cash</button>
           <button class="pb" id="pm-upi" onclick="sp('upi')">UPI</button>
           <button class="pb" id="pm-card" onclick="sp('card')">Card</button>
+          <button class="pb" id="pm-credit" onclick="sp('credit')">Credit</button>
         </div>
         <div class="ar">
           <button class="btn btn-r" style="flex:0 0 auto" onclick="cc()"><i class="fas fa-trash"></i></button>
@@ -177,7 +178,7 @@
   <div id="mt-cust">
     <div class="sec-hd"><span class="sec-t">Customer List</span><button class="btn btn-acc" onclick="acust()"><i class="fas fa-plus"></i>Add Customer</button></div>
     <div class="tw"><table>
-      <thead><tr><th>Name</th><th>Phone</th><th>Visits</th><th>Spend</th></tr></thead>
+      <thead><tr><th>Name</th><th>Phone</th><th>Visits</th><th>Finances</th><th style="text-align:right">Action</th></tr></thead>
       <tbody id="cust-body">
         <tr><td colspan="4" style="text-align:center;color:var(--dim)">No customer records.</td></tr>
       </tbody>
@@ -285,6 +286,15 @@
 <!-- UTILITIES -->
 <div class="pn" id="p-utilities"><div class="pg">
   <div class="sec-hd"><span class="sec-t">Sales Report &amp; Utilities</span></div>
+  <div class="crd" style="padding:12px;margin-bottom:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+    <input type="date" id="uf-st" class="fin" style="width:140px;background:#252a40;border:1px solid var(--brd);border-radius:7px;color:var(--tx);outline:none;padding:7px;"/>
+    <span style="color:var(--mt)">to</span>
+    <input type="date" id="uf-en" class="fin" style="width:140px;background:#252a40;border:1px solid var(--brd);border-radius:7px;color:var(--tx);outline:none;padding:7px;"/>
+    <input type="text" id="uf-cu" class="fin" placeholder="Customer name..." style="min-width:140px;flex:1;background:#252a40;border:1px solid var(--brd);border-radius:7px;color:var(--tx);outline:none;padding:7px;"/>
+    <input type="text" id="uf-dr" class="fin" placeholder="Doctor..." style="width:120px;background:#252a40;border:1px solid var(--brd);border-radius:7px;color:var(--tx);outline:none;padding:7px;"/>
+    <input type="text" id="uf-md" class="fin" placeholder="Medicine..." style="width:140px;background:#252a40;border:1px solid var(--brd);border-radius:7px;color:var(--tx);outline:none;padding:7px;"/>
+    <button class="btn btn-acc" onclick="fetchFilteredBills()"><i class="fas fa-search"></i> Search</button>
+  </div>
   <div class="tw" style="margin-bottom: 20px;">
     <table>
       <thead><tr><th>Bill No.</th><th>Date</th><th>Customer</th><th>Prescription</th><th>Amount</th><th>Method</th><th>Doctor</th><th>Items</th><th>Action</th></tr></thead>
@@ -293,7 +303,7 @@
       </tbody>
     </table>
   </div>
-  <div class="util-actions-sticky" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px">
+  <div class="util-actions-sticky" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:12px;margin-bottom:18px">
     <div class="crd" onclick="rStockRep()" style="padding:18px;cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='#374151'" onmouseout="this.style.borderColor=''">
       <i class="fas fa-boxes-stacked" style="font-size:22px;color:#3b82f6;margin-bottom:10px;display:block"></i>
       <div style="font-size:13px;font-weight:600;margin-bottom:4px">Stock Report</div>
@@ -313,6 +323,11 @@
       <i class="fas fa-database" style="font-size:22px;color:#a78bfa;margin-bottom:10px;display:block"></i>
       <div style="font-size:13px;font-weight:600;margin-bottom:4px">Backup</div>
       <div style="font-size:11px;color:var(--mt)">Database backup</div>
+    </div>
+    <div class="crd" onclick="rGstRep()" style="padding:18px;cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='#374151'" onmouseout="this.style.borderColor=''">
+      <i class="fas fa-file-invoice-dollar" style="font-size:22px;color:#f59e0b;margin-bottom:10px;display:block"></i>
+      <div style="font-size:13px;font-weight:600;margin-bottom:4px">GST Report</div>
+      <div style="font-size:11px;color:var(--mt)">Tax metrics</div>
     </div>
   </div>
 </div></div>
@@ -1159,7 +1174,7 @@ function rc(){
   document.getElementById('tv').textContent='₹'+tax.toFixed(2);
   document.getElementById('ttv').textContent='₹'+tot.toFixed(2);
 }
-function sp(m){pm=m;['cash','upi','card'].forEach(x=>document.getElementById('pm-'+x).classList.remove('sel'));document.getElementById('pm-'+m).classList.add('sel');}
+function sp(m){pm=m;['cash','upi','card','credit'].forEach(x=>document.getElementById('pm-'+x).classList.remove('sel'));document.getElementById('pm-'+m).classList.add('sel');}
 function sm(){
   document.getElementById('man-mod').style.display='flex';
   document.getElementById('man-title').textContent='Add New Medicine';
@@ -1253,7 +1268,7 @@ initNav();
 
 function rMasters(){rCustomers();if(typeof renderSmsRecipients==='function')renderSmsRecipients();rSuppliers();rDoctors();loadShelves();}
 let CUSTOMERS=[];
-function rCustomers(){fetch(API+'/customers?t='+Date.now()).then(r=>r.json()).then(cs=>{CUSTOMERS=cs;const tb=document.getElementById('cust-body');const nL=document.getElementById('cust-list');const pL=document.getElementById('phone-list');if(nL&&pL){nL.innerHTML='';pL.innerHTML='';cs.forEach(x=>{nL.innerHTML+=`<option value="${x.name}">${x.phone}</option>`;pL.innerHTML+=`<option value="${x.phone}">${x.name}</option>`;});}if(!tb)return;tb.innerHTML='';if(!cs.length){tb.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--dim)">No customer records.</td></tr>';return;}cs.forEach(c=>tb.innerHTML+=`<tr><td>${c.name}</td><td>${c.phone}</td><td style="text-align:center">${c.visits}</td><td style="font-weight:600">₹${c.total_spend.toFixed(2)}</td><td style="text-align:right"><i class="fas fa-comment-dots" style="cursor:pointer;color:var(--acc);margin-right:10px" onclick="openSmsForCustomer(${c.id})" title="SMS Customer"></i><i class="fas fa-edit" style="cursor:pointer;color:var(--acc);margin-right:10px" onclick="ecust(${c.id})"></i><i class="fas fa-trash" style="cursor:pointer;color:#e74c3c" onclick="dcust(${c.id})"></i></td></tr>`)});}
+function rCustomers(){fetch(API+'/customers?t='+Date.now()).then(r=>r.json()).then(cs=>{CUSTOMERS=cs;const tb=document.getElementById('cust-body');const nL=document.getElementById('cust-list');const pL=document.getElementById('phone-list');if(nL&&pL){nL.innerHTML='';pL.innerHTML='';cs.forEach(x=>{nL.innerHTML+=`<option value="${x.name}">${x.phone}</option>`;pL.innerHTML+=`<option value="${x.phone}">${x.name}</option>`;});}if(!tb)return;tb.innerHTML='';if(!cs.length){tb.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--dim)">No customer records.</td></tr>';return;}cs.forEach(c=>{const bal = c.balance||0; tb.innerHTML+=`<tr><td>${c.name}</td><td>${c.phone}</td><td style="text-align:center">${c.visits}</td><td style="font-weight:600;${bal>0?'color:#ef4444;':''}"><div style="font-size:12px">Bal: ₹${bal.toFixed(2)}</div><div style="font-size:10px;color:var(--mt)">Spend: ₹${c.total_spend.toFixed(2)}</div></td><td style="text-align:right"><i class="fas fa-book" style="cursor:pointer;color:#a78bfa;margin-right:10px" onclick="openLedger(${c.id})" title="Ledger"></i><i class="fas fa-comment-dots" style="cursor:pointer;color:var(--acc);margin-right:10px" onclick="openSmsForCustomer(${c.id})" title="SMS Customer"></i><i class="fas fa-edit" style="cursor:pointer;color:var(--acc);margin-right:10px" onclick="ecust(${c.id})"></i><i class="fas fa-trash" style="cursor:pointer;color:#e74c3c" onclick="dcust(${c.id})"></i></td></tr>`})});}
 function rSuppliers(){fetch(API+'/suppliers?t='+Date.now()).then(r=>r.json()).then(ss=>{SUPPLIERS=ss;const tb=document.getElementById('sup-body');if(!tb)return;tb.innerHTML='';if(!ss.length){tb.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--dim)">No supplier records.</td></tr>';return;}ss.forEach(s=>tb.innerHTML+=`<tr><td>${s.name}</td><td>${s.phone}</td><td>${s.gst||'—'}</td><td><span class="bx bg">${s.status}</span></td><td style="text-align:right"><i class="fas fa-edit" style="cursor:pointer;color:var(--acc);margin-right:10px" onclick="esup(${s.id})"></i><i class="fas fa-trash" style="cursor:pointer;color:#e74c3c" onclick="dm_sup('${s.id}')"></i></td></tr>`)});}
 let DOCTORS=[];
 function rDoctors(){fetch(API+'/doctors?t='+Date.now()).then(r=>r.json()).then(ds=>{DOCTORS=ds;const tb=document.getElementById('doc-body');if(!tb)return;tb.innerHTML='';if(!ds.length){tb.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--dim)">No doctor records.</td></tr>';return;}ds.forEach(d=>tb.innerHTML+=`<tr><td>${d.name}</td><td>${d.specialty}</td><td>${d.hospital}</td><td>${d.phone}</td><td style="text-align:right"><i class="fas fa-edit" style="cursor:pointer;color:var(--acc);margin-right:10px" onclick="edoc(${d.id})"></i><i class="fas fa-trash" style="cursor:pointer;color:#e74c3c" onclick="ddoc(${d.id})"></i></td></tr>`)}); }
@@ -2134,6 +2149,136 @@ function retrySmsMessage(messageId){
     .catch(err=>alert('Retry failed: '+err.message));
 }
 
+function openLedger(customerId) {
+  document.getElementById('ledger-mod').style.display='flex';
+  document.getElementById('ledger-cid').value = customerId;
+  const c = CUSTOMERS.find(x=>x.id==customerId);
+  document.getElementById('ledger-title').textContent = c ? c.name + ' - Ledger Statement' : 'Ledger Statement';
+  rLedger(customerId);
+}
+
+function rLedger(customerId) {
+  const tb = document.getElementById('ledger-body');
+  tb.innerHTML = '<tr><td colspan="5" style="text-align:center">Loading...</td></tr>';
+  fetch(API+'/customers/'+customerId+'/ledger?t='+Date.now()).then(r=>r.json()).then(rows=>{
+      if(!rows.length) {
+          tb.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--dim)">No ledger entries.</td></tr>';
+          return;
+      }
+      tb.innerHTML = rows.map(r=>`<tr><td>${new Date(r.date).toLocaleString()}</td><td>${r.ref_type} - ${r.description}</td><td style="color:#ef4444">${r.debit>0?r.debit.toFixed(2):'-'}</td><td style="color:#22c55e">${r.credit>0?r.credit.toFixed(2):'-'}</td><td style="font-weight:600">₹${r.balance.toFixed(2)}</td></tr>`).join('');
+  });
+}
+
+function recordPayment() {
+    const cid = document.getElementById('ledger-cid').value;
+    const amount = parseFloat(document.getElementById('ledger-amt').value);
+    const desc = document.getElementById('ledger-desc').value.trim() || 'Manual Payment';
+    if(!amount || amount <= 0) { alert('Enter valid amount'); return; }
+    fetch(API+'/customers/'+cid+'/payment', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({amount, description: desc})
+    }).then(r=>r.json()).then(res=>{
+        if(res.status==='success') {
+            document.getElementById('ledger-amt').value = '';
+            document.getElementById('ledger-desc').value = '';
+            rLedger(cid);
+            rCustomers();
+        } else {
+            alert(res.message);
+        }
+    });
+}
+
+function fetchFilteredBills() {
+    const st = document.getElementById('uf-st').value;
+    const en = document.getElementById('uf-en').value;
+    const cu = document.getElementById('uf-cu').value.trim();
+    const dr = document.getElementById('uf-dr').value.trim();
+    const md = document.getElementById('uf-md').value.trim();
+    
+    let url = API+'/bills?t='+Date.now();
+    if(st) url += '&start_date='+new Date(st).getTime();
+    if(en) { const d = new Date(en); d.setHours(23,59,59); url += '&end_date='+d.getTime(); }
+    if(cu) url += '&customer='+encodeURIComponent(cu);
+    if(dr) url += '&doctor='+encodeURIComponent(dr);
+    if(md) url += '&medicine='+encodeURIComponent(md);
+    
+    fetch(url).then(r=>r.json()).then(bs=>{
+        window.allBills = bs;
+        if(typeof loadUtilsBills === 'function'){
+            loadUtilsBills();
+        }
+    });
+}
+
+function rGstRep() {
+    const st = document.getElementById('uf-st').value;
+    const en = document.getElementById('uf-en').value;
+    let url = API+'/reports/gst?t='+Date.now();
+    if(st) url += '&start_date='+new Date(st).getTime();
+    if(en) { const d = new Date(en); d.setHours(23,59,59); url += '&end_date='+d.getTime(); }
+    
+    fetch(url).then(r=>r.json()).then(res=>{
+        document.getElementById('gst-mod').style.display='flex';
+        document.getElementById('gst-sales').textContent = '₹'+res.total_sales.toFixed(2);
+        document.getElementById('gst-taxable').textContent = '₹'+res.taxable_amount.toFixed(2);
+        document.getElementById('gst-nontax').textContent = '₹'+res.non_taxable_amount.toFixed(2);
+        document.getElementById('gst-tax').textContent = '₹'+res.total_tax.toFixed(2);
+    });
+}
 </script>
+
+<!-- LEDGER MODAL -->
+<div id="ledger-mod" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:999;align-items:center;justify-content:center;">
+  <div class="crd fm" style="width:700px;padding:22px;background:var(--card);box-shadow:0 10px 25px rgba(0,0,0,0.5);max-height:90vh;display:flex;flex-direction:column;">
+    <div style="font-size:15px;font-weight:600;margin-bottom:16px;color:#e8ecf4;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;">
+      <span id="ledger-title" style="flex:1">Ledger Statement</span>
+      <i class="fas fa-xmark" style="cursor:pointer;color:var(--mt)" onclick="document.getElementById('ledger-mod').style.display='none'"></i>
+    </div>
+    <input type="hidden" id="ledger-cid"/>
+    <div style="display:flex;gap:8px;margin-bottom:16px;flex-shrink:0;">
+        <input type="number" id="ledger-amt" placeholder="Amount (₹)" style="width:120px;background:#252a40;border:1px solid var(--brd);border-radius:7px;padding:7px 10px;color:var(--tx)"/>
+        <input type="text" id="ledger-desc" placeholder="Notes (Optional)" style="flex:1;background:#252a40;border:1px solid var(--brd);border-radius:7px;padding:7px 10px;color:var(--tx)"/>
+        <button class="btn btn-acc" onclick="recordPayment()"><i class="fas fa-indian-rupee-sign"></i> Record Payment</button>
+    </div>
+    <div class="tw" style="overflow-y:auto;flex:1;">
+        <table>
+            <thead style="position:sticky;top:0;background:var(--sb);z-index:2"><tr><th>Date</th><th>Description</th><th>Debit (₹)</th><th>Credit (₹)</th><th>Balance (₹)</th></tr></thead>
+            <tbody id="ledger-body"></tbody>
+        </table>
+    </div>
+  </div>
+</div>
+
+<!-- GST REPORT MODAL -->
+<div id="gst-mod" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:999;align-items:center;justify-content:center;">
+  <div class="crd fm" style="width:500px;padding:22px;background:var(--card);box-shadow:0 10px 25px rgba(0,0,0,0.5);max-height:90vh;">
+    <div style="font-size:15px;font-weight:600;margin-bottom:16px;color:#e8ecf4;display:flex;justify-content:space-between;align-items:center;">
+      <span style="flex:1"><i class="fas fa-file-invoice-dollar" style="color:#f59e0b;margin-right:8px"></i> GST Summary Report</span>
+      <i class="fas fa-xmark" style="cursor:pointer;color:var(--mt)" onclick="document.getElementById('gst-mod').style.display='none'"></i>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:20px;">
+        <div style="padding:15px;background:#181c2c;border:1px solid var(--brd);border-radius:8px;text-align:center;">
+            <div style="font-size:11px;color:var(--mt);margin-bottom:5px">Gross Sales</div>
+            <div style="font-size:18px;font-weight:600;color:var(--tx)" id="gst-sales">₹0.00</div>
+        </div>
+        <div style="padding:15px;background:#181c2c;border:1px solid var(--brd);border-radius:8px;text-align:center;">
+            <div style="font-size:11px;color:var(--mt);margin-bottom:5px">Total GST Collected</div>
+            <div style="font-size:18px;font-weight:600;color:#f59e0b" id="gst-tax">₹0.00</div>
+        </div>
+        <div style="padding:15px;background:#181c2c;border:1px solid var(--brd);border-radius:8px;text-align:center;">
+            <div style="font-size:11px;color:var(--mt);margin-bottom:5px">Taxable Amount</div>
+            <div style="font-size:16px;font-weight:600;color:var(--tx)" id="gst-taxable">₹0.00</div>
+        </div>
+        <div style="padding:15px;background:#181c2c;border:1px solid var(--brd);border-radius:8px;text-align:center;">
+            <div style="font-size:11px;color:var(--mt);margin-bottom:5px">Non-Taxable Amount</div>
+            <div style="font-size:16px;font-weight:600;color:var(--tx)" id="gst-nontax">₹0.00</div>
+        </div>
+    </div>
+    <div style="margin-top:20px;text-align:right">
+        <button class="btn btn-out" onclick="window.print()"><i class="fas fa-print"></i> Print</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>

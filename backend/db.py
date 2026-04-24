@@ -284,7 +284,8 @@ def init_db() -> None:
                 total REAL DEFAULT 0,
                 address TEXT DEFAULT '',
                 email TEXT DEFAULT '',
-                face_vector TEXT DEFAULT ''
+                face_vector TEXT DEFAULT '',
+                balance REAL DEFAULT 0
             )
             """
         )
@@ -371,6 +372,21 @@ def init_db() -> None:
                 name TEXT,
                 content TEXT,
                 is_active INTEGER DEFAULT 1
+            )
+            """
+        )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS ledger_entries (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                customer_id INTEGER,
+                date TEXT,
+                ref_type TEXT,
+                ref_id TEXT,
+                description TEXT,
+                debit REAL DEFAULT 0,
+                credit REAL DEFAULT 0,
+                balance REAL DEFAULT 0
             )
             """
         )
@@ -471,6 +487,8 @@ def migrate_db() -> None:
             conn.execute("ALTER TABLE customers ADD COLUMN email TEXT DEFAULT ''")
         if "face_vector" not in c_cols:
             conn.execute("ALTER TABLE customers ADD COLUMN face_vector TEXT DEFAULT ''")
+        if "balance" not in c_cols:
+            conn.execute("ALTER TABLE customers ADD COLUMN balance REAL DEFAULT 0")
 
         sms_template_cols = table_columns(conn, "sms_templates")
         sms_template_new_cols = [
@@ -559,6 +577,21 @@ def migrate_db() -> None:
                 name TEXT,
                 content TEXT,
                 is_active INTEGER DEFAULT 1
+            )
+            """
+        )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS ledger_entries (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                customer_id INTEGER,
+                date TEXT,
+                ref_type TEXT,
+                ref_id TEXT,
+                description TEXT,
+                debit REAL DEFAULT 0,
+                credit REAL DEFAULT 0,
+                balance REAL DEFAULT 0
             )
             """
         )

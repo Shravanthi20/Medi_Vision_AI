@@ -1,3 +1,4 @@
+from datetime import datetime
 from flask import Blueprint, jsonify, request
 
 from ..db import get_conn, json_error, required_fields
@@ -67,6 +68,7 @@ def get_customers():
                 "address": row["address"],
                 "email": row["email"],
                 "face_vector": row["face_vector"],
+                "balance": row["balance"] if "balance" in row.keys() else 0.0,
             }
             for row in rows
         ]
@@ -163,6 +165,47 @@ def delete_customer(id):
     with get_conn() as conn:
         conn.execute("DELETE FROM customers WHERE id = ?", (id,))
     return jsonify({"status": "success"})
+
+
+@masters_bp.route("/api/customers/<id>/ledger", methods=["GET"])
+def get_customer_ledger(id):
+    with get_conn() as conn:
+        rows = conn.execute("SELECT * FROM ledger_entries WHERE customer_id = ? ORDER BY id ASC", (id,)).fetchall()
+    return jsonify([dict(row) for row in rows])
+
+
+@masters_bp.route("/api/customers/<id>/payment", methods=["POST"])
+def record_customer_payment(id):
+    data = request.get_json(silent=True) or {}
+    amount = float(data.get("amount", 0))
+    if amount <= 0:
+        return json_error("Amount must be greater than zero", 400)
+    
+    try:
+        with get_conn() as conn:
+            customer = conn.execute("SELECT balance FROM customers WHERE id = ?", (id,)).fetchone()
+            if not customer:
+                return json_error("Customer not found", 404)
+            
+            # Since a payment reduces the outstanding balance:
+            current_balance = float(customer["balance"] or 0)
+            new_balance = current_balance - amount
+            
+            # Record ledger
+            conn.execute(
+                """
+                INSERT INTO ledger_entries (customer_id, date, ref_type, ref_id, description, debit, credit, balance)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (id, datetime.utcnow().isoformat() + "Z", "Payment", f"PAY-{int(datetime.utcnow().timestamp())}", data.get("description", "Manual Payment"), 0.0, amount, new_balance)
+            )
+            
+            # Update customer
+            conn.execute("UPDATE customers SET balance = ? WHERE id = ?", (new_balance, id))
+            
+        return jsonify({"status": "success", "new_balance": new_balance})
+    except Exception as err:
+        return json_error("Failed to record payment", 500, str(err))
 
 
 @masters_bp.route("/api/doctors/<id>", methods=["DELETE"])

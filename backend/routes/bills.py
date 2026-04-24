@@ -55,6 +55,7 @@ def _adjust_customer_summary(
     visit_delta: int,
     allow_insert: bool,
     face_vector: str = "",
+    balance_delta: float = 0.0,
 ):
     customer_name = _normalize_name(name)
     customer_phone = _normalize_name(phone)
@@ -65,10 +66,12 @@ def _adjust_customer_summary(
     if customer:
         current_visits = int(customer["visits"] or 0)
         current_total = float(customer["total"] or 0)
+        current_bal = float(customer["balance"] or 0) if "balance" in customer.keys() else 0.0
         next_visits = max(0, current_visits + int(visit_delta))
         next_total = max(0.0, current_total + float(total_delta))
-        update_parts = ["visits = ?", "total = ?"]
-        update_values: list[Any] = [next_visits, next_total]
+        next_bal = current_bal + float(balance_delta)
+        update_parts = ["visits = ?", "total = ?", "balance = ?"]
+        update_values: list[Any] = [next_visits, next_total, next_bal]
         if customer_phone and not _normalize_name(customer["phone"]):
             update_parts.append("phone = ?")
             update_values.append(customer_phone)
@@ -89,10 +92,10 @@ def _adjust_customer_summary(
     insert_total = max(0.0, float(total_delta))
     conn.execute(
         """
-        INSERT INTO customers (name, phone, visits, total, address, email, face_vector)
-        VALUES (?, ?, ?, ?, '', '', ?)
+        INSERT INTO customers (name, phone, visits, total, address, email, face_vector, balance)
+        VALUES (?, ?, ?, ?, '', '', ?, ?)
         """,
-        (customer_name, customer_phone, insert_visits, insert_total, face_vector),
+        (customer_name, customer_phone, insert_visits, insert_total, face_vector, balance_delta),
     )
 
 
@@ -220,9 +223,75 @@ def _build_new_bill(existing_row, incoming: dict[str, Any]) -> dict[str, Any]:
 
 @bills_bp.route("/api/bills", methods=["GET"])
 def get_bills():
+    start_ts = request.args.get("start_date")
+    end_ts = request.args.get("end_date")
+    customer = request.args.get("customer")
+    doctor = request.args.get("doctor")
+    medicine = request.args.get("medicine")
+
+    query = "SELECT * FROM bills WHERE 1=1"
+    params = []
+
+    if start_ts:
+        query += " AND ts >= ?"
+        params.append(int(start_ts))
+    if end_ts:
+        query += " AND ts <= ?"
+        params.append(int(end_ts))
+    if customer:
+        query += " AND LOWER(cust) LIKE ?"
+        params.append(f"%{customer.lower()}%")
+    if doctor:
+        query += " AND LOWER(doctor) LIKE ?"
+        params.append(f"%{doctor.lower()}%")
+    if medicine:
+        query += " AND LOWER(items) LIKE ?"
+        params.append(f"%{medicine.lower()}%")
+
+    query += " ORDER BY ts DESC"
+
     with get_conn() as conn:
-        rows = conn.execute("SELECT * FROM bills ORDER BY ts DESC").fetchall()
+        rows = conn.execute(query, params).fetchall()
     return jsonify([normalize_bill_row(row) for row in rows])
+
+@bills_bp.route("/api/reports/gst", methods=["GET"])
+def get_gst_report():
+    start_ts = request.args.get("start_date")
+    end_ts = request.args.get("end_date")
+    
+    query = "SELECT * FROM bills WHERE 1=1"
+    params = []
+    if start_ts:
+        query += " AND ts >= ?"
+        params.append(int(start_ts))
+    if end_ts:
+        query += " AND ts <= ?"
+        params.append(int(end_ts))
+        
+    with get_conn() as conn:
+        rows = conn.execute(query, params).fetchall()
+        
+    total_sales = 0
+    total_tax = 0
+    taxable_amount = 0
+    non_taxable_amount = 0
+    
+    for row in rows:
+        b = normalize_bill_row(row)
+        total_sales += float(b["total"])
+        total_tax += float(b["tax"])
+        if float(b["tax"]) > 0:
+            taxable_amount += (float(b["sub"]) - float(b["disc"]))
+        else:
+            non_taxable_amount += (float(b["sub"]) - float(b["disc"]))
+            
+    return jsonify({
+        "total_sales": total_sales,
+        "total_tax": total_tax,
+        "taxable_amount": taxable_amount,
+        "non_taxable_amount": non_taxable_amount,
+        "net_revenue": total_sales - total_tax
+    })
 
 
 @bills_bp.route("/api/bills/<bill_id>", methods=["GET"])
@@ -247,6 +316,9 @@ def save_bill():
     try:
         with get_conn() as conn:
             _write_bill_row(conn, data, replace=False)
+            is_credit = str(data.get("pay", "")).lower() == "credit"
+            balance_delta = float(data["total"]) if is_credit else 0.0
+
             _adjust_customer_summary(
                 conn,
                 name=data["cust"],
@@ -255,11 +327,31 @@ def save_bill():
                 visit_delta=1,
                 allow_insert=True,
                 face_vector=data.get("face_vector", ""),
+                balance_delta=balance_delta,
             )
             customer_name = str(data["cust"]).strip()
             customer_phone = str(data["phone"]).strip()
 
             customer_row = resolve_customer_row(conn, None, customer_phone, customer_name)
+
+            if customer_row:
+                new_balance = float(customer_row.get("balance", 0)) if customer_row and "balance" in customer_row.keys() else 0.0
+                conn.execute(
+                    """
+                    INSERT INTO ledger_entries (customer_id, date, ref_type, ref_id, description, debit, credit, balance)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        customer_row["id"], 
+                        datetime.utcnow().isoformat() + "Z", 
+                        "Sale", 
+                        data["id"], 
+                        f"Bill #{data['id']} ({data.get('pay', 'cash')})", 
+                        float(data["total"]), 
+                        0.0 if is_credit else float(data["total"]),
+                        new_balance
+                    )
+                )
 
             doctor_name = str(data.get("doctor", "Self")).strip()
             if doctor_name and doctor_name.lower() != "self":
@@ -351,6 +443,11 @@ def update_bill(bill_id):
             old_items = _bill_items(old_bill["items"])
             new_items = _bill_items(updated["items"])
 
+            old_is_credit = str(old_bill.get("pay", "")).lower() == "credit"
+            old_bal_delta = -float(old_bill["total"]) if old_is_credit else 0.0
+            new_is_credit = str(updated.get("pay", "")).lower() == "credit"
+            new_bal_delta = float(updated["total"]) if new_is_credit else 0.0
+
             if _bill_customer_changed(old_bill, updated):
                 _adjust_customer_summary(
                     conn,
@@ -359,6 +456,7 @@ def update_bill(bill_id):
                     total_delta=-float(old_bill["total"]),
                     visit_delta=-1,
                     allow_insert=False,
+                    balance_delta=old_bal_delta,
                 )
                 _adjust_customer_summary(
                     conn,
@@ -368,6 +466,7 @@ def update_bill(bill_id):
                     visit_delta=1,
                     allow_insert=True,
                     face_vector=data.get("face_vector", ""),
+                    balance_delta=new_bal_delta,
                 )
             else:
                 _adjust_customer_summary(
@@ -378,6 +477,7 @@ def update_bill(bill_id):
                     visit_delta=0,
                     allow_insert=False,
                     face_vector=data.get("face_vector", ""),
+                    balance_delta=new_bal_delta + old_bal_delta,
                 )
 
             if updated.get("doctor", "Self") and str(updated.get("doctor", "Self")).strip().lower() != "self":
