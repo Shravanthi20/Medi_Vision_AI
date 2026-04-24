@@ -6,4 +6,32 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 FRONTEND_DIR = BASE_DIR / "frontend"
 TEMPLATES_DIR = FRONTEND_DIR / "templates"
 STATIC_DIR = FRONTEND_DIR / "static"
-DB_PATH = os.environ.get("PHARMACY_DB_PATH", str(BASE_DIR / "database.db"))
+
+
+def _load_dotenv_file(path: Path) -> None:
+    if not path.exists():
+        return
+    for raw_line in path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        key = key.strip()
+        value = value.strip()
+        if not key or key in os.environ:
+            continue
+        if (value.startswith('"') and value.endswith('"')) or (value.startswith("'") and value.endswith("'")):
+            value = value[1:-1]
+        os.environ[key] = value
+
+
+_load_dotenv_file(BASE_DIR / ".env")
+_raw_db_path = os.environ.get("PHARMACY_DB_PATH", "").strip()
+if _raw_db_path:
+    db_path = Path(_raw_db_path)
+    if not db_path.is_absolute():
+        db_path = (BASE_DIR / db_path).resolve()
+else:
+    db_path = BASE_DIR / "database.db"
+
+DB_PATH = str(db_path)
