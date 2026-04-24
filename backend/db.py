@@ -262,6 +262,29 @@ def init_db() -> None:
             )
             """
         )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS communication_logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                bill_id TEXT,
+                customer_phone TEXT,
+                status TEXT DEFAULT 'pending',
+                message TEXT,
+                timestamp TEXT,
+                provider_message_id TEXT DEFAULT ''
+            )
+            """
+        )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS message_templates (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT,
+                content TEXT,
+                is_active INTEGER DEFAULT 1
+            )
+            """
+        )
 
         med_count = conn.execute("SELECT COUNT(*) AS c FROM medicines").fetchone()["c"]
         if med_count == 0:
@@ -314,6 +337,15 @@ def init_db() -> None:
                 VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                 """,
                 initial_meds,
+            )
+
+        template_count = conn.execute("SELECT COUNT(*) AS c FROM message_templates").fetchone()["c"]
+        if template_count == 0:
+            conn.execute(
+                """
+                INSERT INTO message_templates (name, content, is_active)
+                VALUES ('Default Bill WhatsApp', 'Hello! Your bill for Rs. {total} is ready. Thank you for visiting Medi Vision.', 1)
+                """
             )
 
     migrate_db()
@@ -373,3 +405,28 @@ def migrate_db() -> None:
         for col, col_type in med_new_cols:
             if col not in m_cols:
                 conn.execute(f"ALTER TABLE medicines ADD COLUMN {col} {col_type}")
+
+        # Safety check for new tables in existing dbs
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS communication_logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                bill_id TEXT,
+                customer_phone TEXT,
+                status TEXT DEFAULT 'pending',
+                message TEXT,
+                timestamp TEXT,
+                provider_message_id TEXT DEFAULT ''
+            )
+            """
+        )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS message_templates (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT,
+                content TEXT,
+                is_active INTEGER DEFAULT 1
+            )
+            """
+        )

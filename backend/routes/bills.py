@@ -1,10 +1,12 @@
 import json
 from typing import Any
 
+from datetime import datetime
 import sqlite3
 from flask import Blueprint, jsonify, request
 
 from ..db import get_conn, json_error, normalize_bill_row, required_fields, table_columns
+from ..services.whatsapp import send_whatsapp_receipt
 
 
 bills_bp = Blueprint("bills", __name__)
@@ -125,6 +127,42 @@ def save_bill():
                 current_stock = int(med["s"] or 0)
                 next_stock = max(0, current_stock - qty)
                 conn.execute("UPDATE medicines SET s = ? WHERE id = ?", (next_stock, med_id))
+
+            # Send WhatsApp message if phone is provided
+            if customer_phone:
+                items_str = ""
+                for item in data.get("items", []):
+                    name = item.get("n", "Item")
+                    qty = int(item.get("qty", 1) or 1)
+                    price = float(item.get("p", 0) or 0)
+                    item_total = qty * price
+                    items_str += f"- {name} (Qty: {qty}) : Rs. {item_total:.2f}\n"
+
+                sub = float(data.get("sub", 0) or 0)
+                disc = float(data.get("disc", 0) or 0)
+                tax = float(data.get("tax", 0) or 0)
+                total = float(data.get("total", 0) or 0)
+
+                message_content = (
+                    f"Hello {customer_name},\n\n"
+                    f"Your bill for Rs. {total:.2f} is ready.\n\n"
+                    f"*Purchases:*\n{items_str}\n"
+                    f"Subtotal: Rs. {sub:.2f}\n"
+                    f"Discount: Rs. {disc:.2f}\n"
+                    f"GST: Rs. {tax:.2f}\n"
+                    f"*Total: Rs. {total:.2f}*\n\n"
+                    f"Thank you for visiting Selvam Medicals! 💊"
+                )
+                
+                whatsapp_res = send_whatsapp_receipt(data["id"], customer_phone, message_content)
+                
+                conn.execute(
+                    """
+                    INSERT INTO communication_logs (bill_id, customer_phone, status, message, timestamp, provider_message_id)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                    """,
+                    (data["id"], customer_phone, whatsapp_res["status"], message_content, datetime.utcnow().isoformat() + "Z", whatsapp_res["provider_message_id"])
+                )
 
         return jsonify({"status": "success"})
     except sqlite3.IntegrityError:
