@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Selvam Medicals</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@700&family=Jersey+15&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; overflow: hidden; }
+    body { font-family: Inter, sans-serif; background: #000; }
+
+    /* ── APP SHELL ── */
+    .app {
+      width: 1442px;
+      height: 1034px;
+      display: flex;
+    }
+
+    /* ══════════════════════════════
+       SIDEBAR  280 × 1034
+    ══════════════════════════════ */
+    .left-panel {
+      width: 280px;
+      height: 1034px;
+      background: #0b0f17;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      margin-bottom: 40px;
+    }
+
+    .SM {
+      width: 58px;
+      height: 58px;
+      background: #FF9900;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 28px;
+      line-height: 1;
+      font-family: 'JetBrains Mono', monospace;
+      flex-shrink: 0;
+    }
+
+    .logo-text p:first-child { font-weight: bold; font-size: 18px; color: #fff; }
+    .logo-text p:last-child  { font-size: 18px; color: #BAB7B7; }
+
+    .side-bar-dropdown {
+      width: 100%;
+      padding: 12px;
+      background: #111827;
+      border: none;
+      border-radius: 10px;
+      color: #cbd5e1;
+      margin-bottom: 28px;
+      font-size: 18px;
+    }
+
+    .sec-label {
+      font-size: 18px;
+      font-weight: 600;
+      color: #64748b;
+      margin-bottom: 32px;
+    }
+
+    .row { margin-bottom: 31px; }
+    .row.sms { margin-bottom: 76px; }
+
+    .sec-label.other {
+      font-size: 18px;
+      font-weight: 600;
+      color: #80879A;
+      margin-bottom: 40px;
+    }
+
+    .row.settings { margin-bottom: 15px; }
+    .spacer { flex: 1; }
+    .row.logout { margin-bottom: 68px; }
+
+    .opt {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .opt i {
+      width: 24px;
+      height: 24px;
+      font-size: 20px;
+      color: #80879A;
+    }
+
+    .opt-text {
+      font-size: 18px;
+      font-weight: bold;
+      color: #80879A;
+      margin-left: 100px;
+    }
+
+    .opt:hover { background: #1A2035; }
+    .opt:hover i, .opt:hover .opt-text { color: #D58615; }
+
+    /* ══════════════════════════════
+       RIGHT COLUMN  1162 × 1034
+       — blue outline when any field is active
+    ══════════════════════════════ */
+    .main {
+      width: 1162px;
+      height: 1034px;
+      display: flex;
+      flex-direction: column;
+      border: 2px solid transparent;          /* reserve space; colour set by JS */
+      transition: border-color 0.2s;
+    }
+
+    .main.panel-active {
+      border-color: #3B82F6;                  /* blue outline — image 2 */
+    }
+
+    /* ── HEADER  1162 × 78 ── */
+    .header {
+      height: 78px;
+      min-height: 78px;
+      background: #1A2035;
+      border-bottom: 1px solid #595959;
+      display: flex;
+      align-items: center;
+      padding: 0 0 0 33px;
+      gap: 0;
+      flex-shrink: 0;
+    }
+
+    .search-box {
+      width: 280px;
+      height: 40px;
+      background: #12141A;
+      border-radius: 12px;
+      border: none;
+      display: flex;
+      align-items: center;
+      padding: 0 14px;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    .search-box .fa-magnifying-glass { color: #6F6868; font-size: 16px; }
+
+    .search-box input {
+      background: transparent;
+      border: none;
+      outline: none;
+      color: #6F6868;
+      font-family: Inter, sans-serif;
+      font-size: 20px;
+      font-weight: 400;
+      flex: 1;
+    }
+
+    .fy {
+      margin-left: 47px;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      font-size: 28px;
+      color: #989696;
+      flex-shrink: 0;
+    }
+
+    .divider-1 { width: 2px; height: 54px; background: rgba(152,150,150,0.32); margin-left: 28px; flex-shrink: 0; }
+
+    .date-block {
+      margin-left: 28px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      line-height: 1.1;
+      flex-shrink: 0;
+    }
+
+    .date-val { font-family: 'Jersey 15', cursive; font-size: 24px; color: #D69140; }
+    .day-val  { font-family: 'Jersey 15', cursive; font-size: 24px; color: #595959; }
+
+    .divider-2 { width: 2px; height: 54px; background: rgba(152,150,150,0.32); margin-left: 28px; flex-shrink: 0; }
+
+    .clock {
+      margin-left: 28px;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      font-size: 28px;
+      color: #fff;
+      flex-shrink: 0;
+    }
+
+    .divider-3 { width: 2px; height: 54px; background: rgba(152,150,150,0.32); margin-left: 16px; flex-shrink: 0; }
+
+    .user { margin-left: 19px; display: flex; align-items: center; gap: 15px; }
+    .user img { width: 50px; height: 50px; border-radius: 12px; object-fit: cover; }
+    .user span { font-family: Inter, sans-serif; font-size: 18px; font-weight: 700; color: #595959; }
+
+    /* ══════════════════════════════
+       CONTENT AREA
+    ══════════════════════════════ */
+    .content-area {
+      flex: 1;
+      background: #0A0D11;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── BREADCRUMB ── */
+    .breadcrumb-bar {
+      background: #0E1117;
+      border-bottom: 1px solid rgba(108,108,108,0.4);
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .breadcrumb-parent  { font-weight: 600; font-size: 16px; color: #9CA3AF; }
+    .breadcrumb-current { font-weight: 700; font-size: 16px; color: #4ADE80; }
+
+    /* ── DEBIT NOTE MAIN ── */
+    .debit-main {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 16px;
+    }
+
+    /* Card */
+    .card {
+      width: 100%;
+      max-width: 579px;
+      background: #161A1F;
+      border: 1px solid rgba(104,104,104,0.58);
+      border-radius: 24px;
+      overflow: hidden;
+    }
+
+    .card-spacer-top    { height: 63px; }
+    .card-spacer-bottom { height: 64px; }
+    .card-divider       { height: 1px; background: rgba(108,108,108,0.53); }
+
+    .form-body {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      padding: 20px 40px;
+    }
+
+    /* ── FORM ROW — hover & focus state ── */
+    .form-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-radius: 8px;
+      padding: 4px 0;
+      transition: background 0.15s;
+    }
+
+    /* Label */
+    .form-label {
+      flex: 1;
+      font-weight: 600;
+      font-size: clamp(15px, 2.2vw, 25px);
+      color: #80879A;                       /* default */
+      white-space: nowrap;
+      transition: color 0.15s;
+      user-select: none;
+    }
+
+    .form-colon {
+      font-weight: 600;
+      font-size: clamp(15px, 2.2vw, 25px);
+      color: #80879A;
+      flex-shrink: 0;
+      transition: color 0.15s;
+    }
+
+    /* Input wrapper */
+    .input-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      width: 140px;
+      height: 44px;
+      border-radius: 10px;
+      background: #1C2028;
+      border: 1px solid rgba(150,150,150,0.29);
+      padding: 0 10px;
+      flex-shrink: 0;
+      transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+    }
+
+    /* ── HOVER on the row ── */
+    .form-row:hover .form-label,
+    .form-row:hover .form-colon {
+      color: #F59E0B;                       /* amber label on hover */
+    }
+
+    .form-row:hover .input-wrapper {
+      border-color: rgba(245,158,11,0.55);  /* amber tint border */
+      background: #1F2430;
+    }
+
+    /* ── FOCUS-WITHIN on the row ── */
+    .form-row:focus-within .form-label,
+    .form-row:focus-within .form-colon {
+      color: #F59E0B;                       /* amber — matches image 2 active label */
+    }
+
+    .form-row:focus-within .input-wrapper {
+      border-color: #3B82F6;               /* blue border on active input */
+      background: #1E2535;
+      box-shadow: 0 0 0 3px rgba(59,130,246,0.18);
+    }
+
+    .form-input {
+      flex: 1;
+      min-width: 0;
+      background: transparent;
+      color: #fff;
+      font-family: Inter, sans-serif;
+      font-weight: 600;
+      font-size: 15px;
+      border: none;
+      outline: none;
+    }
+
+    .form-input::placeholder {
+      color: rgba(255,255,255,0.25);
+      font-weight: 400;
+    }
+
+    /* focused input brightens placeholder */
+    .form-input:focus::placeholder {
+      color: rgba(255,255,255,0.45);
+    }
+
+    input[type="date"] { color-scheme: dark; width: 0; flex: 1; }
+    input[type="date"]::-webkit-calendar-picker-indicator { display: none; }
+
+    /* ── FOOTER ── */
+    .footer {
+      background: #0E1117;
+      border-top: 1px solid rgba(108,108,108,0.4);
+      height: 68px;
+      min-height: 68px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      flex-shrink: 0;
+    }
+
+    .action-btn {
+      background: none;
+      border: none;
+      font-family: Inter, sans-serif;
+      font-weight: 700;
+      font-size: clamp(12px, 1.4vw, 16px);
+      padding: 4px 2px;
+    }
+
+    .action-btn.active   { color: #F59E0B; cursor: pointer; }
+    .action-btn.active:hover { opacity: 0.8; }
+    .action-btn.inactive { color: rgba(255,255,255,0.25); cursor: default; }
+  </style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ════════════ SIDEBAR ════════════ -->
+  <div class="left-panel">
+    <div class="logo">
+      <div class="SM">SM</div>
+      <div class="logo-text">
+        <p>Selvam</p>
+        <p>Medicals</p>
+      </div>
+    </div>
+
+    <select class="side-bar-dropdown">
+      <option value="" disabled selected hidden>Timeline...</option>
+      <option>Daily</option>
+      <option>Weekly</option>
+      <option>Monthly</option>
+    </select>
+
+    <p class="sec-label">MENU</p>
+
+    <div class="row"><div class="opt"><i class="fa-solid fa-chart-line"></i><p class="opt-text">Sales</p></div></div>
+    <div class="row"><div class="opt"><i class="fa-solid fa-cart-shopping"></i><p class="opt-text">Purchase</p></div></div>
+    <div class="row"><div class="opt"><i class="fa-solid fa-list"></i><p class="opt-text">Item</p></div></div>
+    <div class="row"><div class="opt"><i class="fa-solid fa-users"></i><p class="opt-text">Masters</p></div></div>
+    <div class="row"><div class="opt"><i class="fa-solid fa-desktop"></i><p class="opt-text">System</p></div></div>
+    <div class="row"><div class="opt"><i class="fa-solid fa-toolbox"></i><p class="opt-text">Utilities</p></div></div>
+    <div class="row sms"><div class="opt"><i class="fa-solid fa-comment-dots"></i><p class="opt-text">SMS</p></div></div>
+
+    <p class="sec-label other">OTHER</p>
+
+    <div class="row settings"><div class="opt"><i class="fa-solid fa-gear"></i><p class="opt-text">Settings</p></div></div>
+
+    <div class="spacer"></div>
+
+    <div class="row logout"><div class="opt"><i class="fa-solid fa-right-from-bracket"></i><p class="opt-text">Logout</p></div></div>
+  </div>
+
+  <!-- ════════════ RIGHT COLUMN ════════════ -->
+  <div class="main" id="mainPanel">
+
+    <!-- HEADER -->
+    <header class="header">
+      <div class="search-box">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" placeholder="Search">
+      </div>
+
+      <div class="fy">FY: 2026-2027</div>
+
+      <div class="divider-1"></div>
+
+      <div class="date-block">
+        <span class="date-val" id="date-val"></span>
+        <span class="day-val"  id="day-val"></span>
+      </div>
+
+      <div class="divider-2"></div>
+
+      <div class="clock" id="clock">00:00:00</div>
+
+      <div class="divider-3"></div>
+
+      <div class="user">
+        <img src="https://via.placeholder.com/50" alt="User">
+        <span>Name</span>
+      </div>
+    </header>
+
+    <!-- CONTENT AREA -->
+    <div class="content-area">
+
+      <div class="breadcrumb-bar">
+        <span class="breadcrumb-parent">Sales</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18L15 12L9 6"/></svg>
+        <span class="breadcrumb-current">Debit Note</span>
+      </div>
+
+      <div class="debit-main">
+        <div class="card">
+          <div class="card-spacer-top"></div>
+          <div class="card-divider"></div>
+          <div class="form-body">
+
+            <div class="form-row">
+              <label class="form-label" for="debitNoteNo">Debit Note No.</label>
+              <span class="form-colon">:</span>
+              <div class="input-wrapper">
+                <input type="text" class="form-input" id="debitNoteNo" placeholder="Type...">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <label class="form-label" for="debitDate">Debit Date</label>
+              <span class="form-colon">:</span>
+              <div class="input-wrapper">
+                <input type="date" class="form-input" id="debitDate">
+                <span id="calendarTrigger" style="cursor:pointer;flex-shrink:0;">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M8 2V6"/><path d="M16 2V6"/>
+                    <path d="M19 4H5C3.9 4 3 4.9 3 6V20C3 21.1 3.9 22 5 22H19C20.1 22 21 21.1 21 20V6C21 4.9 20.1 4 19 4Z"/>
+                    <path d="M3 10H21"/><path d="M8 14H8.01"/><path d="M12 14H12.01"/>
+                    <path d="M16 14H16.01"/><path d="M8 18H8.01"/><path d="M12 18H12.01"/>
+                  </svg>
+                </span>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <label class="form-label" for="customerCode">Customer Code</label>
+              <span class="form-colon">:</span>
+              <div class="input-wrapper">
+                <input type="text" class="form-input" id="customerCode" placeholder="Type...">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <label class="form-label" for="amount">Amount</label>
+              <span class="form-colon">:</span>
+              <div class="input-wrapper">
+                <input type="text" class="form-input" id="amount" inputmode="decimal" placeholder="0.00">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <label class="form-label" for="remarks">Remarks</label>
+              <span class="form-colon">:</span>
+              <div class="input-wrapper">
+                <input type="text" class="form-input" id="remarks" placeholder="Type...">
+              </div>
+            </div>
+
+          </div>
+          <div class="card-divider" style="margin-top:20px;"></div>
+          <div class="card-spacer-bottom"></div>
+        </div>
+      </div>
+
+    </div><!-- /content-area -->
+
+    <!-- FOOTER -->
+    <footer class="footer">
+      <button class="action-btn active"   onclick="handleAction('Add')">Add</button>
+      <button class="action-btn inactive">Modify</button>
+      <button class="action-btn inactive">Delete</button>
+      <button class="action-btn active"   onclick="handleAction('View')">View</button>
+      <button class="action-btn active"   onclick="handleAction('Go To')">Go To</button>
+      <button class="action-btn active"   onclick="handleAction('Next')">Next</button>
+      <button class="action-btn active"   onclick="handleAction('Prior')">Prior</button>
+      <button class="action-btn inactive">Options</button>
+      <button class="action-btn active"   onclick="handleAction('Exit')">Exit</button>
+    </footer>
+
+  </div><!-- /main -->
+
+</div><!-- /app -->
+
+<script>
+  /* ── Clock & Date ── */
+  const DAYS   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  function pad(n){ return String(n).padStart(2,'0'); }
+  function updateHeader(){
+    const n = new Date();
+    document.getElementById('clock').textContent =
+      pad(n.getHours())+':'+pad(n.getMinutes())+':'+pad(n.getSeconds());
+    document.getElementById('date-val').textContent =
+      n.getDate()+' '+MONTHS[n.getMonth()]+' '+n.getFullYear();
+    document.getElementById('day-val').textContent = DAYS[n.getDay()];
+  }
+  setInterval(updateHeader, 1000);
+  updateHeader();
+
+  /* ── Blue panel outline: show when any form field is focused ── */
+  const mainPanel = document.getElementById('mainPanel');
+  const allFormInputs = document.querySelectorAll('.form-input');
+
+  allFormInputs.forEach(function(inp){
+    inp.addEventListener('focus',  function(){ mainPanel.classList.add('panel-active'); });
+    inp.addEventListener('blur',   function(){
+      // remove only if no other form input is focused
+      if(!document.querySelector('.form-input:focus')){
+        mainPanel.classList.remove('panel-active');
+      }
+    });
+  });
+
+  /* ── Calendar picker ── */
+  document.getElementById('calendarTrigger').addEventListener('click', function(){
+    var d = document.getElementById('debitDate');
+    d.showPicker ? d.showPicker() : d.focus();
+  });
+
+  /* ── Amount – numbers only ── */
+  document.getElementById('amount').addEventListener('input', function(){
+    this.value = this.value.replace(/[^\d.]/g,'');
+  });
+
+  /* ── Tab / Enter navigation ── */
+  var fields = ['debitNoteNo','debitDate','customerCode','amount','remarks'];
+  var formData = {};
+  fields.forEach(function(id, i){
+    formData[id] = '';
+    var el = document.getElementById(id);
+    el.addEventListener('input', function(){ formData[id] = this.value; });
+    el.addEventListener('keydown', function(e){
+      if(e.key==='Enter' || (e.key==='Tab' && !e.shiftKey)){
+        e.preventDefault();
+        var next = document.getElementById(fields[i+1]);
+        if(next) next.focus();
+      }
+    });
+  });
+
+  /* ── Footer actions ── */
+  function handleAction(name){
+    if(name==='Add'){
+      fields.forEach(function(id){ formData[id]=''; document.getElementById(id).value=''; });
+      document.getElementById('debitNoteNo').focus();
+    }
+    if(name==='Exit'){ if(confirm('Exit?')) window.close(); }
+    console.log('Action:', name, formData);
+  }
+
+  document.getElementById('debitNoteNo').focus();
+</script>
+</body>
+</html>
