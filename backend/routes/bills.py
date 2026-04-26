@@ -8,6 +8,7 @@ from flask import Blueprint, jsonify, request
 from ..db import get_conn, json_error, normalize_bill_row, required_fields, safe_json_loads, table_columns
 from ..services.whatsapp import send_whatsapp_receipt
 from ..sms_service import create_bill_sms_payload, create_sms_message, resolve_customer_row
+from .auth import role_required
 
 
 bills_bp = Blueprint("bills", __name__)
@@ -222,6 +223,7 @@ def _build_new_bill(existing_row, incoming: dict[str, Any]) -> dict[str, Any]:
 
 
 @bills_bp.route("/api/bills", methods=["GET"])
+@role_required("admin", "manager", "user", "junior")
 def get_bills():
     start_ts = request.args.get("start_date")
     end_ts = request.args.get("end_date")
@@ -255,6 +257,7 @@ def get_bills():
     return jsonify([normalize_bill_row(row) for row in rows])
 
 @bills_bp.route("/api/reports/gst", methods=["GET"])
+@role_required("admin", "manager", "user")
 def get_gst_report():
     start_ts = request.args.get("start_date")
     end_ts = request.args.get("end_date")
@@ -295,6 +298,7 @@ def get_gst_report():
 
 
 @bills_bp.route("/api/bills/<bill_id>", methods=["GET"])
+@role_required("admin", "manager", "user", "junior")
 def get_bill(bill_id):
     with get_conn() as conn:
         row = _get_bill_row(conn, bill_id)
@@ -304,6 +308,7 @@ def get_bill(bill_id):
 
 
 @bills_bp.route("/api/bills", methods=["POST"])
+@role_required("admin", "manager", "user", "junior")
 def save_bill():
     data = request.get_json(silent=True) or {}
     required = ["id", "ts", "date", "cust", "phone", "pay", "sub", "disc", "tax", "total", "items"]
@@ -423,6 +428,7 @@ def save_bill():
 
 
 @bills_bp.route("/api/bills/<bill_id>", methods=["PATCH", "PUT"])
+@role_required("admin", "manager", "user")
 def update_bill(bill_id):
     data = request.get_json(silent=True) or {}
     try:
@@ -528,6 +534,7 @@ def update_bill(bill_id):
 
 
 @bills_bp.route("/api/bills/<bill_id>", methods=["DELETE"])
+@role_required("admin", "manager", "user")
 def delete_bill(bill_id):
     try:
         with get_conn() as conn:

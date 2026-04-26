@@ -19,6 +19,7 @@ def create_app() -> Flask:
         static_url_path="/static",
     )
     CORS(app)
+    app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-key")
     app.config["MAX_CONTENT_LENGTH"] = 32 * 1024 * 1024
     register_blueprints(app)
     init_db()

@@ -7,9 +7,11 @@ from .masters import masters_bp
 from .sms import sms_bp
 from .purchases import purchases_bp
 from .communications import communications_bp
+from .auth import auth_bp
 
 
 def register_blueprints(app: Flask) -> None:
+    app.register_blueprint(auth_bp)
     app.register_blueprint(core_bp)
     app.register_blueprint(bills_bp)
     app.register_blueprint(inventory_bp)

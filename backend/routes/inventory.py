@@ -9,12 +9,14 @@ from ..db import (
     required_fields,
     shelf_location_label,
 )
+from .auth import role_required
 
 
 inventory_bp = Blueprint("inventory", __name__)
 
 
 @inventory_bp.route("/api/medicines", methods=["GET"])
+@role_required("admin", "manager", "user", "junior")
 def get_meds():
     with get_conn() as conn:
         rows = conn.execute(
@@ -41,6 +43,7 @@ def get_meds():
 
 
 @inventory_bp.route("/api/medicines/alerts", methods=["GET"])
+@role_required("admin", "manager", "user")
 def medicine_alerts():
     low_stock_threshold = int(request.args.get("low_stock", 15))
     expiry_days = int(request.args.get("expiry_days", 90))
@@ -128,6 +131,7 @@ def medicine_alerts():
 
 
 @inventory_bp.route("/api/medicines", methods=["POST"])
+@role_required("admin", "manager", "user")
 def update_med():
     data = request.get_json(silent=True) or {}
     missing = required_fields(data, ["id", "n", "p", "s"])
@@ -171,6 +175,7 @@ def update_med():
 
 
 @inventory_bp.route("/api/medicines/<id>", methods=["DELETE"])
+@role_required("admin", "manager", "user")
 def delete_med(id):
     with get_conn() as conn:
         conn.execute("DELETE FROM medicines WHERE id = ?", (id,))
@@ -178,6 +183,7 @@ def delete_med(id):
 
 
 @inventory_bp.route("/api/shelves", methods=["GET"])
+@role_required("admin", "manager", "user", "junior")
 def get_shelves():
     with get_conn() as conn:
         rows = conn.execute(
@@ -212,6 +218,7 @@ def get_shelves():
 
 
 @inventory_bp.route("/api/shelves", methods=["POST"])
+@role_required("admin", "manager", "user")
 def save_shelf():
     data = request.get_json(silent=True) or {}
     missing = required_fields(data, ["name"])
@@ -261,6 +268,7 @@ def save_shelf():
 
 
 @inventory_bp.route("/api/shelves/<id>", methods=["DELETE"])
+@role_required("admin", "manager", "user")
 def delete_shelf(id):
     try:
         with get_conn() as conn:

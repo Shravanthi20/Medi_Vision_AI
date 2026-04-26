@@ -1,13 +1,16 @@
 from datetime import datetime
 from flask import Blueprint, jsonify, request
+from werkzeug.security import generate_password_hash
 
 from ..db import get_conn, json_error, required_fields
+from .auth import role_required
 
 
 masters_bp = Blueprint("masters", __name__)
 
 
 @masters_bp.route("/api/suppliers", methods=["GET"])
+@role_required("admin", "manager", "user", "junior")
 def get_suppliers():
     with get_conn() as conn:
         rows = conn.execute("SELECT * FROM suppliers").fetchall()
@@ -27,6 +30,7 @@ def get_suppliers():
 
 
 @masters_bp.route("/api/suppliers", methods=["POST"])
+@role_required("admin", "manager", "user")
 def add_supplier():
     data = request.get_json(silent=True) or {}
     missing = required_fields(data, ["name", "phone"])
@@ -54,6 +58,7 @@ def add_supplier():
 
 
 @masters_bp.route("/api/customers", methods=["GET"])
+@role_required("admin", "manager", "user", "junior")
 def get_customers():
     with get_conn() as conn:
         rows = conn.execute("SELECT * FROM customers").fetchall()
@@ -76,6 +81,7 @@ def get_customers():
 
 
 @masters_bp.route("/api/customers", methods=["POST"])
+@role_required("admin", "manager", "user", "junior")
 def add_customer():
     data = request.get_json(silent=True) or {}
     missing = required_fields(data, ["name", "phone"])
@@ -108,6 +114,7 @@ def add_customer():
 
 
 @masters_bp.route("/api/doctors", methods=["GET"])
+@role_required("admin", "manager", "user", "junior")
 def get_doctors():
     with get_conn() as conn:
         rows = conn.execute("SELECT * FROM doctors").fetchall()
@@ -127,6 +134,7 @@ def get_doctors():
 
 
 @masters_bp.route("/api/doctors", methods=["POST"])
+@role_required("admin", "manager", "user", "junior")
 def add_doctor():
     data = request.get_json(silent=True) or {}
     missing = required_fields(data, ["name", "specialty", "hospital", "phone"])
@@ -154,6 +162,7 @@ def add_doctor():
 
 
 @masters_bp.route("/api/suppliers/<id>", methods=["DELETE"])
+@role_required("admin", "manager", "user")
 def delete_supplier(id):
     with get_conn() as conn:
         conn.execute("DELETE FROM suppliers WHERE id = ?", (id,))
@@ -161,6 +170,7 @@ def delete_supplier(id):
 
 
 @masters_bp.route("/api/customers/<id>", methods=["DELETE"])
+@role_required("admin", "manager", "user")
 def delete_customer(id):
     with get_conn() as conn:
         conn.execute("DELETE FROM customers WHERE id = ?", (id,))
@@ -168,6 +178,7 @@ def delete_customer(id):
 
 
 @masters_bp.route("/api/customers/<id>/ledger", methods=["GET"])
+@role_required("admin", "manager", "user", "junior")
 def get_customer_ledger(id):
     with get_conn() as conn:
         rows = conn.execute("SELECT * FROM ledger_entries WHERE customer_id = ? ORDER BY id ASC", (id,)).fetchall()
@@ -175,6 +186,7 @@ def get_customer_ledger(id):
 
 
 @masters_bp.route("/api/customers/<id>/payment", methods=["POST"])
+@role_required("admin", "manager", "user")
 def record_customer_payment(id):
     data = request.get_json(silent=True) or {}
     amount = float(data.get("amount", 0))
@@ -209,7 +221,56 @@ def record_customer_payment(id):
 
 
 @masters_bp.route("/api/doctors/<id>", methods=["DELETE"])
+@role_required("admin", "manager", "user")
 def delete_doctor(id):
     with get_conn() as conn:
         conn.execute("DELETE FROM doctors WHERE id = ?", (id,))
+    return jsonify({"status": "success"})
+
+
+@masters_bp.route("/api/users", methods=["GET"])
+@role_required("admin")
+def get_users():
+    with get_conn() as conn:
+        rows = conn.execute("SELECT id, username, name, role, code, phone, is_active FROM users").fetchall()
+    return jsonify([dict(row) for row in rows])
+
+
+@masters_bp.route("/api/users", methods=["POST"])
+@role_required("admin")
+def add_user():
+    data = request.get_json(silent=True) or {}
+    missing = required_fields(data, ["username", "name", "role", "password"])
+    if missing:
+        return json_error("Missing required user fields", 400, missing)
+    
+    password_hash = generate_password_hash(data["password"])
+    try:
+        with get_conn() as conn:
+            if data.get("id"):
+                conn.execute(
+                    """
+                    UPDATE users SET username=?, password_hash=?, name=?, role=?, code=?, phone=?, is_active=?
+                    WHERE id=?
+                    """,
+                    (data["username"], password_hash, data["name"], data["role"], data.get("code", ""), data.get("phone", ""), data.get("is_active", 1), data["id"])
+                )
+            else:
+                conn.execute(
+                    """
+                    INSERT INTO users (username, password_hash, name, role, code, phone, is_active)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (data["username"], password_hash, data["name"], data["role"], data.get("code", ""), data.get("phone", ""), data.get("is_active", 1))
+                )
+        return jsonify({"status": "success"})
+    except Exception as err:
+        return json_error("Failed to save user (username might not be unique)", 500, str(err))
+
+
+@masters_bp.route("/api/users/<id>", methods=["DELETE"])
+@role_required("admin")
+def delete_user(id):
+    with get_conn() as conn:
+        conn.execute("DELETE FROM users WHERE id = ?", (id,))
     return jsonify({"status": "success"})

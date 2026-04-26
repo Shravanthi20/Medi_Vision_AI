@@ -4,14 +4,24 @@ from flask import Blueprint, jsonify, render_template, send_file
 
 from ..config import DB_PATH
 from ..db import get_conn
+from .auth import login_required
 
 
 core_bp = Blueprint("core", __name__)
 
 
+from flask import session
+
 @core_bp.route("/")
+@login_required
 def dashboard():
-    return render_template("dashboard.html")
+    current_user = {
+        "id": session.get("user_id"),
+        "name": session.get("name"),
+        "username": session.get("username"),
+        "role": session.get("role")
+    }
+    return render_template("dashboard.html", current_user=current_user)
 
 
 @core_bp.route("/api/health", methods=["GET"])
