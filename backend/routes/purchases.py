@@ -1,12 +1,14 @@
 from flask import Blueprint, jsonify, request
 
 from ..db import get_conn, json_error, required_fields
+from .auth import role_required
 
 
 purchases_bp = Blueprint("purchases", __name__)
 
 
 @purchases_bp.route("/api/purchases", methods=["GET"])
+@role_required("admin", "manager", "user")
 def get_purchases():
     with get_conn() as conn:
         rows = conn.execute("SELECT * FROM purchases").fetchall()
@@ -29,6 +31,7 @@ def get_purchases():
 
 
 @purchases_bp.route("/api/purchases", methods=["POST"])
+@role_required("admin", "manager", "user")
 def add_purchase():
     data = request.get_json(silent=True) or {}
     missing = required_fields(data, ["id", "supplier", "items", "amount", "date", "status"])

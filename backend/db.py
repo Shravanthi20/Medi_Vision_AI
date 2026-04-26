@@ -1,6 +1,7 @@
 import json
 import sqlite3
 from typing import Any
+from werkzeug.security import generate_password_hash
 
 from .config import DB_PATH
 
@@ -197,6 +198,19 @@ def normalize_sms_message_row(row: sqlite3.Row) -> dict[str, Any]:
 
 def init_db() -> None:
     with get_conn() as conn:
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT UNIQUE,
+                password_hash TEXT,
+                name TEXT,
+                role TEXT,
+                code TEXT,
+                is_active INTEGER DEFAULT 1
+            )
+            """
+        )
         conn.execute(
             """
             CREATE TABLE IF NOT EXISTS bills (
@@ -453,11 +467,43 @@ def init_db() -> None:
                 """
             )
 
+        user_count = conn.execute("SELECT COUNT(*) AS c FROM users").fetchone()["c"]
+        if user_count == 0:
+            initial_users = [
+                ("ravirajans", generate_password_hash("33"), "A RAVIRAJANS", "admin", "33"),
+                ("srarvind", generate_password_hash("12"), "SR ARVIND", "admin", "12"),
+            ]
+            conn.executemany(
+                """
+                INSERT INTO users (username, password_hash, name, role, code)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                initial_users
+            )
+
     migrate_db()
 
 
 def migrate_db() -> None:
     with get_conn() as conn:
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT UNIQUE,
+                password_hash TEXT,
+                name TEXT,
+                role TEXT,
+                code TEXT,
+                is_active INTEGER DEFAULT 1
+            )
+            """
+        )
+
+        u_cols = table_columns(conn, "users")
+        if "phone" not in u_cols:
+            conn.execute("ALTER TABLE users ADD COLUMN phone TEXT DEFAULT ''")
+
         p_cols = table_columns(conn, "purchases")
         if "batch" not in p_cols:
             conn.execute("ALTER TABLE purchases ADD COLUMN batch TEXT DEFAULT ''")
