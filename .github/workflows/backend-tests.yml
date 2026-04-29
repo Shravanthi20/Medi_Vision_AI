@@ -1,0 +1,79 @@
+name: Backend Smoke Tests
+
+on:
+    push:
+    pull_request:
+
+jobs:
+    api-smoke-tests:
+        runs-on: ubuntu-latest
+
+        services:
+            postgres:
+                image: postgres:16
+                env:
+                    POSTGRES_USER: medivision
+                    POSTGRES_PASSWORD: medivision
+                    POSTGRES_DB: medivision_test
+                ports:
+                    - 5432:5432
+                options: >-
+                    --health-cmd pg_isready -U medivision -d medivision_test
+                    --health-interval 10s --health-timeout 5s --health-retries 5
+
+        env:
+            DATABASE_URL: postgresql://medivision:medivision@localhost:5432/medivision_test
+            PHARMACY_STORE_NAME: Selvam Medicals
+            SMS_PROVIDER_MODE: auto
+            SMS_PROVIDER_URL: ""
+            SMS_PROVIDER_KEY: ""
+            SMS_PROVIDER_SENDER: Selvam Medicals
+            SMS_PROVIDER_TIMEOUT: "15"
+            TWILIO_ACCOUNT_SID: ""
+            TWILIO_AUTH_TOKEN: ""
+            TWILIO_WHATSAPP_NUMBER: ""
+            FLASK_APP: run.py
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Set up Python
+              uses: actions/setup-python@v5
+              with:
+                  python-version: "3.13"
+
+            - name: Install dependencies
+              run: |
+                  python -m pip install --upgrade pip
+                  pip install -r requirements.txt
+
+            - name: Wait for PostgreSQL
+              run: |
+                  python - <<'PY'
+                  import os
+                  import time
+
+                  import psycopg2
+
+                  url = os.environ["DATABASE_URL"]
+                  for attempt in range(30):
+                      try:
+                          conn = psycopg2.connect(url)
+                          conn.close()
+                          print("PostgreSQL is ready")
+                          break
+                      except Exception as exc:
+                          print(f"Waiting for PostgreSQL: {exc}")
+                          time.sleep(2)
+                  else:
+                      raise SystemExit("PostgreSQL did not become ready in time")
+                  PY
+
+            - name: Apply migrations
+              run: |
+                  flask db upgrade
+
+            - name: Run API smoke tests
+              run: |
+                  pytest -q
