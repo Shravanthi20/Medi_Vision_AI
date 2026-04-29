@@ -1,3 +1,10 @@
 Flask
 Flask-Cors
 python-dotenv
+Flask-SQLAlchemy
+Flask-Migrate
+psycopg2-binary
+pgvector
+Flask-Marshmallow
+marshmallow-sqlalchemy
+pytest
