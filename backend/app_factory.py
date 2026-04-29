@@ -13,8 +13,6 @@ from .extensions import db, migrate, ma
 # Import all models so Alembic auto-discovers them for migrations
 from . import models  # noqa: F401
 
-from .routes_v2 import v2_bp
-
 
 def create_app() -> Flask:
     app = Flask(
@@ -39,7 +37,7 @@ def create_app() -> Flask:
     migrate.init_app(app, db)
     ma.init_app(app)
 
+    # Register blueprints (all refactored for Postgres/ORM)
     register_blueprints(app)
-    app.register_blueprint(v2_bp)
 
     return app

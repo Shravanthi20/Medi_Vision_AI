@@ -1,11 +1,41 @@
+# OS files
 .DS_Store
+Thumbs.db
+
+# Python
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
-.codex/
+*.db
+*.sqlite
+*.sqlite3
+
+# Environments
 .venv/
 venv/
 env/
 .env
+.flaskenv
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Logs
 *.log
+logs/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Project specific
+.codex/
+instance/
+dist/
+build/
+*.egg-info/
