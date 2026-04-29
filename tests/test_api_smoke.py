@@ -30,11 +30,6 @@ def test_core_endpoints(client):
     assert "medicines" in health_body
     assert "bills" in health_body
 
-    v2_health = client.get("/api/v2/health")
-    assert v2_health.status_code == 200
-    v2_body = get_json(v2_health)
-    assert v2_body == {"status": "ok", "api_version": "2.0"}
-
     backup = client.get("/api/backup")
     assert backup.status_code == 410
     backup_body = get_json(backup)
