@@ -1,0 +1,23 @@
+meta {
+  name: List Shelves
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/api/shelves
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("List shelves returns an array", function() {
+    const body = res.getBody();
+    expect(res.getStatus()).to.equal(200);
+    expect(body).to.be.an('array');
+  });
+}

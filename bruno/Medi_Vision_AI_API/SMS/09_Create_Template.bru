@@ -1,0 +1,34 @@
+meta {
+  name: Create SMS Template
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{baseUrl}}/api/sms/templates
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "id": "{{templateId}}",
+    "name": "Test SMS Template",
+    "body": "Hello {customer_name}, your bill is ready.",
+    "message_type": "custom",
+    "active": true
+  }
+}
+
+assert {
+  res.status: eq 201
+}
+
+tests {
+  test("Create SMS template succeeds", function() {
+    const body = res.getBody();
+    expect(res.getStatus()).to.equal(201);
+    expect(body).to.have.property('id');
+    expect(body).to.have.property('name');
+  });
+}

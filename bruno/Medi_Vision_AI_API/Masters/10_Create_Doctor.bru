@@ -1,0 +1,32 @@
+meta {
+  name: Create Doctor
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{baseUrl}}/api/doctors
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "name": "Dr Test",
+    "specialty": "General",
+    "hospital": "Test Hospital",
+    "phone": "9000000003"
+  }
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("Create doctor succeeds", function() {
+    const body = res.getBody();
+    expect(res.getStatus()).to.equal(200);
+    expect(body).to.have.property('status', 'success');
+  });
+}

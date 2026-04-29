@@ -1,0 +1,31 @@
+meta {
+  name: Update SMS Template
+  type: http
+  seq: 10
+}
+
+patch {
+  url: {{baseUrl}}/api/sms/templates/{{templateId}}
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "name": "Updated SMS Template",
+    "body": "Updated body",
+    "active": true
+  }
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("Update SMS template succeeds", function() {
+    const body = res.getBody();
+    expect(res.getStatus()).to.equal(200);
+    expect(body).to.have.property('id');
+  });
+}

@@ -1,0 +1,24 @@
+meta {
+  name: Retry SMS Message
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/api/sms/messages/{{messageId}}/retry
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("Retry SMS message succeeds", function() {
+    const body = res.getBody();
+    expect(res.getStatus()).to.equal(200);
+    expect(body).to.have.property('id');
+    expect(body).to.have.property('send_status');
+  });
+}

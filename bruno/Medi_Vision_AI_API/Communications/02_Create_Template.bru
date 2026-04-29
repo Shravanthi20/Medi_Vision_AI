@@ -1,0 +1,32 @@
+meta {
+  name: Create Communication Template
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/communications/templates
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "name": "Test Template",
+    "content": "Hello {{customer_name}}",
+    "is_active": 1
+  }
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("Create communication template succeeds", function() {
+    const body = res.getBody();
+    expect(res.getStatus()).to.equal(200);
+    expect(body).to.have.property('status', 'success');
+    expect(body).to.have.property('id');
+  });
+}
