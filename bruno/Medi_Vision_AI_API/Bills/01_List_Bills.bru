@@ -1,0 +1,27 @@
+meta {
+  name: List Bills
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/bills
+  body: none
+  auth: none
+}
+
+vars:pre-request {
+  baseUrl: http://127.0.0.1:5001
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("List bills returns an array", function() {
+    const body = res.getBody();
+    expect(res.getStatus()).to.equal(200);
+    expect(body).to.be.an('array');
+  });
+}

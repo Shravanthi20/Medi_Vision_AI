@@ -1,0 +1,32 @@
+meta {
+  name: Create Customer
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/api/customers
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "name": "Test Customer",
+    "phone": "9000000002",
+    "address": "Sample Address",
+    "balance": 100
+  }
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("Create customer succeeds", function() {
+    const body = res.getBody();
+    expect(res.getStatus()).to.equal(200);
+    expect(body).to.have.property('status', 'success');
+  });
+}

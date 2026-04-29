@@ -1,0 +1,23 @@
+meta {
+  name: Delete Doctor
+  type: http
+  seq: 11
+}
+
+delete {
+  url: {{baseUrl}}/api/doctors/{{doctorId}}
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("Delete doctor succeeds", function() {
+    const body = res.getBody();
+    expect(res.getStatus()).to.equal(200);
+    expect(body).to.have.property('status', 'success');
+  });
+}

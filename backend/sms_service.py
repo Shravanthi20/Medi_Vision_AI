@@ -7,8 +7,6 @@ from typing import Any
 from urllib import error as urlerror
 from urllib import request as urlrequest
 
-from .db import normalize_sms_message_row, normalize_sms_template_row
-
 
 SMS_STORE_NAME = os.environ.get("PHARMACY_STORE_NAME", "Selvam Medicals")
 SMS_PROVIDER_URL = os.environ.get("SMS_PROVIDER_URL", "").strip()
@@ -60,6 +58,50 @@ class ProviderResult:
 class _SafeFormatDict(dict):
     def __missing__(self, key: str) -> str:
         return ""
+
+
+def normalize_sms_template_row(row: Any) -> dict[str, Any]:
+    data = dict(row)
+    return {
+        "id": data.get("id"),
+        "name": data.get("name"),
+        "body": data.get("body", ""),
+        "message_type": data.get("message_type", "custom"),
+        "active": int(data.get("active", 1) or 0),
+        "created_ts": data.get("created_ts"),
+        "updated_ts": data.get("updated_ts"),
+    }
+
+
+def normalize_sms_message_row(row: Any) -> dict[str, Any]:
+    data = dict(row)
+    provider_response = data.get("provider_response", {})
+    if isinstance(provider_response, str):
+        provider_response = try_parse_json(provider_response)
+    if not isinstance(provider_response, dict):
+        provider_response = {"raw": provider_response}
+    return {
+        "id": data.get("id"),
+        "created_ts": data.get("created_ts"),
+        "updated_ts": data.get("updated_ts"),
+        "recipient_phone": data.get("recipient_phone", ""),
+        "customer_id": data.get("customer_id", ""),
+        "customer_name": data.get("customer_name", ""),
+        "bill_id": data.get("bill_id", ""),
+        "template_id": data.get("template_id", ""),
+        "message_type": data.get("message_type", "custom"),
+        "body": data.get("body", ""),
+        "send_status": data.get("send_status", "queued"),
+        "provider_name": data.get("provider_name", ""),
+        "provider_message_id": data.get("provider_message_id", ""),
+        "failure_reason": data.get("failure_reason", ""),
+        "retry_count": int(data.get("retry_count", 0) or 0),
+        "last_attempt_ts": int(data.get("last_attempt_ts", 0) or 0),
+        "sent_ts": int(data.get("sent_ts", 0) or 0),
+        "delivered_ts": int(data.get("delivered_ts", 0) or 0),
+        "source": data.get("source", "manual"),
+        "provider_response": provider_response,
+    }
 
 
 def now_ts() -> int:
