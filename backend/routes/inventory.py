@@ -355,6 +355,22 @@ def delete_shelf(id):
         if loc:
             # unassign items using this location
             Item.query.filter_by(rack_number=loc.location_code).update({"rack_number": None})
+            
+            # Reassign dependencies to a fallback location to satisfy Postgres FK constraints
+            fallback = Location.query.filter(Location.location_id != id).first()
+            if not fallback:
+                fallback = Location(location_code="MAIN", location_name="Main Store")
+                db.session.add(fallback)
+                db.session.flush()
+                
+            from ..models.inventory import StockBatch
+            from ..models.purchase import PurchaseInvoice
+            from ..models.sales import SalesBill
+            
+            StockBatch.query.filter_by(location_id=id).update({"location_id": fallback.location_id})
+            PurchaseInvoice.query.filter_by(location_id=id).update({"location_id": fallback.location_id})
+            SalesBill.query.filter_by(location_id=id).update({"location_id": fallback.location_id})
+
             db.session.delete(loc)
             db.session.commit()
         return jsonify({"status": "success"})
