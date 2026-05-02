@@ -26,12 +26,3 @@ def _load_dotenv_file(path: Path) -> None:
 
 
 _load_dotenv_file(BASE_DIR / ".env")
-_raw_db_path = os.environ.get("PHARMACY_DB_PATH", "").strip()
-if _raw_db_path:
-    db_path = Path(_raw_db_path)
-    if not db_path.is_absolute():
-        db_path = (BASE_DIR / db_path).resolve()
-else:
-    db_path = BASE_DIR / "database.db"
-
-DB_PATH = str(db_path)

@@ -1,0 +1,24 @@
+meta {
+  name: V2 Health
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/api/v2/health
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("V2 health returns api version", function() {
+    const body = res.getBody();
+    expect(res.getStatus()).to.equal(200);
+    expect(body).to.have.property('status', 'ok');
+    expect(body).to.have.property('api_version', '2.0');
+  });
+}

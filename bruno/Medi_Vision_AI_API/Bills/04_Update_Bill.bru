@@ -1,0 +1,33 @@
+meta {
+  name: Update Bill
+  type: http
+  seq: 4
+}
+
+patch {
+  url: {{baseUrl}}/api/bills/{{billId}}
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "sub": 70,
+    "disc": 2,
+    "tax": 3.4,
+    "total": 71.4
+  }
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("Update bill returns updated bill", function() {
+    const body = res.getBody();
+    expect(res.getStatus()).to.equal(200);
+    expect(body).to.have.property('id');
+    expect(body).to.have.property('items');
+  });
+}

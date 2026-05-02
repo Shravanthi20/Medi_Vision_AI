@@ -1,0 +1,25 @@
+meta {
+  name: Health
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/health
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("Health returns ok payload", function() {
+    const body = res.getBody();
+    expect(res.getStatus()).to.equal(200);
+    expect(body).to.have.property('status', 'ok');
+    expect(body).to.have.property('medicines');
+    expect(body).to.have.property('bills');
+  });
+}

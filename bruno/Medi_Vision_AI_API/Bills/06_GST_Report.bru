@@ -1,0 +1,27 @@
+meta {
+  name: GST Report
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{baseUrl}}/api/reports/gst
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("GST report returns numeric totals", function() {
+    const body = res.getBody();
+    expect(res.getStatus()).to.equal(200);
+    expect(body).to.have.property('total_sales');
+    expect(body).to.have.property('total_tax');
+    expect(body).to.have.property('taxable_amount');
+    expect(body).to.have.property('non_taxable_amount');
+    expect(body).to.have.property('net_revenue');
+  });
+}
