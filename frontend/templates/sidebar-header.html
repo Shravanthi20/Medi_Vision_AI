@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Selvam Medicals – Sidebar & Header</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@700&family=Jersey+15&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="sidebar-header.css">
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ════════════ SIDEBAR ════════════ -->
+  <div class="left-panel">
+    <div class="logo">
+      <div class="SM">SM</div>
+      <div class="logo-text">
+        <p>Selvam</p>
+        <p>Medicals</p>
+      </div>
+    </div>
+
+    <select class="side-bar-dropdown">
+      <option value="" disabled selected hidden>Timeline...</option>
+      <option>Daily</option>
+      <option>Weekly</option>
+      <option>Monthly</option>
+    </select>
+
+    <p class="sec-label">MENU</p>
+
+    <div class="row"><div class="opt"><i class="fa-solid fa-chart-line"></i><p class="opt-text">Sales</p></div></div>
+    <div class="row"><div class="opt"><i class="fa-solid fa-cart-shopping"></i><p class="opt-text">Purchase</p></div></div>
+    <div class="row"><div class="opt"><i class="fa-solid fa-list"></i><p class="opt-text">Item</p></div></div>
+    <div class="row"><div class="opt"><i class="fa-solid fa-users"></i><p class="opt-text">Masters</p></div></div>
+    <div class="row"><div class="opt"><i class="fa-solid fa-desktop"></i><p class="opt-text">System</p></div></div>
+    <div class="row"><div class="opt"><i class="fa-solid fa-toolbox"></i><p class="opt-text">Utilities</p></div></div>
+    <div class="row sms"><div class="opt"><i class="fa-solid fa-comment-dots"></i><p class="opt-text">SMS</p></div></div>
+
+    <p class="sec-label other">OTHER</p>
+
+    <div class="row settings"><div class="opt"><i class="fa-solid fa-gear"></i><p class="opt-text">Settings</p></div></div>
+
+    <div class="spacer"></div>
+
+    <div class="row logout"><div class="opt"><i class="fa-solid fa-right-from-bracket"></i><p class="opt-text">Logout</p></div></div>
+  </div>
+
+  <!-- ════════════ RIGHT COLUMN ════════════ -->
+  <div class="main">
+
+    <!-- ── HEADER ── -->
+    <header class="header">
+      <div class="search-box">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" placeholder="Search">
+      </div>
+
+      <div class="fy">FY: 2026-2027</div>
+
+      <div class="divider-1"></div>
+
+      <div class="date-block">
+        <span class="date-val" id="date-val"></span>
+        <span class="day-val"  id="day-val"></span>
+      </div>
+
+      <div class="divider-2"></div>
+
+      <div class="clock" id="clock">00:00:00</div>
+
+      <div class="divider-3"></div>
+
+      <div class="user">
+        <img src="https://via.placeholder.com/50" alt="User">
+        <span>Name</span>
+      </div>
+    </header>
+
+    <!-- Page content goes here -->
+
+  </div><!-- /main -->
+
+</div><!-- /app -->
+
+<script src="sidebar-header.js"></script>
+</body>
+</html>
