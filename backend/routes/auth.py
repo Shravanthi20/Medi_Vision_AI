@@ -55,7 +55,7 @@ def api_login():
         session["logged_in"] = True
         session["user_id"] = str(user.user_id)
         session["username"] = user.username
-        session["name"] = user.username  # User model in main has no separate name
+        session["name"] = user.name or user.username
         session["role"] = user.role.role_name if user.role else "user"
         return jsonify({
             "status": "success", 
@@ -82,7 +82,9 @@ def get_users():
         result.append({
             "id": str(u.user_id),
             "username": u.username,
-            "name": u.username,
+            "name": u.name or u.username,
+            "phone": u.phone or "",
+            "code": u.machine_code or "",
             "role": u.role.role_name if u.role else "user",
             "is_active": u.is_active
         })
@@ -95,6 +97,9 @@ def add_user():
     username = data.get("username")
     role_name = data.get("role")
     password = data.get("password")
+    name = data.get("name")
+    phone = data.get("phone")
+    code = data.get("code")
     
     if not username or not role_name:
         return jsonify({"status": "error", "message": "Username and role required"}), 400
@@ -111,6 +116,10 @@ def add_user():
                 return jsonify({"status": "error", "message": "User not found"}), 404
             user.username = username
             user.role_id = role.role_id
+            if name: user.name = name
+            if phone: user.phone = phone
+            if code: user.machine_code = code
+            
             if password:
                 user.password_hash = generate_password_hash(password)
             if "is_active" in data:
@@ -120,6 +129,9 @@ def add_user():
                 return jsonify({"status": "error", "message": "Password required for new user"}), 400
             user = User(
                 username=username,
+                name=name,
+                phone=phone,
+                machine_code=code,
                 password_hash=generate_password_hash(password),
                 role_id=role.role_id,
                 is_active=data.get("is_active", True)

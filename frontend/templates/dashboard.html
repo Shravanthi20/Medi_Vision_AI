@@ -827,7 +827,7 @@ async function addAppUser(){
   const code=document.getElementById('u-code').value.trim();
   const pass=document.getElementById('u-pass').value.trim();
   const r=document.getElementById('u-role').value;
-  if(!n || !user || !pass){alert('Enter name, username, and password');return;}
+  if(!n || !user || (!uid && !pass)){alert('Enter name, username, and password');return;}
   
   try {
     const res = await fetch(API + '/users', {
