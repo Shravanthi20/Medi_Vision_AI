@@ -1,0 +1,286 @@
+/* ═══════════════════════════════════════════════════════════
+   prr.css — Purchase Return Register
+   Sidebar + Header → sidebar-header.css
+═══════════════════════════════════════════════════════════ */
+
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: Inter, sans-serif;
+  background: #000;
+}
+
+/* ── APP SHELL ── */
+.app {
+  width: 1442px;
+  height: 1034px;
+  display: flex;
+}
+
+/* ── RIGHT COLUMN ── */
+.main {
+  width: 1162px;
+  height: 1034px;
+  display: flex;
+  flex-direction: column;
+  border: 2px solid transparent;
+  transition: border-color 0.2s;
+}
+
+.main.panel-active {
+  border-color: #3B82F6;
+}
+
+/* ── CONTENT AREA ── */
+.content-area {
+  flex: 1;
+  background: #0D0F12;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ── BREADCRUMB ── */
+.breadcrumb-bar {
+  background: #0E1117;
+  border-bottom: 1px solid rgba(108, 108, 108, 0.4);
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.breadcrumb-parent {
+  font-weight: 600;
+  font-size: 16px;
+  color: #9CA3AF;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.breadcrumb-parent:hover {
+  color: #D1D5DB;
+}
+
+.breadcrumb-current {
+  font-weight: 700;
+  font-size: 16px;
+  color: #4ADE80;
+}
+
+/* ══════════════════════════════════════════
+   MAIN CONTENT
+══════════════════════════════════════════ */
+.prr-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  /* Left-aligned, matching reference image padding */
+  padding: 20px 24px 16px 24px;
+  overflow: hidden;
+  gap: 16px;
+}
+
+/* ══════════════════════════════════════════
+   INFO SECTION — left-aligned block
+   S.Number : 23029
+   Date     : 21/04/2026
+   Supl. cd :
+══════════════════════════════════════════ */
+.prr-info {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+
+
+/* ══════════════════════════════════════════
+   TABLE — full width, strong borders
+══════════════════════════════════════════ */
+.prr-table-wrap {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.prr-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+/* ── THEAD ── */
+.prr-table thead tr {
+  background: #000000;
+}
+
+.prr-table th {
+  padding: 12px 8px;
+  color: #ffffff;
+  font-family: Inter, sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  text-align: center;
+  white-space: nowrap;
+  /* Outer top/bottom + all column dividers */
+  border-top:    2px solid #ffffff;
+  border-bottom: 2px solid #ffffff;
+  border-right:  1px solid #ffffff;
+  border-left:   1px solid #ffffff;
+}
+
+/* Outer left edge — first th */
+.prr-table thead tr th:first-child {
+  border-left: 2px solid #ffffff;
+}
+
+/* Outer right edge — last th */
+.prr-table thead tr th:last-child {
+  border-right: 2px solid #ffffff;
+}
+
+/* ── TBODY ── */
+.prr-table tbody tr {
+  background: #000000;
+}
+
+.prr-table td {
+  height: 44px;
+  padding: 0 8px;
+  color: #ffffff;
+  font-family: Inter, sans-serif;
+  font-size: 14px;
+  border-right:  1px solid #ffffff;
+  border-left:   1px solid #ffffff;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.35);
+}
+
+/* Outer left edge */
+.prr-table tbody tr td:first-child {
+  border-left: 2px solid #ffffff;
+}
+
+/* Outer right edge */
+.prr-table tbody tr td:last-child {
+  border-right: 2px solid #ffffff;
+}
+
+/* Last row — strong bottom border to close the table */
+.prr-table tbody tr:last-child td {
+  border-bottom: 2px solid #ffffff;
+}
+
+/* ── COLUMN WIDTHS ──
+   Matching reference: Code=small, Item Name=dominant,
+   Batch/Expiry=medium, Type/Qty=small, Price/Taxcd/Value=medium
+*/
+.prr-col-code   { width:  9%; }
+.prr-col-name   { width: 26%; }
+.prr-col-batch  { width:  9%; }
+.prr-col-expiry { width:  9%; }
+.prr-col-type   { width:  8%; }
+.prr-col-qty    { width:  7%; }
+.prr-col-price  { width:  9%; }
+.prr-col-taxcd  { width:  9%; }
+.prr-col-value  { width: 10%; text-align: right; padding-right: 10px; }
+
+/* Align td text to center by default */
+.prr-table td {
+  text-align: center;
+}
+
+/* Item Name and Value special alignment */
+.prr-table td.prr-col-name  { text-align: left; }
+.prr-table td.prr-col-value { text-align: right; padding-right: 10px; }
+
+/* ── FOOTER DIVIDER — full 1162px width, 70px from bottom ── */
+.prr-footer-divider {
+  flex-shrink: 0;
+  height: 1px;
+  background: rgba(145, 145, 145, 0.39);
+  margin-top: auto;
+  margin-bottom: 70px;
+  margin-left: -24px;
+  margin-right: -24px;
+}
+
+/* ══════════════════════════════════════════
+   INFO SECTION INPUTS — matches Memo style
+══════════════════════════════════════════ */
+
+/* Each row: label — colon — input */
+.prr-info-row {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin-bottom: 10px;
+}
+
+.prr-info-label {
+  width: 80px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #8E96B0;
+  flex-shrink: 0;
+  transition: color 0.15s;
+}
+
+/* Label turns orange on focus-within */
+.prr-info-row:focus-within .prr-info-label {
+  color: #F59E0B;
+}
+
+.prr-info-colon {
+  width: 24px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #8E96B0;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.prr-input-wrap {
+  flex: 0 0 220px; /* fixed width — not full row, keeps left-block feel */
+}
+
+/* Input — identical to Memo .form-input */
+.prr-input {
+  width: 100%;
+  height: 40px;
+  background: #1C2028;
+  border: 1px solid rgba(80, 88, 110, 0.4);
+  border-radius: 8px;
+  padding: 0 12px;
+  color: #fff;
+  font-family: Inter, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  outline: none;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+
+/* HOVER — orange */
+.prr-input:hover {
+  border-color: rgba(245, 158, 11, 0.65);
+  background: #1F2430;
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.15);
+}
+
+/* FOCUS — blue */
+.prr-input:focus {
+  border-color: #3B82F6;
+  background: #1C2028;
+  box-shadow: 0 0 0 1px #3B82F6;
+}

@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Selvam Medicals – Credit Note</title>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <!-- Inter (body), JetBrains Mono (FY + clock), Jersey 15 (date/day) -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@700&family=Jersey+15&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/sidebar-header.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/creditnote.css') }}">
+</head>
+<body>
+
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <div class="left-panel">
+    <div class="logo">
+      <div class="SM">SM</div>
+      <div class="logo-text">
+        <p>Selvam</p>
+        <p>Medicals</p>
+      </div>
+    </div>
+
+    <select class="side-bar-dropdown">
+      <option value="" disabled selected hidden>Timeline...</option>
+      <option>Daily</option>
+      <option>Weekly</option>
+      <option>Monthly</option>
+    </select>
+
+    <p class="sec-label">MENU</p>
+
+    <div class="row"><div class="opt"><i class="fa-solid fa-chart-line"></i><p class="opt-text">Sales</p></div></div>
+    <div class="row"><div class="opt"><i class="fa-solid fa-cart-shopping"></i><p class="opt-text">Purchase</p></div></div>
+    <div class="row"><div class="opt"><i class="fa-solid fa-list"></i><p class="opt-text">Item</p></div></div>
+    <div class="row"><div class="opt"><i class="fa-solid fa-users"></i><p class="opt-text">Masters</p></div></div>
+    <div class="row"><div class="opt"><i class="fa-solid fa-desktop"></i><p class="opt-text">System</p></div></div>
+    <div class="row"><div class="opt"><i class="fa-solid fa-toolbox"></i><p class="opt-text">Utilities</p></div></div>
+    <div class="row sms"><div class="opt"><i class="fa-solid fa-comment-dots"></i><p class="opt-text">SMS</p></div></div>
+
+    <p class="sec-label other">OTHER</p>
+
+    <div class="row settings"><div class="opt"><i class="fa-solid fa-gear"></i><p class="opt-text">Settings</p></div></div>
+    <div class="spacer"></div>
+    <div class="row logout"><div class="opt"><i class="fa-solid fa-right-from-bracket"></i><p class="opt-text">Logout</p></div></div>
+  </div>
+
+  <!-- RIGHT COLUMN -->
+  <div class="main" id="mainPanel">
+
+    <!-- HEADER -->
+    <header class="header">
+      <div class="search-box">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" placeholder="Search">
+      </div>
+      <div class="fy">FY: 2026-2027</div>
+      <div class="divider-1"></div>
+      <div class="date-block">
+        <span class="date-val" id="date-val"></span>
+        <span class="day-val" id="day-val"></span>
+      </div>
+      <div class="divider-2"></div>
+      <div class="clock" id="clock">00:00:00</div>
+      <div class="divider-3"></div>
+      <div class="user">
+        <img src="{{ url_for('static', filename='images/user-profile.jpg') }}" alt="User">
+        <span>Name</span>
+      </div>
+    </header>
+
+    <!-- CONTENT AREA -->
+    <div class="content-area">
+
+      <!-- BREADCRUMB -->
+      <div class="breadcrumb-bar">
+        <span class="breadcrumb-parent">Sales</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 18L15 12L9 6"/>
+        </svg>
+        <span class="breadcrumb-current">Credit Note</span>
+      </div>
+
+      <!-- FORM HEADER (blue glow section) -->
+      <div class="cn-form-header">
+        <div class="cn-glow"></div>
+
+        <div class="cn-fields-grid">
+          <!-- LEFT COLUMN -->
+          <div class="cn-fields-col">
+            <div class="cn-field-row">
+              <label class="cn-label">Reference No.</label>
+              <span class="cn-colon">:</span>
+              <div class="cn-input-wrap">
+                <input type="text" class="cn-input" value="1">
+              </div>
+            </div>
+            <div class="cn-field-row">
+              <label class="cn-label">Supplier Code</label>
+              <span class="cn-colon">:</span>
+              <div class="cn-input-wrap">
+                <input type="text" class="cn-input">
+              </div>
+            </div>
+            <div class="cn-field-row">
+              <label class="cn-label">Credit Note No</label>
+              <span class="cn-colon">:</span>
+              <div class="cn-input-wrap">
+                <input type="text" class="cn-input">
+              </div>
+            </div>
+            <div class="cn-field-row">
+              <label class="cn-label">Amount</label>
+              <span class="cn-colon">:</span>
+              <div class="cn-input-wrap">
+                <input type="text" class="cn-input">
+              </div>
+            </div>
+          </div>
+
+          <!-- RIGHT COLUMN -->
+          <div class="cn-fields-col">
+            <div class="cn-field-row">
+              <label class="cn-label">Account Date</label>
+              <span class="cn-colon">:</span>
+              <div class="cn-input-wrap">
+                <input type="text" class="cn-input">
+              </div>
+            </div>
+            <div class="cn-field-row">
+              <label class="cn-label">Credit Note Date</label>
+              <span class="cn-colon">:</span>
+              <div class="cn-input-wrap">
+                <input type="text" class="cn-input">
+              </div>
+            </div>
+            <div class="cn-field-row">
+              <label class="cn-label">ABC Associates</label>
+              <span class="cn-colon">:</span>
+              <div class="cn-input-wrap">
+                <input type="text" class="cn-input">
+              </div>
+            </div>
+            <div class="cn-field-row">
+              <label class="cn-label">Remarks</label>
+              <span class="cn-colon">:</span>
+              <div class="cn-input-wrap">
+                <input type="text" class="cn-input">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DIVIDER -->
+      <div class="cn-divider"></div>
+
+      <!-- ═══════════════════════════════════════
+           ITEMS TABLE — replaced with new component
+      ═══════════════════════════════════════ -->
+      <div class="items-section cn-table-area">
+
+
+        <div class="table-wrapper">
+          <table class="items-table" id="itemsTable">
+            <thead>
+              <tr>
+                <th style="width: 10%">Code</th>
+                <th style="width: 22%">Item Name</th>
+                <th style="width: 9%">Batch</th>
+                <th style="width: 10%">Exp. Dt</th>
+                <th style="width: 9%">Term</th>
+                <th style="width: 7%">Qty</th>
+                <th style="width: 10%">M.R.P</th>
+                <th style="width: 9%">Disc</th>
+                <th style="width: 10%">Value</th>
+           
+              </tr>
+            </thead>
+            <tbody id="tableBody">
+              <!-- Rows injected by credit-note.js -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <!-- ═══════════════════════════════════════ -->
+
+      <!-- DIVIDER -->
+      <div class="cn-divider"></div>
+
+      <!-- BOTTOM ACTION BAR -->
+      <div class="action-bar">
+        <button class="action-btn active">Add</button>
+        <button class="action-btn inactive">Modify</button>
+        <button class="action-btn inactive">Delete</button>
+        <button class="action-btn active">View</button>
+        <button class="action-btn active">Go To</button>
+        <button class="action-btn active">Next</button>
+        <button class="action-btn active">Prior</button>
+        <button class="action-btn inactive">Options</button>
+        <button class="action-btn active">Exit</button>
+      </div>
+
+    </div><!-- /content-area -->
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<script src="{{ url_for('static', filename='js/sidebar-header.js') }}"></script>
+<script src="{{ url_for('static', filename='js/creditnote.js') }}"></script>
+
+</body>
+</html>

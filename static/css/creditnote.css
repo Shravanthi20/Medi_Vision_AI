@@ -1,0 +1,437 @@
+/* ═══════════════════════════════════════════════════════════
+   credit-note.css
+   Sidebar + Header → sidebar-header.css
+
+   STATE FLOW: Hover → Orange | Focus → Blue | Click → Green | Panel → Blue
+═══════════════════════════════════════════════════════════ */
+
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: Inter, sans-serif;
+  background: #000;
+}
+
+/* ── APP SHELL ── */
+.app {
+  width: 1442px;
+  height: 1034px;
+  display: flex;
+}
+
+/* ── RIGHT COLUMN ── */
+.main {
+  width: 1162px;
+  height: 1034px;
+  display: flex;
+  flex-direction: column;
+  border: 2px solid transparent;
+  transition: border-color 0.2s;
+}
+
+/* PANEL ACTIVE — blue border */
+.main.panel-active {
+  border-color: #3B82F6;
+}
+
+/* ── CONTENT AREA ── */
+.content-area {
+  flex: 1;
+  background: #0A0D11;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ── BREADCRUMB ── */
+.breadcrumb-bar {
+  background: #0E1117;
+  border-bottom: 1px solid rgba(108, 108, 108, 0.4);
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.breadcrumb-parent {
+  font-weight: 600;
+  font-size: 16px;
+  color: #9CA3AF;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.breadcrumb-parent:hover {
+  color: #D1D5DB;
+}
+
+.breadcrumb-current {
+  font-weight: 700;
+  font-size: 16px;
+  color: #4ADE80;
+}
+
+/* ══════════════════════════════════════════
+   FORM HEADER — blue glow section
+══════════════════════════════════════════ */
+.cn-form-header {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(90deg, #0A0D11 0%, #1A2340 15%, #1A2340 85%, #0A0D11 100%);
+  flex-shrink: 0;
+  padding: 20px 24px;
+}
+
+/* radial blue glow overlay */
+.cn-glow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse 70% 60% at 50% 50%, rgba(26, 79, 212, 0.45) 0%, transparent 100%);
+  filter: blur(30px);
+}
+
+/* two-column grid */
+.cn-fields-grid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px 32px;
+}
+
+.cn-fields-col {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* each label : input row */
+.cn-field-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cn-label {
+  width: 160px;
+  flex-shrink: 0;
+  text-align: right;
+  font-size: 18px;
+  font-weight: 600;
+  color: #8E96B0;
+  transition: color 0.15s;
+}
+
+/* label turns orange when its input is focused */
+.cn-field-row:focus-within .cn-label {
+  color: #F59E0B;
+}
+
+.cn-colon {
+  font-size: 18px;
+  font-weight: 600;
+  color: #8E96B0;
+  flex-shrink: 0;
+}
+
+.cn-input-wrap {
+  flex: 1;
+  position: relative;
+}
+
+.cn-input {
+  width: 100%;
+  height: 40px;
+  background: #1C2028;
+  border: 1px solid rgba(80, 88, 110, 0.4);
+  border-radius: 8px;
+  padding: 0 12px;
+  color: #fff;
+  font-family: Inter, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  outline: none;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+
+/* HOVER — orange */
+.cn-input:hover {
+  border-color: rgba(245, 158, 11, 0.65);
+  background: #1F2430;
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.15);
+}
+
+/* FOCUS — blue */
+.cn-input:focus {
+  border-color: #3B82F6;
+  background: #1C2028;
+  box-shadow: 0 0 0 1px #3B82F6;
+}
+
+/* ── DIVIDER ── */
+.cn-divider {
+  height: 1px;
+  background: rgba(145, 145, 145, 0.39);
+  flex-shrink: 0;
+}
+
+/* ══════════════════════════════════════════
+   ITEMS TABLE — new component styles
+   Scoped to: .items-section, .items-header,
+              .table-wrapper, .items-table,
+              .item-delete-btn, .item-empty-state
+══════════════════════════════════════════ */
+
+/* Items section wrapper — replaces old .cn-table-area */
+.items-section.cn-table-area {
+  flex: 1;
+  overflow: hidden;
+  padding: 16px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Header row above table */
+.items-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 8px;
+  flex-shrink: 0;
+}
+
+.items-header h2 {
+  font-size: 16px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* Add Item button */
+.items-header button {
+  padding: 8px 16px;
+  font-size: 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: transparent;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.3s;
+  font-family: 'Inter', sans-serif;
+  display: flex;
+  align-items: center;
+}
+
+.items-header button:hover {
+  color: white;
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+/* Scrollable wrapper */
+.table-wrapper {
+  overflow-x: auto;
+  overflow-y: auto;
+  flex: 1;
+  border-radius: 4px;
+}
+
+/* Table base */
+.items-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 700px;
+}
+
+/* thead */
+.items-table thead {
+  background: #111316;
+  border-top: 3px solid white;
+  border-left: 3px solid white;
+  border-right: 3px solid white;
+  border-bottom: 1px solid white;
+}
+
+.items-table th {
+  padding: 16px 12px;
+  color: white;
+  font-weight: 500;
+  font-size: 18px;
+  line-height: 30px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+/* tbody rows */
+.items-table tbody tr {
+  background: #111316;
+  border-left: 3px solid white;
+  border-right: 3px solid white;
+  border-bottom: 2px solid white;
+  transition: background-color 0.2s;
+}
+
+.items-table tbody tr:nth-child(even) {
+  background: #13171B;
+}
+
+/* tbody cells */
+.items-table td {
+  padding: 12px;
+  color: white;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+/* Inputs inside table cells */
+.items-table input[type="text"],
+.items-table input[type="number"] {
+  background: transparent;
+  border: none;
+  color: white;
+  font-weight: 500;
+  font-size: 14px;
+  padding: 4px;
+  width: 100%;
+  font-family: 'Inter', sans-serif;
+  transition: background-color 0.2s;
+}
+
+.items-table input[type="text"]:focus,
+.items-table input[type="number"]:focus {
+  outline: none;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+}
+
+/* Delete button (appears on row hover) */
+.item-delete-btn {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.3);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  opacity: 0;
+  transition: opacity 0.2s, color 0.2s;
+}
+
+.items-table tbody tr:hover .item-delete-btn {
+  opacity: 1;
+}
+
+.item-delete-btn:hover {
+  color: #f87171;
+}
+
+/* Empty state row */
+.item-empty-state {
+  text-align: center;
+  padding: 40px 16px;
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 14px;
+  background: #111316;
+  border-left: 3px solid white;
+  border-right: 3px solid white;
+  border-bottom: 2px solid white;
+}
+
+/* ══════════════════════════════════════════
+   ACTION BAR
+══════════════════════════════════════════ */
+.action-bar {
+  flex-shrink: 0;
+  border-top: 1px solid rgba(145, 145, 145, 0.39);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 18px 12px;
+}
+
+.action-btn {
+  background: #1C2028;
+  border: 1px solid rgba(233, 112, 32, 0.29);
+  border-radius: 12px;
+  cursor: pointer;
+  font-family: Inter, sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  padding: 6px 16px;
+  outline: none;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+
+/* ACTIVE colour */
+.action-btn.active {
+  color: #D58615;
+}
+
+/* INACTIVE */
+.action-btn.inactive {
+  color: #7A6030;
+  cursor: default;
+  border-color: transparent;
+  background: none;
+}
+
+/* HOVER — orange */
+.action-btn.active:hover {
+  border-color: rgba(245, 158, 11, 0.65);
+  background: #1F2430;
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.15);
+}
+
+/* CLICK — green */
+.action-btn.active:active {
+  border-color: #37e920;
+  background: #1C2028;
+  color: #fff;
+  box-shadow: 0 0 0 1px #37e920;
+}
+
+/* FOCUS (after click, tab) — green */
+.action-btn.active:focus {
+  border-color: #37e920;
+  background: #1C2028;
+  color: #fff;
+  box-shadow: 0 0 0 1px #37e920;
+}
+
+/* SELECTED — green (set by JS) */
+.action-btn.active.selected {
+  border-color: #37e920;
+  background: #1C2028;
+  color: #fff;
+  box-shadow: 0 0 0 1px #37e920;
+}
+
+/* SELECTED + HOVER — green holds */
+.action-btn.active.selected:hover {
+  border-color: #37e920;
+  background: #1C2028;
+  box-shadow: 0 0 0 1px #37e920;
+}
+
+/* Column dividers */
+.items-table th,
+.items-table td {
+  border-right: 2px solid white;
+}
+
+.items-table th:last-child,
+.items-table td:last-child {
+  border-right: none;
+}
