@@ -1,6 +1,8 @@
 from datetime import datetime
 
-from flask import Blueprint, jsonify, render_template
+from flask import Blueprint, jsonify, render_template, session
+
+from .auth import login_required
 
 from ..extensions import db
 from ..models.core import Item
@@ -11,8 +13,15 @@ core_bp = Blueprint("core", __name__)
 
 
 @core_bp.route("/")
+@login_required
 def dashboard():
-    return render_template("dashboard.html")
+    current_user = {
+        "id": session.get("user_id"),
+        "username": session.get("username"),
+        "name": session.get("name"),
+        "role": session.get("role")
+    }
+    return render_template("dashboard.html", current_user=current_user)
 
 
 @core_bp.route("/api/health", methods=["GET"])

@@ -57,10 +57,13 @@
         <!-- ════ MAIN PANEL ════ -->
         <main class="main">
 
-            <p class="instruction">Enter your password to access the system</p>
-
+            <p class="instruction">Enter your credentials to access the system</p>
             <form id="login-form" novalidate>
-
+                <p class="pw-label">Username</p>
+                <div class="input-wrapper">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-user"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    <input type="text" id="username" placeholder="Username" autocomplete="username" />
+                </div>
                 <p class="pw-label">Password</p>
 
                 <div class="input-wrapper">

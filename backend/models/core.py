@@ -1,7 +1,7 @@
 from datetime import datetime
 import uuid
 from sqlalchemy.dialects.postgresql import UUID, JSONB
-from pgvector.sqlalchemy import Vector
+# from pgvector.sqlalchemy import Vector
 from ..extensions import db
 
 class Role(db.Model):
@@ -27,6 +27,8 @@ class User(db.Model):
 
     user_id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     username = db.Column(db.String(50), nullable=False, unique=True)
+    name = db.Column(db.String(100))
+    phone = db.Column(db.String(20))
     password_hash = db.Column(db.Text, nullable=False)
     role_id = db.Column(db.Integer, db.ForeignKey('roles.role_id'), nullable=False)
     salesman_id = db.Column(db.Integer, db.ForeignKey('salesmen.salesman_id'), nullable=True) # Will be resolved when salesmen table is created
@@ -255,7 +257,7 @@ class Customer(db.Model):
     gstin = db.Column(db.String(15))
 
     face_image_url = db.Column(db.Text)
-    face_embedding = db.Column(Vector(128))
+    face_embedding = db.Column(JSONB)
     last_face_scan_at = db.Column(db.DateTime)
     is_chronic_patient = db.Column(db.Boolean, nullable=False, default=False)
     risk_score = db.Column(db.Integer, nullable=False, default=0)

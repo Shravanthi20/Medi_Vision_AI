@@ -364,18 +364,23 @@
   <div class="sec-hd"><span class="sec-t">Users &amp; Role Access</span></div>
   <div class="crd" style="padding:12px;margin-bottom:12px">
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
-      <input type="text" id="u-name" placeholder="User name" style="min-width:180px;background:#252a40;border:1px solid var(--brd);border-radius:7px;padding:7px 10px;color:var(--tx)"/>
-      <input type="text" id="u-phone" placeholder="Phone / Email" style="min-width:180px;background:#252a40;border:1px solid var(--brd);border-radius:7px;padding:7px 10px;color:var(--tx)"/>
+      <input type="hidden" id="u-id"/>
+      <input type="text" id="u-name" placeholder="Name" style="min-width:150px;background:#252a40;border:1px solid var(--brd);border-radius:7px;padding:7px 10px;color:var(--tx)"/>
+      <input type="text" id="u-user" placeholder="Username" style="min-width:150px;background:#252a40;border:1px solid var(--brd);border-radius:7px;padding:7px 10px;color:var(--tx)"/>
+      <input type="text" id="u-phone" placeholder="Contact" style="min-width:150px;background:#252a40;border:1px solid var(--brd);border-radius:7px;padding:7px 10px;color:var(--tx)"/>
+      <input type="text" id="u-code" placeholder="Code" style="min-width:100px;background:#252a40;border:1px solid var(--brd);border-radius:7px;padding:7px 10px;color:var(--tx)"/>
+      <input type="password" id="u-pass" placeholder="Login Password" style="min-width:150px;background:#252a40;border:1px solid var(--brd);border-radius:7px;padding:7px 10px;color:var(--tx)"/>
       <select id="u-role" style="background:#252a40;border:1px solid var(--brd);border-radius:7px;padding:7px 10px;color:var(--tx)">
-        <option value="user">User</option>
+        <option value="junior">Junior Staff</option>
+        <option value="user">Staff</option>
         <option value="manager">Manager</option>
-        <option value="super_user">Super User</option>
+        <option value="admin">Admin</option>
       </select>
-      <button class="btn btn-acc" onclick="addAppUser()"><i class="fas fa-user-plus"></i>Create User</button>
+      <button id="u-btn" class="btn btn-acc" onclick="addAppUser()"><i class="fas fa-user-plus"></i>Create User</button>
     </div>
     <div class="tw"><table>
-      <thead><tr><th>Name</th><th>Contact</th><th>Role</th><th>Action</th></tr></thead>
-      <tbody id="u-body"><tr><td colspan="4" style="text-align:center;color:var(--dim)">No users yet.</td></tr></tbody>
+      <thead><tr><th>Name</th><th>Contact</th><th>Code</th><th>Role</th><th>Action</th></tr></thead>
+      <tbody id="u-body"><tr><td colspan="5" style="text-align:center;color:var(--dim)">No users yet.</td></tr></tbody>
     </table></div>
   </div>
   <div class="crd" style="padding:12px">
@@ -716,17 +721,18 @@ function tk(){const n=new Date();document.getElementById('hd').textContent=pd(n.
 tk();setInterval(tk,1000);
 // Nav
 const ROLE_ACCESS={
-  owner_technical:['*'],
-  super_user:['sales','purchase','item','masters','reorder','system','utilities','sms','settings','users'],
+  admin:['*'],
   manager:['sales','purchase','item','masters','reorder','utilities','sms'],
-  user:['sales','reorder']
+  user:['sales','purchase','item','reorder'],
+  junior:['sales']
 };
-let APP_USERS=[],CUR_USER_ID='owner-tech';
+let APP_USERS=[];
+const CURRENT_USER = {{ current_user | tojson | safe }};
+
 function roleCanAccess(panel){
-  const u=APP_USERS.find(x=>x.id===CUR_USER_ID)||APP_USERS[0];
-  if(!u)return true;
-  const allow=ROLE_ACCESS[u.role]||[];
-  return allow.includes('*')||allow.includes(panel);
+  const role = CURRENT_USER.role;
+  const allow = ROLE_ACCESS[role] || ROLE_ACCESS['user'];
+  return allow.includes('*') || allow.includes(panel);
 }
 function sw(k,el){
   if(!roleCanAccess(k)){alert('Access denied for this role.');return;}
@@ -741,10 +747,13 @@ function sw(k,el){
   if(pn)pn.classList.add('on');
 }
 // Log
-function doLogout(){if(confirm('Logout?'))window.close();}
+async function doLogout(){
+  if(confirm('Logout?')) {
+    window.location.href = '/logout';
+  }
+}
 // Tabs (Masters)
-function stab(el,id){document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));el.classList.add('on');['mt-cust','mt-sup','mt-doc'].forEach(x=>document.getElementById(x).style.display='none');document.getElementById(id).style.display='block';}
-// POS
+function stab(el,id){document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));el.classList.add('on');['mt-cust','mt-sup','mt-doc','mt-shelf'].forEach(x=>{if(document.getElementById(x))document.getElementById(x).style.display='none'});document.getElementById(id).style.display='block';}
 // POS
 let MEDS=[], SHELVES=[], cart={}, pm='cash', AM=[];
 let heldBills=JSON.parse(localStorage.getItem('heldBills')||'[]');
@@ -759,18 +768,15 @@ const STATIC_BASE = USE_SEPARATE_BACKEND ? 'http://127.0.0.1:5001/static' : BASE
 function saveHeldBills(){localStorage.setItem('heldBills',JSON.stringify(heldBills));}
 function saveConnectorSites(){localStorage.setItem('connectorSites',JSON.stringify(connectorSites));}
 
-function initUsers(){
-  APP_USERS=JSON.parse(localStorage.getItem('appUsers')||'[]');
-  if(!APP_USERS.length){
-    APP_USERS=[
-      {id:'owner-tech',name:'Owner Technical (You)',contact:'owner@local',role:'owner_technical',locked:true},
-      {id:'super-demo',name:'Super User',contact:'super@local',role:'super_user'},
-      {id:'manager-demo',name:'Manager',contact:'manager@local',role:'manager'},
-      {id:'user-demo',name:'Billing User',contact:'user@local',role:'user'}
-    ];
-    localStorage.setItem('appUsers',JSON.stringify(APP_USERS));
+async function initUsers(){
+  try {
+    const res = await fetch(API + '/users');
+    if (res.ok) {
+        APP_USERS = await res.json();
+    }
+  } catch (err) {
+      console.error(err);
   }
-  CUR_USER_ID=localStorage.getItem('currentUserId')||APP_USERS[0].id;
   renderUserSwitch();
   renderUsersPanel();
   applyRoleAccess();
@@ -778,11 +784,24 @@ function initUsers(){
 
 function renderUserSwitch(){
   const sel=document.getElementById('user-switch');
-  if(!sel)return;
-  sel.innerHTML=APP_USERS.map(u=>`<option value="${u.id}">${u.name}</option>`).join('');
-  sel.value=CUR_USER_ID;
-  const u=APP_USERS.find(x=>x.id===CUR_USER_ID)||APP_USERS[0];
-  document.getElementById('role-badge').textContent=(u?.role||'user').replace('_',' ').toUpperCase();
+  if(sel) sel.style.display = 'none'; // hide the switcher since we don't allow hot-swapping
+  
+  const badge = document.getElementById('role-badge');
+  if (badge) badge.textContent=(CURRENT_USER.role||'user').replace('_',' ').toUpperCase();
+  
+  const ua = document.querySelector('.ua');
+  if (ua) {
+      let nameSpan = document.getElementById('logged-in-name');
+      if (!nameSpan) {
+          nameSpan = document.createElement('span');
+          nameSpan.id = 'logged-in-name';
+          nameSpan.style.color = 'var(--tx)';
+          nameSpan.style.fontSize = '12px';
+          nameSpan.style.marginRight = '8px';
+          if(badge) badge.parentNode.insertBefore(nameSpan, badge);
+      }
+      nameSpan.textContent = CURRENT_USER.name || CURRENT_USER.username;
+  }
 }
 
 function applyRoleAccess(){
@@ -800,36 +819,79 @@ function applyRoleAccess(){
   }
 }
 
-function addAppUser(){
+async function addAppUser(){
+  const uid=document.getElementById('u-id').value;
   const n=document.getElementById('u-name').value.trim();
-  const c=document.getElementById('u-phone').value.trim();
+  const user=document.getElementById('u-user').value.trim();
+  const phone=document.getElementById('u-phone').value.trim();
+  const code=document.getElementById('u-code').value.trim();
+  const pass=document.getElementById('u-pass').value.trim();
   const r=document.getElementById('u-role').value;
-  if(!n){alert('Enter user name');return;}
-  APP_USERS.push({id:'u-'+Date.now(),name:n,contact:c,role:r});
-  localStorage.setItem('appUsers',JSON.stringify(APP_USERS));
-  document.getElementById('u-name').value='';document.getElementById('u-phone').value='';
-  renderUserSwitch();renderUsersPanel();applyRoleAccess();
+  if(!n || !user || (!uid && !pass)){alert('Enter name, username, and password');return;}
+  
+  try {
+    const res = await fetch(API + '/users', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({id: uid, username: user, name: n, role: r, phone: phone, code: code, password: pass})
+    });
+    const result = await res.json();
+    if(result.status === 'success') {
+        document.getElementById('u-id').value='';
+        document.getElementById('u-name').value='';
+        document.getElementById('u-user').value='';
+        document.getElementById('u-phone').value='';
+        document.getElementById('u-code').value='';
+        document.getElementById('u-pass').value='';
+        document.getElementById('u-btn').innerHTML='<i class="fas fa-user-plus"></i>Create User';
+        initUsers();
+    } else {
+        alert(result.message || 'Error creating user');
+    }
+  } catch (err) {
+      console.error(err);
+      alert('Error creating/updating user');
+  }
 }
 
-function removeAppUser(id){
-  const u=APP_USERS.find(x=>x.id===id);
-  if(!u || u.locked){alert('This user is protected.');return;}
-  APP_USERS=APP_USERS.filter(x=>x.id!==id);
-  if(CUR_USER_ID===id)CUR_USER_ID=APP_USERS[0].id;
-  localStorage.setItem('appUsers',JSON.stringify(APP_USERS));
-  localStorage.setItem('currentUserId',CUR_USER_ID);
-  renderUserSwitch();renderUsersPanel();applyRoleAccess();
+function editAppUser(id) {
+    const u = APP_USERS.find(x => x.id == id);
+    if(u) {
+        document.getElementById('u-id').value = u.id;
+        document.getElementById('u-name').value = u.name;
+        document.getElementById('u-user').value = u.username;
+        document.getElementById('u-phone').value = u.phone || '';
+        document.getElementById('u-code').value = u.code || '';
+        document.getElementById('u-role').value = u.role;
+        document.getElementById('u-pass').value = ''; // don't pre-fill password
+        document.getElementById('u-btn').innerHTML='<i class="fas fa-user-edit"></i>Update User';
+        document.getElementById('u-name').focus();
+    }
+}
+
+async function removeAppUser(id){
+  if(confirm('Delete user?')) {
+      try {
+          const res = await fetch(API + '/users/' + id, {method: 'DELETE'});
+          if(res.ok) {
+              initUsers();
+          }
+      } catch (err) {
+          console.error(err);
+      }
+  }
 }
 
 function renderUsersPanel(){
   const tb=document.getElementById('u-body');
+  const dRole=(r)=>r==='user'?'staff':(r==='junior'?'junior staff':r);
   if(tb){
-    tb.innerHTML=APP_USERS.map(u=>`<tr><td>${u.name}</td><td>${u.contact||'—'}</td><td><span class="bx bo">${u.role}</span></td><td style="text-align:right">${u.locked?'<span style="color:var(--dim)">Protected</span>':`<button class="btn btn-r" style="padding:4px 8px" onclick="removeAppUser('${u.id}')">Delete</button>`}</td></tr>`).join('');
+    tb.innerHTML=APP_USERS.map(u=>`<tr><td>${u.name} (${u.username})</td><td>${u.phone||'—'}</td><td>${u.code||'—'}</td><td><span class="bx bo">${dRole(u.role)}</span></td><td style="text-align:right"><button class="btn btn-out" style="padding:4px 8px;margin-right:5px" onclick="editAppUser('${u.id}')">Edit</button><button class="btn btn-r" style="padding:4px 8px" onclick="removeAppUser('${u.id}')">Delete</button></td></tr>`).join('');
   }
   const rb=document.getElementById('role-body');
   if(rb){
     const yn=(k,p)=>((ROLE_ACCESS[k]||[]).includes('*')||(ROLE_ACCESS[k]||[]).includes(p))?'Yes':'No';
-    rb.innerHTML=['owner_technical','super_user','manager','user'].map(k=>`<tr><td>${k}</td><td>${yn(k,'sales')}</td><td>${yn(k,'purchase')}</td><td>${yn(k,'item')}</td><td>${yn(k,'masters')}</td><td>${yn(k,'reorder')}</td><td>${yn(k,'utilities')}</td><td>${yn(k,'system')}</td><td>${yn(k,'users')}</td></tr>`).join('');
+    rb.innerHTML=['admin','manager','user','junior'].map(k=>`<tr><td>${dRole(k)}</td><td>${yn(k,'sales')}</td><td>${yn(k,'purchase')}</td><td>${yn(k,'item')}</td><td>${yn(k,'masters')}</td><td>${yn(k,'reorder')}</td><td>${yn(k,'utilities')}</td><td>${yn(k,'system')}</td><td>${yn(k,'users')}</td></tr>`).join('');
   }
 }
 
@@ -1532,7 +1594,7 @@ function dnSal(){
 function prInv(){
     const w=window.open('','_blank');
     let rows=MEDS.map(i=>`<tr><td>${i.n}</td><td>${i.batch}</td><td>${i.expiry}</td><td>${i.s}</td><td>₹${i.p}</td></tr>`).join('');
-    w.document.write(`<html><head><title>Inventory Report</title><style>body{font-family:sans-serif;padding:30px}table{width:100%;border-collapse:collapse;margin-top:20px}th,td{border:1px solid #ddd;padding:8px;text-align:left}th{background:#f4f4f4}h2{margin:0}</style></head><body><h2>SELVAM MEDICALS - Inventory Report</h2><p>Date: ${new Date().toLocaleDateString()}</p><table><thead><tr><th>Medicine</th><th>Batch</th><th>Expiry</th><th>Stock</th><th>MRP</th></tr></thead><tbody>${rows}</tbody></table><script>window.print()<\/script></body></html>`);
+    w.document.write(`<html><head><title>Inventory Report</title><style>body{font-family:sans-serif;padding:30px}table{width:100%;border-collapse:collapse;margin-top:20px}th,td{border:1px solid #ddd;padding:8px;text-align:left}th{background:#f4f4f4}h2{margin:0}</style></head><body><h2>SELVAM MEDICALS - Inventory Report</h2><p>Date: ${new Date().toLocaleDateString()}</p><table><thead><tr><th>Medicine</th><th>Batch</th><th>Expiry</th><th>Stock</th><th>MRP</th></tr></thead><tbody>${rows}</tbody></table><script>window.print()<\/scr` + `ipt></body></html>`);
     w.document.close();
 }
 function prExp(){
@@ -1543,13 +1605,13 @@ function prExp(){
         const ed=new Date(i.expiry), diff=(ed-now)/(1000*60*60*24);
         return `<tr><td>${i.n}</td><td>${i.batch}</td><td>${i.expiry}</td><td>${i.s}</td><td>${Math.ceil(diff)} days</td></tr>`;
     }).join('');
-    w.document.write(`<html><head><title>Expiry Report</title><style>body{font-family:sans-serif;padding:30px}table{width:100%;border-collapse:collapse;margin-top:20px}th,td{border:1px solid #ddd;padding:8px;text-align:left}th{background:#f4f4f4}h2{margin:0}</style></head><body><h2>SELVAM MEDICALS - Expiry Report</h2><p>As of: ${new Date().toLocaleDateString()}</p><table><thead><tr><th>Medicine</th><th>Batch</th><th>Expiry Date</th><th>Stock</th><th>Days Left</th></tr></thead><tbody>${rows||'<tr><td colspan="5">No items.</td></tr>'}</tbody></table><script>window.print()<\/script></body></html>`);
+    w.document.write(`<html><head><title>Expiry Report</title><style>body{font-family:sans-serif;padding:30px}table{width:100%;border-collapse:collapse;margin-top:20px}th,td{border:1px solid #ddd;padding:8px;text-align:left}th{background:#f4f4f4}h2{margin:0}</style></head><body><h2>SELVAM MEDICALS - Expiry Report</h2><p>As of: ${new Date().toLocaleDateString()}</p><table><thead><tr><th>Medicine</th><th>Batch</th><th>Expiry Date</th><th>Stock</th><th>Days Left</th></tr></thead><tbody>${rows||'<tr><td colspan="5">No items.</td></tr>'}</tbody></table><script>window.print()<\/scr` + `ipt></body></html>`);
     w.document.close();
 }
 function prSal(){
     const w=window.open('','_blank');
     let rows=allBills.map(b=>`<tr><td>${b.id}</td><td>${b.date}</td><td>${b.cust}</td><td>₹${b.total.toFixed(2)}</td><td>${b.pay}</td></tr>`).join('');
-    w.document.write(`<html><head><title>Sales History</title><style>body{font-family:sans-serif;padding:30px}table{width:100%;border-collapse:collapse;margin-top:20px}th,td{border:1px solid #ddd;padding:8px;text-align:left}th{background:#f4f4f4}h2{margin:0}</style></head><body><h2>SELVAM MEDICALS - Sales History</h2><p>Print Date: ${new Date().toLocaleDateString()}</p><table><thead><tr><th>Bill ID</th><th>Date</th><th>Customer</th><th>Total</th><th>Payment</th></tr></thead><tbody>${rows}</tbody></table><script>window.print()<\/script></body></html>`);
+    w.document.write(`<html><head><title>Sales History</title><style>body{font-family:sans-serif;padding:30px}table{width:100%;border-collapse:collapse;margin-top:20px}th,td{border:1px solid #ddd;padding:8px;text-align:left}th{background:#f4f4f4}h2{margin:0}</style></head><body><h2>SELVAM MEDICALS - Sales History</h2><p>Print Date: ${new Date().toLocaleDateString()}</p><table><thead><tr><th>Bill ID</th><th>Date</th><th>Customer</th><th>Total</th><th>Payment</th></tr></thead><tbody>${rows}</tbody></table><script>window.print()<\/scr` + `ipt></body></html>`);
     w.document.close();
 }
 function pb2(){
@@ -1603,11 +1665,6 @@ function pb2(){
     w.document.close();
   }).catch(e=>alert('Bill Save Error: '+e.message));
 }
-
-loadInventory();
-rKpis();
-rPurchases();
-rMasters();
 
 function rBckMod(){
     const m=document.getElementById('rep-mod'), t=document.getElementById('rep-title'), c=document.getElementById('rep-content');
@@ -1688,7 +1745,7 @@ function prFullPdf(){
         <table><thead><tr><th>Bill ID</th><th>Date</th><th>Customer</th><th>Total</th></tr></thead><tbody>${sRows||'<tr><td colspan="4">No sales history.</td></tr>'}</tbody></table>
         
         <p style="margin-top:40px;font-size:11px;color:#64748b;text-align:center">This is an automated system audit report generated by Selvam Medicals POS.</p>
-        <script>window.print()<\/script>
+        <script>window.print()<\/scr` + `ipt>
     </body></html>`);
     w.document.close();
 }
@@ -1883,6 +1940,10 @@ window.onload = () => {
   document.querySelectorAll('.ni').forEach(n => n.tabIndex = 0);
   document.getElementById('ms').focus();
   initUsers();
+  loadInventory();
+  rKpis();
+  rPurchases();
+  rMasters();
   initBillResizer();
   renderHeldBills();
   renderConnectorSites();
