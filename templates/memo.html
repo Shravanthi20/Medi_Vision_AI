@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@700&family=Jersey+15&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="{{ url_for('static', filename='css/sidebar-header.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/memo.css') }}">
@@ -160,17 +160,17 @@
         </div><!-- /memo-card -->
       </div><!-- /center-stage -->
 
-      <!-- BOTTOM ACTION BAR -->
+      <!-- BOTTOM ACTION BAR — plain text menu -->
       <div class="action-bar">
-        <button class="action-btn active">Add</button>
-        <button class="action-btn inactive">Modify</button>
-        <button class="action-btn inactive">Delete</button>
-        <button class="action-btn active">View</button>
-        <button class="action-btn active">Go To</button>
-        <button class="action-btn active">Next</button>
-        <button class="action-btn active">Prior</button>
-        <button class="action-btn inactive">Options</button>
-        <button class="action-btn active">Exit</button>
+        <button class="action-item active">Add</button>
+        <button class="action-item dimmed">Modify</button>
+        <button class="action-item dimmed">Delete</button>
+        <button class="action-item active">View</button>
+        <button class="action-item active">Go To</button>
+        <button class="action-item active">Next</button>
+        <button class="action-item active">Prior</button>
+        <button class="action-item dimmed">Options</button>
+        <button class="action-item active">Exit</button>
       </div>
 
     </div><!-- /content-area -->
@@ -181,36 +181,6 @@
 
 <script src="{{ url_for('static', filename='js/sidebar-header.js') }}"></script>
 <script src="{{ url_for('static', filename='js/memo.js') }}"></script>
-
-<script>
-  const mainPanel = document.getElementById('mainPanel');
-
-  // ACTION BUTTONS — click = green, panel = blue
-  document.querySelectorAll('.action-btn.active').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const isSelected = btn.classList.contains('selected');
-      document.querySelectorAll('.action-btn').forEach(b => b.classList.remove('selected'));
-      if (!isSelected) {
-        btn.classList.add('selected');
-        mainPanel.classList.add('panel-active');
-      } else {
-        mainPanel.classList.remove('panel-active');
-      }
-    });
-  });
-
-  // FORM INPUTS — focus = green, panel = blue
-  document.querySelectorAll('.form-input').forEach(input => {
-    input.addEventListener('focus', () => {
-      mainPanel.classList.add('panel-active');
-    });
-    input.addEventListener('blur', () => {
-      if (!document.querySelector('.action-btn.selected')) {
-        mainPanel.classList.remove('panel-active');
-      }
-    });
-  });
-</script>
 
 </body>
 </html>

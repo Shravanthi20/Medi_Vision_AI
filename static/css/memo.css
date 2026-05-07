@@ -2,7 +2,7 @@
    memo.css — Memo page styles
    Sidebar + Header → sidebar-header.css
 
-   STATE FLOW: Hover → Orange | Focus/Active → Green | Panel → Blue
+   STATE FLOW: Hover → Orange | Focus → Blue | Panel → Blue
 ═══════════════════════════════════════════════════════════ */
 
 *, *::before, *::after {
@@ -192,61 +192,65 @@ body {
   color: #9CA3AF;
 }
 
-/* ── BOTTOM ACTION BAR ── */
+/* ══════════════════════════════════════════
+   ACTION BAR — plain text menu
+══════════════════════════════════════════ */
 .action-bar {
   flex-shrink: 0;
   border-top: 1px solid rgba(145, 145, 145, 0.39);
+  background: #0E1117;
   display: flex;
   justify-content: space-around;
   align-items: center;
-  padding: 18px 12px;
+  padding: 14px 24px;
 }
 
-.action-btn {
-  background: #1C2028;
-  border: 1px solid rgba(233, 112, 32, 0.29);
-  border-radius: 12px;
-  cursor: pointer;
-  font-family: Inter, sans-serif;
-  font-size: 18px;
-  font-weight: 600;
-  padding: 6px 16px;
+.action-item {
+  /* strip all button defaults */
+  appearance: none;
+  -webkit-appearance: none;
+  background: none;
+  border: none;
   outline: none;
-  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+  box-shadow: none;
+  padding: 0;
+  margin: 0;
+  border-radius: 0;
+
+  /* text */
+  font-family: Inter, sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.15s;
 }
 
-/* ACTIVE colour */
-.action-btn.active {
+/* active — full amber */
+.action-item.active {
   color: #D58615;
 }
 
-/* INACTIVE */
-.action-btn.inactive {
+/* dimmed — muted, not clickable */
+.action-item.dimmed {
   color: #7A6030;
   cursor: default;
-  border-color: transparent;
-  background: none;
+  pointer-events: none;
 }
 
-/* HOVER — orange (active buttons only) */
-.action-btn.active:hover {
-  border-color: rgba(245, 158, 11, 0.65);
-  background: #1F2430;
-  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.15);
+/* hover — brighter amber, no box */
+.action-item.active:hover {
+  color: #FBBF24;
 }
 
-/* CLICK — green */
-.action-btn.active:active {
-  border-color: #37e920;
-  background: #1C2028;
-  color: #fff;
-  box-shadow: 0 0 0 1px #37e920;
+/* click — lighter orange */
+.action-item.active:active {
+  color: #FDE68A;
 }
 
-/* FOCUS (after click, tab) — green */
-.action-btn.active:focus {
-  border-color: #37e920;
-  background: #1C2028;
-  color: #fff;
-  box-shadow: 0 0 0 1px #37e920;
+/* focus — lighter orange, no border */
+.action-item.active:focus-visible {
+  color: #FDE68A;
+  outline: none;
 }

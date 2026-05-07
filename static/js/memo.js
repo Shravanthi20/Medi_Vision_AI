@@ -25,10 +25,10 @@
     });
   });
 
-  /* ── Action buttons ── */
-  var actionBtns = document.querySelectorAll('.action-btn.active');
+  /* ── Action items ── */
+  var actionItems = document.querySelectorAll('.action-item.active');
 
-  actionBtns.forEach(function (btn) {
+  actionItems.forEach(function (btn) {
     btn.addEventListener('click', function () {
       var label = btn.textContent.trim();
 
