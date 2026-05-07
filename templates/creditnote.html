@@ -7,7 +7,6 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <!-- Inter (body), JetBrains Mono (FY + clock), Jersey 15 (date/day) -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@700&family=Jersey+15&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="{{ url_for('static', filename='css/sidebar-header.css') }}">
@@ -87,10 +86,9 @@
         <span class="breadcrumb-current">Credit Note</span>
       </div>
 
-      <!-- FORM HEADER (blue glow section) -->
+      <!-- FORM HEADER -->
       <div class="cn-form-header">
         <div class="cn-glow"></div>
-
         <div class="cn-fields-grid">
           <!-- LEFT COLUMN -->
           <div class="cn-fields-col">
@@ -161,12 +159,8 @@
       <!-- DIVIDER -->
       <div class="cn-divider"></div>
 
-      <!-- ═══════════════════════════════════════
-           ITEMS TABLE — replaced with new component
-      ═══════════════════════════════════════ -->
+      <!-- ITEMS TABLE -->
       <div class="items-section cn-table-area">
-
-
         <div class="table-wrapper">
           <table class="items-table" id="itemsTable">
             <thead>
@@ -180,7 +174,6 @@
                 <th style="width: 10%">M.R.P</th>
                 <th style="width: 9%">Disc</th>
                 <th style="width: 10%">Value</th>
-           
               </tr>
             </thead>
             <tbody id="tableBody">
@@ -189,22 +182,21 @@
           </table>
         </div>
       </div>
-      <!-- ═══════════════════════════════════════ -->
 
       <!-- DIVIDER -->
       <div class="cn-divider"></div>
 
-      <!-- BOTTOM ACTION BAR -->
+      <!-- ── BOTTOM ACTION BAR — plain text menu ── -->
       <div class="action-bar">
-        <button class="action-btn active">Add</button>
-        <button class="action-btn inactive">Modify</button>
-        <button class="action-btn inactive">Delete</button>
-        <button class="action-btn active">View</button>
-        <button class="action-btn active">Go To</button>
-        <button class="action-btn active">Next</button>
-        <button class="action-btn active">Prior</button>
-        <button class="action-btn inactive">Options</button>
-        <button class="action-btn active">Exit</button>
+        <button class="action-item active">Add</button>
+        <button class="action-item dimmed">Modify</button>
+        <button class="action-item dimmed">Delete</button>
+        <button class="action-item active">View</button>
+        <button class="action-item active">Go To</button>
+        <button class="action-item active">Next</button>
+        <button class="action-item active">Prior</button>
+        <button class="action-item dimmed">Options</button>
+        <button class="action-item active">Exit</button>
       </div>
 
     </div><!-- /content-area -->

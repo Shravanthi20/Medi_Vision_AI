@@ -1,15 +1,10 @@
 /* credit-note.js
    STATE FLOW: Hover → Orange (CSS) | Click → Green | Panel → Blue
-   TABLE: New component with editable rows, add/delete, summary sync */
+   CHANGED: buildRow, deleteRow, addEmptyRow, updateTotals, Enter nav, del-btn */
 
 const mainPanel = document.getElementById('mainPanel');
 
-/* ══════════════════════════════════════════
-   TABLE COMPONENT — data & logic
-   (replaces old static cn-tbody injection)
-══════════════════════════════════════════ */
-
-// Seed data — replace or populate from your API/store
+/* ── Seed data ── */
 const items = [
   { id: 1, code: "UPAR39", itemName: "Parachute JAS 200 ml", batch: "003", expDate: "12/2027", term: "Expiry", qty: 1, mrp: 135.00, disc: 0, value: 115.58 },
   { id: 2, code: "UPAR39", itemName: "Parachute JAS 200 ml", batch: "003", expDate: "12/2027", term: "Expiry", qty: 1, mrp: 135.00, disc: 0, value: 115.58 },
@@ -19,130 +14,125 @@ const items = [
   { id: 6, code: "UPAR39", itemName: "Parachute JAS 200 ml", batch: "003", expDate: "12/2027", term: "Expiry", qty: 1, mrp: 135.00, disc: 0, value: 115.58 },
 ];
 
-let nextId = items.length + 1;
+/* ══════════════════════════════════════════
+   CHANGED: buildRow — every td is an input
+══════════════════════════════════════════ */
+function buildRow(item, idx) {
+  const row = document.createElement('tr');
 
-/**
- * Renders all rows into #tableBody.
- * Shows an empty-state row when items array is empty.
- */
+  const cols = [
+    ['txt', item.code,                           'text'],
+    ['txt', item.itemName,                       'text'],
+    ['txt', item.batch,                          'text'],
+    ['txt', item.expDate,                        'text'],
+    ['txt', item.term,                           'text'],
+    ['num', parseFloat(item.qty).toFixed(0),     'number'],
+    ['num', parseFloat(item.mrp).toFixed(2),     'number'],
+    ['num', parseFloat(item.disc).toFixed(2),    'number'],
+    ['num', parseFloat(item.value).toFixed(2),   'number'],
+  ];
+
+  cols.forEach(function(col, ci) {
+    const td = document.createElement('td');
+    td.className      = col[0];
+    td.style.position = 'relative';
+
+    const inp = document.createElement('input');
+    inp.type  = col[2];
+    inp.value = col[1];
+    if (col[2] === 'number') inp.step = '0.01';
+
+    inp.addEventListener('change', updateTotals);
+
+    /* Enter key — move to next input, or add new row if last */
+    inp.addEventListener('keydown', function(e) {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      const all    = Array.from(document.querySelectorAll('#tableBody tr td input'));
+      const myIdx  = all.indexOf(inp);
+      const isLast = myIdx === all.length - 1;
+      if (isLast) { addEmptyRow(); }
+      else        { const next = all[myIdx + 1]; if (next) next.focus(); }
+    });
+
+    /* Shift+Delete — remove this row */
+    inp.addEventListener('keydown', function(e) {
+      if (e.key === 'Delete' && e.shiftKey) deleteRow(row);
+    });
+
+    td.appendChild(inp);
+
+    /* del-btn on last cell only */
+    if (ci === cols.length - 1) {
+      const btn       = document.createElement('button');
+      btn.className   = 'del-btn';
+      btn.textContent = '×';
+      btn.title       = 'Delete row';
+      btn.addEventListener('click', function() { deleteRow(row); });
+      td.appendChild(btn);
+    }
+
+    row.appendChild(td);
+  });
+
+  return row;
+}
+
+/* CHANGED: delete row + recalc */
+function deleteRow(row) {
+  row.remove();
+  updateTotals();
+}
+
+/* CHANGED: add blank row, focus first cell */
+function addEmptyRow() {
+  const tbody = document.getElementById('tableBody');
+  const blank = { code: '', itemName: '', batch: '', expDate: '', term: '', qty: 0, mrp: 0, disc: 0, value: 0 };
+  const row   = buildRow(blank, tbody.rows.length);
+  tbody.appendChild(row);
+  row.querySelector('input').focus();
+}
+
+/* CHANGED: renderTable uses buildRow */
 function renderTable() {
   const tbody = document.getElementById('tableBody');
   tbody.innerHTML = '';
 
   if (items.length === 0) {
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="10" class="item-empty-state">
-          No items added yet. Click "Add Item" to get started.
-        </td>
-      </tr>`;
-    updateSummary();
+    tbody.innerHTML = `<tr><td colspan="9" class="item-empty-state">No items added yet.</td></tr>`;
+    updateTotals();
     return;
   }
 
-  items.forEach((item) => {
-    const row = document.createElement('tr');
-    row.innerHTML = `
-      <td><input type="text"   value="${item.code}"     onchange="updateItem(${item.id}, 'code', this.value)"></td>
-      <td><input type="text"   value="${item.itemName}" onchange="updateItem(${item.id}, 'itemName', this.value)"></td>
-      <td><input type="text"   value="${item.batch}"    onchange="updateItem(${item.id}, 'batch', this.value)"></td>
-      <td><input type="text"   value="${item.expDate}"  onchange="updateItem(${item.id}, 'expDate', this.value)"></td>
-      <td><input type="text"   value="${item.term}"     onchange="updateItem(${item.id}, 'term', this.value)"></td>
-      <td><input type="number" value="${item.qty}"      onchange="updateItem(${item.id}, 'qty', this.value)"></td>
-      <td><input type="number" value="${item.mrp}"      onchange="updateItem(${item.id}, 'mrp', this.value)"></td>
-      <td><input type="number" value="${item.disc}"     onchange="updateItem(${item.id}, 'disc', this.value)"></td>
-      <td>${item.value.toFixed(2)}</td>
-
-    `;
-    tbody.appendChild(row);
+  items.forEach(function(item, i) {
+    tbody.appendChild(buildRow(item, i));
   });
 
-  updateSummary();
+  updateTotals();
 }
 
-/**
- * Updates a single field on an item and re-renders.
- * @param {number} id   - item id
- * @param {string} key  - field name
- * @param {string} value - new raw value from input
- */
-function updateItem(id, key, value) {
-  const item = items.find(i => i.id === id);
-  if (!item) return;
-
-  if (key === 'qty' || key === 'mrp' || key === 'disc') {
-    item[key] = parseFloat(value) || 0;
-  } else {
-    item[key] = value;
-  }
-
-  renderTable();
-}
-
-/**
- * Removes an item by id and re-renders.
- * @param {number} id - item id
- */
-function deleteItem(id) {
-  const idx = items.findIndex(i => i.id === id);
-  if (idx !== -1) {
-    items.splice(idx, 1);
-    renderTable();
-  }
-}
-
-/**
- * Adds a blank row and re-renders.
- */
-function addItem() {
-  items.push({
-    id: nextId++,
-    code: '',
-    itemName: '',
-    batch: '',
-    expDate: '',
-    term: '',
-    qty: 1,
-    mrp: 0,
-    disc: 0,
-    value: 0,
+/* CHANGED: reads live from value inputs */
+function updateTotals() {
+  let total = 0;
+  document.querySelectorAll('#tableBody tr').forEach(function(row) {
+    const valInput = row.querySelector('td.num:last-child input');
+    if (valInput) total += parseFloat(valInput.value) || 0;
   });
-  renderTable();
+  const fmt = total.toFixed(2);
+  const sub = document.getElementById('totalValue');
+  if (sub) sub.textContent = fmt;
 }
 
-/**
- * Updates summary counters.
- * DEPENDENCY: requires #totalItems, #totalQty, #totalValue in the DOM.
- * Gracefully no-ops if those elements are absent.
- */
-function updateSummary() {
-  const totalItemsEl = document.getElementById('totalItems');
-  const totalQtyEl   = document.getElementById('totalQty');
-  const totalValueEl = document.getElementById('totalValue');
-
-  if (!totalItemsEl || !totalQtyEl || !totalValueEl) return;
-
-  const totalQty   = items.reduce((sum, item) => sum + item.qty,   0);
-  const totalValue = items.reduce((sum, item) => sum + item.value, 0);
-
-  totalItemsEl.textContent = items.length;
-  totalQtyEl.textContent   = totalQty;
-  totalValueEl.textContent = '₹' + totalValue.toFixed(2);
-}
-
-// Wire up Add Item button
-
-
-// Init table
+/* Init */
 renderTable();
 
 /* ══════════════════════════════════════════
    ACTION BUTTONS — click = green, panel = blue
 ══════════════════════════════════════════ */
-document.querySelectorAll('.action-btn.active').forEach(btn => {
-  btn.addEventListener('click', () => {
+document.querySelectorAll('.action-btn.active').forEach(function(btn) {
+  btn.addEventListener('click', function() {
     const isSelected = btn.classList.contains('selected');
-    document.querySelectorAll('.action-btn').forEach(b => b.classList.remove('selected'));
+    document.querySelectorAll('.action-btn').forEach(function(b) { b.classList.remove('selected'); });
     if (!isSelected) {
       btn.classList.add('selected');
       mainPanel.classList.add('panel-active');
@@ -155,11 +145,11 @@ document.querySelectorAll('.action-btn.active').forEach(btn => {
 /* ══════════════════════════════════════════
    FORM INPUTS — focus triggers blue panel border
 ══════════════════════════════════════════ */
-document.querySelectorAll('.cn-input').forEach(input => {
-  input.addEventListener('focus', () => {
+document.querySelectorAll('.cn-input').forEach(function(input) {
+  input.addEventListener('focus', function() {
     mainPanel.classList.add('panel-active');
   });
-  input.addEventListener('blur', () => {
+  input.addEventListener('blur', function() {
     if (!document.querySelector('.action-btn.selected')) {
       mainPanel.classList.remove('panel-active');
     }
