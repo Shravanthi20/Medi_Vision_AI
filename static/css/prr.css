@@ -85,17 +85,13 @@ body {
   flex: 1;
   display: flex;
   flex-direction: column;
-  /* Left-aligned, matching reference image padding */
   padding: 20px 24px 16px 24px;
   overflow: hidden;
   gap: 16px;
 }
 
 /* ══════════════════════════════════════════
-   INFO SECTION — left-aligned block
-   S.Number : 23029
-   Date     : 21/04/2026
-   Supl. cd :
+   INFO SECTION
 ══════════════════════════════════════════ */
 .prr-info {
   flex-shrink: 0;
@@ -104,16 +100,80 @@ body {
   gap: 0;
 }
 
+.prr-info-row {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin-bottom: 10px;
+}
 
+.prr-info-label {
+  width: 80px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #8E96B0;
+  flex-shrink: 0;
+  transition: color 0.15s;
+}
+
+.prr-info-row:focus-within .prr-info-label {
+  color: #F59E0B;
+}
+
+.prr-info-colon {
+  width: 24px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #8E96B0;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.prr-input-wrap {
+  flex: 0 0 220px;
+}
+
+.prr-input {
+  width: 100%;
+  height: 40px;
+  background: #1C2028;
+  border: 1px solid rgba(80, 88, 110, 0.4);
+  border-radius: 8px;
+  padding: 0 12px;
+  color: #fff;
+  font-family: Inter, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  outline: none;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+
+.prr-input:hover {
+  border-color: rgba(245, 158, 11, 0.65);
+  background: #1F2430;
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.15);
+}
+
+.prr-input:focus {
+  border-color: #3B82F6;
+  background: #1C2028;
+  box-shadow: 0 0 0 1px #3B82F6;
+}
 
 /* ══════════════════════════════════════════
-   TABLE — full width, strong borders
+   TABLE — overflow visible so del-btn shows
 ══════════════════════════════════════════ */
 .prr-table-wrap {
   flex: 1;
   overflow-y: auto;
-  overflow-x: hidden;
+  overflow-x: visible;
 }
+
+/* Scrollbar — matches cancel-bill style */
+.prr-table-wrap::-webkit-scrollbar { width: 6px; }
+.prr-table-wrap::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); }
+.prr-table-wrap::-webkit-scrollbar-thumb { background: rgba(213,134,21,0.45); border-radius: 3px; }
+.prr-table-wrap::-webkit-scrollbar-thumb:hover { background: rgba(213,134,21,0.7); }
 
 .prr-table {
   width: 100%;
@@ -134,25 +194,18 @@ body {
   font-weight: 600;
   text-align: center;
   white-space: nowrap;
-  /* Outer top/bottom + all column dividers */
   border-top:    2px solid #ffffff;
   border-bottom: 2px solid #ffffff;
   border-right:  1px solid #ffffff;
   border-left:   1px solid #ffffff;
 }
 
-/* Outer left edge — first th */
-.prr-table thead tr th:first-child {
-  border-left: 2px solid #ffffff;
-}
-
-/* Outer right edge — last th */
-.prr-table thead tr th:last-child {
-  border-right: 2px solid #ffffff;
-}
+.prr-table thead tr th:first-child { border-left: 2px solid #ffffff; }
+.prr-table thead tr th:last-child  { border-right: 2px solid #ffffff; }
 
 /* ── TBODY ── */
 .prr-table tbody tr {
+  position: relative;
   background: #000000;
 }
 
@@ -162,30 +215,17 @@ body {
   color: #ffffff;
   font-family: Inter, sans-serif;
   font-size: 14px;
+  text-align: center;
   border-right:  1px solid #ffffff;
   border-left:   1px solid #ffffff;
   border-bottom: 1px solid rgba(255, 255, 255, 0.35);
 }
 
-/* Outer left edge */
-.prr-table tbody tr td:first-child {
-  border-left: 2px solid #ffffff;
-}
+.prr-table tbody tr td:first-child { border-left: 2px solid #ffffff; }
+.prr-table tbody tr td:last-child  { border-right: 2px solid #ffffff; }
+.prr-table tbody tr:last-child td  { border-bottom: 2px solid #ffffff; }
 
-/* Outer right edge */
-.prr-table tbody tr td:last-child {
-  border-right: 2px solid #ffffff;
-}
-
-/* Last row — strong bottom border to close the table */
-.prr-table tbody tr:last-child td {
-  border-bottom: 2px solid #ffffff;
-}
-
-/* ── COLUMN WIDTHS ──
-   Matching reference: Code=small, Item Name=dominant,
-   Batch/Expiry=medium, Type/Qty=small, Price/Taxcd/Value=medium
-*/
+/* ── COLUMN WIDTHS ── */
 .prr-col-code   { width:  9%; }
 .prr-col-name   { width: 26%; }
 .prr-col-batch  { width:  9%; }
@@ -194,18 +234,69 @@ body {
 .prr-col-qty    { width:  7%; }
 .prr-col-price  { width:  9%; }
 .prr-col-taxcd  { width:  9%; }
-.prr-col-value  { width: 10%; text-align: right; padding-right: 10px; }
+.prr-col-value  { width: 10%; }
 
-/* Align td text to center by default */
-.prr-table td {
-  text-align: center;
+/* ── INPUTS INSIDE TBODY CELLS — plain text look ── */
+.prr-table td input[type="text"],
+.prr-table td input[type="number"] {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: Inter, sans-serif;
+  width: 100%;
+  padding: 0;
 }
 
-/* Item Name and Value special alignment */
+.prr-table td.num { text-align: right; }
+.prr-table td.num input { text-align: right; }
+.prr-table td.txt { text-align: left; }
+.prr-table td.txt input { text-align: left; }
+
+.prr-table td input:focus {
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 3px;
+}
+
+/* Item Name left, Value right */
 .prr-table td.prr-col-name  { text-align: left; }
 .prr-table td.prr-col-value { text-align: right; padding-right: 10px; }
 
-/* ── FOOTER DIVIDER — full 1162px width, 70px from bottom ── */
+/* ── DELETE BUTTON — hidden until row hover ── */
+.del-btn {
+  position: absolute;
+  right: -22px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  background: none;
+  border: 1px solid rgba(248, 113, 113, 0.4);
+  border-radius: 3px;
+  color: rgba(248, 113, 113, 0.5);
+  font-size: 11px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  padding: 0;
+  font-family: Inter, sans-serif;
+}
+
+.prr-table tbody tr:hover .del-btn {
+  opacity: 1;
+}
+
+.del-btn:hover {
+  color: #f87171;
+  border-color: #f87171;
+  background: rgba(248, 113, 113, 0.08);
+}
+
+/* ── FOOTER DIVIDER ── */
 .prr-footer-divider {
   flex-shrink: 0;
   height: 1px;
@@ -214,73 +305,4 @@ body {
   margin-bottom: 70px;
   margin-left: -24px;
   margin-right: -24px;
-}
-
-/* ══════════════════════════════════════════
-   INFO SECTION INPUTS — matches Memo style
-══════════════════════════════════════════ */
-
-/* Each row: label — colon — input */
-.prr-info-row {
-  display: flex;
-  align-items: center;
-  gap: 0;
-  margin-bottom: 10px;
-}
-
-.prr-info-label {
-  width: 80px;
-  font-size: 16px;
-  font-weight: 600;
-  color: #8E96B0;
-  flex-shrink: 0;
-  transition: color 0.15s;
-}
-
-/* Label turns orange on focus-within */
-.prr-info-row:focus-within .prr-info-label {
-  color: #F59E0B;
-}
-
-.prr-info-colon {
-  width: 24px;
-  font-size: 16px;
-  font-weight: 600;
-  color: #8E96B0;
-  text-align: center;
-  flex-shrink: 0;
-}
-
-.prr-input-wrap {
-  flex: 0 0 220px; /* fixed width — not full row, keeps left-block feel */
-}
-
-/* Input — identical to Memo .form-input */
-.prr-input {
-  width: 100%;
-  height: 40px;
-  background: #1C2028;
-  border: 1px solid rgba(80, 88, 110, 0.4);
-  border-radius: 8px;
-  padding: 0 12px;
-  color: #fff;
-  font-family: Inter, sans-serif;
-  font-size: 14px;
-  font-weight: 600;
-  outline: none;
-  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
-}
-
-/* HOVER — orange */
-.prr-input:hover {
-  border-color: rgba(245, 158, 11, 0.65);
-  background: #1F2430;
-  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.15);
-}
-
-/* FOCUS — blue */
-.prr-input:focus {
-  border-color: #3B82F6;
-  background: #1C2028;
-  box-shadow: 0 0 0 1px #3B82F6;
 }
