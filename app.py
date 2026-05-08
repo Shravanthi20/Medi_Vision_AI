@@ -4,16 +4,17 @@ import sqlite3
 from datetime import datetime
 from typing import Any
 
-from flask import Flask, jsonify, request, send_file
+# ✅ CHANGE TO
+from flask import Flask, jsonify, request, send_file, render_template
 from flask_cors import CORS
 
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.environ.get("PHARMACY_DB_PATH", os.path.join(BASE_DIR, "database.db"))
-DASHBOARD_PATH = os.path.join(BASE_DIR, "/templates/login.html")
+DASHBOARD_PATH = os.path.join(BASE_DIR, "templates/login.html")
 
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder='templates')
 CORS(app)
 app.config["MAX_CONTENT_LENGTH"] = 32 * 1024 * 1024
 
@@ -320,6 +321,10 @@ def api_health():
         }
     )
 
+@app.route('/memo')
+def memo():
+    return render_template('memo.html')
+
 
 @app.route("/api/backup")
 def backup_db():
@@ -333,6 +338,13 @@ def get_bills():
         rows = conn.execute("SELECT * FROM bills ORDER BY ts DESC").fetchall()
     return jsonify([normalize_bill_row(row) for row in rows])
 
+@app.route('/creditnote')
+def creditnote():
+    return render_template('creditnote.html')
+
+@app.route('/prr')
+def prr():
+    return render_template('prr.html')
 
 @app.route("/api/bills", methods=["POST"])
 def save_bill():
@@ -533,7 +545,9 @@ def medicine_alerts():
             "config": {"low_stock": low_stock_threshold, "expiry_days": expiry_days},
         }
     )
-
+@app.route('/supl-mfr-purchasewise')
+def supl_mfr_purchasewise():
+    return render_template('supl_mfr_purchasewise.html')
 
 @app.route("/api/medicines", methods=["POST"])
 def update_med():
