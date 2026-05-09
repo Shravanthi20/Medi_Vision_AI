@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <link rel="stylesheet" href="/static/css/sidebar.css">
+</head>
+
+<body>
+    <div class="sidebar">
+        <div class="sidebar-top">
+            <div class="sidebar-brand">
+                <div class="logo-circle">SM</div>
+                <div class="brand-text">
+                    <span class="brand-name">SELVAM</span>
+                    <span class="brand-sub">MEDICALS</span>
+                </div>
+            </div>
+
+            <div class="timeline-container">
+                <select class="timeline-select" id="timeline">
+                    <option value="yearly">Yearly</option>
+                    <option value="monthly">Monthly</option>
+                    <option value="daily">Daily</option>
+                </select>
+                <i data-lucide="chevron-down" class="timeline-icon"></i>
+            </div>
+
+            <div class="nav-section">
+                <p class="section-title">MENU</p>
+                <nav>
+                    <a href="#" class="nav-item active"><i data-lucide="layout-dashboard"></i>
+                        <span>Dashboard</span></a>
+                    <a href="#" class="nav-item"><i data-lucide="shopping-cart"></i> <span>Sales</span></a>
+                    <a href="#" class="nav-item"><i data-lucide="briefcase"></i> <span>Purchase</span></a>
+                    <a href="#" class="nav-item"><i data-lucide="package"></i> <span>Item</span></a>
+                    <a href="#" class="nav-item"><i data-lucide="users"></i> <span>Masters</span></a>
+                    <a href="#" class="nav-item"><i data-lucide="monitor"></i> <span>System</span></a>
+                    <a href="#" class="nav-item"><i data-lucide="wrench"></i> <span>Utilities</span></a>
+                    <a href="#" class="nav-item"><i data-lucide="message-square"></i> <span>SMS</span></a>
+                </nav>
+            </div>
+        </div>
+
+        <div class="nav-section bottom">
+            <p class="section-title">OTHER</p>
+            <nav>
+                <a href="#" class="nav-item"><i data-lucide="settings"></i> <span>Settings</span></a>
+                <a href="#" class="nav-item logout"><i data-lucide="log-out"></i> <span>Logout</span></a>
+            </nav>
+        </div>
+    </div>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="/static/js/sidebar.js"></script>
+</body>
+
+</html>

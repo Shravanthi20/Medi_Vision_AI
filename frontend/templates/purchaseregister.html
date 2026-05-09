@@ -1,0 +1,53 @@
+{% extends "dashboard.html" %}
+
+{% block content %}
+
+<!-- BREADCRUMB -->
+<div class="breadcrumb-bar">
+  <span class="breadcrumb-parent">Purchase</span>
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M9 18L15 12L9 6"/>
+  </svg>
+  <span class="breadcrumb-current">Purchase Registers</span>
+</div>
+
+<!-- CENTER STAGE -->
+<div class="center-stage">
+  <div class="menu-card">
+
+    <!-- TITLE -->
+    <div class="menu-card-title">
+      <h1>Select Your Choice</h1>
+    </div>
+
+    <!-- MENU ITEMS -->
+    <div class="menu-btn-list">
+      <button class="menu-btn" data-id="1"><span class="btn-num">1</span> – Purchase Register</button>
+      <button class="menu-btn" data-id="2"><span class="btn-num">2</span> – VAT - Purchase Register</button>
+      <button class="menu-btn" data-id="3"><span class="btn-num">3</span> – Salestax Format</button>
+      <button class="menu-btn" data-id="4"><span class="btn-num">4</span> – Form A9</button>
+      <button class="menu-btn" data-id="5"><span class="btn-num">5</span> – RST Report</button>
+      <button class="menu-btn" data-id="6"><span class="btn-num">6</span> – Purchase Itemwise Report</button>
+      <button class="menu-btn" data-id="7"><span class="btn-num">7</span> – Purchase Pkg Report</button>
+      <button class="menu-btn" data-id="8"><span class="btn-num">8</span> – Supplierwise Register</button>
+    </div>
+
+    <!-- CHOICE ROW -->
+    <div class="choice-row">
+      <div class="choice-label">Choice</div>
+      <div class="choice-buttons">
+        <button class="choice-btn">1</button>
+        <button class="choice-btn">2</button>
+        <button class="choice-btn">3</button>
+        <button class="choice-btn">4</button>
+        <button class="choice-btn">5</button>
+        <button class="choice-btn">6</button>
+        <button class="choice-btn">7</button>
+        <button class="choice-btn">8</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}
