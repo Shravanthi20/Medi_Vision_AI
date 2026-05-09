@@ -1,0 +1,49 @@
+meta {
+  name: Create Bill
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/bills
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "cust": "Walk-in",
+    "phone": "9999999999",
+    "pay": "cash",
+    "sub": 60,
+    "disc": 0,
+    "tax": 3,
+    "total": 63,
+    "doctor": "Self",
+    "items": [
+      {
+        "id": "{{medicineId}}",
+        "n": "Dolo 650",
+        "p": 30,
+        "qty": 2
+      }
+    ]
+  }
+}
+
+vars:pre-request {
+  baseUrl: http://127.0.0.1:5001
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("Create bill succeeds", function() {
+    const body = res.getBody();
+    expect(res.getStatus()).to.equal(200);
+    expect(body).to.have.property('status', 'success');
+    expect(body).to.have.property('id');
+  });
+}
