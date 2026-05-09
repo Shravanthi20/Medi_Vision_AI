@@ -1,652 +1,3 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>Selvam Medicals</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
-<style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{--sb:#1c2032;--bg:#0e1018;--card:#1c2032;--brd:#252a40;--acc:#f5a623;--abg:rgba(245,166,35,.13);--tx:#c8cfdf;--mt:#7a87a8;--dim:#4a5570;--billw:310px;}
-body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);height:100vh;display:flex;overflow:hidden;}
-/* SIDEBAR */
-.sb{width:220px;min-width:220px;background:var(--sb);display:flex;flex-direction:column;height:100vh;overflow-y:auto;transition:width .25s;}
-.brand{display:flex;align-items:center;gap:10px;padding:15px 14px 13px;}
-.av{width:40px;height:40px;background:var(--acc);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#000;flex-shrink:0;}
-.bn{font-size:13px;font-weight:700;color:#e8ecf4;} .bs{font-size:10px;color:var(--dim);letter-spacing:.08em;}
-.tl{margin:0 9px 10px;display:flex;align-items:center;justify-content:space-between;background:#252a40;border:1px solid var(--brd);border-radius:7px;padding:8px 11px;cursor:pointer;font-size:12.5px;color:var(--dim);}
-.nl{font-size:9.5px;font-weight:700;color:#34405e;letter-spacing:.13em;padding:7px 16px 4px;text-transform:uppercase;}
-.ni{display:flex;align-items:center;gap:11px;padding:9px 12px;margin:1px 7px;border-radius:7px;cursor:pointer;color:var(--mt);font-size:13px;transition:background .15s,color .15s;}
-.ni i{width:17px;text-align:center;font-size:13px;color:var(--dim);transition:color .15s;}
-.ni:hover{color:var(--tx);} .ni:hover i{color:#8892b0;}
-.ni.on{background:#252d45;color:var(--acc);font-weight:600;} .ni.on i{color:var(--acc);}
-.sp{flex:1;}
-/* MAIN */
-.main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;}
-/* TOPBAR */
-.tb{height:54px;min-height:54px;background:var(--sb);display:flex;align-items:center;gap:0;padding:0 18px;border-bottom:1px solid var(--brd);}
-.srch{position:relative;}
-.srch input{background:#252a40;border:1px solid var(--brd);border-radius:20px;padding:6px 14px 6px 33px;width:195px;color:var(--tx);font-size:12.5px;outline:none;font-family:'Inter',sans-serif;}
-.srch input::placeholder{color:var(--dim);}
-.srch i{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--dim);font-size:11px;}
-.fy{font-size:14px;font-weight:500;color:var(--tx);margin:0 auto 0 26px;}
-.db{display:flex;flex-direction:column;align-items:flex-end;margin:0 8px 0 20px;}
-.db .d{font-size:12.5px;font-weight:600;color:var(--acc);} .db .w{font-size:9.5px;color:var(--acc);}
-.ck{font-size:18px;font-weight:700;color:#e8ecf4;font-variant-numeric:tabular-nums;}
-.ua{display:flex;align-items:center;gap:8px;margin-left:20px;cursor:pointer;}
-.uai{width:32px;height:32px;border-radius:50%;background:#2d3350;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-.uai i{font-size:13px;color:var(--dim);}
-.un{font-size:13px;color:var(--tx);}
-/* CONTENT */
-.ct{flex:1;background:var(--bg);overflow:hidden;display:flex;flex-direction:column;}
-.pn{display:none;flex:1;overflow-y:auto;} .pn.on{display:flex;flex-direction:column;}
-/* COMMON */
-.pg{padding:20px;flex:1;}
-.row{display:flex;gap:14px;flex-wrap:wrap;}
-.crd{background:var(--card);border:1px solid var(--brd);border-radius:10px;}
-.sec-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
-.sec-t{font-size:14px;font-weight:600;color:#e8ecf4;}
-.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:7px;border:none;cursor:pointer;font-size:12.5px;font-weight:600;font-family:'Inter',sans-serif;transition:opacity .15s;}
-.btn:hover{opacity:.85;}
-button:focus, .btn:focus, input:focus, select:focus, .ni:focus, [tabindex="0"]:focus{outline:2px solid var(--acc);outline-offset:1px;z-index:9;}
-.mc:focus{outline:none;border-color:var(--acc);box-shadow:0 0 0 2px rgba(245,166,35,.5);background:#252a40;transform:translateY(-1px);}
-.btn-acc{background:var(--acc);color:#000;} .btn-out{background:#252a40;color:var(--mt);border:1px solid var(--brd);}
-.btn-g{background:#22c55e;color:#fff;} .btn-r{background:#ef4444;color:#fff;} .btn-b{background:#3b82f6;color:#fff;}
-.kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px;}
-.kc{padding:16px 18px;border-radius:10px;background:var(--card);border:1px solid var(--brd);position:relative;overflow:hidden;}
-.kc::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:10px 10px 0 0;}
-.kc.or::before{background:var(--acc);} .kc.gr::before{background:#22c55e;} .kc.bl::before{background:#3b82f6;} .kc.re::before{background:#ef4444;}
-.ki{width:34px;height:34px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px;margin-bottom:10px;}
-.kc.or .ki{background:rgba(245,166,35,.15);color:var(--acc);}
-.kc.gr .ki{background:rgba(34,197,94,.15);color:#22c55e;}
-.kc.bl .ki{background:rgba(59,130,246,.15);color:#3b82f6;}
-.kc.re .ki{background:rgba(239,68,68,.15);color:#ef4444;}
-.kl{font-size:10px;color:var(--mt);text-transform:uppercase;letter-spacing:.07em;margin-bottom:3px;}
-.kv{font-size:20px;font-weight:700;color:#e8ecf4;} .ks{font-size:10px;color:var(--mt);margin-top:3px;}
-table{width:100%;border-collapse:collapse;}
-.tw{border-radius:10px;overflow:hidden;border:1px solid var(--brd);}
-thead th{padding:10px 14px;text-align:left;font-size:10.5px;font-weight:600;color:var(--mt);text-transform:uppercase;letter-spacing:.07em;background:#181c2c;border-bottom:1px solid var(--brd);}
-tbody tr{border-bottom:1px solid #1a1f2e;transition:background .1s;}
-tbody tr:last-child{border-bottom:none;}
-tbody tr:hover{background:rgba(255,255,255,.02);}
-tbody td{padding:10px 14px;font-size:12.5px;color:var(--tx);}
-.bx{display:inline-block;padding:2px 9px;border-radius:20px;font-size:10.5px;font-weight:600;}
-.bg{background:rgba(34,197,94,.15);color:#22c55e;} .bo{background:rgba(245,166,35,.15);color:var(--acc);} .br{background:rgba(239,68,68,.15);color:#ef4444;}
-/* ===POS=== */
-.pos-wrap{display:flex;flex:1;overflow:hidden;}
-.pos-left{flex:1;display:flex;flex-direction:column;padding:14px;gap:10px;border-right:1px solid var(--brd);overflow:hidden;}
-.pos-right{width:var(--billw);min-width:260px;display:flex;flex-direction:column;background:#181c2c;}
-.pos-resizer{width:7px;cursor:col-resize;background:linear-gradient(180deg,#1f2439,#13172a);border-left:1px solid var(--brd);border-right:1px solid var(--brd);}
-.pos-resizer:hover{background:linear-gradient(180deg,#2a314c,#1a1f34);}
-.hold-chip{font-size:10px;background:#2d3552;border:1px solid #3d486d;color:#9fb0db;border-radius:5px;padding:3px 6px;}
-.util-actions-sticky{position:sticky;top:0;z-index:4;background:var(--bg);padding:4px 0 10px;}
-.pos-srow{display:flex;gap:8px;}
-.pi{position:relative;flex:1;}
-.pi input,.ps select{background:#252a40;border:1px solid var(--brd);border-radius:7px;padding:8px 10px 8px 32px;color:var(--tx);font-size:13px;outline:none;font-family:'Inter',sans-serif;width:100%;}
-.ps select{padding-left:10px;cursor:pointer;}
-.pi i{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--dim);font-size:12px;}
-.pi input::placeholder{color:var(--dim);}
-.mg{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;overflow-y:auto;flex:1;}
-.mc{background:var(--card);border:1px solid var(--brd);border-radius:8px;padding:12px;cursor:pointer;transition:border-color .15s,transform .1s;position:relative;display:flex;flex-direction:column;justify-content:center;min-height:110px;gap:2px;text-align:center;}
-.mc:hover{border-color:#374151;transform:translateY(-1px);}
-.mc.ls::after{content:'Low Stock';position:absolute;top:7px;right:7px;background:rgba(239,68,68,.15);color:#ef4444;font-size:8.5px;font-weight:700;padding:1px 5px;border-radius:4px;}
-.mc.os::after{content:'Out of Stock';position:absolute;top:7px;right:7px;background:rgba(239,68,68,.8);color:#fff;font-size:8.5px;font-weight:700;padding:1px 5px;border-radius:4px;}
-.mn{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.mcat{font-size:10px;color:var(--mt);}
-.mr{display:flex;justify-content:center;align-items:center;gap:6px;margin-top:15px;}
-.mp{font-size:13.5px;font-weight:700;color:var(--acc);}
-.mst{font-size:10.5px;color:var(--mt);background:rgba(255,255,255,0.04);border:1px solid var(--brd);border-radius:5px;padding:5px 8px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:5px;flex:0 0 auto;white-space:nowrap;}
-.mst:hover{background:#374151;color:var(--tx);border-color:var(--dim);}
-.madd{width:24px;height:24px;background:var(--abg);border:1px solid rgba(245,166,35,.3);border-radius:5px;display:flex;align-items:center;justify-content:center;color:var(--acc);font-size:11px;cursor:pointer;transition:background .15s;}
-.madd:hover{background:var(--acc);color:#000;}
-.mdel{color:var(--dim);font-size:12px;cursor:pointer;transition:color .15s;display:flex;align-items:center;padding:1px 0;}
-.mdel:hover{color:#ef4444;}
-.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;}
-.g2 div{display:flex;flex-direction:column;gap:4px;}
-.g2 label{font-size:10.5px;color:var(--mt);font-weight:600;text-transform:uppercase;letter-spacing:0.03em;}
-.g2 input, .g2 select{width:100%;background:#252a40;border:1px solid var(--brd);border-radius:7px;padding:9px 12px;color:var(--tx);font-size:13px;outline:none;font-family:'Inter',sans-serif;transition:border-color 0.15s;}
-.g2 input:focus, .g2 select:focus{border-color:var(--acc);}
-/* cart */
-.rh{padding:12px 14px 8px;border-bottom:1px solid var(--brd);display:flex;align-items:center;justify-content:space-between;}
-.rt{font-size:13px;font-weight:600;} .rbn{font-size:10px;color:var(--mt);}
-.rcf{padding:8px 12px;border-bottom:1px solid var(--brd);display:flex;gap:8px;}
-.rcf .f{flex:1;position:relative;}
-.rcf .f i{position:absolute;left:9px;top:50%;transform:translateY(-50%);font-size:10px;color:var(--dim);}
-.rcf input{width:100%;background:#252a40;border:1px solid var(--brd);border-radius:6px;padding:6px 9px 6px 25px;color:var(--tx);font-size:11.5px;outline:none;font-family:'Inter',sans-serif;}
-.rcf input::placeholder{color:var(--dim);}
-.ca{flex:1;overflow-y:auto;padding:8px 12px;}
-.ec{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--mt);gap:8px;}
-.ec i{font-size:36px;color:var(--brd);}
-.ec p{font-size:12px;}
-.ci2{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #1a1f2e;}
-.ci2:last-child{border-bottom:none;}
-.cn2{flex:1;min-width:0;}
-.cn2 .nm{font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.cn2 .pr{font-size:10.5px;color:var(--mt);}
-.qc{display:flex;align-items:center;gap:5px;}
-.qb{width:20px;height:20px;border-radius:4px;background:#252a40;border:1px solid var(--brd);color:var(--tx);font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
-.qb:hover{background:#374151;}
-.qv{font-size:12px;font-weight:600;min-width:18px;text-align:center;}
-.qv-in{width:30px;background:transparent;border:1px solid rgba(255,255,255,0.1);color:var(--tx);font-size:12px;font-weight:600;text-align:center;outline:none;font-family:inherit;padding:2px 0;border-radius:4px;}
-.qv-in::-webkit-outer-spin-button,.qv-in::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
-.ct2{font-size:12.5px;font-weight:700;color:var(--acc);min-width:46px;text-align:right;}
-.cd{color:var(--mt);cursor:pointer;font-size:12px;} .cd:hover{color:#ef4444;}
-/* bill summary */
-.bs2{padding:12px 14px;border-top:1px solid var(--brd);background:#13172a;}
-.sr{display:flex;justify-content:space-between;font-size:12px;padding:3px 0;color:var(--mt);}
-.sr.tot{color:#e8ecf4;font-size:15px;font-weight:700;border-top:1px solid var(--brd);margin-top:6px;padding-top:8px;}
-.dr{display:flex;align-items:center;gap:6px;margin:6px 0;}
-.dr label{font-size:11px;color:var(--mt);}
-.dr input{width:60px;background:#252a40;border:1px solid var(--brd);border-radius:5px;padding:4px 6px;color:var(--tx);font-size:12px;outline:none;text-align:right;font-family:'Inter',sans-serif;}
-.dr select{background:#252a40;border:1px solid var(--brd);border-radius:5px;padding:4px 6px;color:var(--tx);font-size:12px;outline:none;font-family:'Inter',sans-serif;}
-.pr2{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:8px;}
-.pb{padding:8px;border-radius:7px;border:1px solid var(--brd);background:#252a40;color:var(--mt);font-size:11.5px;font-weight:600;cursor:pointer;text-align:center;transition:all .15s;font-family:'Inter',sans-serif;}
-.pb:hover,.pb.sel{background:var(--acc);color:#000;border-color:var(--acc);}
-.ar{display:flex;gap:6px;margin-top:10px;}
-/* form */
-.fm input,.fm select,.fm textarea{width:100%;background:#252a40;border:1px solid var(--brd);border-radius:7px;padding:9px 12px;color:var(--tx);font-size:13px;outline:none;font-family:'Inter',sans-serif;margin-bottom:10px;}
-.fm label{font-size:11.5px;color:var(--mt);margin-bottom:3px;display:block;}
-.fm textarea{resize:vertical;min-height:80px;}
-.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-/* tabs */
-.tabs{display:flex;gap:4px;margin-bottom:14px;}
-.tab{padding:6px 16px;border-radius:20px;font-size:12.5px;font-weight:500;cursor:pointer;color:var(--mt);border:1px solid transparent;}
-.tab.on{background:var(--abg);color:var(--acc);border-color:rgba(245,166,35,.3);}
-/* alerts */
-.ali{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #1a1f2e;font-size:12.5px;}
-.ali:last-child{border-bottom:none;}
-.dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
-.dr2{background:#ef4444;} .do2{background:var(--acc);}
-/* responsive */
-@media(max-width:900px){
-  .sb{width:56px;} .sb .bn,.sb .bs,.sb .tl,.sb .nl,.sb .ni span,.sb .ua .un{display:none;}
-  .sb .ni{justify-content:center;padding:12px;} .sb .ni i{width:auto;}
-  .kpi{grid-template-columns:repeat(2,1fr);}
-  .mg{grid-template-columns:repeat(2,1fr);}
-  .pos-right{width:260px;min-width:260px;}
-  .pos-resizer{display:none;}
-}
-@media(max-width:640px){
-  .kpi{grid-template-columns:1fr 1fr;}
-  .pos-wrap{flex-direction:column;}
-  .pos-right{width:100%;min-width:unset;max-height:380px;}
-  .mg{grid-template-columns:repeat(2,1fr);}
-}
-</style>
-<script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
-<script defer src="http://127.0.0.1:5001/static/face-api.min.js"></script>
-</head>
-<body>
-<!-- SIDEBAR -->
-<aside class="sb">
-  <div class="brand">
-    <div class="av">SM</div>
-    <div><div class="bn">SELVAM</div><div class="bs">MEDICALS</div></div>
-  </div>
-  <div class="tl"><span>Timeline.....</span><i class="fas fa-chevron-down" style="font-size:10px"></i></div>
-  <div class="nl">MENU</div>
-  <div class="ni on" data-panel="sales" onclick="sw('sales',this)"><i class="fas fa-circle-dollar-to-slot"></i><span>Sales</span></div>
-  <div class="ni" data-panel="purchase" onclick="sw('purchase',this)"><i class="fas fa-bag-shopping"></i><span>Purchase</span></div>
-  <div class="ni" data-panel="item" onclick="sw('item',this)"><i class="fas fa-list-check"></i><span>Item</span></div>
-  <div class="ni" data-panel="masters" onclick="sw('masters',this)"><i class="fas fa-user-plus"></i><span>Masters</span></div>
-  <div class="ni" data-panel="reorder" onclick="sw('reorder',this)"><i class="fas fa-robot"></i><span>Re-Order AI</span></div>
-  <div class="ni" data-panel="system" onclick="sw('system',this)"><i class="fas fa-display"></i><span>System</span></div>
-  <div class="ni" data-panel="utilities" onclick="sw('utilities',this)"><i class="fas fa-hard-drive"></i><span>Utilities</span></div>
-  <div class="ni" data-panel="sms" onclick="sw('sms',this)"><i class="fas fa-comment-dots"></i><span>SMS</span></div>
-  <div class="sp"></div>
-  <div class="nl">OTHER</div>
-  <div class="ni" data-panel="users" onclick="sw('users',this)"><i class="fas fa-users-gear"></i><span>Users & Access</span></div>
-  <div class="ni" data-panel="settings" onclick="sw('settings',this)"><i class="fas fa-gear"></i><span>Settings</span></div>
-  <div class="ni" onclick="doLogout()" style="margin-bottom:12px"><i class="fas fa-arrow-right-from-bracket"></i><span>Logout</span></div>
-</aside>
-<!-- MAIN -->
-<div class="main">
-  <div class="tb">
-    <div class="srch"><i class="fas fa-magnifying-glass"></i><input type="text" placeholder="Search"/></div>
-    <div class="fy">FY:&nbsp;2026-2027</div>
-    <div class="db"><span class="d" id="hd"></span><span class="w" id="hw"></span></div>
-    <span class="ck" id="hc"></span>
-    <div class="ua" style="margin-left:auto;gap:6px">
-      <div class="uai"><i class="fas fa-user"></i></div>
-      <select id="user-switch" style="background:#252a40;border:1px solid var(--brd);border-radius:6px;padding:5px 8px;color:var(--tx);font-size:11px;outline:none;font-family:'Inter',sans-serif;max-width:160px"></select>
-      <span class="hold-chip" id="role-badge">OWNER</span>
-    </div>
-  </div>
-  <div class="ct">
-<!-- SALES / POS -->
-<div class="pn on" id="p-sales">
-  <div class="pos-wrap">
-    <div class="pos-left">
-      <div class="pos-srow">
-        <div class="pi"><i class="fas fa-magnifying-glass"></i><input type="text" id="ms" placeholder="Search medicine..." oninput="fm2()"/></div>
-        <div class="ps"><select id="cat-filter" onchange="fm2()"><option value="">All Categories</option><option>Tablet</option><option>Syrup</option><option>Injection</option><option>Capsule</option><option>Drops</option></select></div>
-        <button class="btn btn-out" style="padding: 0 12px; height: 33px; border-radius: 7px; flex-shrink: 0;" onclick="sm()" title="Add Manual Item"><i class="fas fa-plus"></i></button>
-      </div>
-      <div class="mg" id="mg"></div>
-    </div>
-    <div class="pos-resizer" id="pos-resizer" title="Drag to resize billing panel"></div>
-    <div class="pos-right" id="pos-right">
-      <div class="rh">
-        <span class="rt"><i class="fas fa-file-invoice" style="color:var(--acc);margin-right:6px"></i>Bill</span>
-        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end">
-          <span class="rbn">#B-1043</span>
-          <select id="hold-list" style="background:#252a40;border:1px solid var(--brd);border-radius:5px;color:var(--tx);font-size:10.5px;padding:4px 6px;max-width:120px">
-            <option value="">Held Bills</option>
-          </select>
-          <button class="btn btn-out" style="padding:4px 7px;font-size:10px" onclick="loadHeldBill()">Load</button>
-          <button class="btn btn-out" style="padding:4px 7px;font-size:10px" onclick="newBillTab()">New</button>
-        </div>
-      </div>
-      <div class="rcf" style="border-bottom:none; padding-bottom:4px;">
-        <div class="f"><i class="fas fa-user"></i><input type="text" id="cn" list="cust-list" placeholder="Customer name"/></div>
-        <div class="f"><i class="fas fa-phone"></i><input type="text" id="cp" list="phone-list" placeholder="Phone"/></div>
-      </div>
-      <datalist id="cust-list"></datalist><datalist id="phone-list"></datalist>
-      <div class="rcf" style="padding-top:4px; padding-bottom:4px; border-bottom:none;">
-        <div class="f"><i class="fas fa-user-tag"></i>
-          <select id="cust-type" style="width:100%;background:#252a40;border:1px solid var(--brd);border-radius:6px;padding:6px 9px 6px 25px;color:var(--tx);font-size:11.5px;outline:none;font-family:'Inter',sans-serif">
-            <option value="customer">Customer</option>
-            <option value="doctor">Doctor</option>
-            <option value="hospital">Hospital</option>
-          </select>
-        </div>
-        <div class="f"><i class="fas fa-file-invoice-dollar"></i>
-          <select id="bill-type" onchange="rc()" style="width:100%;background:#252a40;border:1px solid var(--brd);border-radius:6px;padding:6px 9px 6px 25px;color:var(--tx);font-size:11.5px;outline:none;font-family:'Inter',sans-serif">
-            <option value="retail">Retail</option>
-            <option value="wholesale">Wholesale</option>
-          </select>
-        </div>
-      </div>
-      <div class="rcf" style="padding-top:4px; padding-bottom:4px; border-bottom:none;">
-        <div class="f"><i class="fas fa-stethoscope"></i><input type="text" id="cdr" placeholder="Doctor / Hospital Ref. (Optional)"/></div>
-      </div>
-      <div style="padding: 0 14px 10px; border-bottom:1px solid var(--brd); display:flex; gap:8px;">
-        <button class="btn btn-out" style="flex:1; padding:6px; font-size:11px; background:#252a40; color:var(--mt); border:1px solid var(--brd)" onclick="triggerFaceScan()"><i class="fas fa-expand"></i> Face ID (F4)</button>
-        <button class="btn btn-out" id="btn-rx" style="flex:1; padding:6px; font-size:11px; background:#252a40; color:var(--mt); border:1px solid var(--brd)" onclick="document.getElementById('rx-upload').click()"><i class="fas fa-paperclip"></i> Upload</button>
-        <img id="rx-preview" style="display:none; width:30px; height:30px; object-fit:cover; border-radius:4px; border:1px solid var(--acc)"/>
-        <input type="file" id="rx-upload" style="display:none" onchange="attachRx(this)" accept="image/*,.pdf"/>
-      </div>
-      <div class="ca" id="ca"><div class="ec" id="ec"><i class="fas fa-cart-shopping"></i><p>No items added</p><p style="font-size:11px">Click a medicine to add</p></div></div>
-      <div class="bs2" id="bs2" style="display:none">
-        <div class="sr"><span>Subtotal</span><span id="sv">₹0</span></div>
-        <div class="dr"><label>Discount</label><input type="number" id="dv" value="0" min="0" oninput="rc()"/><select id="dt" onchange="rc()"><option value="pct">%</option><option value="flat">₹</option></select></div>
-        <div class="sr"><span>GST 5%</span><span id="tv">₹0</span></div>
-        <div class="sr tot"><span>TOTAL</span><span id="ttv">₹0</span></div>
-        <div class="pr2">
-          <button class="pb sel" id="pm-cash" onclick="sp('cash')">Cash</button>
-          <button class="pb" id="pm-upi" onclick="sp('upi')">UPI</button>
-          <button class="pb" id="pm-card" onclick="sp('card')">Card</button>
-        </div>
-        <div class="ar">
-          <button class="btn btn-r" style="flex:0 0 auto" onclick="cc()"><i class="fas fa-trash"></i></button>
-          <button class="btn btn-out" style="flex:1" onclick="hb()"><i class="fas fa-pause"></i>Hold</button>
-          <button class="btn btn-acc" style="flex:1" onclick="pb2()"><i class="fas fa-print"></i>Bill</button>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-<!-- PURCHASE -->
-<div class="pn" id="p-purchase"><div class="pg">
-  <div class="sec-hd"><span class="sec-t">Purchase Orders</span><button class="btn btn-acc" onclick="apur()"><i class="fas fa-plus"></i>New Order</button></div>
-  <div class="crd" style="padding:12px;margin-bottom:12px">
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-      <input type="file" id="pur-xl-file" accept=".xlsx,.xls,.csv" style="background:#252a40;border:1px solid var(--brd);border-radius:7px;padding:7px 10px;color:var(--tx);font-size:12px;min-width:240px"/>
-      <button class="btn btn-out" onclick="parsePurchaseExcel()"><i class="fas fa-file-import"></i> Parse Excel</button>
-      <button class="btn btn-acc" onclick="importPurchaseExcelToInventory()"><i class="fas fa-upload"></i> Import To Stock</button>
-      <span style="font-size:11px;color:var(--mt)">Columns: medicine/item/product, qty/stock/units, mrp/price(optional), batch(optional), expiry(optional)</span>
-    </div>
-    <div class="tw" style="margin-top:10px;max-height:220px;overflow:auto">
-      <table>
-        <thead><tr><th>Medicine</th><th>Qty</th><th>MRP</th><th>Batch</th><th>Expiry</th></tr></thead>
-        <tbody id="pur-import-preview"><tr><td colspan="5" style="text-align:center;color:var(--dim)">No Excel parsed yet.</td></tr></tbody>
-      </table>
-    </div>
-  </div>
-  <div class="tw"><table>
-    <thead><tr><th>PO No.</th><th>Supplier</th><th>Items</th><th>Amount</th><th>Date</th><th>Status</th></tr></thead>
-    <tbody id="pur-body">
-      <tr><td colspan="6" style="text-align:center;color:var(--dim)">No purchase orders recorded.</td></tr>
-    </tbody>
-  </table></div>
-</div></div>
-<!-- ITEM -->
-<div class="pn" id="p-item"><div class="pg">
-  <div class="sec-hd"><span class="sec-t">Medicine Inventory</span><button class="btn btn-acc" onclick="sm()"><i class="fas fa-plus"></i>Add Medicine</button></div>
-  <div style="margin-bottom:12px;display:flex;gap:8px">
-    <div class="pi" style="max-width:240px"><i class="fas fa-magnifying-glass"></i><input type="text" id="ms_inv" placeholder="Search inventory..." oninput="fi(this.value)" style="width:100%;background:#252a40;border:1px solid var(--brd);border-radius:7px;padding:7px 10px 7px 30px;color:var(--tx);font-size:12.5px;outline:none;font-family:'Inter',sans-serif"/></div>
-  </div>
-  <div class="tw" style="overflow:auto; max-height:calc(100vh - 160px);"><table style="min-width:1440px">
-    <thead><tr style="position:sticky;top:0;z-index:3;background:var(--sb)">
-      <th style="position:sticky;left:0;background:#181c2c;z-index:4">Item Name</th>
-      <th>Batch</th><th>Exp</th><th>P.Rate</th><th>P.Packing</th><th>MRP</th>
-      <th>Sales Pack</th><th>Qty</th><th>P.Gst</th><th>S.Gst</th><th>Disc</th>
-      <th>Offer</th><th>Re-Order</th><th>Max</th><th style="text-align:right">Action</th>
-    </tr></thead>
-    <tbody id="inv-body">
-      <tr><td colspan="15" style="text-align:center;color:var(--dim)">Loading inventory...</td></tr>
-    </tbody>
-  </table></div>
-</div></div>
-<!-- MASTERS -->
-<div class="pn" id="p-masters"><div class="pg">
-  <div class="tabs">
-    <div class="tab on" onclick="stab(this,'mt-cust')">Customers</div>
-    <div class="tab" onclick="stab(this,'mt-sup')">Suppliers</div>
-    <div class="tab" onclick="stab(this,'mt-doc')">Doctors</div>
-  </div>
-  <div id="mt-cust">
-    <div class="sec-hd"><span class="sec-t">Customer List</span><button class="btn btn-acc" onclick="acust()"><i class="fas fa-plus"></i>Add Customer</button></div>
-    <div class="tw"><table>
-      <thead><tr><th>Name</th><th>Phone</th><th>Visits</th><th>Spend</th></tr></thead>
-      <tbody id="cust-body">
-        <tr><td colspan="4" style="text-align:center;color:var(--dim)">No customer records.</td></tr>
-      </tbody>
-    </table></div>
-  </div>
-  <div id="mt-sup" style="display:none">
-    <div class="sec-hd"><span class="sec-t">Supplier List</span><button class="btn btn-acc" onclick="asup()"><i class="fas fa-plus"></i>Add Supplier</button></div>
-    <div class="tw"><table>
-      <thead><tr><th>Supplier</th><th>Phone</th><th>GST No.</th><th>Status</th><th style="text-align:right">Action</th></tr></thead>
-      <tbody id="sup-body">
-        <tr><td colspan="5" style="text-align:center;color:var(--dim)">No supplier records.</td></tr>
-      </tbody>
-    </table></div>
-  </div>
-  <div id="mt-doc" style="display:none">
-    <div class="sec-hd"><span class="sec-t">Doctor List</span><button class="btn btn-acc" onclick="adoc()"><i class="fas fa-plus"></i>Add Doctor</button></div>
-    <div class="tw"><table>
-      <thead><tr><th>Doctor</th><th>Speciality</th><th>Hospital</th><th>Phone</th></tr></thead>
-      <tbody id="doc-body">
-        <tr><td colspan="4" style="text-align:center;color:var(--dim)">No doctor records.</td></tr>
-      </tbody>
-    </table></div>
-  </div>
-</div></div>
-<!-- SYSTEM -->
-<div class="pn" id="p-system"><div class="pg">
-  <div class="sec-hd">
-    <span class="sec-t">System Dashboard</span>
-    <div style="display:flex;align-items:center;gap:10px">
-      <span style="font-size:11px;color:var(--mt)">Select Date:</span>
-      <input type="date" id="sys-date" onchange="rKpis(this.value)" style="background:#252a40;border:1px solid var(--brd);border-radius:6px;padding:4px 8px;color:var(--tx);font-size:12px;outline:none;font-family:'Inter',sans-serif"/>
-    </div>
-  </div>
-  <div class="kpi">
-    <div class="kc or"><div class="ki"><i class="fas fa-receipt"></i></div><div class="kl" id="kl-tb">Today Bills</div><div class="kv" id="kpi-tb">0</div><div class="ks" id="ks-tb">+0 vs yesterday</div></div>
-    <div class="kc gr"><div class="ki"><i class="fas fa-indian-rupee-sign"></i></div><div class="kl" id="kl-tr">Today Revenue</div><div class="kv" id="kpi-tr">₹0</div><div class="ks" id="ks-tr">+0% vs yesterday</div></div>
-    <div class="kc bl"><div class="ki"><i class="fas fa-users"></i></div><div class="kl">Active Users</div><div class="kv" id="kpi-au">1</div><div class="ks">Logged in now</div></div>
-    <div class="kc re"><div class="ki"><i class="fas fa-bell"></i></div><div class="kl">Alerts</div><div class="kv" id="kpi-al">0</div><div class="ks">Expiry + Low stock</div></div>
-  </div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-    <div class="crd" style="padding:16px">
-      <div class="sec-hd"><span class="sec-t">Expiry Alerts</span><span style="font-size:11px;color:var(--acc);cursor:pointer">View All</span></div>
-      <div id="sys-exp"></div>
-    </div>
-    <div class="crd" style="padding:16px">
-      <div class="sec-hd"><span class="sec-t">Low Stock</span><span style="font-size:11px;color:var(--acc);cursor:pointer">View All</span></div>
-      <div id="sys-low"></div>
-    </div>
-  </div>
-</div></div>
-<!-- UTILITIES -->
-<div class="pn" id="p-utilities"><div class="pg">
-  <div class="sec-hd"><span class="sec-t">Sales Report &amp; Utilities</span></div>
-  <div class="tw" style="margin-bottom: 20px;">
-    <table>
-      <thead><tr><th>Bill No.</th><th>Date</th><th>Customer</th><th>Prescription</th><th>Amount</th><th>Method</th><th>Doctor</th><th>Items</th></tr></thead>
-      <tbody id="util-bills-body">
-        <tr><td colspan="8" style="text-align:center;color:var(--dim)">No bills generated yet.</td></tr>
-      </tbody>
-    </table>
-  </div>
-  <div class="util-actions-sticky" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px">
-    <div class="crd" onclick="rStockRep()" style="padding:18px;cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='#374151'" onmouseout="this.style.borderColor=''">
-      <i class="fas fa-boxes-stacked" style="font-size:22px;color:#3b82f6;margin-bottom:10px;display:block"></i>
-      <div style="font-size:13px;font-weight:600;margin-bottom:4px">Stock Report</div>
-      <div style="font-size:11px;color:var(--mt)">Inventory valuation</div>
-    </div>
-    <div class="crd" onclick="rExpRep()" style="padding:18px;cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='#374151'" onmouseout="this.style.borderColor=''">
-      <i class="fas fa-triangle-exclamation" style="font-size:22px;color:#ef4444;margin-bottom:10px;display:block"></i>
-      <div style="font-size:13px;font-weight:600;margin-bottom:4px">Expiry Report</div>
-      <div style="font-size:11px;color:var(--mt)">Near-expiry items</div>
-    </div>
-    <div class="crd" onclick="rExpDel()" style="padding:18px;cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='#374151'" onmouseout="this.style.borderColor=''">
-      <i class="fas fa-file-export" style="font-size:22px;color:#22c55e;margin-bottom:10px;display:block"></i>
-      <div style="font-size:13px;font-weight:600;margin-bottom:4px">Export Data</div>
-      <div style="font-size:11px;color:var(--mt)">PDF / Excel</div>
-    </div>
-    <div class="crd" onclick="rBckMod()" style="padding:18px;cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='#374151'" onmouseout="this.style.borderColor=''">
-      <i class="fas fa-database" style="font-size:22px;color:#a78bfa;margin-bottom:10px;display:block"></i>
-      <div style="font-size:13px;font-weight:600;margin-bottom:4px">Backup</div>
-      <div style="font-size:11px;color:var(--mt)">Database backup</div>
-    </div>
-  </div>
-</div></div>
-<!-- REORDER AI -->
-<div class="pn" id="p-reorder"><div class="pg">
-  <div class="sec-hd"><span class="sec-t">Smart Re-Order Wanted List</span><button class="btn btn-acc" onclick="generateWantedList()"><i class="fas fa-wand-magic-sparkles"></i>Generate List</button></div>
-  <div class="crd" style="padding:12px;margin-bottom:12px">
-    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
-      <div style="display:flex;align-items:center;gap:6px"><span style="font-size:11px;color:var(--mt)">Forecast Days</span><input type="number" id="ro-days" value="30" min="7" max="180" style="width:80px;background:#252a40;border:1px solid var(--brd);border-radius:6px;padding:5px 7px;color:var(--tx)"></div>
-      <div style="display:flex;align-items:center;gap:6px"><span style="font-size:11px;color:var(--mt)">Lead Days</span><input type="number" id="ro-lead" value="7" min="1" max="60" style="width:80px;background:#252a40;border:1px solid var(--brd);border-radius:6px;padding:5px 7px;color:var(--tx)"></div>
-      <div style="display:flex;align-items:center;gap:6px"><span style="font-size:11px;color:var(--mt)">Safety Stock</span><input type="number" id="ro-safety" value="8" min="0" max="999" style="width:80px;background:#252a40;border:1px solid var(--brd);border-radius:6px;padding:5px 7px;color:var(--tx)"></div>
-      <button class="btn btn-out" onclick="exportWantedCsv()"><i class="fas fa-file-csv"></i>Export Wanted CSV</button>
-    </div>
-    <div class="tw"><table>
-      <thead><tr><th>Medicine</th><th>Stock</th><th>Min/Reorder</th><th>Avg Daily</th><th>Forecast Need</th><th>Wanted Qty</th><th>Matched Site</th><th>Status</th></tr></thead>
-      <tbody id="ro-body"><tr><td colspan="8" style="text-align:center;color:var(--dim)">Click Generate List</td></tr></tbody>
-    </table></div>
-  </div>
-  <div class="crd" style="padding:12px">
-    <div class="sec-hd"><span class="sec-t">Website Name Matching (Retailio + more)</span></div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
-      <input type="text" id="site-name" placeholder="Website name (e.g. Retailio, MedPlus B2B)" style="min-width:230px;background:#252a40;border:1px solid var(--brd);border-radius:7px;padding:7px 10px;color:var(--tx)"/>
-      <input type="text" id="site-catalog" placeholder="Catalog names comma separated" style="min-width:320px;flex:1;background:#252a40;border:1px solid var(--brd);border-radius:7px;padding:7px 10px;color:var(--tx)"/>
-      <button class="btn btn-out" onclick="addConnectorSite()"><i class="fas fa-plus"></i>Add Site</button>
-    </div>
-    <div class="tw"><table>
-      <thead><tr><th>Website</th><th>Catalog Mapping</th><th>Action</th></tr></thead>
-      <tbody id="site-body"><tr><td colspan="3" style="text-align:center;color:var(--dim)">No sites configured.</td></tr></tbody>
-    </table></div>
-  </div>
-</div></div>
-<!-- USERS -->
-<div class="pn" id="p-users"><div class="pg">
-  <div class="sec-hd"><span class="sec-t">Users &amp; Role Access</span></div>
-  <div class="crd" style="padding:12px;margin-bottom:12px">
-    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
-      <input type="text" id="u-name" placeholder="User name" style="min-width:180px;background:#252a40;border:1px solid var(--brd);border-radius:7px;padding:7px 10px;color:var(--tx)"/>
-      <input type="text" id="u-phone" placeholder="Phone / Email" style="min-width:180px;background:#252a40;border:1px solid var(--brd);border-radius:7px;padding:7px 10px;color:var(--tx)"/>
-      <select id="u-role" style="background:#252a40;border:1px solid var(--brd);border-radius:7px;padding:7px 10px;color:var(--tx)">
-        <option value="user">User</option>
-        <option value="manager">Manager</option>
-        <option value="super_user">Super User</option>
-      </select>
-      <button class="btn btn-acc" onclick="addAppUser()"><i class="fas fa-user-plus"></i>Create User</button>
-    </div>
-    <div class="tw"><table>
-      <thead><tr><th>Name</th><th>Contact</th><th>Role</th><th>Action</th></tr></thead>
-      <tbody id="u-body"><tr><td colspan="4" style="text-align:center;color:var(--dim)">No users yet.</td></tr></tbody>
-    </table></div>
-  </div>
-  <div class="crd" style="padding:12px">
-    <div class="sec-hd"><span class="sec-t">Role Matrix (App Level)</span></div>
-    <div class="tw"><table>
-      <thead><tr><th>Role</th><th>Sales</th><th>Purchase</th><th>Items</th><th>Masters</th><th>Reorder AI</th><th>Utilities</th><th>System</th><th>Users</th></tr></thead>
-      <tbody id="role-body"></tbody>
-    </table></div>
-  </div>
-</div></div>
-<!-- SMS -->
-<div class="pn" id="p-sms"><div class="pg">
-  <div class="sec-hd"><span class="sec-t">SMS Notifications</span><button class="btn btn-acc"><i class="fas fa-paper-plane"></i>Send SMS</button></div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-    <div>
-      <div class="crd fm" style="padding:16px;margin-bottom:14px">
-        <div style="font-size:13px;font-weight:600;margin-bottom:12px">Compose Message</div>
-        <label>To (Phone / Group)</label>
-        <input type="text" placeholder="Enter phone or select group"/>
-        <label>Template</label>
-        <select><option>Bill Ready</option><option>Expiry Reminder</option><option>Low Stock Alert</option><option>Custom</option></select>
-        <label>Message</label>
-        <textarea placeholder="Type your message...">Dear customer, your bill from Selvam Medicals is ready. Total: ₹XXX. Thank you!</textarea>
-        <button class="btn btn-acc" style="width:100%"><i class="fas fa-paper-plane"></i>Send Now</button>
-      </div>
-    </div>
-    <div>
-      <div style="font-size:13px;font-weight:600;margin-bottom:10px">Recent Messages</div>
-      <div class="tw"><table>
-        <thead><tr><th>To</th><th>Message</th><th>Status</th><th>Time</th></tr></thead>
-        <tbody>
-          <tr><td>98765 43210</td><td>Bill ready ₹380</td><td><span class="bx bg">Sent</span></td><td>14:32</td></tr>
-          <tr><td>87654 32109</td><td>Expiry reminder</td><td><span class="bx bg">Sent</span></td><td>14:00</td></tr>
-          <tr><td>76543 21098</td><td>Low stock alert</td><td><span class="bx br">Failed</span></td><td>13:45</td></tr>
-        </tbody>
-      </table></div>
-    </div>
-  </div>
-</div></div>
-<!-- SETTINGS -->
-<div class="pn" id="p-settings"><div class="pg">
-  <div class="sec-hd"><span class="sec-t">Store Settings</span></div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-    <div class="crd fm" style="padding:20px">
-      <div style="font-size:13px;font-weight:600;margin-bottom:14px">General</div>
-      <label>Store Name</label><input type="text" value="Selvam Medicals"/>
-      <label>GST Number</label><input type="text" value="33AAAAA1234A1Z5"/>
-      <label>Phone</label><input type="text" value="044-XXXXXXXX"/>
-      <label>Address</label><textarea>No.1, Main Road, Chennai – 600001</textarea>
-      <button class="btn btn-acc"><i class="fas fa-floppy-disk"></i>Save Changes</button>
-    </div>
-    <div class="crd fm" style="padding:20px">
-      <div style="font-size:13px;font-weight:600;margin-bottom:14px">Financial Year</div>
-      <label>Current FY</label><input type="text" value="2026-2027"/>
-      <label>GST Rate (%)</label><input type="number" value="5"/>
-      <label>Default Discount (%)</label><input type="number" value="0"/>
-      <label>Low Stock Threshold</label><input type="number" value="10"/>
-      <button class="btn btn-acc"><i class="fas fa-floppy-disk"></i>Save Changes</button>
-    </div>
-  </div>
-</div></div>
-
-  </div><!-- /ct -->
-</div><!-- /main -->
-
-</div>
-<!-- MEDICINE MODAL (ADD/EDIT) -->
-<div id="man-mod" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:999;align-items:center;justify-content:center;">
-  <div class="crd fm" style="width:520px;padding:22px;background:var(--card);box-shadow:0 10px 25px rgba(0,0,0,0.5);max-height:90vh;overflow-y:auto;">
-    <div style="font-size:15px;font-weight:600;margin-bottom:16px;color:#e8ecf4;display:flex;justify-content:space-between;align-items:center;">
-      <span id="man-title">Add/Edit Medicine</span>
-      <i class="fas fa-xmark" style="cursor:pointer;color:var(--mt)" onclick="document.getElementById('man-mod').style.display='none'"></i>
-    </div>
-    <input type="hidden" id="man-id"/>
-    <div class="g2">
-      <div><label>Item Name</label><input type="text" id="man-n"/></div>
-      <div><label>Generic Name</label><input type="text" id="man-g"/></div>
-    </div>
-    <div class="g2">
-      <div><label>Category</label><select id="man-c"><option>Tablet</option><option>Syrup</option><option>Injection</option><option>Capsule</option><option>Drops</option></select></div>
-      <div><label>Batch No.</label><input type="text" id="man-batch"/></div>
-    </div>
-    <div class="g2">
-      <div><label>Expiry Date</label><input type="date" id="man-exp"/></div>
-      <div><label>Quantity (Qty)</label><input type="number" id="man-s" value="0"/></div>
-    </div>
-    <div class="g2">
-      <div><label>Purchase Rate (P.Rate)</label><input type="number" id="man-prate" value="0" step="0.01"/></div>
-      <div><label>MRP</label><input type="number" id="man-p" value="0" step="0.01"/></div>
-    </div>
-    <div class="g2">
-      <div><label>Purchase Packing</label><input type="text" id="man-ppack" placeholder="e.g. 1x10"/></div>
-      <div><label>Sales Packing</label><input type="text" id="man-spack" placeholder="e.g. 1 strip"/></div>
-    </div>
-    <div class="g2">
-      <div><label>Purchase GST (%)</label><input type="number" id="man-pgst" value="12"/></div>
-      <div><label>Sales GST (%)</label><input type="number" id="man-sgst" value="12"/></div>
-    </div>
-    <div class="g2">
-      <div><label>Product Discount (%)</label><input type="number" id="man-disc" value="0"/></div>
-      <div><label>Offer (e.g. 5+1)</label><input type="text" id="man-offer" placeholder="None"/></div>
-    </div>
-    <div class="g2">
-      <div><label>Re-Order Level</label><input type="number" id="man-reorder" value="10"/></div>
-      <div><label>Max Qty</label><input type="number" id="man-max" value="100"/></div>
-    </div>
-    <button class="btn btn-acc" style="width:100%;margin-top:10px;justify-content:center;padding:12px;" onclick="am_sv()">Save Medicine Details</button>
-  </div>
-</div>
-<!-- PURCHASE MODAL -->
-<div id="pur-mod" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:999;align-items:center;justify-content:center;">
-  <div class="crd fm" style="width:320px;padding:22px;background:var(--card);box-shadow:0 10px 25px rgba(0,0,0,0.5);">
-    <div style="font-size:15px;font-weight:600;margin-bottom:16px;color:#e8ecf4;display:flex;justify-content:space-between;align-items:center;">
-      <span>New Purchase Order</span>
-      <i class="fas fa-xmark" style="cursor:pointer;color:var(--mt)" onclick="document.getElementById('pur-mod').style.display='none'"></i>
-    </div>
-    <label>Supplier</label><input type="text" id="pur-s" placeholder="Supplier Name"/>
-    <label>Items Description</label><input type="text" id="pur-i" placeholder="e.g. 10 Boxes Dolo"/>
-    <label>Total Amount (₹)</label><input type="number" id="pur-a" value="0"/>
-    <label>Status</label><select id="pur-st" style="width:100%;"><option>Pending</option><option>Received</option><option>Cancelled</option></select>
-    <button class="btn btn-acc" style="width:100%;margin-top:10px;justify-content:center;padding:10px;" onclick="sv_pur()">Save Order</button>
-  </div>
-</div>
-<!-- MASTER MODALS -->
-<div id="cust-mod" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:999;align-items:center;justify-content:center;">
-  <div class="crd fm" style="width:320px;padding:22px;background:var(--card);box-shadow:0 10px 25px rgba(0,0,0,0.5);">
-    <div style="font-size:15px;font-weight:600;margin-bottom:16px;color:#e8ecf4;display:flex;justify-content:space-between;align-items:center;"><span id="cust-title">Add Customer</span><i class="fas fa-xmark" style="cursor:pointer" onclick="document.getElementById('cust-mod').style.display='none'"></i></div>
-    <input type="hidden" id="c-id"/><input type="hidden" id="c-face"/>
-    <label>Customer Name</label><input type="text" id="c-n"/><label>Phone</label><input type="text" id="c-p"/><label>Address</label><input type="text" id="c-a"/><label>Email</label><input type="text" id="c-e"/>
-    <div style="text-align:center; margin-bottom: 8px;">
-      <video id="c-vid" autoplay playsinline style="width:100%;height:150px;object-fit:cover;display:none;margin-bottom:8px;border-radius:8px;transform:scaleX(-1)"></video>
-      <button class="btn btn-out" id="c-btn-scan" style="width:100%;padding:10px;justify-content:center;font-size:11.5px" onclick="enrollFace(event)"><i class="fas fa-camera"></i> Enroll Face Vector</button>
-    </div>
-    <button class="btn btn-acc" style="width:100%;margin-top:10px;" onclick="sv_cust()">Save Customer</button>
-  </div>
-</div>
-<div id="sup-mod" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:999;align-items:center;justify-content:center;">
-  <div class="crd fm" style="width:320px;padding:22px;background:var(--card);box-shadow:0 10px 25px rgba(0,0,0,0.5);">
-    <div style="font-size:15px;font-weight:600;margin-bottom:16px;color:#e8ecf4;display:flex;justify-content:space-between;align-items:center;"><span id="sup-title">Add Supplier</span><i class="fas fa-xmark" style="cursor:pointer" onclick="document.getElementById('sup-mod').style.display='none'"></i></div>
-    <input type="hidden" id="s-id"/>
-    <label>Supplier Name</label><input type="text" id="s-n"/><label>Phone</label><input type="text" id="s-p"/><label>GST Number</label><input type="text" id="s-g"/><label>Status</label><select id="s-st"><option>Active</option><option>Inactive</option></select>
-    <button class="btn btn-acc" style="width:100%;margin-top:10px;" onclick="sv_sup()">Save Supplier</button>
-  </div>
-</div>
-<div id="doc-mod" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:999;align-items:center;justify-content:center;">
-  <div class="crd fm" style="width:320px;padding:22px;background:var(--card);box-shadow:0 10px 25px rgba(0,0,0,0.5);">
-    <div style="font-size:15px;font-weight:600;margin-bottom:16px;color:#e8ecf4;display:flex;justify-content:space-between;align-items:center;"><span id="doc-title">Add Doctor</span><i class="fas fa-xmark" style="cursor:pointer" onclick="document.getElementById('doc-mod').style.display='none'"></i></div>
-    <input type="hidden" id="d-id"/>
-    <label>Doctor Name</label><input type="text" id="d-n"/><label>Specialty</label><input type="text" id="d-s"/><label>Hospital</label><input type="text" id="d-h"/><label>Phone</label><input type="text" id="d-p"/>
-    <button class="btn btn-acc" style="width:100%;margin-top:10px;" onclick="sv_doc()">Save Doctor</button>
-  </div>
-</div>
-<!-- REPORT MODAL -->
-<div id="rep-mod" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:999;align-items:center;justify-content:center;">
-  <div class="crd fm" style="width:800px;max-width:95%;padding:22px;background:var(--card);box-shadow:0 10px 25px rgba(0,0,0,0.5);">
-    <div style="font-size:16px;font-weight:600;margin-bottom:16px;color:#e8ecf4;display:flex;justify-content:space-between;align-items:center;">
-      <span id="rep-title">Report</span>
-      <div style="display:flex;align-items:center;gap:15px">
-        <i class="fas fa-print" id="rep-print-btn" style="cursor:pointer;color:var(--acc);display:none" title="Print this report"></i>
-        <i class="fas fa-xmark" style="cursor:pointer" onclick="clRep()"></i>
-      </div>
-    </div>
-    <div id="rep-content" style="max-height:70vh;overflow-y:auto;padding-right:10px"></div>
-  </div>
-</div>
-<!-- Face Scan Modal -->
-<div id="face-modal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.85); z-index:9999; justify-content:center; align-items:center; backdrop-filter:blur(4px)">
-  <div style="background:var(--card); border:1px solid var(--acc); padding:30px; border-radius:12px; text-align:center; width:280px; box-shadow:0 10px 40px rgba(0,0,0,0.5)">
-    <h3 style="color:var(--acc); margin-bottom:20px; font-size:14px; font-weight:600; letter-spacing:1px"><i class="fas fa-expand fa-spin" style="margin-right:6px"></i> SCANNING BIOMETRICS</h3>
-    <div style="width:120px; height:120px; border:2px dashed rgba(245,166,35,0.3); margin:0 auto 20px; border-radius:50%; position:relative; overflow:hidden">
-       <video id="face-vid" autoplay playsinline style="width:100%; height:100%; object-fit:cover; position:absolute; top:0; left:0; z-index:1; transform: scaleX(-1);"></video>
-       <div id="face-scanline" style="position:absolute; top:0; left:0; right:0; height:6px; background:rgba(245,166,35,0.8); box-shadow:0 0 15px var(--acc); animation: scanline 1.2s infinite alternate linear; z-index:5;"></div>
-    </div>
-    <p id="face-status" style="font-size:12px; color:var(--tx); font-weight:500">Please look directly at camera.</p>
-  </div>
-</div>
-<style>@keyframes scanline { 0% { top: 0; } 100% { top: 110px; } }</style>
-<script>
 let rxBase64 = '';
 function attachRx(input) {
   if (input.files && input.files[0]) {
@@ -807,7 +158,7 @@ function doLogout(){if(confirm('Logout?'))window.close();}
 function stab(el,id){document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));el.classList.add('on');['mt-cust','mt-sup','mt-doc'].forEach(x=>document.getElementById(x).style.display='none');document.getElementById(id).style.display='block';}
 // POS
 // POS
-let MEDS=[], cart={}, pm='cash', AM=[];
+let MEDS=[], SHELVES=[], cart={}, pm='cash', AM=[];
 let heldBills=JSON.parse(localStorage.getItem('heldBills')||'[]');
 let purchaseImportRows=[];
 let connectorSites=JSON.parse(localStorage.getItem('connectorSites')||'[{"id":"site-retailio","name":"Retailio","catalog":["Dolo 650mg","Augmentin 625","Pantoprazole 40","Ondansetron 4mg"]}]');
@@ -960,8 +311,34 @@ function loadHeldBill(){
   rct();renderHeldBills();
 }
 
-function rmed(list){const g=document.getElementById('mg');g.innerHTML='';if(!list.length){g.innerHTML='<div style="color:var(--mt);font-size:12px;padding:16px;grid-column:1/-1">No medicines found.</div>';return;}list.forEach(m=>{const d=document.createElement('div');let scl='';if(m.s<=0)scl=' os';else if(m.s<15)scl=' ls';d.className='mc'+scl;d.tabIndex=0;d.onclick=(e)=>{if(!e.target.closest('.madd')&&!e.target.closest('.mdel')&&!e.target.closest('.mst'))at(m.id);};const db=`<div class="mdel" title="Delete" onclick="dm('${m.id}');event.stopPropagation()"><i class="fas fa-trash"></i></div>`;d.innerHTML='<div class="mn" title="'+m.n+'">'+m.n+'</div><div class="mcat">'+m.g+' · '+m.c+'</div><div class="mr"><div class="mp">₹'+m.p+'</div><div class="mst" onclick="editMed(\''+m.id+'\');event.stopPropagation()" title="Edit Medicine">'+m.s+' units <i class="fas fa-pen" style="font-size:8.5px;opacity:0.6"></i></div><div style="display:flex;align-items:center;gap:6px;">'+db+'<div class="madd" onclick="at(\''+m.id+'\');event.stopPropagation()"><i class="fas fa-plus"></i></div></div></div>';g.appendChild(d);});}
-function rItems(list){const tb=document.getElementById('inv-body');if(!tb)return;tb.innerHTML='';if(!list.length){tb.innerHTML='<tr><td colspan="15" style="text-align:center;color:var(--dim)">No items found.</td></tr>';return;}list.forEach(m=>{const st=m.s<=0?'<span class="bx br">Out</span>':(m.s<15?'<span class="bx br" style="background:#f59e0b">Low</span>':'<span class="bx bg">OK</span>');tb.innerHTML+=`<tr><td style="position:sticky;left:0;background:var(--card);border-right:1px solid var(--brd);font-weight:600">${m.n}</td><td>${m.batch||'—'}</td><td>${m.expiry||'—'}</td><td>₹${m.p_rate}</td><td>${m.p_packing||'—'}</td><td>₹${m.p}</td><td>${m.s_packing||'—'}</td><td>${m.s}</td><td>${m.p_gst}%</td><td>${m.s_gst}%</td><td>${m.disc}%</td><td>${m.offer||'None'}</td><td>${m.reorder}</td><td>${m.max_qty}</td><td style="text-align:right"><button class="btn btn-out" style="padding:4px 8px" onclick="editMed('${m.id}')"><i class="fas fa-pen"></i></button></td></tr>`;});}
+function shelfLabel(m){
+  return m.shelf_label || (m.shelf_name ? m.shelf_name : 'Unassigned');
+}
+function renderShelfSelects(){
+  const medSel=document.getElementById('man-shelf');
+  const invSel=document.getElementById('shelf-filter');
+  const currentMedValue=medSel ? medSel.value : '';
+  const currentInvValue=invSel ? invSel.value : '';
+  if(medSel){
+    medSel.innerHTML='<option value="">Unassigned</option>' + SHELVES.map(s=>`<option value="${s.id}">${s.label}${s.status!=='Active'?' ('+s.status+')':''}</option>`).join('');
+    medSel.value=currentMedValue;
+  }
+  if(invSel){
+    invSel.innerHTML='<option value="">All Shelves</option>' + SHELVES.map(s=>`<option value="${s.id}">${s.label}${s.status!=='Active'?' ('+s.status+')':''}</option>`).join('');
+    invSel.value=currentInvValue;
+  }
+  updateShelfPreview();
+}
+function updateShelfPreview(){
+  const medSel=document.getElementById('man-shelf');
+  const preview=document.getElementById('man-shelf-label');
+  if(!medSel || !preview)return;
+  const shelf=SHELVES.find(s=>String(s.id)===String(medSel.value));
+  preview.value=shelf?shelf.label:'Unassigned';
+  medSel.onchange=updateShelfPreview;
+}
+function rmed(list){const g=document.getElementById('mg');g.innerHTML='';if(!list.length){g.innerHTML='<div style="color:var(--mt);font-size:12px;padding:16px;grid-column:1/-1">No medicines found.</div>';return;}list.forEach(m=>{const d=document.createElement('div');let scl='';if(m.s<=0)scl=' os';else if(m.s<15)scl=' ls';d.className='mc'+scl;d.tabIndex=0;d.onclick=(e)=>{if(!e.target.closest('.madd')&&!e.target.closest('.mdel')&&!e.target.closest('.mst'))at(m.id);};const db=`<div class="mdel" title="Delete" onclick="dm('${m.id}');event.stopPropagation()"><i class="fas fa-trash"></i></div>`;d.innerHTML='<div class="mn" title="'+m.n+'">'+m.n+'</div><div class="mcat">'+m.g+' · '+m.c+'</div><div style="font-size:10px;color:var(--mt);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+shelfLabel(m)+'</div><div class="mr"><div class="mp">₹'+m.p+'</div><div class="mst" onclick="editMed(\''+m.id+'\');event.stopPropagation()" title="Edit Medicine">'+m.s+' units <i class="fas fa-pen" style="font-size:8.5px;opacity:0.6"></i></div><div style="display:flex;align-items:center;gap:6px;">'+db+'<div class="madd" onclick="at(\''+m.id+'\');event.stopPropagation()"><i class="fas fa-plus"></i></div></div></div>';g.appendChild(d);});}
+function rItems(list){const tb=document.getElementById('inv-body');if(!tb)return;tb.innerHTML='';if(!list.length){tb.innerHTML='<tr><td colspan="16" style="text-align:center;color:var(--dim)">No items found.</td></tr>';return;}list.forEach(m=>{const st=m.s<=0?'<span class="bx br">Out</span>':(m.s<15?'<span class="bx br" style="background:#f59e0b">Low</span>':'<span class="bx bg">OK</span>');tb.innerHTML+=`<tr><td style="position:sticky;left:0;background:var(--card);border-right:1px solid var(--brd);font-weight:600">${m.n}</td><td>${shelfLabel(m)}</td><td>${m.batch||'—'}</td><td>${m.expiry||'—'}</td><td>₹${m.p_rate}</td><td>${m.p_packing||'—'}</td><td>₹${m.p}</td><td>${m.s_packing||'—'}</td><td>${m.s}</td><td>${m.p_gst}%</td><td>${m.s_gst}%</td><td>${m.disc}%</td><td>${m.offer||'None'}</td><td>${m.reorder}</td><td>${m.max_qty}</td><td style="text-align:right"><button class="btn btn-out" style="padding:4px 8px" onclick="editMed('${m.id}')"><i class="fas fa-pen"></i></button></td></tr>`;});}
 function rPurchases(){fetch(API+'/purchases?t='+Date.now()).then(r=>r.json()).then(ps=>{const tb=document.getElementById('pur-body');if(!tb)return;if(!ps.length){tb.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--dim)">No purchase orders recorded.</td></tr>';return;}tb.innerHTML='';ps.sort((a,b)=>b.id.localeCompare(a.id)).forEach(p=>{const st=p.status==='Received'?'bg':(p.status==='Cancelled'?'br':'bo');const prf=p.photo?`<i class="fas fa-camera-retro" style="margin-left:6px;opacity:0.6;cursor:pointer" onclick="v_sh('${p.id}')"></i>`:'';tb.innerHTML+=`<tr><td><span class="bx bo">#${p.id}</span></td><td>${p.supplier}</td><td>${p.items}</td><td>₹${p.amount}</td><td>${p.date}</td><td><span class="bx ${st}" onclick="upSt('${p.id}')" style="cursor:pointer">${p.status}</span>${prf}</td></tr>`;});});}
 function v_sh(id){fetch(API+'/purchases').then(r=>r.json()).then(ps=>{const p=ps.find(x=>x.id==id);if(!p||!p.photo)return;const w=window.open('','_blank','width=450,height=550');w.document.write(`<html><body style="background:#0f172a;color:#fff;font-family:sans-serif;padding:20px;text-align:center;"><h3>Order Verification Proof</h3><img src="${p.photo}" style="width:100%;border-radius:8px;border:1px solid #334155"/><div style="text-align:left;margin-top:15px;font-size:13px;"><p><b>ID:</b> #${p.id}</p><p><b>Supplier:</b> ${p.supplier}</p><p><b>Batch:</b> ${p.batch}</p><p><b>Expiry:</b> ${p.expiry}</p></div></body></html>`);});}
 function upSt(id){fetch(API+'/purchases').then(r=>r.json()).then(ps=>{const p=ps.find(x=>x.id==id);if(!p)return;const next={'Pending':'Received','Received':'Cancelled','Cancelled':'Pending'}[p.status]||'Pending';if(next==='Received'){v_open(p);return;}p.status=next;fetch(API+'/purchases',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)}).then(()=>rPurchases());});}
@@ -983,7 +360,9 @@ function fm2(){
         const matchCat = !c || m.c === c;
         const matchText = m.n.toLowerCase().includes(q) || 
                           m.g.toLowerCase().includes(q) || 
-                          (m.batch && m.batch.toLowerCase().includes(q));
+                          (m.batch && m.batch.toLowerCase().includes(q)) ||
+                          (m.shelf_name && m.shelf_name.toLowerCase().includes(q)) ||
+                          (m.shelf_label && m.shelf_label.toLowerCase().includes(q));
         return matchCat && matchText;
     });
     rmed(filteredMeds);
@@ -1117,7 +496,18 @@ window.addEventListener('keydown', e => {
     if(best) best.focus();
 });
 
-function fi(q){const lq=q.toLowerCase();rItems(MEDS.filter(m=>m.n.toLowerCase().includes(lq)||m.batch.toLowerCase().includes(lq)));}
+function fi(q){
+  const lq=(q||'').toLowerCase();
+  const shelfFilter=document.getElementById('shelf-filter')?.value || '';
+  const list=MEDS.filter(m=>{
+    const shelfMatch = !shelfFilter || String(m.shelf_id||'') === String(shelfFilter);
+    const text = [
+      m.n, m.g, m.c, m.batch, m.expiry, m.offer, m.shelf_name, m.shelf_label, m.shelf_aisle, m.shelf_rack, m.shelf_slot, m.shelf_bin
+    ].filter(Boolean).join(' ').toLowerCase();
+    return shelfMatch && text.includes(lq);
+  });
+  rItems(list);
+}
 // fm2() handles both now
 
 function at(id){const i=MEDS.find(x=>x.id==id);if(!i)return;if(i.s<=0){alert('Out of stock!');return;}if(cart[id]&&(cart[id].qty>=i.s)){alert('Cannot exceed available stock!');return;}if(cart[id])cart[id].qty++;else cart[id]={...i,qty:1};rct();}
@@ -1157,6 +547,8 @@ function sm(){
   document.getElementById('man-id').value='';
   ['n','g','batch','exp','ppack','spack','offer'].forEach(k=>document.getElementById('man-'+k).value='');
   ['s','prate','p','pgst','sgst','disc','reorder','max'].forEach(k=>document.getElementById('man-'+k).value=0);
+  document.getElementById('man-shelf').value='';
+  document.getElementById('man-shelf-label').value='Unassigned';
   document.getElementById('man-n').focus();
 }
 function editMed(id){
@@ -1181,6 +573,8 @@ function editMed(id){
   document.getElementById('man-offer').value=m.offer;
   document.getElementById('man-reorder').value=m.reorder;
   document.getElementById('man-max').value=m.max_qty;
+  document.getElementById('man-shelf').value=m.shelf_id||'';
+  document.getElementById('man-shelf-label').value=shelfLabel(m);
   document.getElementById('man-n').focus();
 }
 function am_sv(){
@@ -1205,7 +599,8 @@ function am_sv(){
     disc:parseFloat(document.getElementById('man-disc').value)||0,
     offer:document.getElementById('man-offer').value,
     reorder:parseInt(document.getElementById('man-reorder').value)||0,
-    max_qty:parseInt(document.getElementById('man-max').value)||0
+    max_qty:parseInt(document.getElementById('man-max').value)||0,
+    shelf_id:document.getElementById('man-shelf').value||''
   };
   fetch(API+'/medicines',{
     method:'POST',
@@ -1222,7 +617,7 @@ function am_sv(){
   .finally(()=>{btn.disabled=false;btn.textContent=ot;});
 }
 function initNav(){
-  const ids=['man-n','man-g','man-c','man-batch','man-exp','man-s','man-prate','man-p','man-ppack','man-spack','man-pgst','man-sgst','man-disc','man-offer','man-reorder','man-max'];
+  const ids=['man-n','man-g','man-c','man-batch','man-shelf','man-exp','man-s','man-prate','man-p','man-ppack','man-spack','man-pgst','man-sgst','man-disc','man-offer','man-reorder','man-max'];
   ids.forEach((id,idx)=>{
     const el=document.getElementById(id);
     if(el)el.onkeydown=(e)=>{
@@ -1237,12 +632,80 @@ function initNav(){
 }
 initNav();
 
-function rMasters(){rCustomers();rSuppliers();rDoctors();}
+function rMasters(){rCustomers();rSuppliers();rDoctors();loadShelves();}
 let CUSTOMERS=[];
 function rCustomers(){fetch(API+'/customers?t='+Date.now()).then(r=>r.json()).then(cs=>{CUSTOMERS=cs;const tb=document.getElementById('cust-body');const nL=document.getElementById('cust-list');const pL=document.getElementById('phone-list');if(nL&&pL){nL.innerHTML='';pL.innerHTML='';cs.forEach(x=>{nL.innerHTML+=`<option value="${x.name}">${x.phone}</option>`;pL.innerHTML+=`<option value="${x.phone}">${x.name}</option>`;});}if(!tb)return;tb.innerHTML='';if(!cs.length){tb.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--dim)">No customer records.</td></tr>';return;}cs.forEach(c=>tb.innerHTML+=`<tr><td>${c.name}</td><td>${c.phone}</td><td style="text-align:center">${c.visits}</td><td style="font-weight:600">₹${c.total_spend.toFixed(2)}</td><td style="text-align:right"><i class="fas fa-edit" style="cursor:pointer;color:var(--acc);margin-right:10px" onclick="ecust(${c.id})"></i><i class="fas fa-trash" style="cursor:pointer;color:#e74c3c" onclick="dcust(${c.id})"></i></td></tr>`)});}
 function rSuppliers(){fetch(API+'/suppliers?t='+Date.now()).then(r=>r.json()).then(ss=>{SUPPLIERS=ss;const tb=document.getElementById('sup-body');if(!tb)return;tb.innerHTML='';if(!ss.length){tb.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--dim)">No supplier records.</td></tr>';return;}ss.forEach(s=>tb.innerHTML+=`<tr><td>${s.name}</td><td>${s.phone}</td><td>${s.gst||'—'}</td><td><span class="bx bg">${s.status}</span></td><td style="text-align:right"><i class="fas fa-edit" style="cursor:pointer;color:var(--acc);margin-right:10px" onclick="esup(${s.id})"></i><i class="fas fa-trash" style="cursor:pointer;color:#e74c3c" onclick="dm_sup('${s.id}')"></i></td></tr>`)});}
 let DOCTORS=[];
 function rDoctors(){fetch(API+'/doctors?t='+Date.now()).then(r=>r.json()).then(ds=>{DOCTORS=ds;const tb=document.getElementById('doc-body');if(!tb)return;tb.innerHTML='';if(!ds.length){tb.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--dim)">No doctor records.</td></tr>';return;}ds.forEach(d=>tb.innerHTML+=`<tr><td>${d.name}</td><td>${d.specialty}</td><td>${d.hospital}</td><td>${d.phone}</td><td style="text-align:right"><i class="fas fa-edit" style="cursor:pointer;color:var(--acc);margin-right:10px" onclick="edoc(${d.id})"></i><i class="fas fa-trash" style="cursor:pointer;color:#e74c3c" onclick="ddoc(${d.id})"></i></td></tr>`)}); }
+
+function loadShelves(){
+  fetch(API+'/shelves?t='+Date.now()).then(r=>r.json()).then(rows=>{
+    SHELVES=rows||[];
+    renderShelfSelects();
+    const tb=document.getElementById('shelf-body');
+    if(!tb)return;
+    tb.innerHTML='';
+    if(!SHELVES.length){
+      tb.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--dim)">No shelf locations.</td></tr>';
+      return;
+    }
+    tb.innerHTML=SHELVES.map(s=>`<tr><td>${s.name}</td><td style="font-size:11px;color:var(--mt)">${[s.aisle&&`Aisle ${s.aisle}`,s.rack&&`Rack ${s.rack}`,s.shelf&&`Shelf ${s.shelf}`,s.bin&&`Bin ${s.bin}`].filter(Boolean).join(' / ')||'—'}</td><td>${s.notes||'—'}</td><td><span class="bx ${s.status==='Active'?'bg':'bo'}">${s.status}</span></td><td>${s.medicine_count||0}</td><td style="text-align:right"><i class="fas fa-edit" style="cursor:pointer;color:var(--acc);margin-right:10px" onclick="eshelf(${s.id})"></i><i class="fas fa-trash" style="cursor:pointer;color:#e74c3c" onclick="dshelf(${s.id})"></i></td></tr>`).join('');
+  });
+}
+function ashelf(){
+  document.getElementById('shelf-mod').style.display='flex';
+  document.getElementById('shelf-title').textContent='Add Shelf Location';
+  document.getElementById('shelf-id').value='';
+  ['name','aisle','rack','slot','bin','notes'].forEach(k=>document.getElementById('shelf-'+k).value='');
+  document.getElementById('shelf-status').value='Active';
+  document.getElementById('shelf-name').focus();
+}
+function eshelf(id){
+  const s=SHELVES.find(x=>x.id==id);
+  if(!s)return;
+  document.getElementById('shelf-mod').style.display='flex';
+  document.getElementById('shelf-title').textContent='Edit Shelf Location';
+  document.getElementById('shelf-id').value=s.id;
+  document.getElementById('shelf-name').value=s.name||'';
+  document.getElementById('shelf-aisle').value=s.aisle||'';
+  document.getElementById('shelf-rack').value=s.rack||'';
+  document.getElementById('shelf-slot').value=s.shelf||'';
+  document.getElementById('shelf-bin').value=s.bin||'';
+  document.getElementById('shelf-notes').value=s.notes||'';
+  document.getElementById('shelf-status').value=s.status||'Active';
+  document.getElementById('shelf-name').focus();
+}
+function saveShelf(){
+  const name=document.getElementById('shelf-name').value.trim();
+  if(!name){alert('Enter shelf name');return;}
+  const payload={
+    id:document.getElementById('shelf-id').value||null,
+    name,
+    aisle:document.getElementById('shelf-aisle').value.trim(),
+    rack:document.getElementById('shelf-rack').value.trim(),
+    shelf:document.getElementById('shelf-slot').value.trim(),
+    bin:document.getElementById('shelf-bin').value.trim(),
+    notes:document.getElementById('shelf-notes').value.trim(),
+    status:document.getElementById('shelf-status').value
+  };
+  fetch(API+'/shelves',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(payload)
+  }).then(r=>{if(!r.ok)return r.json().then(e=>{throw e});return r.json();}).then(()=>{
+    document.getElementById('shelf-mod').style.display='none';
+    loadShelves();
+    loadInventory();
+  }).catch(err=>alert('Save Failed: '+(err.message||'Server error')));
+}
+function dshelf(id){
+  if(!confirm('Delete this shelf location? Medicines assigned to it will become unassigned.'))return;
+  fetch(API+'/shelves/'+id,{method:'DELETE'}).then(r=>{if(!r.ok)return r.json().then(e=>{throw e});return r.json();}).then(()=>{
+    loadShelves();
+    loadInventory();
+  }).catch(err=>alert('Delete Failed: '+(err.message||'Server error')));
+}
 
 function acust(){document.getElementById('cust-mod').style.display='flex';document.getElementById('cust-title').textContent='Add Customer';document.getElementById('c-id').value='';document.getElementById('c-n').value='';document.getElementById('c-p').value='';document.getElementById('c-a').value='';document.getElementById('c-e').value='';document.getElementById('c-face').value='';document.getElementById('c-btn-scan').innerHTML='<i class="fas fa-camera"></i> Enroll Face Vector';document.getElementById('c-btn-scan').style.borderColor='';document.getElementById('c-btn-scan').style.color='';document.getElementById('c-n').focus();}
 function ecust(id){const c=CUSTOMERS.find(x=>x.id==id);if(!c)return;document.getElementById('cust-mod').style.display='flex';document.getElementById('cust-title').textContent='Edit Customer';document.getElementById('c-id').value=c.id;document.getElementById('c-n').value=c.name;document.getElementById('c-p').value=c.phone;document.getElementById('c-a').value=c.address||'';document.getElementById('c-e').value=c.email||'';document.getElementById('c-face').value=c.face_vector||'';document.getElementById('c-btn-scan').innerHTML=c.face_vector?'<i class="fas fa-check"></i> ML Vector Enrolled!':'<i class="fas fa-camera"></i> Enroll Face Vector';document.getElementById('c-btn-scan').style.borderColor=c.face_vector?'#22c55e':'';document.getElementById('c-btn-scan').style.color=c.face_vector?'#22c55e':'';document.getElementById('c-n').focus();}
@@ -1349,10 +812,10 @@ function rSys(sD){
   if(!ls.length)g_low.innerHTML='<div style="color:var(--dim);font-size:11px;padding:8px">No low stock items.</div>';
   ls.forEach(m=>{
     const txt=m.s<=0?'<span style="color:#ef4444;font-weight:600">Out of Stock</span>':`${m.s} units left`;
-    g_low.innerHTML+=`<div class="ali"><div class="dot dr2"></div><span style="flex:1">${m.n}</span><span style="font-size:10.5px;color:var(--mt)">${txt}</span></div>`
+    g_low.innerHTML+=`<div class="ali"><div class="dot dr2"></div><div style="flex:1;min-width:0"><div>${m.n}</div><div style="font-size:10px;color:var(--mt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${shelfLabel(m)}</div></div><span style="font-size:10.5px;color:var(--mt)">${txt}</span></div>`
   });
   if(!ex.length)g_exp.innerHTML='<div style="color:var(--dim);font-size:11px;padding:8px">No near-expiry items.</div>';
-  ex.forEach(m=>{g_exp.innerHTML+=`<div class="ali"><div class="dot dr2"></div><span style="flex:1">${m.n}</span><span style="font-size:10.5px;color:var(--mt)">Exp: ${m.expiry}</span></div>`});
+  ex.forEach(m=>{g_exp.innerHTML+=`<div class="ali"><div class="dot dr2"></div><div style="flex:1;min-width:0"><div>${m.n}</div><div style="font-size:10px;color:var(--mt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${shelfLabel(m)}</div></div><span style="font-size:10.5px;color:var(--mt)">Exp: ${m.expiry}</span></div>`});
 }
 function clRep(){
     document.getElementById('rep-mod').style.display='none';
@@ -1752,25 +1215,25 @@ function generateWantedList(){
       salesMap[i.n]=(salesMap[i.n]||0)+(parseInt(i.qty,10)||0);
     });
   });
-  wantedRows=MEDS.map(m=>{
+    wantedRows=MEDS.map(m=>{
     const sold=salesMap[m.n]||0;
     const avg=sold/days;
     const minPoint=parseInt(m.reorder,10)||10;
     const forecast=Math.ceil(avg*lead+safety);
     const reorderPoint=Math.max(minPoint,forecast);
     const wanted=Math.max(0,reorderPoint-(parseInt(m.s,10)||0));
-    return {name:m.n,stock:parseInt(m.s,10)||0,minPoint,avg,forecast,reorderPoint,wanted,site:matchedSiteForMedicine(m.n)};
+    return {name:m.n,stock:parseInt(m.s,10)||0,minPoint,avg,forecast,reorderPoint,wanted,site:matchedSiteForMedicine(m.n),shelf:shelfLabel(m)};
   }).sort((a,b)=>b.wanted-a.wanted);
   const tb=document.getElementById('ro-body');
   if(!tb)return;
-  if(!wantedRows.length){tb.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--dim)">No inventory data.</td></tr>';return;}
-  tb.innerHTML=wantedRows.map(r=>`<tr><td>${r.name}</td><td>${r.stock}</td><td>${r.minPoint}</td><td>${r.avg.toFixed(2)}</td><td>${r.forecast}</td><td style="font-weight:700;color:${r.wanted>0?'#f5a623':'#22c55e'}">${r.wanted}</td><td>${r.site}</td><td>${r.wanted>0?'<span class="bx br">REORDER</span>':'<span class="bx bg">OK</span>'}</td></tr>`).join('');
+  if(!wantedRows.length){tb.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--dim)">No inventory data.</td></tr>';return;}
+  tb.innerHTML=wantedRows.map(r=>`<tr><td>${r.name}</td><td>${r.shelf}</td><td>${r.stock}</td><td>${r.minPoint}</td><td>${r.avg.toFixed(2)}</td><td>${r.forecast}</td><td style="font-weight:700;color:${r.wanted>0?'#f5a623':'#22c55e'}">${r.wanted}</td><td>${r.site}</td><td>${r.wanted>0?'<span class="bx br">REORDER</span>':'<span class="bx bg">OK</span>'}</td></tr>`).join('');
 }
 
 function exportWantedCsv(){
   if(!wantedRows.length){alert('Generate wanted list first.');return;}
-  let csv='Medicine,Stock,ReorderPoint,WantedQty,MatchedSite\n';
-  wantedRows.filter(r=>r.wanted>0).forEach(r=>csv+=`"${r.name}","${r.stock}","${r.reorderPoint}","${r.wanted}","${r.site}"\n`);
+  let csv='Medicine,Shelf,Stock,ReorderPoint,WantedQty,MatchedSite\n';
+  wantedRows.filter(r=>r.wanted>0).forEach(r=>csv+=`"${r.name}","${r.shelf}","${r.stock}","${r.reorderPoint}","${r.wanted}","${r.site}"\n`);
   const blob=new Blob([csv],{type:'text/csv'}), url=window.URL.createObjectURL(blob), a=document.createElement('a');
   a.href=url; a.download='wanted_reorder_list.csv'; a.click();
 }
@@ -1825,7 +1288,3 @@ window.onload = () => {
     if(typeof loadInventory === 'function') loadInventory();
   }, 5000);
 };
-
-</script>
-</body>
-</html>

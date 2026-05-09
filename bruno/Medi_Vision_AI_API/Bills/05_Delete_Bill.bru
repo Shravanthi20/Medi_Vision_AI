@@ -1,0 +1,24 @@
+meta {
+  name: Delete Bill
+  type: http
+  seq: 5
+}
+
+delete {
+  url: {{baseUrl}}/api/bills/{{billId}}
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("Delete bill succeeds", function() {
+    const body = res.getBody();
+    expect(res.getStatus()).to.equal(200);
+    expect(body).to.have.property('status', 'success');
+    expect(body).to.have.property('deleted');
+  });
+}
