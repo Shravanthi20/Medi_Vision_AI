@@ -1,0 +1,24 @@
+meta {
+  name: Backup
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/backup
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 410
+}
+
+tests {
+  test("Backup is disabled in Postgres mode", function() {
+    const body = res.getBody();
+    expect(res.getStatus()).to.equal(410);
+    expect(body).to.have.property('status', 'error');
+    expect(body.message).to.include('Postgres');
+  });
+}

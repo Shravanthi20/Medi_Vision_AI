@@ -224,7 +224,7 @@
     }
 
     /* ══════════════════════════════
-       BREADCRUMB BAR  — own row
+       BREADCRUMB BAR
     ══════════════════════════════ */
     .breadcrumb-bar {
       background: #0E1117;
@@ -245,95 +245,97 @@
     .breadcrumb-current { font-weight: 700; font-size: 15px; color: #4ADE80; }
 
     /* ══════════════════════════════
-       INFO ROW  — 3-zone, own row
+       INFO ROW
     ══════════════════════════════ */
     .info-row {
       background: #0E1117;
       border-bottom: 1px solid rgba(108,108,108,0.4);
       padding: 18px 28px;
       display: grid;
-      grid-template-columns: 1fr auto 1fr;
+      grid-template-columns: 1fr 1fr 1fr;
       align-items: center;
+      gap: 0 32px;
       flex-shrink: 0;
     }
 
-    /* LEFT: patient info — stacked, left-aligned */
+    /* LEFT — 3 stacked fields */
     .left-info {
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: 12px;
       align-items: flex-start;
     }
 
-    .patient-line {
-      color: #fff;
-      font-size: 25px;
-      font-weight: 500;
-      line-height: 1.6;
-    }
-
-    /* CENTER: Bill No — centred in grid cell */
+    /* CENTER — single field, vertically centred by grid */
     .center-info {
       display: flex;
       align-items: center;
       justify-content: center;
     }
 
-    .bill-no {
-      font-family: 'JetBrains Mono', monospace;
-      font-weight: 700;
-      font-size: 25px;
-      color: #D58615;
-      letter-spacing: 0.05em;
-      white-space: nowrap;
-    }
-
-    /* RIGHT: inputs — stacked, right-aligned */
+    /* RIGHT — 2 stacked fields, top-aligned */
     .right-info {
       display: flex;
       flex-direction: column;
-      gap: 6px;
-      align-items: flex-end;
+      gap: 12px;
+      align-items: flex-start;
     }
 
+    /* remove old plain-text styles */
+    .patient-line { display: none; }
+    .bill-no      { display: none; }
+
+    /* ── INPUT FIELDS — memo.css style ── */
     .input-field {
       display: flex;
       align-items: center;
-      background: #1C2028;
-      border: 1px solid rgba(150,150,150,0.29);
-      border-radius: 6px;
-      padding: 0 12px;
-      height: 34px;
-      gap: 8px;
-      width: 260px;
+      gap: 10px;
+      width: 100%;
     }
 
-    .input-field:focus-within {
-      border-color: rgba(213,134,21,0.6);
-      box-shadow: 0 0 0 2px rgba(213,134,21,0.15);
-    }
-
+    /* fixed-width label column so all inputs line up */
     .input-label {
-      color: #D58615;
-      font-size: 16px;
-      font-weight: 600;
-      white-space: nowrap;
+      width: 110px;
       flex-shrink: 0;
+      text-align: right;
+      font-size: 15px;
+      font-weight: 600;
+      color: #8E96B0;
+      transition: color 0.15s;
+      white-space: nowrap;
+    }
+
+    .input-field:focus-within .input-label {
+      color: #F59E0B;
     }
 
     .input-field input {
-      background: transparent;
-      color: #fff;
-      font-size: 16px;
-      font-weight: 400;
-      border: none;
-      outline: none;
       flex: 1;
-      min-width: 0;
+      height: 38px;
+      background: #1C2028;
+      border: 1px solid rgba(80,88,110,0.4);
+      border-radius: 8px;
+      padding: 0 12px;
+      color: #fff;
       font-family: Inter, sans-serif;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
     }
 
-    .input-field input::placeholder { color: rgba(255,255,255,0.35); }
+    .input-field input:hover {
+      border-color: rgba(245,158,11,0.65);
+      background: #1F2430;
+      box-shadow: 0 0 0 2px rgba(245,158,11,0.15);
+    }
+
+    .input-field input:focus {
+      border-color: #3B82F6;
+      background: #1C2028;
+      box-shadow: 0 0 0 1px #3B82F6;
+    }
+
+    .input-field input::placeholder { color: rgba(255,255,255,0.25); }
 
     /* ══════════════════════════════
        CANCEL BILL MAIN
@@ -346,7 +348,7 @@
       padding: 0 28px;
     }
 
-    /* ── TABLE ── */
+    /* ── TABLE SECTION ── */
     .table-section {
       flex: 1;
       display: flex;
@@ -355,83 +357,123 @@
       padding-top: 12px;
     }
 
-    .table-container {
-      display: flex;
-      flex-direction: column;
-      flex: 1;
-      overflow: hidden;
-    }
-
-    /* Table Header */
-    .table-header {
-      display: grid;
-      grid-template-columns: 14.4% 28.8% 10.3% 10.9% 7.5% 10.5% 17.6%;
-      background: #111316;
-      border: 2px solid rgba(255,255,255,0.7);
-    }
-
-    .table-header-cell {
-      color: #fff;
-      font-weight: 600;
-      font-size: 25px;
-      padding: 16px 10px;
-      text-align: center;
-      border-right: 1px solid rgba(255,255,255,0.4);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .table-header-cell:last-child { border-right: none; }
-
-    /* Table Body */
-    .table-body {
+    /* ══════════════════════════════
+       TABLE — styled to match second code
+    ══════════════════════════════ */
+    .table-wrapper {
+      overflow-x: auto;
       overflow-y: auto;
-      border-left: 1px solid rgba(255,255,255,0.2);
-      border-right: 1px solid rgba(255,255,255,0.2);
-      border-bottom: 1px solid rgba(255,255,255,0.2);
       flex: 1;
+      border-radius: 4px;
     }
 
-    .table-row {
-      display: grid;
-      grid-template-columns: 14.4% 28.8% 10.3% 10.9% 7.5% 10.5% 17.6%;
-      border-bottom: 1px solid rgba(255,255,255,0.15);
-      transition: background 0.15s;
+    .items-table {
+      width: 100%;
+      border-collapse: collapse;
     }
 
-    .table-row:hover { background: rgba(255,255,255,0.04); }
-
-    .table-cell {
-      color: #fff;
-      font-size: 25px;
-      font-weight: 500;
-      padding: 12px 10px;
-      text-align: center;
-      border-right: 1px solid rgba(255,255,255,0.15);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      white-space: nowrap;
-    }
-
-    .table-cell:last-child { border-right: none; }
-
-    /* Subtotal row */
-    .total-box {
-      display: flex;
-      justify-content: flex-end;
-      margin-top: 6px;
-      flex-shrink: 0;
-    }
-
-    .total-value {
+    /* thead — 3px solid white outer, 1px bottom */
+    .items-table thead {
       background: #111316;
-      color: #fff;
-      padding: 8px 28px;
-      font-size: 25px;
+      border-top: 3px solid white;
+      border-left: 3px solid white;
+      border-right: 3px solid white;
+      border-bottom: 1px solid white;
+    }
+
+    .items-table th {
+      padding: 16px 12px;
+      color: white;
+      font-weight: 500;
+      font-size: 18px;
+      line-height: 30px;
+      text-align: left;
+      white-space: nowrap;
+      border-right: 2px solid white;
+    }
+    .items-table th:last-child { border-right: none; }
+
+    /* tbody rows — 3px left/right, 2px bottom */
+    .items-table tbody tr {
+      background: #111316;
+      border-left: 3px solid white;
+      border-right: 3px solid white;
+      border-bottom: 2px solid white;
+      transition: background-color 0.2s;
+    }
+    .items-table tbody tr:nth-child(even) { background: #13171B; }
+    .items-table tbody tr:last-child { border-bottom: 3px solid white; }
+    .items-table tbody tr:hover { background: rgba(255,255,255,0.04); }
+
+    /* tbody cells */
+    .items-table td {
+      padding: 12px;
+      color: white;
+      font-weight: 500;
+      font-size: 14px;
+      border-right: 2px solid white;
+    }
+    .items-table td:last-child { border-right: none; }
+
+    /* inputs inside cells */
+    .items-table input[type="text"],
+    .items-table input[type="number"] {
+      background: transparent;
+      border: none;
+      color: white;
+      font-weight: 500;
+      font-size: 14px;
+      padding: 4px;
+      width: 100%;
+      font-family: Inter, sans-serif;
+      outline: none;
+      transition: background 0.2s;
+    }
+    .items-table input:focus {
+      background: rgba(255,255,255,0.05);
+      border-radius: 4px;
+    }
+
+    /* CHANGED: inputs inside td — transparent, plain text look, no glow */
+    .items-table td input {
+      background: transparent;
+      border: none;
+      outline: none;
+      color: white;
+      font-size: 14px;
+      font-weight: 500;
+      font-family: Inter, sans-serif;
+      width: 100%;
+      padding: 0;
+    }
+    /* numbers right-aligned, text left-aligned */
+    .items-table td.num input { text-align: right; }
+    .items-table td.txt input { text-align: left; }
+
+    /* CHANGED: tfoot total — attached to table bottom, right-aligned to Value col */
+    .items-table tfoot tr {
+      border-left: 3px solid white;
+      border-right: 3px solid white;
+      border-bottom: 3px solid white;
+      border-top: 2px solid white;
+      background: #111316;
+    }
+    .items-table tfoot td {
+      padding: 10px 12px;
+      border-right: 2px solid white;
+      color: #D58615;
+      font-size: 15px;
       font-weight: 600;
-      border: 1px solid rgba(255,255,255,0.2);
+    }
+    .items-table tfoot td:last-child {
+      border-right: none;
+      text-align: right;
+      color: #fff;
+    }
+    .items-table tfoot td.total-label {
+      text-align: right;
+      color: #D58615;
+      border-right: 2px solid white;
     }
 
     /* ── BOTTOM SUMMARY ── */
@@ -480,17 +522,55 @@
       flex-shrink: 0;
     }
 
-    .final-total span {
-      color: #fff;
+    .final-total span { color: #fff; }
+
+    /* ── DELETE BUTTON — appears on row hover ── */
+    .items-table thead tr { position: relative; }
+    .items-table tbody tr { position: relative; }
+
+    .del-btn {
+      position: absolute;
+      right: -22px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 18px;
+      height: 18px;
+      background: none;
+      border: 1px solid rgba(248,113,113,0.4);
+      border-radius: 3px;
+      color: rgba(248,113,113,0.5);
+      font-size: 11px;
+      line-height: 1;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.15s, color 0.15s, border-color 0.15s;
+      padding: 0;
+      font-family: Inter, sans-serif;
     }
 
+    .items-table tbody tr:hover .del-btn {
+      opacity: 1;
+    }
+
+    .del-btn:hover {
+      color: #f87171;
+      border-color: #f87171;
+      background: rgba(248,113,113,0.08);
+    }
+
+    /* make table-wrapper overflow visible on right so button shows */
+    .table-wrapper { overflow-x: visible; }
+    .table-section { overflow: visible; }
+    .items-table { position: relative; }
+
     /* Scrollbar */
-    .table-body::-webkit-scrollbar { width: 6px; }
-    .table-body::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); }
-    .table-body::-webkit-scrollbar-thumb { background: rgba(213,134,21,0.45); border-radius: 3px; }
-    .table-body::-webkit-scrollbar-thumb:hover { background: rgba(213,134,21,0.7); }
-
-
+    .table-wrapper::-webkit-scrollbar { width: 6px; }
+    .table-wrapper::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); }
+    .table-wrapper::-webkit-scrollbar-thumb { background: rgba(213,134,21,0.45); border-radius: 3px; }
+    .table-wrapper::-webkit-scrollbar-thumb:hover { background: rgba(213,134,21,0.7); }
   </style>
 </head>
 <body>
@@ -567,7 +647,7 @@
     <!-- CONTENT AREA -->
     <div class="content-area">
 
-      <!-- ══════ BREADCRUMB BAR ══════ -->
+      <!-- BREADCRUMB BAR -->
       <div class="breadcrumb-bar">
         <div class="breadcrumb-left">
           <span class="breadcrumb-parent">Sales</span>
@@ -578,62 +658,75 @@
         </div>
       </div>
 
-      <!-- ══════ INFO ROW (3-zone grid) ══════ -->
+      <!-- INFO ROW -->
       <div class="info-row">
 
-        <!-- LEFT: patient info — stacked vertically -->
+        <!-- LEFT: Dr.Name, CustName, Address -->
         <div class="left-info">
-          <span class="patient-line">Dr.Name: Ashok</span>
-          <span class="patient-line">CustName: Selvam</span>
-          <span class="patient-line">Address: XXXX</span>
+          <div class="input-field">
+            <span class="input-label">Dr. Name :</span>
+            <input type="text" value="Ashok" id="dr-name-input">
+          </div>
+          <div class="input-field">
+            <span class="input-label">Cust Name :</span>
+            <input type="text" value="Selvam" id="cust-name-input">
+          </div>
+          <div class="input-field">
+            <span class="input-label">Address :</span>
+            <input type="text" value="XXXX" id="address-input">
+          </div>
         </div>
 
-        <!-- CENTER: Bill No — perfectly centred by grid -->
+        <!-- CENTER: Bill No -->
         <div class="center-info">
-          <span class="bill-no">Bill No : 232</span>
+          <div class="input-field">
+            <span class="input-label">Bill No :</span>
+            <input type="text" value="232" id="bill-no-input">
+          </div>
         </div>
 
-        <!-- RIGHT: Salesman + Cashbill inputs — right-aligned -->
+        <!-- RIGHT: Salesman, Cashbill -->
         <div class="right-info">
           <div class="input-field">
             <span class="input-label">Salesman :</span>
             <input type="text" placeholder="Type...." id="salesman-input">
           </div>
           <div class="input-field">
-            <span class="input-label">Cashbill &nbsp;#</span>
+            <span class="input-label">Cashbill # :</span>
             <input type="text" placeholder="" id="cashbill-input">
           </div>
         </div>
 
-      </div><!-- /info-row -->
+      </div>
 
-      <!-- ══════ CANCEL BILL MAIN ══════ -->
+      <!-- CANCEL BILL MAIN -->
       <div class="cancel-main">
 
         <!-- Table -->
         <div class="table-section">
-          <div class="table-container">
-
-            <!-- Table Header -->
-            <div class="table-header">
-              <div class="table-header-cell">Item Code</div>
-              <div class="table-header-cell">Item Name</div>
-              <div class="table-header-cell">Batch</div>
-              <div class="table-header-cell">Expiry</div>
-              <div class="table-header-cell">Qty</div>
-              <div class="table-header-cell">M.R.P</div>
-              <div class="table-header-cell">Value</div>
-            </div>
-
-            <!-- Table Body -->
-            <div class="table-body" id="table-body"></div>
-
+          <div class="table-wrapper">
+            <table class="items-table" id="itemsTable">
+              <thead>
+                <tr>
+                  <th style="width:14.4%">Item Code</th>
+                  <th style="width:28.8%">Item Name</th>
+                  <th style="width:10.3%">Batch</th>
+                  <th style="width:10.9%">Expiry</th>
+                  <th style="width:7.5%">Qty</th>
+                  <th style="width:10.5%">M.R.P</th>
+                  <th style="width:17.6%">Value</th>
+                </tr>
+              </thead>
+              <tbody id="table-body"></tbody>
+              <!-- CHANGED: total attached to table as tfoot -->
+              <tfoot>
+                <tr>
+                  <td colspan="6" class="total-label">Total :</td>
+                  <td id="subtotal" style="text-align:right;">0.00</td>
+                </tr>
+              </tfoot>
+            </table>
           </div>
-        </div>
-
-        <!-- Subtotal -->
-        <div class="total-box">
-          <div class="total-value">Total : <span id="subtotal">0.00</span></div>
         </div>
 
         <!-- Bottom Summary -->
@@ -653,11 +746,8 @@
         </div>
 
       </div>
-      <!-- ══════ /CANCEL BILL MAIN ══════ -->
 
     </div><!-- /content-area -->
-
-
 
   </div><!-- /main -->
 
@@ -668,7 +758,6 @@
   const DAYS   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
   const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   function pad(n){ return String(n).padStart(2,'0'); }
-
   function updateHeader(){
     const n = new Date();
     document.getElementById('clock').textContent    = pad(n.getHours())+':'+pad(n.getMinutes())+':'+pad(n.getSeconds());
@@ -692,42 +781,103 @@
     { code: "GLI2",    name: "GLIBENCLAMIDE 2.5",   batch: "15649", expiry: "02/26", qty: 30, mrp:  22.00, value: 660.00 }
   ];
 
-  /* ── Render Table ── */
+  /* CHANGED: recalculate total from all value inputs */
+  function updateTotals(){
+    let total = 0;
+    document.querySelectorAll('#table-body tr').forEach(function(row){
+      const valInput = row.querySelector('td.num:last-child input');
+      if(valInput) total += parseFloat(valInput.value) || 0;
+    });
+    const fmt = total.toFixed(2);
+    document.getElementById('subtotal').textContent    = fmt;
+    const ft = document.getElementById('final-total');
+    if(ft) ft.textContent = fmt;
+  }
+
+  /* build a row with input fields in every cell + delete button */
+  function buildRow(item, idx){
+    const row = document.createElement('tr');
+
+    const cols = [
+      ['txt', (idx+1)+' '+item.code,  'text'],
+      ['txt', item.name,              'text'],
+      ['txt', item.batch,             'text'],
+      ['txt', item.expiry,            'text'],
+      ['num', item.qty,               'number'],
+      ['num', item.mrp.toFixed(2),    'number'],
+      ['num', item.value.toFixed(2),  'number'],
+    ];
+
+    cols.forEach(function(col, ci){
+      const td  = document.createElement('td');
+      td.className = col[0];
+      td.style.position = 'relative';
+      const inp = document.createElement('input');
+      inp.type  = col[2];
+      inp.value = col[1];
+      if(col[2]==='number') inp.step = '0.01';
+      inp.addEventListener('change', updateTotals);
+
+      inp.addEventListener('keydown', function(e){
+        if(e.key !== 'Enter') return;
+        e.preventDefault();
+        const allInputs = Array.from(document.querySelectorAll('#table-body tr td input'));
+        const myIdx     = allInputs.indexOf(inp);
+        const isLast    = myIdx === allInputs.length - 1;
+        if(isLast){ addEmptyRow(); }
+        else { const next = allInputs[myIdx+1]; if(next) next.focus(); }
+      });
+
+      /* Delete shortcut: Delete key on any cell removes the row */
+      inp.addEventListener('keydown', function(e){
+        if(e.key === 'Delete' && e.shiftKey) deleteRow(row);
+      });
+
+      td.appendChild(inp);
+
+      /* ADD: delete button on last cell only */
+      if(ci === cols.length - 1){
+        const btn = document.createElement('button');
+        btn.className   = 'del-btn';
+        btn.textContent = '×';
+        btn.title       = 'Delete row';
+        btn.addEventListener('click', function(){ deleteRow(row); });
+        td.appendChild(btn);
+      }
+
+      row.appendChild(td);
+    });
+
+    return row;
+  }
+
+  /* ADD: remove row, recalc totals */
+  function deleteRow(row){
+    row.remove();
+    updateTotals();
+  }
+
+  /* CHANGED: adds a blank editable row, focuses first cell */
+  function addEmptyRow(){
+    const tbody = document.getElementById('table-body');
+    const rowCount = tbody.rows.length;
+    const blank = { code:'', name:'', batch:'', expiry:'', qty:0, mrp:0, value:0 };
+    const row   = buildRow(blank, rowCount);
+    tbody.appendChild(row);
+    row.querySelector('input').focus();
+  }
+
+  /* CHANGED: renderTable uses buildRow */
   function renderTable(){
     const tbody = document.getElementById('table-body');
-    const frag  = document.createDocumentFragment();
+    tbody.innerHTML = '';
     billItems.forEach(function(item, i){
-      const row = document.createElement('div');
-      row.className = 'table-row';
-      row.innerHTML =
-        '<div class="table-cell">'+(i+1)+' '+item.code+'</div>'+
-        '<div class="table-cell">'+item.name+'</div>'+
-        '<div class="table-cell">'+item.batch+'</div>'+
-        '<div class="table-cell">'+item.expiry+'</div>'+
-        '<div class="table-cell">'+item.qty+'</div>'+
-        '<div class="table-cell">'+item.mrp.toFixed(2)+'</div>'+
-        '<div class="table-cell">'+item.value.toFixed(2)+'</div>';
-      frag.appendChild(row);
+      tbody.appendChild(buildRow(item, i));
     });
-    tbody.appendChild(frag);
+    updateTotals();
   }
 
-  /* ── Update Totals ── */
-  function updateTotals(){
-    const total = billItems.reduce(function(s,i){ return s+i.value; }, 0);
-    document.getElementById('subtotal').textContent   = total.toFixed(2);
-    document.getElementById('final-total').textContent = total.toFixed(2);
-  }
-
-  /* ── Footer Actions ── */
-  function handleAction(name){
-    if(name==='Exit'){ if(confirm('Exit?')) window.close(); }
-    console.log('Action:', name);
-  }
-
-  /* ── Init ── */
   renderTable();
-  updateTotals();
 </script>
 </body>
 </html>

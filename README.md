@@ -6,6 +6,7 @@ Medi Vision AI is a full-stack, AI-powered medical shop ERP for billing, invento
 
 - Billing and invoice management
 - Medicine inventory tracking
+- Shelf mapping for medicine locations
 - Customer and supplier CRM
 - Doctor records
 - Face recognition support for customer handling
@@ -29,7 +30,7 @@ pip install -r requirements.txt
 3. Start the application:
 
 ```bash
-python app.py
+python run.py
 ```
 
 4. Open the app in your browser:
@@ -38,7 +39,21 @@ python app.py
 http://127.0.0.1:5001
 ```
 
+### Project Structure
+
+- `run.py` is the local development entrypoint.
+- `wsgi.py` is the production entrypoint.
+- `backend/app_factory.py` builds the Flask app and registers routes.
+- `backend/db.py` holds database setup, migrations, and shared row helpers.
+- `backend/routes/` contains the route groups split by feature area.
+- `frontend/templates/dashboard.html` is the main UI entrypoint served at `/`.
+- `frontend/static/` holds the browser assets used by the dashboard.
+
 ### Notes
 
 - The app uses SQLite by default and creates `database.db` in the project folder.
-- You can set `PHARMACY_DB_PATH` if you want to use a different database location.
+- You can set `PHARMACY_DB_PATH` if you want to use a different database location, and it can be relative to the project root.
+- The app loads a local `.env` file automatically from the project root.
+- See [.env.example](f:/Medi_Vision_AI/.env.example) for the suggested template.
+- SMS history and templates are stored in SQLite and the bill flow will queue an SMS automatically after a bill is saved.
+- To connect a real gateway, set `SMS_PROVIDER_URL`, `SMS_PROVIDER_KEY`, `SMS_PROVIDER_SENDER`, and optionally `SMS_PROVIDER_MODE`.

@@ -1,0 +1,31 @@
+meta {
+  name: Save Shelf
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/api/shelves
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "id": {{shelfId}},
+    "name": "Main Rack",
+    "status": "Active"
+  }
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("Save shelf succeeds", function() {
+    const body = res.getBody();
+    expect(res.getStatus()).to.equal(200);
+    expect(body).to.have.property('status', 'success');
+  });
+}
