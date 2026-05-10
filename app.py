@@ -4,13 +4,14 @@ import sqlite3
 from datetime import datetime
 from typing import Any
 
-from flask import Flask, jsonify, request, send_file
+from flask import Flask, render_template, request, redirect, url_for, send_file, jsonify
 from flask_cors import CORS
+
 
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.environ.get("PHARMACY_DB_PATH", os.path.join(BASE_DIR, "database.db"))
-DASHBOARD_PATH = os.path.join(BASE_DIR, "/templates/login.html")
+DASHBOARD_PATH = os.path.join(BASE_DIR, "templates", "login.html")
 
 
 app = Flask(__name__)
@@ -827,6 +828,10 @@ def delete_doctor(id):
     with get_conn() as conn:
         conn.execute("DELETE FROM doctors WHERE id = ?", (id,))
     return jsonify({"status": "success"})
+
+@app.route('/mfrchange2')
+def mfr_change_detail_page():
+    return render_template('mfrchange2.html')
 
 
 init_db()

@@ -1,0 +1,23 @@
+meta {
+  name: List Communication Logs
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/api/communications/logs
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("List communication logs returns an array", function() {
+    const body = res.getBody();
+    expect(res.getStatus()).to.equal(200);
+    expect(body).to.be.an('array');
+  });
+}

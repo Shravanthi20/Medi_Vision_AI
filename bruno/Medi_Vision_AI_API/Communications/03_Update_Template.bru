@@ -1,0 +1,31 @@
+meta {
+  name: Update Communication Template
+  type: http
+  seq: 3
+}
+
+put {
+  url: {{baseUrl}}/api/communications/templates/{{commTemplateId}}
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "name": "Updated Template",
+    "content": "Updated content",
+    "is_active": 1
+  }
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("Update communication template succeeds", function() {
+    const body = res.getBody();
+    expect(res.getStatus()).to.equal(200);
+    expect(body).to.have.property('status', 'success');
+  });
+}
