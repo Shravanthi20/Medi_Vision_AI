@@ -25,11 +25,9 @@ def create_app() -> Flask:
     app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-key")
     app.config["MAX_CONTENT_LENGTH"] = 32 * 1024 * 1024
     
-    database_url = os.getenv("DATABASE_URL", "").strip()
-    if not database_url:
-        raise RuntimeError("DATABASE_URL must be set for Postgres-only mode")
+    database_url = os.getenv("DATABASE_URL", "sqlite:///database.db").strip()
 
-    # Configure Postgres URI
+    # Configure Database URI
     app.config["SQLALCHEMY_DATABASE_URI"] = database_url
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 

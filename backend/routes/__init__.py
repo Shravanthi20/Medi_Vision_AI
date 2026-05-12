@@ -8,6 +8,7 @@ from .sms import sms_bp
 from .purchases import purchases_bp
 from .communications import communications_bp
 from .auth import auth_bp
+from .chatbot import chatbot_bp
 
 
 def register_blueprints(app: Flask) -> None:
@@ -19,3 +20,4 @@ def register_blueprints(app: Flask) -> None:
     app.register_blueprint(masters_bp)
     app.register_blueprint(communications_bp)
     app.register_blueprint(sms_bp)
+    app.register_blueprint(chatbot_bp)

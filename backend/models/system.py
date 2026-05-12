@@ -1,7 +1,8 @@
 """Domain G — System / Audit: audit_log, sms_log, system_settings."""
 
 from datetime import datetime
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import JSON as JSONB
 from ..extensions import db
 
 

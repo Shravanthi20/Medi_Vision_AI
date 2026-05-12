@@ -1,5 +1,6 @@
 from datetime import datetime
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import JSON as JSONB
 from ..extensions import db
 
 
