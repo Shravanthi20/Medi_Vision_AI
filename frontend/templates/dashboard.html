@@ -29,6 +29,7 @@
   <div class="ni" data-panel="utilities" onclick="sw('utilities',this)"><i class="fas fa-hard-drive"></i><span>Utilities</span></div>
   <div class="ni" data-panel="sms" onclick="sw('sms',this)"><i class="fas fa-comment-dots"></i><span>SMS</span></div>
   <div class="ni" data-panel="insights" onclick="sw('insights',this)"><i class="fas fa-chart-line"></i><span>Data Insights</span></div>
+  <div class="ni" data-panel="staff-performance" onclick="sw('staff-performance',this)"><i class="fas fa-users-viewfinder"></i><span>Staff Insights</span></div>
   <div class="sp"></div>
   <div class="nl">OTHER</div>
   <div class="ni" data-panel="users" onclick="sw('users',this)"><i class="fas fa-users-gear"></i><span>Users & Access</span></div>
@@ -614,6 +615,83 @@
     </div>
   </div>
 </div></div>
+<!-- STAFF PERFORMANCE -->
+<div class="pn" id="p-staff-performance"><div class="pg">
+  <div class="sec-hd">
+    <span class="sec-t">Salesman Performance Analytics</span>
+    <button class="btn btn-out" onclick="rStaffInsights()"><i class="fas fa-rotate"></i> Refresh Data</button>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr;gap:20px;">
+    <div class="crd" style="padding:24px;">
+      <div style="font-size:14px;font-weight:600;margin-bottom:15px;display:flex;align-items:center;gap:10px">
+        <i class="fas fa-trophy" style="color:#f5a623"></i> Staff Leaderboard (Last 30 Days)
+      </div>
+      <div class="tw">
+        <table>
+          <thead>
+            <tr>
+              <th>Salesman</th>
+              <th>Code</th>
+              <th style="text-align:right">Bills</th>
+              <th style="text-align:right">Avg Bill</th>
+              <th style="text-align:right">Total Revenue</th>
+              <th style="text-align:right">Action</th>
+            </tr>
+          </thead>
+          <tbody id="staff-summary-body">
+            <tr><td colspan="6" style="text-align:center;padding:40px;color:var(--dim)">Loading performance data...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div></div>
+
+<!-- STAFF PERFORMANCE MODAL -->
+<div id="staff-perf-mod" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.85); z-index:10001; justify-content:center; align-items:center; backdrop-filter:blur(6px)">
+  <div class="crd" style="width:95%; max-width:1000px; max-height:90vh; display:flex; flex-direction:column; padding:0; overflow:hidden; border:1px solid rgba(255,255,255,0.15)">
+    <div style="padding:20px; border-bottom:1px solid var(--brd); display:flex; justify-content:space-between; align-items:center; background:linear-gradient(90deg, rgba(59,130,246,0.1) 0%, transparent 100%)">
+      <div>
+        <h3 id="staff-mod-name" style="margin:0; font-size:20px; color:var(--tx)">Salesman Performance</h3>
+        <p id="staff-mod-code" style="margin:5px 0 0; font-size:12px; color:var(--mt); font-weight:700"></p>
+      </div>
+      <button class="btn btn-out" onclick="document.getElementById('staff-perf-mod').style.display='none'" style="width:35px; height:35px; border-radius:50%; padding:0; display:flex; align-items:center; justify-content:center">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div style="flex:1; overflow-y:auto; padding:24px">
+      <!-- Summary Tiles -->
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:20px; margin-bottom:24px">
+        <div style="padding:20px; background:rgba(255,255,255,0.03); border-radius:12px; border:1px solid var(--brd); text-align:center">
+          <div style="font-size:11px; color:var(--mt); margin-bottom:8px; text-transform:uppercase; letter-spacing:1px">Total Revenue</div>
+          <div id="staff-stat-rev" style="font-size:24px; font-weight:700; color:var(--acc)">₹0</div>
+        </div>
+        <div style="padding:20px; background:rgba(255,255,255,0.03); border-radius:12px; border:1px solid var(--brd); text-align:center">
+          <div style="font-size:11px; color:var(--mt); margin-bottom:8px; text-transform:uppercase; letter-spacing:1px">Bills Generated</div>
+          <div id="staff-stat-bills" style="font-size:24px; font-weight:700; color:var(--tx)">0</div>
+        </div>
+        <div style="padding:20px; background:rgba(255,255,255,0.03); border-radius:12px; border:1px solid var(--brd); text-align:center">
+          <div style="font-size:11px; color:var(--mt); margin-bottom:8px; text-transform:uppercase; letter-spacing:1px">Avg Bill Value</div>
+          <div id="staff-stat-avg" style="font-size:24px; font-weight:700; color:#22c55e">₹0</div>
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns:3fr 2fr; gap:24px">
+        <!-- Sales Trend -->
+        <div class="crd" style="padding:20px; background:rgba(255,255,255,0.02)">
+          <div style="font-size:13px; font-weight:600; margin-bottom:15px">Daily Sales Momentum</div>
+          <div style="height:300px; position:relative"><canvas id="staffTrendChart"></canvas></div>
+        </div>
+        <!-- Category Distribution -->
+        <div class="crd" style="padding:20px; background:rgba(255,255,255,0.02)">
+          <div style="font-size:13px; font-weight:600; margin-bottom:15px">Category Contribution</div>
+          <div style="height:300px; position:relative"><canvas id="staffCatChart"></canvas></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- SETTINGS -->
 <div class="pn" id="p-settings"><div class="pg">
   <div class="sec-hd"><span class="sec-t">Store Settings</span></div>
@@ -1113,7 +1191,7 @@ function renderUsersPanel(){
   const tb=document.getElementById('u-body');
   const dRole=(r)=>r==='user'?'staff':(r==='junior'?'junior staff':r);
   if(tb){
-    tb.innerHTML=APP_USERS.map(u=>`<tr><td>${u.name} (${u.username})</td><td>${u.phone||'—'}</td><td>${u.code||'—'}</td><td><span class="bx bo">${dRole(u.role)}</span></td><td style="text-align:right"><button class="btn btn-out" style="padding:4px 8px;margin-right:5px" onclick="editAppUser('${u.id}')">Edit</button><button class="btn btn-r" style="padding:4px 8px" onclick="removeAppUser('${u.id}')">Delete</button></td></tr>`).join('');
+    tb.innerHTML=APP_USERS.map(u=>`<tr><td>${u.name} (${u.username})</td><td>${u.phone||'—'}</td><td>${u.code||'—'}</td><td><span class="bx bo">${dRole(u.role)}</span></td><td style="text-align:right"><button class="btn btn-out" style="padding:4px 8px;margin-right:5px;border-color:var(--acc);color:var(--acc)" onclick="showStaffPerformanceByCode('${u.code}')" title="View Performance"><i class="fas fa-chart-line"></i></button><button class="btn btn-out" style="padding:4px 8px;margin-right:5px" onclick="editAppUser('${u.id}')">Edit</button><button class="btn btn-r" style="padding:4px 8px" onclick="removeAppUser('${u.id}')">Delete</button></td></tr>`).join('');
   }
   const rb=document.getElementById('role-body');
   if(rb){
@@ -3069,11 +3147,124 @@ function showClvModal(segmentId) {
     document.getElementById('clv-mod').style.display = 'flex';
 }
 
+let staffTrendChart = null, staffCatChart = null;
+
+async function rStaffInsights() {
+    try {
+        const res = await fetch('/api/analytics/staff-summary');
+        const data = await res.json();
+        if(data.status === 'success') {
+            const body = document.getElementById('staff-summary-body');
+            body.innerHTML = data.data.map(s => `
+                <tr style="transition:0.2s" onmouseover="this.style.background='rgba(255,255,255,0.03)'" onmouseout="this.style.background='transparent'">
+                    <td><div style="display:flex;align-items:center;gap:10px">
+                        <div style="width:30px;height:30px;background:rgba(59,130,246,0.2);color:#3b82f6;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px">${s.name[0]}</div>
+                        <span style="font-weight:500">${s.name}</span>
+                    </div></td>
+                    <td><span class="hold-chip" style="font-size:10px">${s.code}</span></td>
+                    <td style="text-align:right">${s.bills}</td>
+                    <td style="text-align:right;color:#22c55e;font-weight:600">₹${s.avg_bill.toLocaleString()}</td>
+                    <td style="text-align:right;font-weight:700">₹${s.revenue.toLocaleString()}</td>
+                    <td style="text-align:right">
+                        <button class="btn btn-out" style="padding:4px 10px;font-size:10px" onclick="showStaffPerformance(${s.id})">
+                            <i class="fas fa-chart-pie"></i> View Performance
+                        </button>
+                    </td>
+                </tr>
+            `).join('') || '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--dim)">No salesman records found.</td></tr>';
+        }
+    } catch(e) { console.error(e); }
+}
+
+async function showStaffPerformance(id) {
+    try {
+        const res = await fetch(`/api/analytics/staff/${id}`);
+        const data = await res.json();
+        if(data.status === 'success') {
+            const d = data.data;
+            document.getElementById('staff-mod-name').innerText = d.staff_info.name;
+            document.getElementById('staff-mod-code').innerText = `STAFF CODE: ${d.staff_info.code}`;
+            document.getElementById('staff-stat-rev').innerText = `₹${d.summary.total_revenue.toLocaleString()}`;
+            document.getElementById('staff-stat-bills').innerText = d.summary.bill_count;
+            document.getElementById('staff-stat-avg').innerText = `₹${d.summary.avg_bill.toLocaleString()}`;
+            
+            document.getElementById('staff-perf-mod').style.display = 'flex';
+            
+            // Render Trend Chart
+            const trendCtx = document.getElementById('staffTrendChart').getContext('2d');
+            if(staffTrendChart) staffTrendChart.destroy();
+            staffTrendChart = new Chart(trendCtx, {
+                type: 'line',
+                data: {
+                    labels: d.trend.map(t => t.date),
+                    datasets: [{
+                        label: 'Daily Revenue',
+                        data: d.trend.map(t => t.revenue),
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59,130,246,0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        borderWidth: 3,
+                        pointRadius: 4,
+                        pointBackgroundColor: '#3b82f6'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#8e94a9', font: { size: 10 } } },
+                        x: { grid: { display: false }, ticks: { color: '#8e94a9', font: { size: 10 } } }
+                    }
+                }
+            });
+            
+            // Render Category Chart
+            const catCtx = document.getElementById('staffCatChart').getContext('2d');
+            if(staffCatChart) staffCatChart.destroy();
+            staffCatChart = new Chart(catCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: d.categories.map(c => c.category),
+                    datasets: [{
+                        data: d.categories.map(c => c.value),
+                        backgroundColor: ['#3b82f6', '#22c55e', '#f5a623', '#ef4444', '#a78bfa', '#ec4899'],
+                        borderWidth: 0,
+                        hoverOffset: 15
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { color: '#8e94a9', font: { size: 10 }, boxWidth: 12 } }
+                    },
+                    cutout: '70%'
+                }
+            });
+        }
+    } catch(e) { console.error(e); }
+}
+
+async function showStaffPerformanceByCode(code) {
+    try {
+        const res = await fetch('/api/analytics/staff-summary');
+        const data = await res.json();
+        if(data.status === 'success') {
+            const staff = data.data.find(s => s.code === code);
+            if(staff) showStaffPerformance(staff.id);
+            else alert('No sales data found for this staff code.');
+        }
+    } catch(e) { console.error(e); }
+}
+
 // Update sw function to load insights
 const oldSw = sw;
 sw = function(k, el) {
     oldSw(k, el);
     if(k === 'insights') rInsights();
+    if(k === 'staff-performance') rStaffInsights();
 };
 </script>
 
