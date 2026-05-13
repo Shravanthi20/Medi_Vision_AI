@@ -4,7 +4,7 @@ import sqlite3
 from datetime import datetime
 from typing import Any
 
-from flask import Flask, jsonify, request, send_file
+from flask import Flask, jsonify, request, send_file, render_template
 from flask_cors import CORS
 
 
@@ -301,7 +301,7 @@ def normalize_bill_row(row: sqlite3.Row) -> dict[str, Any]:
 
 @app.route("/")
 def dashboard():
-    return send_file(DASHBOARD_PATH)
+    return render_template("login.html")
 
 
 @app.route("/api/health", methods=["GET"])
@@ -827,6 +827,16 @@ def delete_doctor(id):
     with get_conn() as conn:
         conn.execute("DELETE FROM doctors WHERE id = ?", (id,))
     return jsonify({"status": "success"})
+
+
+@app.route('/mfrchange2')
+def mfr_change_detail_page():
+    return render_template('mfrchange2.html')
+
+
+@app.route('/wanted')
+def wanted():
+    return render_template('wanted.html')
 
 
 init_db()
