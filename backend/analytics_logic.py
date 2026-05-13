@@ -433,3 +433,103 @@ def get_personalized_suggestions(customer_id, limit=10, days_back=90, exclude_re
             })
     
     return sorted(suggestions, key=lambda x: x['stock'], reverse=True)[:limit]
+def get_staff_performance_summary(days_back=30):
+    """
+    Get high-level performance metrics for all active salesmen.
+    """
+    from .models.hr import Salesman
+    start_date = datetime.utcnow().date() - timedelta(days=days_back)
+    
+    staff_stats = db.session.query(
+        Salesman.salesman_id,
+        Salesman.salesman_name,
+        Salesman.salesman_code,
+        func.count(SalesBill.bill_id).label('bill_count'),
+        func.sum(SalesBill.net_amount).label('total_revenue')
+    ).join(SalesBill, Salesman.salesman_id == SalesBill.salesman_id).filter(
+        SalesBill.is_cancelled == False,
+        SalesBill.bill_date >= start_date
+    ).group_by(Salesman.salesman_id, Salesman.salesman_name, Salesman.salesman_code).all()
+    
+    return [
+        {
+            "id": sid,
+            "name": name,
+            "code": code,
+            "bills": bills,
+            "revenue": round(float(rev), 2),
+            "avg_bill": round(float(rev) / bills, 2) if bills > 0 else 0
+        }
+        for sid, name, code, bills, rev in staff_stats
+    ]
+
+def get_staff_detailed_performance(staff_id, days_back=30):
+    """
+    Generate detailed performance metrics for a specific staff member.
+    """
+    from .models.hr import Salesman
+    from .models.core import ProductCategory
+    
+    staff = db.session.get(Salesman, staff_id)
+    if not staff:
+        return None
+        
+    start_date = datetime.utcnow().date() - timedelta(days=days_back)
+    
+    # 1. Sales Trend (Last 30 Days)
+    trend_query = db.session.query(
+        SalesBill.bill_date,
+        func.sum(SalesBill.net_amount).label('daily_rev')
+    ).filter(
+        SalesBill.salesman_id == staff_id,
+        SalesBill.is_cancelled == False,
+        SalesBill.bill_date >= start_date
+    ).group_by(SalesBill.bill_date).order_by(SalesBill.bill_date).all()
+    
+    trend = [{"date": d.isoformat(), "revenue": float(r)} for d, r in trend_query]
+    
+    # 2. Category Distribution
+    category_query = db.session.query(
+        ProductCategory.category_name,
+        func.sum(SalesBillItem.value).label('cat_val')
+    ).join(Item, Item.category_id == ProductCategory.category_id)\
+     .join(SalesBillItem, SalesBillItem.item_id == Item.item_id)\
+     .join(SalesBill, SalesBillItem.bill_id == SalesBill.bill_id)\
+     .filter(
+        SalesBill.salesman_id == staff_id,
+        SalesBill.is_cancelled == False,
+        SalesBill.bill_date >= start_date
+    ).group_by(ProductCategory.category_name).all()
+    
+    categories = [{"category": name, "value": float(val)} for name, val in category_query]
+    
+    # 3. Top Items Sold by this Staff
+    top_items = db.session.query(
+        Item.item_name,
+        func.sum(SalesBillItem.qty_sold).label('qty')
+    ).join(SalesBillItem, Item.item_id == SalesBillItem.item_id)\
+     .join(SalesBill, SalesBillItem.bill_id == SalesBill.bill_id)\
+     .filter(
+        SalesBill.salesman_id == staff_id,
+        SalesBill.is_cancelled == False,
+        SalesBill.bill_date >= start_date
+    ).group_by(Item.item_name).order_by(func.sum(SalesBillItem.qty_sold).desc()).limit(5).all()
+    
+    # 4. Overall Summary
+    total_rev = sum(t["revenue"] for t in trend)
+    bill_count = db.session.query(func.count(SalesBill.bill_id)).filter(
+        SalesBill.salesman_id == staff_id, 
+        SalesBill.is_cancelled == False
+    ).scalar()
+    
+    return {
+        "staff_info": {"name": staff.salesman_name, "code": staff.salesman_code},
+        "summary": {
+            "total_revenue": round(total_rev, 2),
+            "bill_count": bill_count,
+            "avg_bill": round(total_rev / bill_count, 2) if bill_count > 0 else 0
+        },
+        "trend": trend,
+        "categories": categories,
+        "top_items": [{"name": n, "qty": int(q)} for n, q in top_items]
+    }

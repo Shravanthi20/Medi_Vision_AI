@@ -6,7 +6,9 @@ from ..analytics_logic import (
     get_market_basket_analysis, 
     get_churn_risk_customers,
     get_customer_lifetime_value,
-    get_dynamic_stockout_risk
+    get_dynamic_stockout_risk,
+    get_staff_performance_summary,
+    get_staff_detailed_performance
 )
 
 analytics_bp = Blueprint("analytics", __name__)
@@ -41,5 +43,25 @@ def sales_forecast():
     try:
         data = get_sales_forecast(days_back=60, forecast_days=14)
         return jsonify(data)
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@analytics_bp.route("/api/analytics/staff-summary", methods=["GET"])
+@role_required("admin", "manager")
+def staff_summary():
+    try:
+        data = get_staff_performance_summary()
+        return jsonify({"status": "success", "data": data})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@analytics_bp.route("/api/analytics/staff/<int:staff_id>", methods=["GET"])
+@role_required("admin", "manager")
+def staff_details(staff_id):
+    try:
+        data = get_staff_detailed_performance(staff_id)
+        if not data:
+            return jsonify({"status": "error", "message": "Staff not found"}), 404
+        return jsonify({"status": "success", "data": data})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
