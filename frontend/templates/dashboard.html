@@ -448,8 +448,14 @@
           <label style="display:flex;align-items:center;gap:10px;margin-bottom:8px;cursor:pointer;font-size:12px;">
             <input type="checkbox" checked onchange="toggleInsight('sec-basket', this.checked)"> Market Basket
           </label>
-          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:12px;">
+          <label style="display:flex;align-items:center;gap:10px;margin-bottom:8px;cursor:pointer;font-size:12px;">
             <input type="checkbox" checked onchange="toggleInsight('sec-churn', this.checked)"> Customer Churn
+          </label>
+          <label style="display:flex;align-items:center;gap:10px;margin-bottom:8px;cursor:pointer;font-size:12px;">
+            <input type="checkbox" checked onchange="toggleInsight('sec-clv', this.checked)"> Lifetime Value (RFM)
+          </label>
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:12px;">
+            <input type="checkbox" checked onchange="toggleInsight('sec-stockout', this.checked)"> Stockout Risk
           </label>
         </div>
       </div>
@@ -511,6 +517,30 @@
         <tbody id="churn-body"><tr><td colspan="3" style="text-align:center;padding:40px;color:var(--dim)">Identifying...</td></tr></tbody>
       </table></div>
     </div>
+
+    <!-- Customer Lifetime Value (RFM) -->
+    <div id="sec-clv" class="crd" style="padding:24px; display:flex; flex-direction:column; min-height:360px;">
+      <div style="font-size:14px;font-weight:600;margin-bottom:15px;">
+        <i class="fas fa-gem" style="color:#3b82f6;margin-right:8px"></i> Customer Lifetime Value (RFM)
+      </div>
+      <div style="font-size:11px;color:var(--mt);margin-bottom:12px">AI clustering based on Recency, Frequency, &amp; Spend.</div>
+      <div class="tw" style="flex:1; overflow-y:auto;"><table>
+        <thead><tr><th>Segment</th><th>Customers</th><th style="text-align:right">Avg Spend</th><th style="text-align:right">Total Revenue</th></tr></thead>
+        <tbody id="clv-body"><tr><td colspan="4" style="text-align:center;padding:40px;color:var(--dim)">Clustering customers...</td></tr></tbody>
+      </table></div>
+    </div>
+
+    <!-- Dynamic Stockout Risk -->
+    <div id="sec-stockout" class="crd" style="padding:24px; display:flex; flex-direction:column; min-height:360px;">
+      <div style="font-size:14px;font-weight:600;margin-bottom:15px;">
+        <i class="fas fa-hourglass-half" style="color:#f5a623;margin-right:8px"></i> Dynamic Stockout Risk
+      </div>
+      <div style="font-size:11px;color:var(--mt);margin-bottom:12px">Real-time velocity vs remaining supply days.</div>
+      <div class="tw" style="flex:1; overflow-y:auto;"><table>
+        <thead><tr><th>Medicine</th><th>Stock</th><th>Velocity/Day</th><th style="text-align:right">Status</th></tr></thead>
+        <tbody id="stockout-body"><tr><td colspan="4" style="text-align:center;padding:40px;color:var(--dim)">Calculating remaining days...</td></tr></tbody>
+      </table></div>
+    </div>
   </div>
 </div></div>
 <!-- SETTINGS -->
@@ -540,6 +570,36 @@
 </div><!-- /main -->
 
 </div>
+
+<!-- CLV CUSTOMERS MODAL -->
+<div id="clv-mod" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:999;align-items:center;justify-content:center;">
+  <div class="crd fm" style="width:640px;padding:24px;background:var(--card);box-shadow:0 10px 25px rgba(0,0,0,0.5);max-height:85vh;display:flex;flex-direction:column;">
+    <div style="font-size:15px;font-weight:700;margin-bottom:16px;color:#e8ecf4;display:flex;justify-content:space-between;align-items:center;">
+      <div style="display:flex;align-items:center;gap:10px">
+        <i class="fas fa-users" style="color:var(--acc)"></i>
+        <span id="clv-mod-title">Segment Customers</span>
+      </div>
+      <i class="fas fa-xmark" style="cursor:pointer;color:var(--mt)" onclick="document.getElementById('clv-mod').style.display='none'"></i>
+    </div>
+    <div style="font-size:12px;color:var(--mt);margin-bottom:16px" id="clv-mod-desc"></div>
+    <div class="tw" style="flex:1;overflow-y:auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>Customer Name</th>
+            <th>Phone</th>
+            <th style="text-align:right">Bills</th>
+            <th style="text-align:right">Total Spend</th>
+            <th style="text-align:right">Recency</th>
+          </tr>
+        </thead>
+        <tbody id="clv-mod-body">
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
 <!-- MEDICINE MODAL (ADD/EDIT) -->
 <div id="man-mod" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:999;align-items:center;justify-content:center;">
   <div class="crd fm" style="width:520px;padding:22px;background:var(--card);box-shadow:0 10px 25px rgba(0,0,0,0.5);max-height:90vh;overflow-y:auto;">
@@ -2548,6 +2608,50 @@ async function rInsights() {
             </tr>
         `).join('') || '<tr><td colspan="3" style="text-align:center;padding:40px">No high-risk customers</td></tr>';
 
+        // Customer Lifetime Value (RFM)
+        const clvBody = document.getElementById('clv-body');
+        if (clvBody && data.clv_rfm) {
+            window.clvSegments = data.clv_rfm;
+            clvBody.innerHTML = data.clv_rfm.map(s => {
+                const sampleText = (s.sample_customers || []).map(x => `${x.name} (₹${x.spend.toLocaleString()})`).join(', ');
+                return `
+                    <tr onclick="showClvModal('${s.id}')" style="cursor:pointer;transition:background 0.2s" title="Click to view all customers in this category" onmouseover="this.style.background='rgba(255,255,255,0.03)'" onmouseout="this.style.background='transparent'">
+                        <td style="padding:14px">
+                            <div style="display:flex;align-items:center;gap:8px">
+                                <div style="width:8px;height:8px;border-radius:50%;background:${s.color}"></div>
+                                <span style="font-weight:700;color:var(--tx)">${s.name}</span>
+                            </div>
+                            <div style="font-size:10px;color:var(--dim);margin-top:4px">${s.desc}</div>
+                        </td>
+                        <td style="padding:14px;font-weight:600">${s.count}</td>
+                        <td style="text-align:right;padding:14px;font-weight:600">₹${s.avg_spend.toLocaleString()}</td>
+                        <td style="text-align:right;padding:14px">
+                            <div style="font-weight:700;color:var(--acc)">₹${s.total_spend.toLocaleString()}</div>
+                            <div style="font-size:9px;color:var(--dim);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${sampleText}">${sampleText || 'No custom samples'}</div>
+                        </td>
+                    </tr>
+                `;
+            }).join('') || '<tr><td colspan="4" style="text-align:center;padding:40px">No segments available</td></tr>';
+        }
+
+        // Dynamic Stockout Risk
+        const stockoutBody = document.getElementById('stockout-body');
+        if (stockoutBody && data.stockout_risk) {
+            stockoutBody.innerHTML = data.stockout_risk.map(r => `
+                <tr>
+                    <td style="padding:14px">
+                        <div style="font-weight:600">${r.name}</div>
+                        <div style="font-size:10px;color:var(--mt)">ID: ${r.item_id}</div>
+                    </td>
+                    <td style="padding:14px;font-weight:700;color:var(--tx)">${r.stock} <span style="font-size:10px;color:var(--dim);font-weight:400">units</span></td>
+                    <td style="padding:14px;font-weight:600">${r.daily_velocity} <span style="font-size:10px;color:var(--dim);font-weight:400">/day</span></td>
+                    <td style="text-align:right;padding:14px">
+                        <span class="hold-chip" style="background:${r.color}20;color:${r.color};border:none;padding:4px 8px;font-weight:700;font-size:10px">${r.risk_level} (${r.days_remaining}d left)</span>
+                    </td>
+                </tr>
+            `).join('') || '<tr><td colspan="4" style="text-align:center;padding:40px">All stock supplies healthy</td></tr>';
+        }
+
     } catch (e) {
         console.error('Analytics load failed:', e);
     }
@@ -2572,6 +2676,30 @@ function toggleDataset(index, btn) {
 function toggleInsight(id, show) {
     const el = document.getElementById(id);
     if(el) el.style.display = show ? 'flex' : 'none';
+}
+
+function showClvModal(segmentId) {
+    if (!window.clvSegments) return;
+    const seg = window.clvSegments.find(s => s.id === segmentId);
+    if (!seg) return;
+    
+    document.getElementById('clv-mod-title').textContent = seg.name + ' Customers';
+    document.getElementById('clv-mod-desc').textContent = seg.desc;
+    
+    const tbody = document.getElementById('clv-mod-body');
+    const custs = seg.all_customers || [];
+    
+    tbody.innerHTML = custs.map(c => `
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.05)">
+            <td style="padding:12px;font-weight:600;color:var(--tx)">${c.name}</td>
+            <td style="padding:12px;color:var(--mt)">${c.phone}</td>
+            <td style="text-align:right;padding:12px;font-weight:600">${c.freq}</td>
+            <td style="text-align:right;padding:12px;font-weight:700;color:var(--acc)">₹${c.spend.toLocaleString()}</td>
+            <td style="text-align:right;padding:12px;font-size:11px;color:var(--dim)">${c.recency} days ago</td>
+        </tr>
+    `).join('') || '<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--dim)">No customers inside this segment</td></tr>';
+    
+    document.getElementById('clv-mod').style.display = 'flex';
 }
 
 // Update sw function to load insights

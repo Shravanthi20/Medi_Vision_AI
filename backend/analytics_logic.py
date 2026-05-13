@@ -3,6 +3,7 @@ from sqlalchemy import func, desc
 from .extensions import db
 from .models.sales import SalesBill, SalesBillItem
 from .models.core import Item, Customer
+from .models.inventory import StockBatch
 import math
 
 def calculate_linear_regression(data):
@@ -170,3 +171,129 @@ def get_churn_risk_customers(days_threshold=60, min_total_spend=500):
         }
         for name, phone, last_visit, total_spend in churn_risk
     ]
+
+def get_customer_lifetime_value(days_back=180):
+    """
+    Cluster customers using RFM (Recency, Frequency, Monetary) parameters.
+    Segments: Champions, Loyal Refillers, At-Risk.
+    """
+    start_date = datetime.utcnow().date() - timedelta(days=days_back)
+    
+    # Query aggregated stats per customer
+    stats = db.session.query(
+        SalesBill.customer_id,
+        Customer.customer_name,
+        Customer.phone,
+        func.count(SalesBill.bill_id).label('frequency'),
+        func.sum(SalesBill.net_amount).label('monetary'),
+        func.max(SalesBill.bill_date).label('last_visit')
+    ).join(Customer, SalesBill.customer_id == Customer.customer_id).filter(
+        SalesBill.customer_id != None,
+        SalesBill.is_cancelled == False,
+        SalesBill.bill_date >= start_date
+    ).group_by(SalesBill.customer_id, Customer.customer_name, Customer.phone).all()
+    
+    segments = {
+        "champions": {"name": "Champions", "count": 0, "total_spend": 0.0, "customers": [], "color": "#3b82f6", "desc": "Bought recently, buy often, and spend the most"},
+        "loyal": {"name": "Loyal Refillers", "count": 0, "total_spend": 0.0, "customers": [], "color": "#22c55e", "desc": "High purchase frequency for chronic refills"},
+        "at_risk": {"name": "At-Risk VIPs", "count": 0, "total_spend": 0.0, "customers": [], "color": "#f5a623", "desc": "High spenders who haven't visited recently"},
+        "promising": {"name": "Promising / Walk-ins", "count": 0, "total_spend": 0.0, "customers": [], "color": "#a78bfa", "desc": "Recent shoppers or lower frequency buyers"}
+    }
+    
+    today = datetime.utcnow().date()
+    
+    for cid, cname, phone, freq, mon, last_visit in stats:
+        mon_val = float(mon or 0)
+        recency = (today - last_visit).days if last_visit else 0
+        
+        # Determine segment
+        if recency <= 30 and freq >= 8 and mon_val >= 5000:
+            key = "champions"
+        elif freq >= 4:
+            key = "loyal"
+        elif recency > 60 and mon_val >= 500:
+            key = "at_risk"
+        else:
+            key = "promising"
+            
+        seg = segments[key]
+        seg["count"] += 1
+        seg["total_spend"] += mon_val
+        seg["customers"].append({"name": cname, "phone": phone or "-", "spend": round(mon_val, 2), "recency": recency, "freq": freq})
+            
+    # Format return list
+    result = []
+    for k, v in segments.items():
+        avg_spend = round(v["total_spend"] / v["count"], 2) if v["count"] > 0 else 0.0
+        v["customers"].sort(key=lambda x: x["spend"], reverse=True)
+        result.append({
+            "id": k,
+            "name": v["name"],
+            "count": v["count"],
+            "avg_spend": avg_spend,
+            "total_spend": round(v["total_spend"], 2),
+            "sample_customers": v["customers"][:5],
+            "all_customers": v["customers"],
+            "color": v["color"],
+            "desc": v["desc"]
+        })
+        
+    return result
+
+def get_dynamic_stockout_risk(days_back=30):
+    """
+    Calculate real-time daily consumption velocity per item to predict remaining days of supply.
+    """
+    start_date = datetime.utcnow().date() - timedelta(days=days_back)
+    
+    # Calculate quantity sold per item over the period
+    sales_velocity = db.session.query(
+        SalesBillItem.item_id,
+        func.sum(SalesBillItem.qty_sold).label('total_sold')
+    ).join(SalesBill, SalesBillItem.bill_id == SalesBill.bill_id).filter(
+        SalesBill.bill_date >= start_date,
+        SalesBill.is_cancelled == False
+    ).group_by(SalesBillItem.item_id).all()
+    
+    velocity_map = {item_id: float(sold or 0) / days_back for item_id, sold in sales_velocity}
+    
+    # Query items to get stock and compute stockout risk
+    items = Item.query.filter_by(is_active=True).all()
+    
+    result = []
+    for item in items:
+        total_stock = db.session.query(func.coalesce(func.sum(StockBatch.current_qty), 0)).filter_by(item_id=item.item_id).scalar()
+        stock = int(total_stock)
+        
+        # Base fallback velocity if no sales recorded recently
+        vel = velocity_map.get(item.item_id, 0.1)
+        if vel <= 0:
+            vel = 0.1
+            
+        days_remaining = int(round(stock / vel))
+        
+        # Filter for items that have low days remaining or critical stock
+        if days_remaining <= 25 or stock <= 15:
+            if days_remaining <= 5 or stock == 0:
+                risk = "CRITICAL"
+                color = "#ef4444"
+            elif days_remaining <= 12:
+                risk = "HIGH"
+                color = "#f5a623"
+            else:
+                risk = "MODERATE"
+                color = "#3b82f6"
+                
+            result.append({
+                "item_id": item.item_id,
+                "name": item.item_name,
+                "stock": stock,
+                "daily_velocity": round(vel, 2),
+                "days_remaining": days_remaining,
+                "risk_level": risk,
+                "color": color
+            })
+            
+    # Sort by days remaining ascending
+    result.sort(key=lambda x: x["days_remaining"])
+    return result[:15]
