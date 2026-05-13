@@ -9,6 +9,7 @@ from ..models.sales import SalesBill, SalesBillItem, BillingVoucher
 from ..models.core import Customer, Doctor, Item, Location
 from ..models.inventory import StockBatch
 from ..models.lookups import BillType
+from ..analytics_logic import update_customer_purchase_pattern
 from ..services.whatsapp import send_whatsapp_receipt
 
 bills_bp = Blueprint("bills", __name__)
@@ -567,8 +568,17 @@ def save_bill():
 
         db.session.commit()
 
-        # WhatsApp receipt
-        if customer_phone:
+        if customer:
+            for cart_item in cart_items:
+                item_id = str(cart_item.get("id", "")).strip()
+                qty = int(cart_item.get("qty", 1) or 1)
+                if item_id and qty > 0:
+                    update_customer_purchase_pattern(customer.customer_id, item_id, qty)
+        
+        db.session.commit()
+
+        # WhatsApp receipt (Twilio Backup)
+        if customer_phone and data.get("send_twilio_whatsapp"):
             try:
                 items_str = "\n".join(
                     f"- {ci.get('n','Item')} (Qty:{ci.get('qty',1)}) : Rs.{float(ci.get('p',0))*int(ci.get('qty',1)):.2f}"

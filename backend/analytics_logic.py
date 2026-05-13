@@ -1,9 +1,10 @@
-from datetime import datetime, timedelta
-from sqlalchemy import func, desc
+from datetime import datetime, timedelta, date as date_type
+from sqlalchemy import func, desc, case
 from .extensions import db
 from .models.sales import SalesBill, SalesBillItem
 from .models.core import Item, Customer
 from .models.inventory import StockBatch
+from .models.ai import CustomerPurchasePattern
 import math
 
 def calculate_linear_regression(data):
@@ -297,3 +298,138 @@ def get_dynamic_stockout_risk(days_back=30):
     # Sort by days remaining ascending
     result.sort(key=lambda x: x["days_remaining"])
     return result[:15]
+
+def update_customer_purchase_pattern(customer_id, item_id, quantity_purchased):
+    """
+    Update customer purchase pattern when a bill is saved.
+    
+    Args:
+        customer_id: ID of the customer who made the purchase
+        item_id: ID of the item purchased
+        quantity_purchased: Quantity of the item in this transaction
+    """
+    if not customer_id or not item_id:
+        return
+    
+    try:
+        today = date_type.today()
+        pattern = CustomerPurchasePattern.query.filter_by(
+            customer_id=customer_id,
+            item_id=item_id
+        ).first()
+        
+        if pattern:
+            pattern.purchase_count += 1
+            pattern.total_quantity += quantity_purchased
+            pattern.avg_quantity = pattern.total_quantity / pattern.purchase_count
+            pattern.last_purchased_date = today
+        else:
+            pattern = CustomerPurchasePattern(
+                customer_id=customer_id,
+                item_id=item_id,
+                purchase_count=1,
+                total_quantity=quantity_purchased,
+                avg_quantity=float(quantity_purchased),
+                last_purchased_date=today
+            )
+            db.session.add(pattern)
+        
+        db.session.flush()
+    except Exception as e:
+        print(f"Error updating purchase pattern: {e}")
+
+
+def get_personalized_suggestions(customer_id, limit=10, days_back=90, exclude_recent_days=30):
+    """
+    Generate personalized medicine suggestions for a customer based on:
+    1. Items they previously purchased
+    2. Market basket analysis (items frequently bought together)
+    3. Top moving items in inventory
+    
+    Args:
+        customer_id: Customer ID to generate suggestions for
+        limit: Number of suggestions to return
+        days_back: Look back this many days for purchase history and basket analysis
+        exclude_recent_days: Exclude items purchased within this many days
+    
+    Returns:
+        List of suggested items with reasoning
+    """
+    from .models.core import Item
+    from .models.inventory import StockBatch
+    
+    customer_items = db.session.query(
+        SalesBillItem.item_id,
+        Item.item_name,
+        func.max(SalesBill.bill_date).label('last_purchase_date'),
+        func.sum(SalesBillItem.qty_sold).label('total_qty_purchased')
+    ).join(SalesBill, SalesBillItem.bill_id == SalesBill.bill_id).join(Item, SalesBillItem.item_id == Item.item_id).filter(
+        SalesBill.customer_id == customer_id,
+        SalesBill.is_cancelled == False
+    ).group_by(SalesBillItem.item_id, Item.item_name).all()
+    
+    customer_item_ids = {item_id for item_id, _, _, _ in customer_items}
+    exclude_cutoff = datetime.utcnow().date() - timedelta(days=exclude_recent_days)
+    recently_bought = {
+        item_id for item_id, _, last_date, _ in customer_items
+        if last_date and last_date > exclude_cutoff
+    }
+    
+    basket_start = datetime.utcnow().date() - timedelta(days=days_back)
+    related_items = set()
+    
+    if customer_item_ids:
+        related_pairs = db.session.query(
+            case(
+                (SalesBillItem.item_id.in_(customer_item_ids), None),
+                else_=SalesBillItem.item_id
+            ).label('related_id'),
+            func.count('*').label('co_occurrence')
+        ).join(SalesBill, SalesBillItem.bill_id == SalesBill.bill_id).filter(
+            SalesBill.bill_date >= basket_start,
+            SalesBill.is_cancelled == False
+        ).group_by('related_id').order_by(desc('co_occurrence')).limit(limit * 2).all()
+        
+        for related_id, _ in related_pairs:
+            if related_id and related_id not in recently_bought:
+                related_items.add(related_id)
+    
+    top_items_list = get_top_moving_items(limit=limit * 2, days_back=days_back)
+    top_item_ids = {item['item_id'] for item in top_items_list if item['item_id'] not in recently_bought}
+    
+    candidate_ids = list((related_items | top_item_ids) - customer_item_ids - recently_bought)
+    
+    if not candidate_ids:
+        candidate_ids = db.session.query(Item.item_id).filter(
+            ~Item.item_id.in_(recently_bought | customer_item_ids)
+        ).all()
+        candidate_ids = [item_id for (item_id,) in candidate_ids]
+    
+    # Get full item details for suggestions
+    suggestions_data = db.session.query(
+        Item.item_id,
+        Item.item_name,
+        Item.default_selling_price,
+        func.coalesce(func.sum(StockBatch.current_qty), 0).label('stock_qty')
+    ).outerjoin(StockBatch, Item.item_id == StockBatch.item_id).filter(
+        Item.item_id.in_(candidate_ids[:limit * 3])
+    ).group_by(Item.item_id, Item.item_name, Item.default_selling_price).all()
+    
+    suggestions = []
+    for item_id, item_name, price, stock in suggestions_data:
+        if int(stock) > 0:
+            reason = "Popular item"
+            if item_id in related_items:
+                reason = "Frequently bought with your purchases"
+            if item_id in top_item_ids:
+                reason = "Top selling medicine"
+            
+            suggestions.append({
+                "item_id": item_id,
+                "item_name": item_name,
+                "price": float(price or 0),
+                "stock": int(stock),
+                "reason": reason
+            })
+    
+    return sorted(suggestions, key=lambda x: x['stock'], reverse=True)[:limit]

@@ -36,15 +36,18 @@ class CustomerPurchasePattern(db.Model):
 
     pattern_id = db.Column(db.BigInteger, primary_key=True)
     customer_id = db.Column(db.Integer, db.ForeignKey('customers.customer_id'), nullable=False)
+    item_id = db.Column(db.String(10), db.ForeignKey('items.item_id'))
     category_id = db.Column(db.Integer, db.ForeignKey('product_categories.category_id'))
     combination_id = db.Column(db.Integer, db.ForeignKey('combinations.combination_id'))
     purchase_count = db.Column(db.Integer, nullable=False, default=1)
+    total_quantity = db.Column(db.Integer, nullable=False, default=0)
+    avg_quantity = db.Column(db.Float, nullable=False, default=0.0)
     last_purchased_date = db.Column(db.Date, nullable=False)
     next_expected_date = db.Column(db.Date)
     updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     __table_args__ = (
-        db.UniqueConstraint('customer_id', 'category_id', 'combination_id'),
+        db.UniqueConstraint('customer_id', 'item_id', 'category_id', 'combination_id'),
     )
 
 
@@ -73,6 +76,7 @@ class WantedList(db.Model):
     __tablename__ = 'wanted_list'
 
     wanted_id = db.Column(db.Integer, primary_key=True)
+    customer_id = db.Column(db.Integer, db.ForeignKey('customers.customer_id'), nullable=False)
     item_id = db.Column(db.String(10), db.ForeignKey('items.item_id'), nullable=False)
     supplier_id = db.Column(db.Integer, db.ForeignKey('suppliers.supplier_id'))
     manufacturer_id = db.Column(db.Integer, db.ForeignKey('manufacturers.manufacturer_id'))

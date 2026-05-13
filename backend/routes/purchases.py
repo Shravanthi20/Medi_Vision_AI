@@ -5,7 +5,17 @@ from sqlalchemy import func
 
 from ..extensions import db
 from ..models.purchase import PurchaseInvoice, PurchaseInvoiceItem
-from ..models.core import Supplier, Item, Location, FinancialYear, GstSlab
+from ..models.core import (
+    Supplier,
+    Item,
+    Location,
+    FinancialYear,
+    GstSlab,
+    Manufacturer,
+    ProductCategory,
+    UnitOfMeasure,
+    HsnCode,
+)
 from ..models.inventory import StockBatch
 from ..models.lookups import PurchaseType
 
@@ -77,6 +87,39 @@ def _get_or_create_purchase_defaults():
     return fy.financial_year_id, location.location_id, pt.purchase_type_id, user.user_id, gst_slab.gst_slab_id
 
 
+def _get_or_create_item_defaults(gst_slab_id: int):
+    """Ensure minimal lookup rows exist so we can auto-create Item records."""
+    mfg = Manufacturer.query.first()
+    if not mfg:
+        mfg = Manufacturer(manufacturer_code="SYS", manufacturer_name="System Default")
+        db.session.add(mfg)
+        db.session.flush()
+
+    cat = ProductCategory.query.first()
+    if not cat:
+        cat = ProductCategory(category_name="General")
+        db.session.add(cat)
+        db.session.flush()
+
+    hsn = HsnCode.query.first()
+    if not hsn:
+        hsn = HsnCode(
+            hsn_code="00000000",
+            description="Default",
+            gst_slab_id=gst_slab_id,
+        )
+        db.session.add(hsn)
+        db.session.flush()
+
+    uom = UnitOfMeasure.query.first()
+    if not uom:
+        uom = UnitOfMeasure(uom_code="NOS", uom_name="Numbers")
+        db.session.add(uom)
+        db.session.flush()
+
+    return mfg.manufacturer_id, cat.category_id, hsn.hsn_id, uom.uom_id
+
+
 def _purchase_to_compat(purchase: PurchaseInvoice) -> dict:
     """Serialize a PurchaseInvoice to the flat dict the frontend expects."""
     supplier = Supplier.query.get(purchase.supplier_id)
@@ -130,6 +173,22 @@ def _get_or_create_supplier(name: str) -> Supplier:
     return supplier
 
 
+def _next_item_id() -> str:
+    """Generate a unique Item.item_id that fits the String(10) schema."""
+    base = int(datetime.utcnow().timestamp() * 1000) % 100000000
+    candidate = f"M{base:08d}"
+    while Item.query.get(candidate):
+        base = (base + 1) % 100000000
+        candidate = f"M{base:08d}"
+    return candidate
+
+
+def _next_purchase_item_id() -> int:
+    """Generate a PK value for PurchaseInvoiceItem on DBs without autoincrement for BigInteger PK."""
+    max_id = db.session.query(func.coalesce(func.max(PurchaseInvoiceItem.purchase_item_id), 0)).scalar()
+    return int(max_id or 0) + 1
+
+
 @purchases_bp.route("/api/purchases", methods=["GET"])
 def get_purchases():
     purchases = PurchaseInvoice.query.order_by(PurchaseInvoice.purchase_id.desc()).all()
@@ -146,10 +205,26 @@ def add_purchase():
 
     try:
         fy_id, loc_id, pt_id, user_id, gst_slab_id = _get_or_create_purchase_defaults()
+        mfg_id, cat_id, hsn_id, uom_id = _get_or_create_item_defaults(gst_slab_id)
 
         supplier = _get_or_create_supplier(supplier_name)
 
-        amount = float(data.get("amount", 0))
+        line_items = data.get("line_items") if isinstance(data.get("line_items"), list) else []
+
+        def _line_amount(line):
+            qty = int(line.get("qty", 0) or 0)
+            qty = max(0, qty)
+            unit_price = float(line.get("unit_price", 0) or 0)
+            basis = str(line.get("pricing_basis", "per_unit") or "per_unit")
+            explicit = float(line.get("amount", 0) or 0)
+            if explicit > 0:
+                return explicit
+            return unit_price if basis == "lot_total" else (qty * unit_price)
+
+        amount = float(data.get("amount", 0) or 0)
+        if amount <= 0 and line_items:
+            amount = sum(_line_amount(li) for li in line_items)
+
         inv_date_str = data.get("date", "")
         try:
             inv_date = datetime.strptime(inv_date_str, "%d/%m/%Y").date()
@@ -196,12 +271,118 @@ def add_purchase():
         db.session.add(purchase)
         db.session.flush()
 
-        # If items string is given, try to match item names and create line items
+        # Preferred path: process structured purchase line items and update stock.
+        if line_items:
+            next_purchase_item_id = _next_purchase_item_id()
+            processed_lines = 0
+            for idx, line in enumerate(line_items):
+                name = str(line.get("name", "") or "").strip()
+                qty = max(0, int(line.get("qty", 0) or 0))
+                if not name or qty <= 0:
+                    continue
+                processed_lines += 1
+
+                unit_price = float(line.get("unit_price", 0) or 0)
+                basis = str(line.get("pricing_basis", "per_unit") or "per_unit")
+                line_amount = float(_line_amount(line))
+                effective_rate = unit_price
+                if basis == "lot_total" and qty > 0:
+                    effective_rate = line_amount / qty
+
+                matched_item = Item.query.filter(
+                    func.lower(Item.item_name) == name.lower()
+                ).first()
+                if not matched_item:
+                    matched_item = Item(
+                        item_id=_next_item_id(),
+                        item_name=name,
+                        manufacturer_id=mfg_id,
+                        category_id=cat_id,
+                        hsn_id=hsn_id,
+                        uom_id=uom_id,
+                        purchase_gst_slab_id=gst_slab_id,
+                        sales_gst_slab_id=gst_slab_id,
+                        default_mrp=effective_rate if effective_rate > 0 else 0,
+                        default_selling_price=effective_rate if effective_rate > 0 else 0,
+                    )
+                    db.session.add(matched_item)
+                    db.session.flush()
+                elif effective_rate > 0:
+                    matched_item.default_selling_price = effective_rate
+                    matched_item.default_mrp = effective_rate
+
+                batch_no = str(line.get("batch", "") or "").strip() or "__default__"
+                expiry_str = str(line.get("expiry", "") or "").strip()
+                expiry_date = date_type(2099, 12, 31)
+                if expiry_str:
+                    try:
+                        expiry_date = datetime.strptime(expiry_str, "%Y-%m-%d").date()
+                    except ValueError:
+                        pass
+
+                batch = StockBatch.query.filter_by(
+                    item_id=matched_item.item_id,
+                    batch_no=batch_no,
+                    location_id=loc_id,
+                ).first()
+                if not batch:
+                    batch = StockBatch(
+                        item_id=matched_item.item_id,
+                        batch_no=batch_no,
+                        expiry_date=expiry_date,
+                        location_id=loc_id,
+                        manufacturer_id=matched_item.manufacturer_id,
+                        mrp=float(matched_item.default_mrp or 0),
+                        purchase_rate=float(effective_rate or matched_item.default_selling_price or 0),
+                        opening_qty=0,
+                        current_qty=0,
+                        total_stock=0,
+                    )
+                    db.session.add(batch)
+                    db.session.flush()
+
+                batch.current_qty = int(batch.current_qty or 0) + qty
+                batch.total_stock = int(batch.total_stock or 0) + qty
+                if effective_rate > 0:
+                    batch.purchase_rate = effective_rate
+                    batch.mrp = effective_rate
+                if expiry_str:
+                    batch.expiry_date = expiry_date
+
+                li = PurchaseInvoiceItem(
+                    purchase_item_id=next_purchase_item_id,
+                    purchase_id=purchase.purchase_id,
+                    item_id=matched_item.item_id,
+                    stock_batch_id=batch.stock_batch_id,
+                    pkg_qty=qty,
+                    purchase_rate_at_purchase=float(effective_rate or matched_item.default_selling_price or 0),
+                    mrp_at_purchase=float(matched_item.default_mrp or effective_rate or 0),
+                    net_rate=float(effective_rate or matched_item.default_selling_price or 0),
+                    stax_pct=0,
+                    gst_slab_id=gst_slab_id,
+                    cgst_pct=0,
+                    sgst_pct=0,
+                    igst_pct=0,
+                    gst_amount=0,
+                    value=float(line_amount if line_amount > 0 else (effective_rate * qty)),
+                )
+                db.session.add(li)
+                next_purchase_item_id += 1
+
+            if processed_lines == 0:
+                db.session.rollback()
+                return _json_error("No valid purchase line items provided", 400)
+
+            db.session.commit()
+            return jsonify({"status": "success"})
+
+        # Backward compatibility path: legacy comma-separated items string.
         items_str = str(data.get("items", ""))
         batch_no  = str(data.get("batch", "")).strip()
         expiry_str = str(data.get("expiry", "")).strip()
 
         if items_str:
+            next_purchase_item_id = _next_purchase_item_id()
             item_names = [n.strip() for n in items_str.split(",") if n.strip()]
             for iname in item_names:
                 matched_item = Item.query.filter(
@@ -239,6 +420,7 @@ def add_purchase():
                         db.session.flush()
 
                 li = PurchaseInvoiceItem(
+                    purchase_item_id=next_purchase_item_id,
                     purchase_id=purchase.purchase_id,
                     item_id=matched_item.item_id,
                     stock_batch_id=batch.stock_batch_id if batch else None,
@@ -255,6 +437,7 @@ def add_purchase():
                     value=float(matched_item.default_selling_price or 0),
                 )
                 db.session.add(li)
+                next_purchase_item_id += 1
 
         db.session.commit()
         return jsonify({"status": "success"})

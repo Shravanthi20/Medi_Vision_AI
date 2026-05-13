@@ -1,7 +1,7 @@
 from datetime import datetime, date
 
 from flask import Blueprint, jsonify, request
-from sqlalchemy import func
+from sqlalchemy import func, or_
 
 from ..extensions import db
 from ..models.core import (
@@ -40,6 +40,15 @@ def _item_to_compat(item: Item) -> dict:
     combination = Combination.query.get(item.combination_id) if item.combination_id else None
     p_gst_slab = GstSlab.query.get(item.purchase_gst_slab_id)
     s_gst_slab = GstSlab.query.get(item.sales_gst_slab_id)
+    shelf_loc = None
+    if item.rack_number:
+        rack_key = str(item.rack_number).strip()
+        if rack_key.isdigit():
+            shelf_loc = Location.query.get(int(rack_key))
+        if not shelf_loc:
+            shelf_loc = Location.query.filter_by(location_code=rack_key).first()
+        if not shelf_loc and rack_key.isdigit():
+            shelf_loc = Location.query.get(int(item.rack_number))
 
     offer_str = (
         f"Buy {item.offer_buy_qty} Get {item.offer_free_qty} Free"
@@ -71,16 +80,21 @@ def _item_to_compat(item: Item) -> dict:
         "offer":      offer_str,
         "reorder":    item.reorder_level or 0,
         "max_qty":    item.max_stock or 0,
-        "shelf_id":   item.rack_number or "",
-        "shelf_name": item.rack_number or "",
-        "shelf_label": item.rack_number or "Unassigned",
+        "shelf_id":   str(shelf_loc.location_id) if shelf_loc else "",
+        "shelf_name": shelf_loc.location_name if shelf_loc else (item.rack_number or ""),
+        "shelf_label": shelf_loc.location_name if shelf_loc else (item.rack_number or "Unassigned"),
     }
 
 
 def _location_to_compat(loc: Location) -> dict:
     """Serialize a Location ORM object to the dict the frontend expects."""
     # Count items that use this location code as their rack_number
-    med_count = Item.query.filter_by(rack_number=loc.location_code).count()
+    med_count = Item.query.filter(
+        or_(
+            Item.rack_number == str(loc.location_id),
+            Item.rack_number == loc.location_code,
+        )
+    ).count()
     return {
         "id":             loc.location_id,
         "name":           loc.location_name,
@@ -192,7 +206,15 @@ def update_med():
         return _json_error("Missing required field: n (item name)", 400)
 
     try:
-        mfg_id, cat_id, slab_id, hsn_id, uom_id = _get_or_create_defaults()
+        mfg_id, _, slab_id, hsn_id, uom_id = _get_or_create_defaults()
+
+        cat_name = data.get("c", "General").strip()
+        category = ProductCategory.query.filter(func.lower(ProductCategory.category_name) == cat_name.lower()).first()
+        if not category:
+            category = ProductCategory(category_name=cat_name)
+            db.session.add(category)
+            db.session.flush()
+        cat_id = category.category_id
 
         item_id = data.get("id") or ("m_" + str(int(datetime.utcnow().timestamp() * 1000)))
         item = Item.query.get(item_id)
@@ -209,7 +231,8 @@ def update_med():
                 sales_gst_slab_id=slab_id,
             )
             db.session.add(item)
-
+            
+        item.category_id = cat_id
         # update item fields from the flat frontend payload
         item.item_name           = data.get("n", item.item_name)
         item.default_selling_price = float(data.get("p", item.default_selling_price or 0))
@@ -218,7 +241,26 @@ def update_med():
         item.max_stock             = int(data.get("max_qty", item.max_stock or 0))
         item.purchase_packing      = data.get("p_packing", item.purchase_packing or "")
         item.sales_packing         = data.get("s_packing", item.sales_packing or "")
-        item.rack_number           = data.get("shelf_id", item.rack_number or "")
+
+        selected_shelf_id = str(data.get("shelf_id", "") or "").strip()
+        shelf_location = None
+        if selected_shelf_id:
+            if selected_shelf_id.isdigit():
+                shelf_location = Location.query.get(int(selected_shelf_id))
+            if not shelf_location:
+                shelf_location = Location.query.filter_by(location_code=selected_shelf_id).first()
+            if not shelf_location:
+                fallback = Location.query.first()
+                shelf_location = fallback
+
+        if not shelf_location:
+            shelf_location = Location.query.first()
+        if not shelf_location:
+            shelf_location = Location(location_code="MAIN", location_name="Main Store")
+            db.session.add(shelf_location)
+            db.session.flush()
+
+        item.rack_number = str(shelf_location.location_id)
 
         # offer: parse "Buy X Get Y Free" back if present
         offer = data.get("offer", "")
@@ -248,18 +290,12 @@ def update_med():
             .first()
         )
         new_qty = int(data.get("s", 0))
-        location = Location.query.first()
-        location_id = location.location_id if location else None
-
-        if not location_id:
-            loc = Location(location_code="MAIN", location_name="Main Store")
-            db.session.add(loc)
-            db.session.flush()
-            location_id = loc.location_id
+        location_id = shelf_location.location_id
 
         if existing_batch:
             existing_batch.current_qty = new_qty
             existing_batch.total_stock = new_qty
+            existing_batch.location_id = location_id
             if expiry_date:
                 existing_batch.expiry_date = expiry_date
             existing_batch.purchase_rate = float(data.get("p_rate", existing_batch.purchase_rate or 0))
@@ -324,6 +360,7 @@ def save_shelf():
         if loc_id:
             loc = Location.query.get(loc_id)
             if loc:
+                previous_code = loc.location_code
                 loc.location_name = name
                 # generate a code from name if it changed
                 loc.location_code = name[:10].upper().replace(" ", "_")
@@ -341,6 +378,9 @@ def save_shelf():
             )
             db.session.add(loc)
 
+        if loc_id and loc and previous_code != loc.location_code:
+            Item.query.filter_by(rack_number=previous_code).update({"rack_number": str(loc.location_id)})
+
         db.session.commit()
         return jsonify({"status": "success"})
     except Exception as err:
@@ -354,7 +394,12 @@ def delete_shelf(id):
         loc = Location.query.get(id)
         if loc:
             # unassign items using this location
-            Item.query.filter_by(rack_number=loc.location_code).update({"rack_number": None})
+            Item.query.filter(
+                or_(
+                    Item.rack_number == str(loc.location_id),
+                    Item.rack_number == loc.location_code,
+                )
+            ).update({"rack_number": None}, synchronize_session=False)
             
             # Reassign dependencies to a fallback location to satisfy Postgres FK constraints
             fallback = Location.query.filter(Location.location_id != id).first()

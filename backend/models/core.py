@@ -252,6 +252,8 @@ class Customer(db.Model):
     customer_id = db.Column(db.Integer, primary_key=True)
     customer_name = db.Column(db.String(150), nullable=False)
     phone = db.Column(db.String(20))
+    family_head_id = db.Column(db.Integer, db.ForeignKey('customers.customer_id'))
+    family_relation = db.Column(db.String(50))
     doctor_id = db.Column(db.Integer, db.ForeignKey('doctors.doctor_id'))
     address = db.Column(db.Text)
     gstin = db.Column(db.String(15))
