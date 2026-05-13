@@ -1,0 +1,87 @@
+.form-container-wrapper {
+    display: flex;
+    justify-content: center;
+    padding: 40px 20px;
+}
+
+.receipt-card {
+    background: #1a1d26;
+    border: 1px solid #2e323a;
+    border-radius: 20px;
+    padding: 40px;
+    width: 100%;
+    max-width: 700px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.report-form-container {
+    max-width: 550px;
+    margin: 0 auto;
+}
+
+.form-group {
+    display: flex;
+    align-items: center;
+    margin-bottom: 18px;
+}
+
+.form-group label {
+    color: #8a8d91;
+    font-size: 14px;
+    width: 140px;
+    /* Aligns colons vertically */
+    flex-shrink: 0;
+}
+
+.form-group input,
+.custom-select {
+    background: #12141a;
+    border: 1px solid #2e323a;
+    border-radius: 8px;
+    color: white;
+    padding: 10px 15px;
+    flex: 1;
+    outline: none;
+    font-size: 14px;
+}
+
+.small-input {
+    max-width: 120px;
+}
+
+/* Date Range Row */
+.date-range-row {
+    display: flex;
+    gap: 10px;
+}
+
+.input-with-icon {
+    position: relative;
+    flex: 1;
+    display: flex;
+}
+
+.input-with-icon i {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 16px;
+    color: #5e6470;
+    pointer-events: none;
+}
+
+.inline-label {
+    width: auto !important;
+    padding: 0 10px;
+    white-space: nowrap;
+}
+
+.date-box {
+    max-width: 160px;
+}
+
+.custom-select {
+    appearance: none;
+    cursor: pointer;
+}

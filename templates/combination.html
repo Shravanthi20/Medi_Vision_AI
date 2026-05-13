@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Combination View - Selvam Medicals</title>
+    <link rel="stylesheet" href="/static/css/combination.css">
+    <link rel="stylesheet" href="/static/css/header.css">
+    <link rel="stylesheet" href="/static/css/sidebar.css">
+    <link rel="stylesheet" href="/static/css/footer.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="dashboard-bg">
+
+    <div class="app-container">
+        <!-- Sidebar placeholder -->
+        <div id="sidebar-target"></div>
+
+        <div class="main-content">
+            <!-- Header placeholder -->
+            <div id="header-target"></div>
+
+            <div class="content-wrapper">
+                <div class="page-header" style="padding: 20px 24px 0;">
+                    <div class="breadcrumb" style="display: flex; align-items: center; gap: 8px; color: #8a8d91; font-size: 14px;">
+                        <span>Masters</span>
+                        <i data-lucide="chevron-right" style="width: 14px; height: 14px;"></i>
+                        <span class="current-page" style="color: #f39c12; font-weight: 600;">Combination View</span>
+                    </div>
+                </div>
+
+                <div class="combination-container">
+                    <div class="combination-card">
+                        <div class="combination-header-grid">
+                            <div class="field">
+                                <label>Code</label>
+                                <input type="text" value="2">
+                            </div>
+                            <div class="field">
+                                <label>Sch:H</label>
+                                <input type="text" value="X">
+                            </div>
+                            <div class="field">
+                                <label>H1</label>
+                                <input type="text" value="">
+                            </div>
+                        </div>
+
+                        <div class="field" style="margin-bottom: 30px;">
+                            <label>Combination</label>
+                            <input type="text" value="5-FLUOROURACIL" style="width: 100%;">
+                        </div>
+
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Item Name</th>
+                                        <th>Mfr.</th>
+                                        <th>Pkg</th>
+                                        <th>Stock</th>
+                                        <th>Offer</th>
+                                        <th>Pur.Rate</th>
+                                        <th>M.R.P</th>
+                                        <th>Loc</th>
+                                        <th>Remark</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td>INSUTAGE 30/70 CATRIDGE</td><td>SANOFI</td><td>5</td><td>0</td><td>0</td><td>1468.00</td><td>1835.00</td><td>FRI</td><td>-</td></tr>
+                                    <tr><td>ACROTAC 10</td><td>SUN</td><td>10</td><td>0</td><td>0</td><td>292.86</td><td>384.38</td><td>TOP</td><td>-</td></tr>
+                                    <tr><td>FLORISTORE 2.5</td><td>ZUVENT</td><td>10</td><td>0</td><td>0</td><td>148.82</td><td>219.50</td><td>TOP</td><td>-</td></tr>
+                                    <tr><td>HAPPIBIOTIC CAP</td><td>ZYDUS</td><td>5</td><td>0</td><td>0</td><td>107.64</td><td>141.28</td><td>H10</td><td>-</td></tr>
+                                    <tr><td>POGES CAP</td><td>LARION</td><td>10</td><td>0</td><td>0</td><td>135.71</td><td>190.00</td><td>TOP</td><td>-</td></tr>
+                                    <tr><td>HIMALAYA BRESOL NS NASA</td><td>HIMA*AY</td><td>1</td><td>0</td><td>0</td><td>53.34</td><td>70.00</td><td>TOP</td><td>-</td></tr>
+                                    <tr><td>PARACAIN EYE DROPS</td><td>SUNW</td><td>1</td><td>0</td><td>0</td><td>40.00</td><td>52.50</td><td>TOP</td><td>-</td></tr>
+                                    <tr><td>ACNELAK 4IN1 FACE WASH</td><td>MENA</td><td>1</td><td>0</td><td>0</td><td>244.07</td><td>360.00</td><td>TOP</td><td>-</td></tr>
+                                    <tr><td>DERMADEW HAIR SERUM</td><td>HH</td><td>1</td><td>0</td><td>0</td><td>797.29</td><td>1176.00</td><td>TOP</td><td>-</td></tr>
+                                    <tr><td>NASOWASH NS NASAL SPRAY</td><td>CIPLA</td><td>1</td><td>0</td><td>0</td><td>314.29</td><td>440.00</td><td>TOP</td><td>-</td></tr>
+                                    <tr><td>ACNESOL NC TUBE OF 20GM</td><td>MENA</td><td>1</td><td>20</td><td>0</td><td>77.83</td><td>102.15</td><td>TOP</td><td>-</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer placeholder -->
+            <div id="footer-target"></div>
+        </div>
+    </div>
+
+    <script src="/static/js/combination.js"></script>
+</body>
+</html>

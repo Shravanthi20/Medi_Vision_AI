@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Inventory Page</title>
+    <link rel="stylesheet" href="/static/css/itemmaster.css" />
+    <link rel="stylesheet" href="/static/css/header.css">
+    <link rel="stylesheet" href="/static/css/sidebar.css">
+    <link rel="stylesheet" href="/static/css/footer.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+
+<body class="dashboard-bg">
+
+    <div class="app-container">
+        <!-- Sidebar placeholder -->
+        <div id="sidebar-target"></div>
+
+        <div class="main-content">
+            <!-- Header placeholder -->
+            <div id="header-target"></div>
+
+            <div class="content-wrapper">
+                <div class="page-header" style="padding: 20px 24px 0;">
+                    <div class="breadcrumb" style="display: flex; align-items: center; gap: 8px; color: #8a8d91; font-size: 14px;">
+                        <span>Inventory</span>
+                        <i data-lucide="chevron-right" style="width: 14px; height: 14px;"></i>
+                        <span class="current-page" style="color: #f39c12; font-weight: 600;">Item Master</span>
+                    </div>
+                </div>
+
+                <div style="padding: 24px;">
+                    <div class="inventory-container">
+                        <!-- ... (existing content) ... -->
+                    <!-- Top Section -->
+                    <div class="inventory-grid">
+                        <!-- Left Column -->
+                        <div class="column">
+                <div class="field">
+                    <label>Item Type</label>
+                    <input type="text">
+                </div>
+
+                <div class="field">
+                    <label>Mfr. Code</label>
+                    <input type="text">
+                </div>
+
+                <div class="field">
+                    <label>Location</label>
+                    <input type="text">
+                </div>
+
+                <div class="field">
+                    <label>Total Qty</label>
+                    <input type="number" value="0">
+                </div>
+
+                <div class="field">
+                    <label>Packing</label>
+                    <input type="text">
+                </div>
+
+                <div class="field">
+                    <label>M.R.P</label>
+                    <input type="number" value="0.00">
+                </div>
+
+                <div class="field">
+                    <label>Pur. Rate</label>
+                    <input type="number" value="0.00">
+                </div>
+
+                <div class="field">
+                    <label>Pur. Ref</label>
+                    <input type="text">
+                </div>
+
+                <div class="field">
+                    <label>Last Supl.</label>
+                    <input type="text">
+                </div>
+
+                <div class="field">
+                    <label>2nd Supl.</label>
+                    <input type="text">
+                </div>
+
+                <div class="field">
+                    <label>Combination</label>
+                    <input type="text" value="1970">
+                </div>
+
+                <div class="field">
+                    <label>Stockist</label>
+                    <input type="text">
+                </div>
+
+            </div>
+
+            <!-- Middle Column -->
+            <div class="column">
+
+                <div class="field">
+                    <label>HSN</label>
+                    <input type="text" value="3004909">
+                </div>
+
+                <div class="field">
+                    <label>Item Name</label>
+                    <input type="text">
+                </div>
+
+                <div class="field">
+                    <label>Schedule H</label>
+                    <input type="text">
+                </div>
+
+                <div class="field">
+                    <label>Min Qty</label>
+                    <input type="number" value="0">
+                </div>
+
+                <div class="field">
+                    <label>Batch No</label>
+                    <input type="text">
+                </div>
+
+                <div class="field">
+                    <label>MRP For</label>
+                    <input type="number" value="0">
+                </div>
+
+                <div class="field">
+                    <label>P. Rate For</label>
+                    <input type="number" value="0">
+                </div>
+
+                <div class="field">
+                    <label>Offer</label>
+                    <input type="text">
+                </div>
+
+                <div class="field">
+                    <label>Main Supl.</label>
+                    <input type="text">
+                </div>
+
+                <div class="field">
+                    <label>3rd Supl.</label>
+                    <input type="text">
+                </div>
+
+            </div>
+
+            <!-- Right Column -->
+            <div class="column">
+
+                <div class="field">
+                    <label>Cd</label>
+                    <input type="text">
+                </div>
+
+                <div class="field">
+                    <label>Item Type</label>
+                    <input type="text" value="Non-Medicine">
+                </div>
+
+                <div class="field">
+                    <label>Narcotic</label>
+                    <input type="text">
+                </div>
+
+                <div class="field">
+                    <label>Gen</label>
+                    <input type="text">
+                </div>
+
+                <div class="field">
+                    <label>Max Qty</label>
+                    <input type="number" value="0">
+                </div>
+
+                <div class="field">
+                    <label>Exp Date</label>
+                    <input type="date">
+                </div>
+
+                <div class="field">
+                    <label>MRP Tax Cd</label>
+                    <input type="text" value="G3">
+                </div>
+
+                <div class="field">
+                    <label>Pur Tax Cd</label>
+                    <input type="number" value="0.00">
+                </div>
+
+                <div class="field">
+                    <label>Profit</label>
+                    <input type="number" value="0.00">
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- Table -->
+        <div class="table-container">
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Qty Batch</th>
+                        <th>Exp. Dt.</th>
+                        <th>M.R.P.</th>
+                        <th>For</th>
+                        <th>Tax</th>
+                        <th>Netrate</th>
+                        <th>Tax Ref.No</th>
+                        <th>Supplier Name</th>
+                    </tr>
+                </thead>
+
+                <tbody id="tableBody">
+                    <tr>
+                        <td>0</td>
+                        <td>-</td>
+                        <td>0.00</td>
+                        <td>0</td>
+                        <td>0.00</td>
+                        <td>0.00</td>
+                        <td>-</td>
+                        <td>-</td>
+                    </tr>
+                </tbody>
+            </table>
+
+        </div>
+
+            </div>
+            <!-- Footer placeholder -->
+            <div id="footer-target"></div>
+        </div>
+    </div>
+
+    <script src="/static/js/itemmaster.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drug Register Report</title>
+    <link rel="stylesheet" href="/static/css/drugRegister.css">
+    <link rel="stylesheet" href="/static/css/header.css">
+    <link rel="stylesheet" href="/static/css/sidebar.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+
+<body class="dashboard-bg">
+
+    <div class="app-container">
+        <div id="sidebar-target"></div>
+
+        <div class="main-content">
+            <div id="header-target"></div>
+
+            <div class="page-header">
+                <div class="breadcrumb">
+                    <span>Sales</span>
+                    <i data-lucide="chevron-right"></i>
+                    <span class="current-page">Drug Register Report</span>
+                </div>
+            </div>
+
+            <div class="form-container-wrapper">
+                <div class="receipt-card">
+                    <form class="receipt-form">
+                        <div class="report-form-container">
+                            <div class="form-group">
+                                <label>Page Number <span>:</span></label>
+                                <input type="text" class="small-input">
+                            </div>
+
+                            <div class="form-group date-range-row">
+                                <label>From Date <span>:</span></label>
+                                <div class="input-with-icon date-box">
+                                    <input type="text" placeholder="DD/MM/YYYY">
+                                    <i data-lucide="calendar"></i>
+                                </div>
+
+                                <label class="inline-label">To Date <span>:</span></label>
+                                <div class="input-with-icon date-box">
+                                    <input type="text" placeholder="DD/MM/YYYY">
+                                    <i data-lucide="calendar"></i>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Report Type <span>:</span></label>
+                                <div class="input-with-icon">
+                                    <select class="custom-select">
+                                        <option value=""></option>
+                                        <option value="detailed">Detailed</option>
+                                        <option value="summary">Summary</option>
+                                    </select>
+                                    <i data-lucide="chevron-down"></i>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Serial Number <span>:</span></label>
+                                <input type="text">
+                            </div>
+
+                            <div class="form-group">
+                                <label>Report Size <span>:</span></label>
+                                <input type="text">
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+        <script src="/static/js/drugRegister.js"></script>
+</body>
+
+</html>
