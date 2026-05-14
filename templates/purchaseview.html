@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Purchase View - Selvam Medicals</title>
+    <link rel="stylesheet" href="/static/css/purchaseview.css">
+    <link rel="stylesheet" href="/static/css/header.css">
+    <link rel="stylesheet" href="/static/css/sidebar.css">
+    <link rel="stylesheet" href="/static/css/footer.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="dashboard-bg">
+
+    <div class="app-container">
+        <!-- Sidebar placeholder -->
+        <div id="sidebar-target"></div>
+
+        <div class="main-content">
+            <!-- Header placeholder -->
+            <div id="header-target"></div>
+
+            <div class="content-wrapper">
+                <div class="page-header" style="padding: 20px 24px 0;">
+                    <div class="breadcrumb" style="display: flex; align-items: center; gap: 8px; color: #8a8d91; font-size: 14px;">
+                        <span>Masters</span>
+                        <i data-lucide="chevron-right" style="width: 14px; height: 14px;"></i>
+                        <span class="current-page" style="color: #f39c12; font-weight: 600;">Purchase View</span>
+                    </div>
+                </div>
+
+                <div class="purchase-view-container">
+                    <div class="menu-card">
+                        <div class="menu-header">
+                            <h2>Purchase View</h2>
+                        </div>
+                        
+                        <div class="menu-options">
+                            <div class="menu-item"><span class="opt-num">1</span> <span class="opt-arrow">→</span> <span class="opt-text">Datewise View</span></div>
+                            <div class="menu-item"><span class="opt-num">2</span> <span class="opt-arrow">→</span> <span class="opt-text">Supplierwise View</span></div>
+                            <div class="menu-item"><span class="opt-num">3</span> <span class="opt-arrow">→</span> <span class="opt-text">Itemwise View</span></div>
+                            <div class="menu-item"><span class="opt-num">4</span> <span class="opt-arrow">→</span> <span class="opt-text">Ref.No.wise View</span></div>
+                            <div class="menu-item"><span class="opt-num">5</span> <span class="opt-arrow">→</span> <span class="opt-text">Locationwise View</span></div>
+                            <div class="menu-item"><span class="opt-num">6</span> <span class="opt-arrow">→</span> <span class="opt-text">Marginwise View</span></div>
+                            <div class="menu-item"><span class="opt-num">7</span> <span class="opt-arrow">→</span> <span class="opt-text">Pur.Rate Difference Report</span></div>
+                        </div>
+
+                        <div class="choice-section">
+                            <div class="field inline-field">
+                                <label>Enter Choice No.</label>
+                                <span class="colon">:</span>
+                                <input type="text" id="choice-input" value="1" maxlength="1">
+                            </div>
+                        </div>
+
+                        <div class="menu-footer">
+                            <p id="feedback-text">Enter the valid choice</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer placeholder -->
+            <div id="footer-target"></div>
+        </div>
+    </div>
+
+    <script src="/static/js/purchaseview.js"></script>
+</body>
+</html>

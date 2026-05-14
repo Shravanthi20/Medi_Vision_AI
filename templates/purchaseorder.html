@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Purchase Order - Selvam Medicals</title>
+    <link rel="stylesheet" href="/static/css/purchaseorder.css">
+    <link rel="stylesheet" href="/static/css/header.css">
+    <link rel="stylesheet" href="/static/css/sidebar.css">
+    <link rel="stylesheet" href="/static/css/footer.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="dashboard-bg">
+
+    <div class="app-container">
+        <!-- Sidebar placeholder -->
+        <div id="sidebar-target"></div>
+
+        <div class="main-content">
+            <!-- Header placeholder -->
+            <div id="header-target"></div>
+
+            <div class="content-wrapper">
+                <div class="page-header" style="padding: 20px 24px 0;">
+                    <div class="breadcrumb" style="display: flex; align-items: center; gap: 8px; color: #8a8d91; font-size: 14px;">
+                        <span>Transactions</span>
+                        <i data-lucide="chevron-right" style="width: 14px; height: 14px;"></i>
+                        <span class="current-page" style="color: #f39c12; font-weight: 600;">Purchase Order</span>
+                    </div>
+                </div>
+
+                <div class="purchase-order-container">
+                    <!-- Order Header Card -->
+                    <div class="order-card">
+                        <div class="card-header">
+                            <h3>Order Information</h3>
+                        </div>
+                        
+                        <div class="order-grid">
+                            <div class="field">
+                                <label>Pur. Order No.</label>
+                                <input type="text" placeholder="Auto-generated">
+                            </div>
+                            <div class="field">
+                                <label>Pur. Order Date</label>
+                                <div class="date-input-group">
+                                    <input type="text" placeholder="DD" style="width: 45px; text-align: center;">
+                                    <span>/</span>
+                                    <input type="text" placeholder="MM" style="width: 45px; text-align: center;">
+                                    <span>/</span>
+                                    <input type="text" placeholder="YYYY" style="width: 65px; text-align: center;">
+                                </div>
+                            </div>
+                            <div class="field">
+                                <label>Supplier Code</label>
+                                <div class="supplier-input-group">
+                                    <input type="text" placeholder="Code" style="width: 80px;">
+                                    <input type="text" placeholder="Supplier Name" style="flex: 1;">
+                                    <div class="balance-badge">2143.00 CR</div>
+                                </div>
+                            </div>
+                            <div class="field">
+                                <label>Sales From (Date Range)</label>
+                                <div class="date-range-group">
+                                    <div class="date-input-group">
+                                        <input type="text" placeholder="DD" style="width: 40px;">
+                                        <span>/</span>
+                                        <input type="text" placeholder="MM" style="width: 40px;">
+                                        <span>/</span>
+                                        <input type="text" placeholder="YYYY" style="width: 60px;">
+                                    </div>
+                                    <span class="range-to">to</span>
+                                    <div class="date-input-group">
+                                        <input type="text" placeholder="DD" style="width: 40px;">
+                                        <span>/</span>
+                                        <input type="text" placeholder="MM" style="width: 40px;">
+                                        <span>/</span>
+                                        <input type="text" placeholder="YYYY" style="width: 60px;">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="field">
+                                <label>Pur. Order Amt.</label>
+                                <input type="text" value="0.00" class="highlight-input">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Items Table Card -->
+                    <div class="table-card">
+                        <div class="table-header">
+                            <h3>Items List</h3>
+                            <button class="add-item-btn"><i data-lucide="plus"></i> Add Item</button>
+                        </div>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Code</th>
+                                        <th>Item Description</th>
+                                        <th>Mfr.</th>
+                                        <th>Pkg.</th>
+                                        <th>Stock</th>
+                                        <th>Qty.</th>
+                                        <th>Rate</th>
+                                        <th>Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr class="empty-row">
+                                        <td colspan="8">No items added to this order yet.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer placeholder -->
+            <div id="footer-target"></div>
+        </div>
+    </div>
+
+    <script src="/static/js/purchaseorder.js"></script>
+</body>
+</html>

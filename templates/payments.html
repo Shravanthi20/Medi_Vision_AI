@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payments/Debit - Selvam Medicals</title>
+    <link rel="stylesheet" href="/static/css/payments.css">
+    <link rel="stylesheet" href="/static/css/header.css">
+    <link rel="stylesheet" href="/static/css/sidebar.css">
+    <link rel="stylesheet" href="/static/css/footer.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="dashboard-bg">
+
+    <div class="app-container">
+        <!-- Sidebar placeholder -->
+        <div id="sidebar-target"></div>
+
+        <div class="main-content">
+            <!-- Header placeholder -->
+            <div id="header-target"></div>
+
+            <div class="content-wrapper">
+                <div class="page-header" style="padding: 20px 24px 0;">
+                    <div class="breadcrumb" style="display: flex; align-items: center; gap: 8px; color: #8a8d91; font-size: 14px;">
+                        <span>Transactions</span>
+                        <i data-lucide="chevron-right" style="width: 14px; height: 14px;"></i>
+                        <span class="current-page" style="color: #f39c12; font-weight: 600;">Payment/Debit</span>
+                    </div>
+                </div>
+
+                <div class="payments-container">
+                    <!-- Top Payment Info Card -->
+                    <div class="payment-card">
+                        <div class="card-header">
+                            <h3>Payment Details</h3>
+                        </div>
+                        
+                        <div class="payment-grid">
+                            <div class="field">
+                                <label>Payment Date</label>
+                                <input type="text" value="20/04/2026">
+                            </div>
+                            <div class="field">
+                                <label>Payment Type</label>
+                                <input type="text" value="Fndtfr">
+                            </div>
+                            <div class="field">
+                                <label>Pmt. No.</label>
+                                <input type="text" value="7">
+                            </div>
+                            <div class="field">
+                                <label>Bank Code</label>
+                                <input type="text" value="2">
+                            </div>
+                            <div class="field">
+                                <label>Fndtfr Ref. No.</label>
+                                <input type="text" value="">
+                            </div>
+                            <div class="field">
+                                <label>Reference</label>
+                                <input type="text" value="Fndtfr">
+                            </div>
+                            <div class="field">
+                                <label>Fndtfr Date</label>
+                                <input type="text" value="20/04/2026">
+                            </div>
+                            <div class="field">
+                                <label>Payment Amount</label>
+                                <input type="text" value="2979.00" class="highlight-input">
+                            </div>
+                            <div class="field">
+                                <label>Pending Inv. Selected</label>
+                                <input type="text" value="0.00">
+                            </div>
+                        </div>
+
+                        <div class="supplier-info">
+                            <div class="field">
+                                <label>Supplier Code</label>
+                                <div class="supplier-row">
+                                    <input type="text" value="123" style="width: 80px;">
+                                    <input type="text" value="NAGAMMAI PHARMA" style="flex: 1;">
+                                    <div class="balance-badge">146761.00 CR</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Invoice Table Card -->
+                    <div class="table-card">
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Ref.No.</th>
+                                        <th>Inv.No.</th>
+                                        <th>Inv.Date</th>
+                                        <th>A/c Date</th>
+                                        <th>Inv.Amount</th>
+                                        <th>A/c Amount</th>
+                                        <th>Paid Amt.</th>
+                                        <th>Days</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td>P3813</td><td>1281764</td><td>11/03/2026</td><td>11/03/2026</td><td>1094.00</td><td>1094.00</td><td>1094.00</td><td>41</td></tr>
+                                    <tr><td>P3831</td><td>D01283710</td><td>13/03/2026</td><td>13/03/2026</td><td>505.00</td><td>505.00</td><td>505.00</td><td>39</td></tr>
+                                    <tr><td>P3894</td><td>1287793</td><td>18/03/2026</td><td>18/03/2026</td><td>979.00</td><td>979.00</td><td>979.00</td><td>34</td></tr>
+                                    <tr><td>P3910</td><td>1288154</td><td>19/03/2026</td><td>19/03/2026</td><td>401.00</td><td>401.00</td><td>401.00</td><td>33</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer placeholder -->
+            <div id="footer-target"></div>
+        </div>
+    </div>
+
+    <script src="/static/js/payments.js"></script>
+</body>
+</html>

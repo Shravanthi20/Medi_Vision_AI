@@ -1,0 +1,167 @@
+body {
+    background: #0b1020;
+    color: #d1d5db;
+    margin: 0;
+    overflow: hidden;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+.app-container {
+    display: flex;
+    width: 100vw;
+    height: 100vh;
+}
+
+.main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+    background-color: #0d0f11;
+}
+
+.content-wrapper {
+    flex: 1;
+    overflow-y: auto;
+    padding-bottom: 20px;
+}
+
+.import-container {
+    padding: 80px 24px;
+    display: flex;
+    justify-content: center;
+}
+
+.menu-card {
+    background: #111827;
+    border-radius: 20px;
+    padding: 40px;
+    width: 100%;
+    max-width: 700px;
+    border: 1px solid #1f2937;
+    box-shadow: 0 15px 50px rgba(0,0,0,0.6);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.menu-header {
+    width: 100%;
+    background: #7e22ce;
+    padding: 14px;
+    text-align: center;
+    border-radius: 10px;
+    margin-bottom: 50px;
+}
+
+.menu-header h2 {
+    margin: 0;
+    color: #ffffff;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+.menu-options {
+    width: 100%;
+    margin-bottom: 45px;
+}
+
+.menu-item {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    font-size: 19px;
+    color: #f3f4f6;
+    margin-bottom: 15px;
+    padding: 12px 20px;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    border: 1px solid transparent;
+}
+
+.menu-item:hover {
+    background: rgba(126, 34, 206, 0.08);
+    border-color: rgba(126, 34, 206, 0.3);
+    transform: translateX(10px);
+}
+
+.opt-num {
+    color: #f39c12;
+    font-weight: 800;
+    font-size: 22px;
+    min-width: 30px;
+}
+
+.opt-text {
+    font-weight: 400;
+    color: #d1d5db;
+}
+
+.opt-text strong {
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.choice-section {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    margin-bottom: 35px;
+}
+
+.inline-field {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.inline-field label {
+    font-size: 18px;
+    color: #9ca3af;
+    font-weight: 600;
+}
+
+.colon {
+    color: #f39c12;
+    font-weight: 700;
+    font-size: 18px;
+}
+
+.inline-field input {
+    width: 70px;
+    height: 45px;
+    background: #1f2937;
+    border: 1px solid #374151;
+    border-radius: 10px;
+    color: #f39c12;
+    text-align: center;
+    font-size: 24px;
+    font-weight: 800;
+    outline: none;
+    transition: all 0.2s;
+}
+
+.inline-field input:focus {
+    border-color: #f39c12;
+    box-shadow: 0 0 0 4px rgba(243, 156, 18, 0.15);
+}
+
+.menu-footer {
+    width: 100%;
+    text-align: center;
+    border-top: 1px solid #1f2937;
+    padding-top: 25px;
+}
+
+#feedback-text {
+    color: #60a5fa;
+    font-size: 17px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+}
+
+.dashboard-bg {
+    background-color: #0d0f11;
+}
