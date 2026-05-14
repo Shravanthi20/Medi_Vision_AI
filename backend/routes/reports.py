@@ -26,10 +26,11 @@ from ..models.sales import (
 )
 from ..models.core import (
     Customer, Doctor, Item, GstSlab, Manufacturer, HsnCode,
-    ProductCategory,
+    ProductCategory, Supplier,
 )
 from ..models.inventory import StockBatch, ExpiryAlert
-from ..models.finance import Expense
+from ..models.finance import Expense, GstTransaction
+from ..models.purchase import PurchaseInvoice, PurchaseInvoiceItem, PurchasePayment
 from ..models.lookups import BillType, ReturnReason, PaymentMode
 
 
@@ -702,3 +703,309 @@ def page_inventory_valuation():
         "reports/inventory_valuation.html",
         current_user=_current_page_user(),
     )
+
+
+# ===========================================================================
+# FINANCIAL & COMPLIANCE REPORTS
+# ===========================================================================
+
+# ---------------------------------------------------------------------------
+# 9. GST Output & Input Tax Report
+# ---------------------------------------------------------------------------
+
+@reports_bp.route("/api/reports/gst-tax", methods=["GET"])
+def api_gst_tax():
+    """GST summary grouped by slab for a date range — output (sales) and input (purchases)."""
+    start_date = _parse_date(request.args.get("start_date"))
+    end_date = _parse_date(request.args.get("end_date"))
+    if not start_date:
+        start_date = datetime.now().date().replace(day=1)
+    if not end_date:
+        end_date = datetime.now().date()
+
+    # --- Output Tax (Sales) ---
+    sales_bills = SalesBill.query.filter(
+        SalesBill.bill_date.between(start_date, end_date),
+        SalesBill.is_cancelled.is_(False),
+    ).all()
+
+    output_by_slab = {}
+    total_output = {"taxable": 0, "cgst": 0, "sgst": 0, "igst": 0, "total_tax": 0}
+
+    for bill in sales_bills:
+        for bi in bill.items:
+            slab_pct = float(bi.cgst_pct + bi.sgst_pct + bi.igst_pct)
+            key = f"{slab_pct:.0f}%"
+            if key not in output_by_slab:
+                output_by_slab[key] = {"slab": key, "taxable": 0, "cgst": 0, "sgst": 0, "igst": 0, "total_tax": 0, "count": 0}
+            taxable = float(bi.value) - float(bi.gst_amount)
+            output_by_slab[key]["taxable"] += taxable
+            output_by_slab[key]["cgst"] += float(bi.cgst_pct) / 100 * taxable if bi.cgst_pct else 0
+            output_by_slab[key]["sgst"] += float(bi.sgst_pct) / 100 * taxable if bi.sgst_pct else 0
+            output_by_slab[key]["igst"] += float(bi.igst_pct) / 100 * taxable if bi.igst_pct else 0
+            output_by_slab[key]["total_tax"] += float(bi.gst_amount)
+            output_by_slab[key]["count"] += 1
+
+    for v in output_by_slab.values():
+        total_output["taxable"] += v["taxable"]
+        total_output["cgst"] += v["cgst"]
+        total_output["sgst"] += v["sgst"]
+        total_output["igst"] += v["igst"]
+        total_output["total_tax"] += v["total_tax"]
+
+    # --- Input Tax (Purchases) ---
+    purchases = PurchaseInvoice.query.filter(
+        PurchaseInvoice.invoice_date.between(start_date, end_date),
+    ).all()
+
+    input_by_slab = {}
+    total_input = {"taxable": 0, "cgst": 0, "sgst": 0, "igst": 0, "total_tax": 0}
+
+    for pi in purchases:
+        for pii in pi.line_items:
+            slab_pct = float(pii.cgst_pct + pii.sgst_pct + pii.igst_pct)
+            key = f"{slab_pct:.0f}%"
+            if key not in input_by_slab:
+                input_by_slab[key] = {"slab": key, "taxable": 0, "cgst": 0, "sgst": 0, "igst": 0, "total_tax": 0, "count": 0}
+            taxable = float(pii.value) - float(pii.gst_amount)
+            input_by_slab[key]["taxable"] += taxable
+            input_by_slab[key]["cgst"] += float(pii.cgst_pct) / 100 * taxable if pii.cgst_pct else 0
+            input_by_slab[key]["sgst"] += float(pii.sgst_pct) / 100 * taxable if pii.sgst_pct else 0
+            input_by_slab[key]["igst"] += float(pii.igst_pct) / 100 * taxable if pii.igst_pct else 0
+            input_by_slab[key]["total_tax"] += float(pii.gst_amount)
+            input_by_slab[key]["count"] += 1
+
+    for v in input_by_slab.values():
+        total_input["taxable"] += v["taxable"]
+        total_input["cgst"] += v["cgst"]
+        total_input["sgst"] += v["sgst"]
+        total_input["igst"] += v["igst"]
+        total_input["total_tax"] += v["total_tax"]
+
+    # Round everything
+    def _round_dict(d):
+        return {k: round(v, 2) if isinstance(v, float) else v for k, v in d.items()}
+
+    return jsonify({
+        "start_date": start_date.strftime("%d/%m/%Y"),
+        "end_date": end_date.strftime("%d/%m/%Y"),
+        "output_tax": {
+            "by_slab": [_round_dict(v) for v in sorted(output_by_slab.values(), key=lambda x: x["slab"])],
+            "totals": _round_dict(total_output),
+        },
+        "input_tax": {
+            "by_slab": [_round_dict(v) for v in sorted(input_by_slab.values(), key=lambda x: x["slab"])],
+            "totals": _round_dict(total_input),
+        },
+        "net_liability": {
+            "cgst": round(total_output["cgst"] - total_input["cgst"], 2),
+            "sgst": round(total_output["sgst"] - total_input["sgst"], 2),
+            "igst": round(total_output["igst"] - total_input["igst"], 2),
+            "total": round(total_output["total_tax"] - total_input["total_tax"], 2),
+        },
+    })
+
+
+@reports_bp.route("/reports/gst-tax", methods=["GET"])
+@login_required
+def page_gst_tax():
+    return render_template("reports/gst_tax.html", current_user=_current_page_user())
+
+
+# ---------------------------------------------------------------------------
+# 10. Purchase Register (Supplier/Manufacturer Wise)
+# ---------------------------------------------------------------------------
+
+@reports_bp.route("/api/reports/purchase-register", methods=["GET"])
+def api_purchase_register():
+    """Purchase invoices with date filter and supplier grouping."""
+    start_date = _parse_date(request.args.get("start_date"))
+    end_date = _parse_date(request.args.get("end_date"))
+
+    query = PurchaseInvoice.query
+    if start_date:
+        query = query.filter(PurchaseInvoice.invoice_date >= start_date)
+    if end_date:
+        query = query.filter(PurchaseInvoice.invoice_date <= end_date)
+
+    invoices = query.order_by(PurchaseInvoice.invoice_date.desc()).all()
+
+    rows = []
+    supplier_totals = {}
+    grand_total = 0
+
+    for pi in invoices:
+        supplier = Supplier.query.get(pi.supplier_id)
+        sup_name = supplier.supplier_name if supplier else "Unknown"
+        items_count = pi.line_items.count()
+        net = float(pi.net_amount)
+        grand_total += net
+
+        if sup_name not in supplier_totals:
+            supplier_totals[sup_name] = {"invoices": 0, "total": 0}
+        supplier_totals[sup_name]["invoices"] += 1
+        supplier_totals[sup_name]["total"] += net
+
+        rows.append({
+            "purchase_id": pi.purchase_id,
+            "ref_no": pi.ref_no,
+            "invoice_no": pi.invoice_no or "",
+            "invoice_date": pi.invoice_date.strftime("%d/%m/%Y") if pi.invoice_date else "",
+            "supplier": sup_name,
+            "items_count": items_count,
+            "gross": float(pi.gross_amount),
+            "discount": float(pi.discount_amount),
+            "tax": float(pi.cgst_amount) + float(pi.sgst_amount) + float(pi.igst_amount),
+            "net": round(net, 2),
+        })
+
+    supplier_summary = [{"supplier": k, **v, "total": round(v["total"], 2)} for k, v in sorted(supplier_totals.items())]
+
+    return jsonify({
+        "start_date": start_date.strftime("%d/%m/%Y") if start_date else "",
+        "end_date": end_date.strftime("%d/%m/%Y") if end_date else "",
+        "total_invoices": len(rows),
+        "grand_total": round(grand_total, 2),
+        "supplier_summary": supplier_summary,
+        "invoices": rows,
+    })
+
+
+@reports_bp.route("/reports/purchase-register", methods=["GET"])
+@login_required
+def page_purchase_register():
+    return render_template("reports/purchase_register.html", current_user=_current_page_user())
+
+
+# ---------------------------------------------------------------------------
+# 11. Supplier Ledger & Outstanding Payables
+# ---------------------------------------------------------------------------
+
+@reports_bp.route("/api/reports/supplier-ledger", methods=["GET"])
+def api_supplier_ledger():
+    """All suppliers with purchase totals, payments, and outstanding balance."""
+    suppliers = Supplier.query.filter(Supplier.is_active.is_(True)).all()
+
+    ledger = []
+    total_payable = 0
+    total_paid = 0
+
+    for sup in suppliers:
+        purchase_total = db.session.query(
+            func.coalesce(func.sum(PurchaseInvoice.net_amount), 0)
+        ).filter(PurchaseInvoice.supplier_id == sup.supplier_id).scalar()
+
+        payment_total = db.session.query(
+            func.coalesce(func.sum(PurchasePayment.amount), 0)
+        ).filter(PurchasePayment.supplier_id == sup.supplier_id).scalar()
+
+        purchase_total = float(purchase_total)
+        payment_total = float(payment_total)
+        outstanding = purchase_total - payment_total
+        total_payable += purchase_total
+        total_paid += payment_total
+
+        if purchase_total > 0 or payment_total > 0:
+            ledger.append({
+                "supplier_id": sup.supplier_id,
+                "supplier_name": sup.supplier_name,
+                "gstin": sup.gstin or "",
+                "phone": sup.phone or "",
+                "total_purchases": round(purchase_total, 2),
+                "total_payments": round(payment_total, 2),
+                "outstanding": round(outstanding, 2),
+            })
+
+    ledger.sort(key=lambda x: x["outstanding"], reverse=True)
+
+    return jsonify({
+        "report_date": datetime.now().date().strftime("%d/%m/%Y"),
+        "total_suppliers": len(ledger),
+        "total_payable": round(total_payable, 2),
+        "total_paid": round(total_paid, 2),
+        "total_outstanding": round(total_payable - total_paid, 2),
+        "suppliers": ledger,
+    })
+
+
+@reports_bp.route("/reports/supplier-ledger", methods=["GET"])
+@login_required
+def page_supplier_ledger():
+    return render_template("reports/supplier_ledger.html", current_user=_current_page_user())
+
+
+# ---------------------------------------------------------------------------
+# 12. Gross Margin / Profit & Loss Summary
+# ---------------------------------------------------------------------------
+
+@reports_bp.route("/api/reports/profit-loss", methods=["GET"])
+def api_profit_loss():
+    """P&L summary for a date range: sales revenue vs cost of goods vs expenses."""
+    start_date = _parse_date(request.args.get("start_date"))
+    end_date = _parse_date(request.args.get("end_date"))
+    if not start_date:
+        start_date = datetime.now().date().replace(day=1)
+    if not end_date:
+        end_date = datetime.now().date()
+
+    # Revenue from sales
+    bills = SalesBill.query.filter(
+        SalesBill.bill_date.between(start_date, end_date),
+        SalesBill.is_cancelled.is_(False),
+    ).all()
+
+    total_revenue = sum(float(b.net_amount) for b in bills)
+    total_discount = sum(float(b.discount_amount) for b in bills)
+    total_tax_collected = sum(float(b.cgst_amount) + float(b.sgst_amount) + float(b.igst_amount) for b in bills)
+
+    # Cost of goods sold (from SalesBillItem.purchase_rate_at_sale)
+    cogs = 0
+    for b in bills:
+        for bi in b.items:
+            cogs += float(bi.purchase_rate_at_sale) * int(bi.qty_sold)
+
+    gross_profit = total_revenue - cogs
+
+    # Operating expenses
+    expenses = Expense.query.filter(
+        Expense.expense_date.between(start_date, end_date),
+        Expense.is_active.is_(True),
+    ).all()
+
+    total_expenses = sum(float(e.amount) for e in expenses)
+
+    # Expense breakdown by category
+    expense_breakdown = {}
+    for e in expenses:
+        cat = e.expense_category
+        expense_breakdown[cat] = expense_breakdown.get(cat, 0) + float(e.amount)
+
+    expense_categories = [{"category": k, "amount": round(v, 2)} for k, v in sorted(expense_breakdown.items())]
+
+    net_profit = gross_profit - total_expenses
+    gross_margin_pct = round((gross_profit / total_revenue) * 100, 1) if total_revenue > 0 else 0
+    net_margin_pct = round((net_profit / total_revenue) * 100, 1) if total_revenue > 0 else 0
+
+    return jsonify({
+        "start_date": start_date.strftime("%d/%m/%Y"),
+        "end_date": end_date.strftime("%d/%m/%Y"),
+        "total_bills": len(bills),
+        "revenue": {
+            "net_sales": round(total_revenue, 2),
+            "total_discount": round(total_discount, 2),
+            "tax_collected": round(total_tax_collected, 2),
+        },
+        "cost_of_goods_sold": round(cogs, 2),
+        "gross_profit": round(gross_profit, 2),
+        "gross_margin_pct": gross_margin_pct,
+        "operating_expenses": round(total_expenses, 2),
+        "expense_categories": expense_categories,
+        "net_profit": round(net_profit, 2),
+        "net_margin_pct": net_margin_pct,
+    })
+
+
+@reports_bp.route("/reports/profit-loss", methods=["GET"])
+@login_required
+def page_profit_loss():
+    return render_template("reports/profit_loss.html", current_user=_current_page_user())

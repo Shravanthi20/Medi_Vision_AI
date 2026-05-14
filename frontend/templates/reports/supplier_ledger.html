@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Supplier Ledger — Selvam Medicals</title>
+    <meta name="description" content="Supplier Ledger and Outstanding Payables Report."/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+    <link rel="stylesheet" href="/static/css/reports.css"/>
+    <style>
+        .outstanding-positive { color: #dc2626; font-weight: 700; }
+        .outstanding-zero { color: #16a34a; font-weight: 600; }
+        .outstanding-credit { color: #3b82f6; font-weight: 600; }
+    </style>
+</head>
+<body>
+
+<div class="report-toolbar">
+    <div class="toolbar-left">
+        <a href="/" class="toolbar-brand"><div class="logo-circle">SM</div><span>SELVAM MEDICALS</span></a>
+        <span class="toolbar-title"><i class="fas fa-handshake"></i>&nbsp; Supplier Ledger</span>
+    </div>
+    <div class="toolbar-actions">
+        <button class="btn-toolbar btn-back" onclick="history.back()"><i class="fas fa-arrow-left"></i> Back</button>
+        <button class="btn-toolbar btn-print" onclick="window.print()"><i class="fas fa-print"></i> Print</button>
+    </div>
+</div>
+
+<div class="report-container" id="report-loading">
+    <div class="report-loading"><i class="fas fa-spinner fa-spin"></i><p>Loading supplier data…</p></div>
+</div>
+
+<div class="report-container" id="report-content" style="display:none;">
+    <div class="report-page">
+        <div class="store-header">
+            <h1>SELVAM MEDICALS</h1>
+            <div class="store-subtitle">Retail & Wholesale Chemists</div>
+            <div class="store-details">No.1, Main Road, Chennai — 600001 &nbsp;|&nbsp; <strong>GSTIN:</strong> 33AAAAA1234A1Z5</div>
+        </div>
+
+        <div class="report-title-bar">
+            <h2><i class="fas fa-handshake" style="margin-right:6px;"></i> SUPPLIER LEDGER & OUTSTANDING PAYABLES</h2>
+            <div class="report-meta"><div><strong>As of:</strong> <span id="sl-date"></span></div></div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-bottom:1px solid #ddd;">
+            <div style="padding:14px 20px;text-align:center;border-right:1px solid #eee;">
+                <div style="font-size:10px;color:#777;text-transform:uppercase;">Active Suppliers</div>
+                <div style="font-size:20px;font-weight:800;color:#1a1a2e;" id="sl-sup">0</div>
+            </div>
+            <div style="padding:14px 20px;text-align:center;border-right:1px solid #eee;">
+                <div style="font-size:10px;color:#777;text-transform:uppercase;">Total Purchases</div>
+                <div style="font-size:20px;font-weight:800;color:#3b82f6;" id="sl-payable">₹0</div>
+            </div>
+            <div style="padding:14px 20px;text-align:center;border-right:1px solid #eee;">
+                <div style="font-size:10px;color:#777;text-transform:uppercase;">Total Paid</div>
+                <div style="font-size:20px;font-weight:800;color:#16a34a;" id="sl-paid">₹0</div>
+            </div>
+            <div style="padding:14px 20px;text-align:center;">
+                <div style="font-size:10px;color:#777;text-transform:uppercase;">Outstanding</div>
+                <div style="font-size:20px;font-weight:800;color:#dc2626;" id="sl-outstanding">₹0</div>
+            </div>
+        </div>
+
+        <div class="report-table-wrap">
+            <table class="report-table">
+                <thead><tr>
+                    <th>Supplier</th><th>GSTIN</th><th>Phone</th>
+                    <th class="text-right">Purchases (₹)</th><th class="text-right">Payments (₹)</th><th class="text-right">Outstanding (₹)</th>
+                </tr></thead>
+                <tbody id="sl-tbody"></tbody>
+                <tfoot><tr>
+                    <td colspan="3" class="text-right"><strong>TOTALS</strong></td>
+                    <td class="text-right" id="sl-t-pur"></td>
+                    <td class="text-right" id="sl-t-pay"></td>
+                    <td class="text-right" id="sl-t-out"></td>
+                </tr></tfoot>
+            </table>
+        </div>
+
+        <div id="sl-empty" class="report-empty" style="display:none;">
+            <i class="fas fa-check-circle" style="color:#16a34a;"></i>
+            <p>No outstanding payables. All suppliers are settled.</p>
+        </div>
+
+        <div class="report-footer">
+            <div class="footer-note">Supplier ledger is computed from all-time purchase invoices and payment records. Verify against supplier statements. E & O.E.</div>
+            <div class="footer-sign"><div class="sign-line"></div><div>Accountant / Owner</div></div>
+        </div>
+    </div>
+</div>
+
+<script>
+function fmt(n) { return '₹' + Number(n || 0).toFixed(2); }
+function fmtL(n) { return '₹' + Number(n || 0).toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+
+async function loadReport() {
+    try {
+        const res = await fetch('/api/reports/supplier-ledger');
+        const d = await res.json();
+
+        document.getElementById('sl-date').textContent = d.report_date;
+        document.getElementById('sl-sup').textContent = d.total_suppliers;
+        document.getElementById('sl-payable').textContent = fmtL(d.total_payable);
+        document.getElementById('sl-paid').textContent = fmtL(d.total_paid);
+        document.getElementById('sl-outstanding').textContent = fmtL(d.total_outstanding);
+
+        const tbody = document.getElementById('sl-tbody');
+        tbody.innerHTML = '';
+
+        if (!d.suppliers.length) {
+            document.getElementById('sl-empty').style.display = '';
+        } else {
+            d.suppliers.forEach(s => {
+                const cls = s.outstanding > 0 ? 'outstanding-positive' : s.outstanding < 0 ? 'outstanding-credit' : 'outstanding-zero';
+                tbody.innerHTML += `<tr>
+                    <td><strong>${s.supplier_name}</strong></td>
+                    <td style="font-size:11px;color:#555;">${s.gstin}</td>
+                    <td>${s.phone}</td>
+                    <td class="text-right">${fmt(s.total_purchases)}</td>
+                    <td class="text-right">${fmt(s.total_payments)}</td>
+                    <td class="text-right ${cls}">${fmt(s.outstanding)}</td>
+                </tr>`;
+            });
+        }
+
+        document.getElementById('sl-t-pur').innerHTML = `<strong>${fmtL(d.total_payable)}</strong>`;
+        document.getElementById('sl-t-pay').innerHTML = `<strong>${fmtL(d.total_paid)}</strong>`;
+        document.getElementById('sl-t-out').innerHTML = `<strong style="color:#dc2626;">${fmtL(d.total_outstanding)}</strong>`;
+
+        document.getElementById('report-loading').style.display = 'none';
+        document.getElementById('report-content').style.display = '';
+    } catch (e) {
+        console.error(e);
+        document.getElementById('report-loading').innerHTML = '<div class="report-empty"><i class="fas fa-exclamation-triangle"></i><p>Failed to load supplier ledger.</p></div>';
+    }
+}
+
+loadReport();
+</script>
+</body>
+</html>

@@ -342,12 +342,27 @@
       <div style="font-size:13px;font-weight:600;margin-bottom:4px">Backup</div>
       <div style="font-size:11px;color:var(--mt)">Database backup</div>
     </div>
-    <div class="crd" onclick="rGstRep()" style="padding:18px;cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='#374151'" onmouseout="this.style.borderColor=''">
+    <div class="crd" onclick="window.open('/reports/gst-tax','_blank')" style="padding:18px;cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='#374151'" onmouseout="this.style.borderColor=''">
       <i class="fas fa-file-invoice-dollar" style="font-size:22px;color:#f59e0b;margin-bottom:10px;display:block"></i>
-      <div style="font-size:13px;font-weight:600;margin-bottom:4px">GST Report</div>
-      <div style="font-size:11px;color:var(--mt)">Tax metrics</div>
+      <div style="font-size:13px;font-weight:600;margin-bottom:4px">GST Tax Report</div>
+      <div style="font-size:11px;color:var(--mt)">Output & input tax</div>
     </div>
-    <div class="crd" onclick="openFinancePanel()" style="padding:18px;cursor:pointer;transition:border-color .15px" onmouseover="this.style.borderColor='#374151'" onmouseout="this.style.borderColor=''">
+    <div class="crd" onclick="window.open('/reports/purchase-register','_blank')" style="padding:18px;cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='#374151'" onmouseout="this.style.borderColor=''">
+      <i class="fas fa-truck-ramp-box" style="font-size:22px;color:#ec4899;margin-bottom:10px;display:block"></i>
+      <div style="font-size:13px;font-weight:600;margin-bottom:4px">Purchases</div>
+      <div style="font-size:11px;color:var(--mt)">Purchase register</div>
+    </div>
+    <div class="crd" onclick="window.open('/reports/supplier-ledger','_blank')" style="padding:18px;cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='#374151'" onmouseout="this.style.borderColor=''">
+      <i class="fas fa-handshake" style="font-size:22px;color:#14b8a6;margin-bottom:10px;display:block"></i>
+      <div style="font-size:13px;font-weight:600;margin-bottom:4px">Supplier Ledger</div>
+      <div style="font-size:11px;color:var(--mt)">Payables & balances</div>
+    </div>
+    <div class="crd" onclick="window.open('/reports/profit-loss','_blank')" style="padding:18px;cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='#374151'" onmouseout="this.style.borderColor=''">
+      <i class="fas fa-chart-line" style="font-size:22px;color:#22c55e;margin-bottom:10px;display:block"></i>
+      <div style="font-size:13px;font-weight:600;margin-bottom:4px">Profit & Loss</div>
+      <div style="font-size:11px;color:var(--mt)">Margin & P&amp;L summary</div>
+    </div>
+    <div class="crd" onclick="openFinancePanel()" style="padding:18px;cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='#374151'" onmouseout="this.style.borderColor=''">
       <i class="fas fa-calculator" style="font-size:22px;color:#22c55e;margin-bottom:10px;display:block"></i>
       <div style="font-size:13px;font-weight:600;margin-bottom:4px">Accounting</div>
       <div style="font-size:11px;color:var(--mt)">Expenses, P&amp;L, payables</div>
