@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Billing Query - Selvam Medicals</title>
+    <link rel="stylesheet" href="/static/css/billingquery.css">
+    <link rel="stylesheet" href="/static/css/header.css">
+    <link rel="stylesheet" href="/static/css/sidebar.css">
+    <link rel="stylesheet" href="/static/css/footer.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="dashboard-bg">
+
+    <div class="app-container">
+        <!-- Sidebar placeholder -->
+        <div id="sidebar-target"></div>
+
+        <div class="main-content">
+            <!-- Header placeholder -->
+            <div id="header-target"></div>
+
+            <div class="content-wrapper">
+                <div class="page-header" style="padding: 20px 24px 0;">
+                    <div class="breadcrumb" style="display: flex; align-items: center; gap: 8px; color: #8a8d91; font-size: 14px;">
+                        <span>Sales</span>
+                        <i data-lucide="chevron-right" style="width: 14px; height: 14px;"></i>
+                        <span class="current-page" style="color: #f39c12; font-weight: 600;">Billing Query</span>
+                    </div>
+                </div>
+
+                <div class="billing-query-container">
+                    <div class="menu-card">
+                        <div class="menu-header">
+                            <h2>Billing Query</h2>
+                        </div>
+                        
+                        <div class="menu-grid">
+                            <div class="menu-column">
+                                <div class="menu-item"><span class="opt-num">1</span> <span class="opt-arrow">→</span> <span class="opt-text">Billnumberwise & Amountwise</span></div>
+                                <div class="menu-item"><span class="opt-num">2</span> <span class="opt-arrow">→</span> <span class="opt-text">Random Bills</span></div>
+                                <div class="menu-item"><span class="opt-num">3</span> <span class="opt-arrow">→</span> <span class="opt-text">Billdatewise</span></div>
+                                <div class="menu-item"><span class="opt-num">4</span> <span class="opt-arrow">→</span> <span class="opt-text">Billtimewise</span></div>
+                                <div class="menu-item"><span class="opt-num">5</span> <span class="opt-arrow">→</span> <span class="opt-text">Customer Name/Codewise</span></div>
+                                <div class="menu-item"><span class="opt-num">6</span> <span class="opt-arrow">→</span> <span class="opt-text">Itemnamewise</span></div>
+                            </div>
+                            <div class="menu-column">
+                                <div class="menu-item"><span class="opt-num">7</span> <span class="opt-arrow">→</span> <span class="opt-text">Doctorwise</span></div>
+                                <div class="menu-item"><span class="opt-num">8</span> <span class="opt-arrow">→</span> <span class="opt-text">Salesmanwise View</span></div>
+                                <div class="menu-item"><span class="opt-num">9</span> <span class="opt-arrow">→</span> <span class="opt-text">Network Bills View</span></div>
+                                <div class="menu-item"><span class="opt-num">10</span> <span class="opt-arrow">→</span> <span class="opt-text">Locationwise</span></div>
+                                <div class="menu-item"><span class="opt-num">11</span> <span class="opt-arrow">→</span> <span class="opt-text">Marginwise</span></div>
+                                <div class="menu-item"><span class="opt-num">12</span> <span class="opt-arrow">→</span> <span class="opt-text">Discountwise</span></div>
+                            </div>
+                        </div>
+
+                        <div class="choice-section">
+                            <div class="field inline-field">
+                                <label>Choice</label>
+                                <span class="colon">:</span>
+                                <input type="text" id="choice-input" value="1" maxlength="2">
+                            </div>
+                        </div>
+
+                        <div class="menu-footer">
+                            <p id="feedback-text">Enter the valid choice</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer placeholder -->
+            <div id="footer-target"></div>
+        </div>
+    </div>
+
+    <script src="/static/js/billingquery.js"></script>
+</body>
+</html>

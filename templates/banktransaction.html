@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bank Transaction - Selvam Medicals</title>
+    <link rel="stylesheet" href="/static/css/banktransaction.css">
+    <link rel="stylesheet" href="/static/css/header.css">
+    <link rel="stylesheet" href="/static/css/sidebar.css">
+    <link rel="stylesheet" href="/static/css/footer.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="dashboard-bg">
+
+    <div class="app-container">
+        <!-- Sidebar placeholder -->
+        <div id="sidebar-target"></div>
+
+        <div class="main-content">
+            <!-- Header placeholder -->
+            <div id="header-target"></div>
+
+            <div class="content-wrapper">
+                <div class="page-header" style="padding: 20px 24px 0;">
+                    <div class="breadcrumb" style="display: flex; align-items: center; gap: 8px; color: #8a8d91; font-size: 14px;">
+                        <span>Transactions</span>
+                        <i data-lucide="chevron-right" style="width: 14px; height: 14px;"></i>
+                        <span class="current-page" style="color: #f39c12; font-weight: 600;">Bank Transaction</span>
+                    </div>
+                </div>
+
+                <div class="transaction-container">
+                    <div class="transaction-card">
+                        <div class="transaction-form">
+                            <div class="form-row">
+                                <div class="field">
+                                    <label>Serial Number</label>
+                                    <input type="text" placeholder="Auto-generated">
+                                </div>
+                                <div class="field">
+                                    <label>Account Date</label>
+                                    <div class="date-input-group">
+                                        <input type="text" placeholder="DD" style="width: 45px; text-align: center;">
+                                        <span>/</span>
+                                        <input type="text" placeholder="MM" style="width: 45px; text-align: center;">
+                                        <span>/</span>
+                                        <input type="text" placeholder="YYYY" style="width: 65px; text-align: center;">
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <label>Bank Code</label>
+                                    <input type="text" placeholder="Code">
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="field">
+                                    <label>Transaction Type</label>
+                                    <select class="modern-select">
+                                        <option value="0">Payment</option>
+                                        <option value="1">Receipt</option>
+                                        <option value="2">Transfer</option>
+                                    </select>
+                                </div>
+                                <div class="field">
+                                    <label>Amount</label>
+                                    <input type="text" value="0.00" class="highlight-input">
+                                </div>
+                            </div>
+
+                            <div class="field" style="margin-bottom: 20px;">
+                                <label>Remarks</label>
+                                <textarea placeholder="Enter transaction remarks..."></textarea>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="field" style="flex: 2;">
+                                    <label>Bank Name</label>
+                                    <input type="text" placeholder="Search or enter bank name">
+                                </div>
+                                <div class="field">
+                                    <label>Cheque Number</label>
+                                    <input type="text" placeholder="Optional">
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="field">
+                                    <label>Cheque Date</label>
+                                    <div class="date-input-group">
+                                        <input type="text" placeholder="DD" style="width: 45px; text-align: center;">
+                                        <span>/</span>
+                                        <input type="text" placeholder="MM" style="width: 45px; text-align: center;">
+                                        <span>/</span>
+                                        <input type="text" placeholder="YYYY" style="width: 65px; text-align: center;">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer placeholder -->
+            <div id="footer-target"></div>
+        </div>
+    </div>
+
+    <script src="/static/js/banktransaction.js"></script>
+</body>
+</html>
