@@ -307,15 +307,30 @@
     </table>
   </div>
   <div class="util-actions-sticky" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:12px;margin-bottom:18px">
+    <div class="crd" onclick="window.open('/reports/daily-sales','_blank')" style="padding:18px;cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='#374151'" onmouseout="this.style.borderColor=''">
+      <i class="fas fa-cash-register" style="font-size:22px;color:#f59e0b;margin-bottom:10px;display:block"></i>
+      <div style="font-size:13px;font-weight:600;margin-bottom:4px">Daily Sales</div>
+      <div style="font-size:11px;color:var(--mt)">Day book &amp; cash tally</div>
+    </div>
     <div class="crd" onclick="rStockRep()" style="padding:18px;cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='#374151'" onmouseout="this.style.borderColor=''">
       <i class="fas fa-boxes-stacked" style="font-size:22px;color:#3b82f6;margin-bottom:10px;display:block"></i>
       <div style="font-size:13px;font-weight:600;margin-bottom:4px">Stock Report</div>
       <div style="font-size:11px;color:var(--mt)">Inventory valuation</div>
     </div>
-    <div class="crd" onclick="rExpRep()" style="padding:18px;cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='#374151'" onmouseout="this.style.borderColor=''">
+    <div class="crd" onclick="window.open('/reports/expiry-stock','_blank')" style="padding:18px;cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='#374151'" onmouseout="this.style.borderColor=''">
       <i class="fas fa-triangle-exclamation" style="font-size:22px;color:#ef4444;margin-bottom:10px;display:block"></i>
       <div style="font-size:13px;font-weight:600;margin-bottom:4px">Expiry Report</div>
       <div style="font-size:11px;color:var(--mt)">Near-expiry items</div>
+    </div>
+    <div class="crd" onclick="window.open('/reports/low-stock','_blank')" style="padding:18px;cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='#374151'" onmouseout="this.style.borderColor=''">
+      <i class="fas fa-box-open" style="font-size:22px;color:#a855f7;margin-bottom:10px;display:block"></i>
+      <div style="font-size:13px;font-weight:600;margin-bottom:4px">Low Stock</div>
+      <div style="font-size:11px;color:var(--mt)">Reorder alerts</div>
+    </div>
+    <div class="crd" onclick="window.open('/reports/inventory-valuation','_blank')" style="padding:18px;cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='#374151'" onmouseout="this.style.borderColor=''">
+      <i class="fas fa-warehouse" style="font-size:22px;color:#0ea5e9;margin-bottom:10px;display:block"></i>
+      <div style="font-size:13px;font-weight:600;margin-bottom:4px">Inventory Value</div>
+      <div style="font-size:11px;color:var(--mt)">MRP &amp; cost valuation</div>
     </div>
     <div class="crd" onclick="rExpDel()" style="padding:18px;cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='#374151'" onmouseout="this.style.borderColor=''">
       <i class="fas fa-file-export" style="font-size:22px;color:#22c55e;margin-bottom:10px;display:block"></i>
