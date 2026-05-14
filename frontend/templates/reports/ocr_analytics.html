@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Prescription OCR Analytics — Selvam Medicals</title>
+    <meta name="description" content="AI Prescription OCR Analytics Report."/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+    <link rel="stylesheet" href="/static/css/reports.css"/>
+    <style>
+        .tag { display:inline-block; padding:2px 6px; border-radius:4px; font-size:10px; font-weight:700; text-transform:uppercase; }
+        .tag-auto { background:#dcfce7; color:#16a34a; }
+        .tag-human { background:#fef3c7; color:#d97706; }
+        .tag-verified { background:#e0e7ff; color:#4f46e5; }
+        .tag-pending { background:#f1f5f9; color:#64748b; }
+    </style>
+</head>
+<body>
+
+<div class="report-toolbar">
+    <div class="toolbar-left">
+        <a href="/" class="toolbar-brand"><div class="logo-circle">SM</div><span>SELVAM MEDICALS</span></a>
+        <span class="toolbar-title"><i class="fas fa-file-medical"></i>&nbsp; Prescription OCR Analytics</span>
+    </div>
+    <div class="toolbar-actions">
+        <button class="btn-toolbar btn-back" onclick="history.back()"><i class="fas fa-arrow-left"></i> Back</button>
+        <button class="btn-toolbar btn-print" onclick="window.print()"><i class="fas fa-print"></i> Print</button>
+    </div>
+</div>
+
+<div class="report-filters">
+    <label>From:</label><input type="date" id="f-start"/>
+    <label>To:</label><input type="date" id="f-end"/>
+    <button class="btn-filter" onclick="loadReport()"><i class="fas fa-filter"></i> Load</button>
+</div>
+
+<div class="report-container" id="report-loading">
+    <div class="report-loading"><i class="fas fa-spinner fa-spin"></i><p>Loading OCR metrics…</p></div>
+</div>
+
+<div class="report-container" id="report-content" style="display:none;">
+    <div class="report-page">
+        <div class="store-header">
+            <h1>SELVAM MEDICALS</h1>
+            <div class="store-subtitle">Retail & Wholesale Chemists</div>
+            <div class="store-details">No.1, Main Road, Chennai — 600001</div>
+        </div>
+
+        <div class="report-title-bar">
+            <h2><i class="fas fa-file-medical" style="margin-right:6px;"></i> PRESCRIPTION OCR AUTOMATION ANALYTICS</h2>
+            <div class="report-meta"><div id="ocr-period"></div></div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-bottom:1px solid #ddd;">
+            <div style="padding:14px 20px;text-align:center;border-right:1px solid #eee;">
+                <div style="font-size:10px;color:#777;text-transform:uppercase;">Total Processed</div>
+                <div style="font-size:20px;font-weight:800;color:#1a1a2e;" id="ocr-total">0</div>
+            </div>
+            <div style="padding:14px 20px;text-align:center;border-right:1px solid #eee;">
+                <div style="font-size:10px;color:#777;text-transform:uppercase;">Automation Rate</div>
+                <div style="font-size:20px;font-weight:800;color:#16a34a;" id="ocr-auto-pct">0%</div>
+            </div>
+            <div style="padding:14px 20px;text-align:center;border-right:1px solid #eee;">
+                <div style="font-size:10px;color:#777;text-transform:uppercase;">Avg Confidence</div>
+                <div style="font-size:20px;font-weight:800;color:#3b82f6;" id="ocr-conf">0%</div>
+            </div>
+            <div style="padding:14px 20px;text-align:center;">
+                <div style="font-size:10px;color:#777;text-transform:uppercase;">Human Fallback</div>
+                <div style="font-size:20px;font-weight:800;color:#d97706;" id="ocr-human">0</div>
+            </div>
+        </div>
+
+        <div style="padding:12px 24px 4px;font-size:13px;font-weight:700;color:#1a1a2e;">Recent OCR Extractions (Sample)</div>
+        <div class="report-table-wrap">
+            <table class="report-table">
+                <thead><tr>
+                    <th>Log ID</th><th>Processed At</th><th class="text-center">Medicines Found</th>
+                    <th class="text-right">Confidence</th><th>Processing Type</th><th>Verification</th>
+                </tr></thead>
+                <tbody id="ocr-tbody"></tbody>
+            </table>
+        </div>
+
+        <div class="report-footer">
+            <div class="footer-note">Automation Rate shows the percentage of prescriptions processed without requiring human fallback. Confidence scores are provided by the OCR engine. E & O.E.</div>
+            <div class="footer-sign"><div class="sign-line"></div><div>Manager / System Admin</div></div>
+        </div>
+    </div>
+</div>
+
+<script>
+async function loadReport() {
+    const start = document.getElementById('f-start').value;
+    const end = document.getElementById('f-end').value;
+    let url = '/api/reports/ocr-analytics';
+    const params = [];
+    if (start) params.push('start_date=' + start);
+    if (end) params.push('end_date=' + end);
+    if (params.length) url += '?' + params.join('&');
+
+    document.getElementById('report-loading').style.display = '';
+    document.getElementById('report-content').style.display = 'none';
+
+    try {
+        const res = await fetch(url);
+        const d = await res.json();
+
+        document.getElementById('ocr-period').innerHTML = `<strong>Period:</strong> ${d.start_date} to ${d.end_date}`;
+        document.getElementById('ocr-total').textContent = d.total_processed;
+        document.getElementById('ocr-auto-pct').textContent = d.automation_rate_pct + '%';
+        document.getElementById('ocr-conf').textContent = d.avg_confidence_pct + '%';
+        document.getElementById('ocr-human').textContent = d.human_verification_required;
+
+        const tbody = document.getElementById('ocr-tbody');
+        tbody.innerHTML = '';
+
+        if (!d.recent_logs.length) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center" style="color:#999;">No OCR logs for this period.</td></tr>';
+        } else {
+            d.recent_logs.forEach(r => {
+                const typeTag = r.requires_human 
+                    ? `<span class="tag tag-human">Human Fallback</span>` 
+                    : `<span class="tag tag-auto">Auto Processed</span>`;
+                
+                let verTag = '';
+                if (r.requires_human) {
+                    verTag = r.is_verified 
+                        ? `<span class="tag tag-verified"><i class="fas fa-check"></i> Verified</span>`
+                        : `<span class="tag tag-pending"><i class="fas fa-clock"></i> Pending</span>`;
+                } else {
+                    verTag = `<span style="color:#ccc;font-size:11px;">N/A</span>`;
+                }
+
+                tbody.innerHTML += `<tr>
+                    <td>#${r.log_id}</td>
+                    <td>${r.processed_at}</td>
+                    <td class="text-center"><strong>${r.medicines_parsed}</strong></td>
+                    <td class="text-right" style="color:${r.confidence >= 80 ? '#16a34a' : '#d97706'};font-weight:600;">${r.confidence}%</td>
+                    <td>${typeTag}</td>
+                    <td>${verTag}</td>
+                </tr>`;
+            });
+        }
+
+        document.getElementById('report-loading').style.display = 'none';
+        document.getElementById('report-content').style.display = '';
+    } catch (e) {
+        console.error(e);
+        document.getElementById('report-loading').innerHTML = '<div class="report-empty"><i class="fas fa-exclamation-triangle"></i><p>Failed to load OCR analytics.</p></div>';
+    }
+}
+
+const now = new Date();
+document.getElementById('f-start').value = now.toISOString().slice(0, 8) + '01';
+document.getElementById('f-end').value = now.toISOString().slice(0, 10);
+loadReport();
+</script>
+</body>
+</html>

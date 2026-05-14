@@ -32,6 +32,7 @@ from ..models.inventory import StockBatch, ExpiryAlert
 from ..models.finance import Expense, GstTransaction
 from ..models.purchase import PurchaseInvoice, PurchaseInvoiceItem, PurchasePayment
 from ..models.hr import Salesman, AttendanceLog, SalesmanLedger
+from ..models.ai import AiFaceLog, CustomerPurchasePattern, PrescriptionOcrLog, WantedList
 from ..models.lookups import BillType, ReturnReason, PaymentMode
 
 
@@ -1209,3 +1210,196 @@ def api_attendance_salary():
 @login_required
 def page_attendance_salary():
     return render_template("reports/attendance_salary.html", current_user=_current_page_user())
+
+
+# ===========================================================================
+# AI & ANALYTICS REPORTS
+# ===========================================================================
+
+# ---------------------------------------------------------------------------
+# 15. Customer Retention & Purchase Patterns (CRM)
+# ---------------------------------------------------------------------------
+
+@reports_bp.route("/api/reports/customer-retention", methods=["GET"])
+def api_customer_retention():
+    """Identifies patients based on purchase patterns and expected return dates."""
+    # Filter out inactive customers
+    customers = Customer.query.filter(Customer.is_active.is_(True)).all()
+    
+    rows = []
+    total_chronic = 0
+    overdue_count = 0
+    
+    today = datetime.now().date()
+    
+    for cust in customers:
+        patterns = CustomerPurchasePattern.query.filter(
+            CustomerPurchasePattern.customer_id == cust.customer_id
+        ).all()
+        
+        if not patterns:
+            continue
+            
+        total_chronic += 1
+        
+        # Determine the most critical pattern for the customer
+        latest_expected = None
+        is_overdue = False
+        items_tracked = []
+        
+        for p in patterns:
+            item = Item.query.get(p.item_id)
+            item_name = item.item_name if item else "Unknown Item"
+            items_tracked.append(f"{item_name} (Avg: {int(p.avg_quantity)})")
+            
+            if p.next_expected_date:
+                if latest_expected is None or p.next_expected_date < latest_expected:
+                    latest_expected = p.next_expected_date
+                    
+        if latest_expected and latest_expected < today:
+            is_overdue = True
+            overdue_count += 1
+            
+        rows.append({
+            "customer_id": cust.customer_id,
+            "customer_name": cust.customer_name,
+            "phone": cust.phone or "",
+            "patterns_count": len(patterns),
+            "items_tracked": items_tracked,
+            "last_purchase_date": max((p.last_purchased_date for p in patterns if p.last_purchased_date), default=None),
+            "next_expected_date": latest_expected.strftime("%d/%m/%Y") if latest_expected else "N/A",
+            "is_overdue": is_overdue,
+            "days_overdue": (today - latest_expected).days if is_overdue and latest_expected else 0,
+        })
+        
+    rows.sort(key=lambda x: (not x["is_overdue"], -x["days_overdue"]))
+
+    return jsonify({
+        "report_date": today.strftime("%d/%m/%Y"),
+        "total_customers": len(customers),
+        "total_chronic_patients": total_chronic,
+        "overdue_count": overdue_count,
+        "retention_data": [{
+            **r,
+            "last_purchase_date": r["last_purchase_date"].strftime("%d/%m/%Y") if r["last_purchase_date"] else "N/A",
+        } for r in rows],
+    })
+
+@reports_bp.route("/reports/customer-retention", methods=["GET"])
+@login_required
+def page_customer_retention():
+    return render_template("reports/customer_retention.html", current_user=_current_page_user())
+
+
+# ---------------------------------------------------------------------------
+# 16. Facial Recognition Footfall Analytics
+# ---------------------------------------------------------------------------
+
+@reports_bp.route("/api/reports/face-footfall", methods=["GET"])
+def api_face_footfall():
+    """Analyzes walk-in frequency using camera data, tracking peak shop hours."""
+    start_date = _parse_date(request.args.get("start_date"))
+    end_date = _parse_date(request.args.get("end_date"))
+    if not start_date:
+        start_date = datetime.now().date()
+    if not end_date:
+        end_date = datetime.now().date()
+        
+    # Get all logs in date range
+    logs = AiFaceLog.query.filter(
+        db.func.date(AiFaceLog.detected_at).between(start_date, end_date)
+    ).all()
+    
+    total_walkins = len(logs)
+    unique_customers = len(set(log.customer_id for log in logs if log.customer_id))
+    fraud_alerts = sum(1 for log in logs if log.is_fraud_alert)
+    
+    # Peak hours calculation
+    hourly_distribution = {i: 0 for i in range(24)}
+    for log in logs:
+        hourly_distribution[log.detected_at.hour] += 1
+        
+    peak_hours = [{"hour": f"{h:02d}:00", "count": c} for h, c in hourly_distribution.items() if c > 0]
+    peak_hours.sort(key=lambda x: x["count"], reverse=True)
+    
+    # Recent wanted/fraud logs
+    recent_alerts = []
+    for log in [l for l in logs if l.is_fraud_alert][:10]:
+        recent_alerts.append({
+            "detected_at": log.detected_at.strftime("%d/%m/%Y %H:%M:%S"),
+            "camera_id": log.camera_id,
+            "confidence": float(log.confidence_score) if log.confidence_score else 0,
+            "action": log.action_triggered or "Flagged",
+        })
+
+    return jsonify({
+        "start_date": start_date.strftime("%d/%m/%Y"),
+        "end_date": end_date.strftime("%d/%m/%Y"),
+        "total_walkins": total_walkins,
+        "unique_customers": unique_customers,
+        "fraud_alerts": fraud_alerts,
+        "peak_hours": peak_hours[:5], # Top 5 peak hours
+        "hourly_distribution": [{"hour": h, "count": c} for h, c in hourly_distribution.items()],
+        "recent_alerts": recent_alerts,
+    })
+
+@reports_bp.route("/reports/face-footfall", methods=["GET"])
+@login_required
+def page_face_footfall():
+    return render_template("reports/face_footfall.html", current_user=_current_page_user())
+
+
+# ---------------------------------------------------------------------------
+# 17. Prescription OCR Analytics
+# ---------------------------------------------------------------------------
+
+@reports_bp.route("/api/reports/ocr-analytics", methods=["GET"])
+def api_ocr_analytics():
+    """Report showing the success/failure rate of the AI OCR feature."""
+    start_date = _parse_date(request.args.get("start_date"))
+    end_date = _parse_date(request.args.get("end_date"))
+    if not start_date:
+        start_date = datetime.now().date().replace(day=1)
+    if not end_date:
+        end_date = datetime.now().date()
+        
+    logs = PrescriptionOcrLog.query.filter(
+        db.func.date(PrescriptionOcrLog.processed_at).between(start_date, end_date)
+    ).all()
+    
+    total_processed = len(logs)
+    human_verification_required = sum(1 for log in logs if log.requires_human_verification)
+    auto_processed = total_processed - human_verification_required
+    
+    avg_confidence = 0
+    if total_processed > 0:
+        confidences = [float(log.confidence_score) for log in logs if log.confidence_score]
+        if confidences:
+            avg_confidence = sum(confidences) / len(confidences)
+            
+    recent_logs = []
+    for log in sorted(logs, key=lambda l: l.processed_at, reverse=True)[:50]:
+        recent_logs.append({
+            "log_id": log.ocr_log_id,
+            "processed_at": log.processed_at.strftime("%d/%m/%Y %H:%M:%S"),
+            "confidence": float(log.confidence_score) if log.confidence_score else 0,
+            "requires_human": log.requires_human_verification,
+            "is_verified": log.verified_at is not None,
+            "medicines_parsed": len(log.parsed_medicines) if log.parsed_medicines else 0,
+        })
+
+    return jsonify({
+        "start_date": start_date.strftime("%d/%m/%Y"),
+        "end_date": end_date.strftime("%d/%m/%Y"),
+        "total_processed": total_processed,
+        "auto_processed": auto_processed,
+        "human_verification_required": human_verification_required,
+        "automation_rate_pct": round((auto_processed / total_processed * 100) if total_processed > 0 else 0, 1),
+        "avg_confidence_pct": round(avg_confidence, 1),
+        "recent_logs": recent_logs,
+    })
+
+@reports_bp.route("/reports/ocr-analytics", methods=["GET"])
+@login_required
+def page_ocr_analytics():
+    return render_template("reports/ocr_analytics.html", current_user=_current_page_user())
