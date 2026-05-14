@@ -3,6 +3,7 @@ from sqlalchemy import func, desc, case
 from .extensions import db
 from .models.sales import SalesBill, SalesBillItem
 from .models.core import Item, Customer
+from .models.inventory import StockBatch
 from .models.ai import CustomerPurchasePattern
 import math
 
@@ -172,6 +173,132 @@ def get_churn_risk_customers(days_threshold=60, min_total_spend=500):
         for name, phone, last_visit, total_spend in churn_risk
     ]
 
+def get_customer_lifetime_value(days_back=180):
+    """
+    Cluster customers using RFM (Recency, Frequency, Monetary) parameters.
+    Segments: Champions, Loyal Refillers, At-Risk.
+    """
+    start_date = datetime.utcnow().date() - timedelta(days=days_back)
+    
+    # Query aggregated stats per customer
+    stats = db.session.query(
+        SalesBill.customer_id,
+        Customer.customer_name,
+        Customer.phone,
+        func.count(SalesBill.bill_id).label('frequency'),
+        func.sum(SalesBill.net_amount).label('monetary'),
+        func.max(SalesBill.bill_date).label('last_visit')
+    ).join(Customer, SalesBill.customer_id == Customer.customer_id).filter(
+        SalesBill.customer_id != None,
+        SalesBill.is_cancelled == False,
+        SalesBill.bill_date >= start_date
+    ).group_by(SalesBill.customer_id, Customer.customer_name, Customer.phone).all()
+    
+    segments = {
+        "champions": {"name": "Champions", "count": 0, "total_spend": 0.0, "customers": [], "color": "#3b82f6", "desc": "Bought recently, buy often, and spend the most"},
+        "loyal": {"name": "Loyal Refillers", "count": 0, "total_spend": 0.0, "customers": [], "color": "#22c55e", "desc": "High purchase frequency for chronic refills"},
+        "at_risk": {"name": "At-Risk VIPs", "count": 0, "total_spend": 0.0, "customers": [], "color": "#f5a623", "desc": "High spenders who haven't visited recently"},
+        "promising": {"name": "Promising / Walk-ins", "count": 0, "total_spend": 0.0, "customers": [], "color": "#a78bfa", "desc": "Recent shoppers or lower frequency buyers"}
+    }
+    
+    today = datetime.utcnow().date()
+    
+    for cid, cname, phone, freq, mon, last_visit in stats:
+        mon_val = float(mon or 0)
+        recency = (today - last_visit).days if last_visit else 0
+        
+        # Determine segment
+        if recency <= 30 and freq >= 8 and mon_val >= 5000:
+            key = "champions"
+        elif freq >= 4:
+            key = "loyal"
+        elif recency > 60 and mon_val >= 500:
+            key = "at_risk"
+        else:
+            key = "promising"
+            
+        seg = segments[key]
+        seg["count"] += 1
+        seg["total_spend"] += mon_val
+        seg["customers"].append({"name": cname, "phone": phone or "-", "spend": round(mon_val, 2), "recency": recency, "freq": freq})
+            
+    # Format return list
+    result = []
+    for k, v in segments.items():
+        avg_spend = round(v["total_spend"] / v["count"], 2) if v["count"] > 0 else 0.0
+        v["customers"].sort(key=lambda x: x["spend"], reverse=True)
+        result.append({
+            "id": k,
+            "name": v["name"],
+            "count": v["count"],
+            "avg_spend": avg_spend,
+            "total_spend": round(v["total_spend"], 2),
+            "sample_customers": v["customers"][:5],
+            "all_customers": v["customers"],
+            "color": v["color"],
+            "desc": v["desc"]
+        })
+        
+    return result
+
+def get_dynamic_stockout_risk(days_back=30):
+    """
+    Calculate real-time daily consumption velocity per item to predict remaining days of supply.
+    """
+    start_date = datetime.utcnow().date() - timedelta(days=days_back)
+    
+    # Calculate quantity sold per item over the period
+    sales_velocity = db.session.query(
+        SalesBillItem.item_id,
+        func.sum(SalesBillItem.qty_sold).label('total_sold')
+    ).join(SalesBill, SalesBillItem.bill_id == SalesBill.bill_id).filter(
+        SalesBill.bill_date >= start_date,
+        SalesBill.is_cancelled == False
+    ).group_by(SalesBillItem.item_id).all()
+    
+    velocity_map = {item_id: float(sold or 0) / days_back for item_id, sold in sales_velocity}
+    
+    # Query items to get stock and compute stockout risk
+    items = Item.query.filter_by(is_active=True).all()
+    
+    result = []
+    for item in items:
+        total_stock = db.session.query(func.coalesce(func.sum(StockBatch.current_qty), 0)).filter_by(item_id=item.item_id).scalar()
+        stock = int(total_stock)
+        
+        # Base fallback velocity if no sales recorded recently
+        vel = velocity_map.get(item.item_id, 0.1)
+        if vel <= 0:
+            vel = 0.1
+            
+        days_remaining = int(round(stock / vel))
+        
+        # Filter for items that have low days remaining or critical stock
+        if days_remaining <= 25 or stock <= 15:
+            if days_remaining <= 5 or stock == 0:
+                risk = "CRITICAL"
+                color = "#ef4444"
+            elif days_remaining <= 12:
+                risk = "HIGH"
+                color = "#f5a623"
+            else:
+                risk = "MODERATE"
+                color = "#3b82f6"
+                
+            result.append({
+                "item_id": item.item_id,
+                "name": item.item_name,
+                "stock": stock,
+                "daily_velocity": round(vel, 2),
+                "days_remaining": days_remaining,
+                "risk_level": risk,
+                "color": color
+            })
+            
+    # Sort by days remaining ascending
+    result.sort(key=lambda x: x["days_remaining"])
+    return result[:15]
+
 def update_customer_purchase_pattern(customer_id, item_id, quantity_purchased):
     """
     Update customer purchase pattern when a bill is saved.
@@ -306,3 +433,103 @@ def get_personalized_suggestions(customer_id, limit=10, days_back=90, exclude_re
             })
     
     return sorted(suggestions, key=lambda x: x['stock'], reverse=True)[:limit]
+def get_staff_performance_summary(days_back=30):
+    """
+    Get high-level performance metrics for all active salesmen.
+    """
+    from .models.hr import Salesman
+    start_date = datetime.utcnow().date() - timedelta(days=days_back)
+    
+    staff_stats = db.session.query(
+        Salesman.salesman_id,
+        Salesman.salesman_name,
+        Salesman.salesman_code,
+        func.count(SalesBill.bill_id).label('bill_count'),
+        func.sum(SalesBill.net_amount).label('total_revenue')
+    ).join(SalesBill, Salesman.salesman_id == SalesBill.salesman_id).filter(
+        SalesBill.is_cancelled == False,
+        SalesBill.bill_date >= start_date
+    ).group_by(Salesman.salesman_id, Salesman.salesman_name, Salesman.salesman_code).all()
+    
+    return [
+        {
+            "id": sid,
+            "name": name,
+            "code": code,
+            "bills": bills,
+            "revenue": round(float(rev), 2),
+            "avg_bill": round(float(rev) / bills, 2) if bills > 0 else 0
+        }
+        for sid, name, code, bills, rev in staff_stats
+    ]
+
+def get_staff_detailed_performance(staff_id, days_back=30):
+    """
+    Generate detailed performance metrics for a specific staff member.
+    """
+    from .models.hr import Salesman
+    from .models.core import ProductCategory
+    
+    staff = db.session.get(Salesman, staff_id)
+    if not staff:
+        return None
+        
+    start_date = datetime.utcnow().date() - timedelta(days=days_back)
+    
+    # 1. Sales Trend (Last 30 Days)
+    trend_query = db.session.query(
+        SalesBill.bill_date,
+        func.sum(SalesBill.net_amount).label('daily_rev')
+    ).filter(
+        SalesBill.salesman_id == staff_id,
+        SalesBill.is_cancelled == False,
+        SalesBill.bill_date >= start_date
+    ).group_by(SalesBill.bill_date).order_by(SalesBill.bill_date).all()
+    
+    trend = [{"date": d.isoformat(), "revenue": float(r)} for d, r in trend_query]
+    
+    # 2. Category Distribution
+    category_query = db.session.query(
+        ProductCategory.category_name,
+        func.sum(SalesBillItem.value).label('cat_val')
+    ).join(Item, Item.category_id == ProductCategory.category_id)\
+     .join(SalesBillItem, SalesBillItem.item_id == Item.item_id)\
+     .join(SalesBill, SalesBillItem.bill_id == SalesBill.bill_id)\
+     .filter(
+        SalesBill.salesman_id == staff_id,
+        SalesBill.is_cancelled == False,
+        SalesBill.bill_date >= start_date
+    ).group_by(ProductCategory.category_name).all()
+    
+    categories = [{"category": name, "value": float(val)} for name, val in category_query]
+    
+    # 3. Top Items Sold by this Staff
+    top_items = db.session.query(
+        Item.item_name,
+        func.sum(SalesBillItem.qty_sold).label('qty')
+    ).join(SalesBillItem, Item.item_id == SalesBillItem.item_id)\
+     .join(SalesBill, SalesBillItem.bill_id == SalesBill.bill_id)\
+     .filter(
+        SalesBill.salesman_id == staff_id,
+        SalesBill.is_cancelled == False,
+        SalesBill.bill_date >= start_date
+    ).group_by(Item.item_name).order_by(func.sum(SalesBillItem.qty_sold).desc()).limit(5).all()
+    
+    # 4. Overall Summary
+    total_rev = sum(t["revenue"] for t in trend)
+    bill_count = db.session.query(func.count(SalesBill.bill_id)).filter(
+        SalesBill.salesman_id == staff_id, 
+        SalesBill.is_cancelled == False
+    ).scalar()
+    
+    return {
+        "staff_info": {"name": staff.salesman_name, "code": staff.salesman_code},
+        "summary": {
+            "total_revenue": round(total_rev, 2),
+            "bill_count": bill_count,
+            "avg_bill": round(total_rev / bill_count, 2) if bill_count > 0 else 0
+        },
+        "trend": trend,
+        "categories": categories,
+        "top_items": [{"name": n, "qty": int(q)} for n, q in top_items]
+    }
