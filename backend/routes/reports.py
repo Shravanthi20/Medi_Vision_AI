@@ -31,6 +31,7 @@ from ..models.core import (
 from ..models.inventory import StockBatch, ExpiryAlert
 from ..models.finance import Expense, GstTransaction
 from ..models.purchase import PurchaseInvoice, PurchaseInvoiceItem, PurchasePayment
+from ..models.hr import Salesman, AttendanceLog, SalesmanLedger
 from ..models.lookups import BillType, ReturnReason, PaymentMode
 
 
@@ -1009,3 +1010,202 @@ def api_profit_loss():
 @login_required
 def page_profit_loss():
     return render_template("reports/profit_loss.html", current_user=_current_page_user())
+
+
+# ===========================================================================
+# HR & STAFF REPORTS
+# ===========================================================================
+
+# ---------------------------------------------------------------------------
+# 13. Salesman Performance & Commission Report
+# ---------------------------------------------------------------------------
+
+@reports_bp.route("/api/reports/salesman-performance", methods=["GET"])
+def api_salesman_performance():
+    """Revenue per salesman with bill counts and commission data."""
+    start_date = _parse_date(request.args.get("start_date"))
+    end_date = _parse_date(request.args.get("end_date"))
+    if not start_date:
+        start_date = datetime.now().date().replace(day=1)
+    if not end_date:
+        end_date = datetime.now().date()
+
+    salesmen = Salesman.query.filter(Salesman.is_active.is_(True)).all()
+
+    rows = []
+    grand_revenue = 0
+    grand_bills = 0
+
+    for sm in salesmen:
+        bills = SalesBill.query.filter(
+            SalesBill.salesman_id == sm.salesman_id,
+            SalesBill.bill_date.between(start_date, end_date),
+            SalesBill.is_cancelled.is_(False),
+        ).all()
+
+        bill_count = len(bills)
+        revenue = sum(float(b.net_amount) for b in bills)
+        items_sold = 0
+        cogs = 0
+        for b in bills:
+            for bi in b.items:
+                items_sold += int(bi.qty_sold)
+                cogs += float(bi.purchase_rate_at_sale) * int(bi.qty_sold)
+
+        gross_profit = revenue - cogs
+
+        # Commission from ledger entries in period
+        commission = db.session.query(
+            func.coalesce(func.sum(SalesmanLedger.ai_commission_earned), 0)
+        ).filter(
+            SalesmanLedger.salesman_id == sm.salesman_id,
+            SalesmanLedger.period_from >= start_date,
+            SalesmanLedger.period_to <= end_date,
+        ).scalar()
+
+        grand_revenue += revenue
+        grand_bills += bill_count
+
+        rows.append({
+            "salesman_id": sm.salesman_id,
+            "salesman_code": sm.salesman_code,
+            "salesman_name": sm.salesman_name,
+            "phone": sm.phone or "",
+            "bill_count": bill_count,
+            "items_sold": items_sold,
+            "revenue": round(revenue, 2),
+            "cogs": round(cogs, 2),
+            "gross_profit": round(gross_profit, 2),
+            "margin_pct": round((gross_profit / revenue) * 100, 1) if revenue > 0 else 0,
+            "commission": round(float(commission), 2),
+            "avg_bill_value": round(revenue / bill_count, 2) if bill_count > 0 else 0,
+        })
+
+    rows.sort(key=lambda x: x["revenue"], reverse=True)
+
+    return jsonify({
+        "start_date": start_date.strftime("%d/%m/%Y"),
+        "end_date": end_date.strftime("%d/%m/%Y"),
+        "total_salesmen": len(rows),
+        "grand_revenue": round(grand_revenue, 2),
+        "grand_bills": grand_bills,
+        "salesmen": rows,
+    })
+
+
+@reports_bp.route("/reports/salesman-performance", methods=["GET"])
+@login_required
+def page_salesman_performance():
+    return render_template("reports/salesman_performance.html", current_user=_current_page_user())
+
+
+# ---------------------------------------------------------------------------
+# 14. Staff Attendance & Salary Register
+# ---------------------------------------------------------------------------
+
+@reports_bp.route("/api/reports/attendance-salary", methods=["GET"])
+def api_attendance_salary():
+    """Attendance summary + salary ledger entries for all staff in a period."""
+    start_date = _parse_date(request.args.get("start_date"))
+    end_date = _parse_date(request.args.get("end_date"))
+    if not start_date:
+        start_date = datetime.now().date().replace(day=1)
+    if not end_date:
+        end_date = datetime.now().date()
+
+    salesmen = Salesman.query.filter(Salesman.is_active.is_(True)).all()
+
+    staff_data = []
+    total_payable = 0
+    total_paid = 0
+
+    for sm in salesmen:
+        # Attendance: count unique days with CAME
+        attendance_logs = AttendanceLog.query.filter(
+            AttendanceLog.salesman_id == sm.salesman_id,
+            AttendanceLog.log_date.between(start_date, end_date),
+        ).order_by(AttendanceLog.log_date, AttendanceLog.log_time).all()
+
+        days_present = len(set(log.log_date for log in attendance_logs if log.status == 'CAME'))
+        total_days = (end_date - start_date).days + 1
+
+        # Calculate total hours from CAME/WENT pairs
+        total_hours = 0
+        day_logs = {}
+        for log in attendance_logs:
+            if log.log_date not in day_logs:
+                day_logs[log.log_date] = []
+            day_logs[log.log_date].append(log)
+
+        for day_date, logs in day_logs.items():
+            came_time = None
+            for log in sorted(logs, key=lambda l: l.log_time):
+                if log.status == 'CAME' and came_time is None:
+                    came_time = log.log_time
+                elif log.status == 'WENT' and came_time is not None:
+                    diff = (log.log_time - came_time).total_seconds() / 3600
+                    total_hours += diff
+                    came_time = None
+
+        # Salary ledger entries for this period
+        ledger_entries = SalesmanLedger.query.filter(
+            SalesmanLedger.salesman_id == sm.salesman_id,
+            SalesmanLedger.period_from >= start_date,
+            SalesmanLedger.period_to <= end_date,
+        ).order_by(SalesmanLedger.period_from).all()
+
+        salary_rows = []
+        staff_payable = 0
+        staff_paid = 0
+        for entry in ledger_entries:
+            salary_rows.append({
+                "period": entry.period_label,
+                "from": entry.period_from.strftime("%d/%m/%Y"),
+                "to": entry.period_to.strftime("%d/%m/%Y"),
+                "hours": float(entry.total_working_hrs),
+                "rate_per_hr": float(entry.salary_per_hr),
+                "gross": float(entry.gross_salary),
+                "advance": float(entry.advance_taken),
+                "commission": float(entry.ai_commission_earned),
+                "net_payable": float(entry.net_payable),
+                "is_paid": entry.is_paid,
+                "paid_date": entry.paid_date.strftime("%d/%m/%Y") if entry.paid_date else "",
+            })
+            staff_payable += float(entry.net_payable)
+            if entry.is_paid:
+                staff_paid += float(entry.net_payable)
+
+        total_payable += staff_payable
+        total_paid += staff_paid
+
+        staff_data.append({
+            "salesman_id": sm.salesman_id,
+            "salesman_code": sm.salesman_code,
+            "salesman_name": sm.salesman_name,
+            "phone": sm.phone or "",
+            "salary_per_hr": float(sm.salary_per_hr),
+            "days_present": days_present,
+            "total_days": total_days,
+            "attendance_pct": round((days_present / total_days) * 100, 1) if total_days > 0 else 0,
+            "total_hours": round(total_hours, 1),
+            "salary_entries": salary_rows,
+            "total_payable": round(staff_payable, 2),
+            "total_paid": round(staff_paid, 2),
+            "outstanding": round(staff_payable - staff_paid, 2),
+        })
+
+    return jsonify({
+        "start_date": start_date.strftime("%d/%m/%Y"),
+        "end_date": end_date.strftime("%d/%m/%Y"),
+        "total_staff": len(staff_data),
+        "total_payable": round(total_payable, 2),
+        "total_paid": round(total_paid, 2),
+        "total_outstanding": round(total_payable - total_paid, 2),
+        "staff": staff_data,
+    })
+
+
+@reports_bp.route("/reports/attendance-salary", methods=["GET"])
+@login_required
+def page_attendance_salary():
+    return render_template("reports/attendance_salary.html", current_user=_current_page_user())
