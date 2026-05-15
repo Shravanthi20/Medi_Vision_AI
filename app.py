@@ -4,13 +4,12 @@ import sqlite3
 from datetime import datetime
 from typing import Any
 
-from flask import Flask, jsonify, request, send_file
+from flask import Flask, jsonify, request, send_file, render_template
 from flask_cors import CORS
 
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.environ.get("PHARMACY_DB_PATH", os.path.join(BASE_DIR, "database.db"))
-DASHBOARD_PATH = os.path.join(BASE_DIR, "/templates/login.html")
 
 
 app = Flask(__name__)
@@ -299,13 +298,35 @@ def normalize_bill_row(row: sqlite3.Row) -> dict[str, Any]:
     }
 
 
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# TEMPLATE ROUTES (HTML Pages)
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 @app.route("/")
 def dashboard():
-    return send_file(DASHBOARD_PATH)
+    """Render login/dashboard page"""
+    return render_template("login.html")
 
+
+@app.route("/wanted")
+def wanted():
+    """Render wanted (manual) page"""
+    return render_template("wanted.html")
+
+
+@app.route("/mfrchange2")
+def mfr_change_detail_page():
+    """Render manufacturer/location change page"""
+    return render_template("mfrchange2.html")
+
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# API ROUTES (JSON Data)
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 @app.route("/api/health", methods=["GET"])
 def api_health():
+    """Health check endpoint"""
     with get_conn() as conn:
         med_count = conn.execute("SELECT COUNT(*) AS c FROM medicines").fetchone()["c"]
         bill_count = conn.execute("SELECT COUNT(*) AS c FROM bills").fetchone()["c"]
@@ -323,12 +344,14 @@ def api_health():
 
 @app.route("/api/backup")
 def backup_db():
+    """Download database backup"""
     return send_file(DB_PATH, as_attachment=True)
 
 
 # --- BILLS ---
 @app.route("/api/bills", methods=["GET"])
 def get_bills():
+    """Get all bills"""
     with get_conn() as conn:
         rows = conn.execute("SELECT * FROM bills ORDER BY ts DESC").fetchall()
     return jsonify([normalize_bill_row(row) for row in rows])
@@ -336,6 +359,7 @@ def get_bills():
 
 @app.route("/api/bills", methods=["POST"])
 def save_bill():
+    """Create a new bill"""
     data = request.get_json(silent=True) or {}
     required = ["id", "ts", "date", "cust", "phone", "pay", "sub", "disc", "tax", "total", "items"]
     missing = required_fields(data, required)
@@ -458,6 +482,7 @@ def save_bill():
 # --- MEDICINES (INVENTORY) ---
 @app.route("/api/medicines", methods=["GET"])
 def get_meds():
+    """Get all medicines"""
     with get_conn() as conn:
         rows = conn.execute("SELECT * FROM medicines").fetchall()
     keys = [
@@ -484,6 +509,7 @@ def get_meds():
 
 @app.route("/api/medicines/alerts", methods=["GET"])
 def medicine_alerts():
+    """Get low stock and expiry alerts"""
     low_stock_threshold = int(request.args.get("low_stock", 15))
     expiry_days = int(request.args.get("expiry_days", 90))
     now = datetime.now().date()
@@ -537,6 +563,7 @@ def medicine_alerts():
 
 @app.route("/api/medicines", methods=["POST"])
 def update_med():
+    """Create or update medicine"""
     data = request.get_json(silent=True) or {}
     missing = required_fields(data, ["id", "n", "p", "s"])
     if missing:
@@ -579,6 +606,7 @@ def update_med():
 
 @app.route("/api/medicines/<id>", methods=["DELETE"])
 def delete_med(id):
+    """Delete medicine by ID"""
     with get_conn() as conn:
         conn.execute("DELETE FROM medicines WHERE id = ?", (id,))
     return jsonify({"status": "success"})
@@ -587,6 +615,7 @@ def delete_med(id):
 # --- PURCHASES ---
 @app.route("/api/purchases", methods=["GET"])
 def get_purchases():
+    """Get all purchases"""
     with get_conn() as conn:
         rows = conn.execute("SELECT * FROM purchases").fetchall()
     return jsonify(
@@ -609,6 +638,7 @@ def get_purchases():
 
 @app.route("/api/purchases", methods=["POST"])
 def add_purchase():
+    """Create a new purchase"""
     data = request.get_json(silent=True) or {}
     missing = required_fields(data, ["id", "supplier", "items", "amount", "date", "status"])
     if missing:
@@ -665,6 +695,7 @@ def add_purchase():
 # --- MASTERS (CUSTOMERS / DOCTORS / SUPPLIERS) ---
 @app.route("/api/suppliers", methods=["GET"])
 def get_suppliers():
+    """Get all suppliers"""
     with get_conn() as conn:
         rows = conn.execute("SELECT * FROM suppliers").fetchall()
     return jsonify(
@@ -684,6 +715,7 @@ def get_suppliers():
 
 @app.route("/api/suppliers", methods=["POST"])
 def add_supplier():
+    """Create or update supplier"""
     data = request.get_json(silent=True) or {}
     missing = required_fields(data, ["name", "phone"])
     if missing:
@@ -711,6 +743,7 @@ def add_supplier():
 
 @app.route("/api/customers", methods=["GET"])
 def get_customers():
+    """Get all customers"""
     with get_conn() as conn:
         rows = conn.execute("SELECT * FROM customers").fetchall()
     return jsonify(
@@ -732,6 +765,7 @@ def get_customers():
 
 @app.route("/api/customers", methods=["POST"])
 def add_customer():
+    """Create or update customer"""
     data = request.get_json(silent=True) or {}
     missing = required_fields(data, ["name", "phone"])
     if missing:
@@ -764,6 +798,7 @@ def add_customer():
 
 @app.route("/api/doctors", methods=["GET"])
 def get_doctors():
+    """Get all doctors"""
     with get_conn() as conn:
         rows = conn.execute("SELECT * FROM doctors").fetchall()
     return jsonify(
@@ -783,6 +818,7 @@ def get_doctors():
 
 @app.route("/api/doctors", methods=["POST"])
 def add_doctor():
+    """Create or update doctor"""
     data = request.get_json(silent=True) or {}
     missing = required_fields(data, ["name", "specialty", "hospital", "phone"])
     if missing:
@@ -810,6 +846,7 @@ def add_doctor():
 
 @app.route("/api/suppliers/<id>", methods=["DELETE"])
 def delete_supplier(id):
+    """Delete supplier by ID"""
     with get_conn() as conn:
         conn.execute("DELETE FROM suppliers WHERE id = ?", (id,))
     return jsonify({"status": "success"})
@@ -817,6 +854,7 @@ def delete_supplier(id):
 
 @app.route("/api/customers/<id>", methods=["DELETE"])
 def delete_customer(id):
+    """Delete customer by ID"""
     with get_conn() as conn:
         conn.execute("DELETE FROM customers WHERE id = ?", (id,))
     return jsonify({"status": "success"})
@@ -824,11 +862,13 @@ def delete_customer(id):
 
 @app.route("/api/doctors/<id>", methods=["DELETE"])
 def delete_doctor(id):
+    """Delete doctor by ID"""
     with get_conn() as conn:
         conn.execute("DELETE FROM doctors WHERE id = ?", (id,))
     return jsonify({"status": "success"})
 
 
+# Initialize database
 init_db()
 
 
