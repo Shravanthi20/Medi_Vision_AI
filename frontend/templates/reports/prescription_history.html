@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Prescription History — Selvam Medicals</title>
+    <meta name="description" content="Patient Prescription History for Selvam Medicals."/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+    <link rel="stylesheet" href="/static/css/reports.css"/>
+</head>
+<body>
+
+<!-- Toolbar -->
+<div class="report-toolbar">
+    <div class="toolbar-left">
+        <a href="/" class="toolbar-brand">
+            <div class="logo-circle">SM</div>
+            <span>SELVAM MEDICALS</span>
+        </a>
+        <span class="toolbar-title"><i class="fas fa-pills"></i>&nbsp; Prescription History</span>
+    </div>
+    <div class="toolbar-actions">
+        <button class="btn-toolbar btn-back" onclick="history.back()"><i class="fas fa-arrow-left"></i> Back</button>
+        <button class="btn-toolbar btn-print" onclick="window.print()"><i class="fas fa-print"></i> Print</button>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="report-filters" id="report-filters">
+    <label>From:</label>
+    <input type="date" id="filter-start"/>
+    <label>To:</label>
+    <input type="date" id="filter-end"/>
+    <button class="btn-filter" onclick="loadHistory()"><i class="fas fa-filter"></i> Apply</button>
+</div>
+
+<!-- Loading -->
+<div class="report-container" id="report-loading">
+    <div class="report-loading">
+        <i class="fas fa-spinner fa-spin"></i>
+        <p>Loading prescription history…</p>
+    </div>
+</div>
+
+<!-- Report -->
+<div class="report-container" id="report-content" style="display:none;">
+    <div class="report-page">
+
+        <div class="store-header">
+            <h1>SELVAM MEDICALS</h1>
+            <div class="store-subtitle">Retail & Wholesale Chemists</div>
+            <div class="store-details">
+                No.1, Main Road, Chennai — 600001 &nbsp;|&nbsp; Ph: 044-XXXXXXXX<br/>
+                <strong>GSTIN:</strong> 33AAAAA1234A1Z5 &nbsp;&nbsp;
+                <strong>DL No:</strong> TN-01-XXXXX / TN-01-XXXXX
+            </div>
+        </div>
+
+        <div class="report-title-bar">
+            <h2><i class="fas fa-prescription" style="margin-right:6px;"></i> PRESCRIPTION REGISTER</h2>
+            <div class="report-meta" id="rx-period"></div>
+        </div>
+
+        <div class="report-info">
+            <div>
+                <div><span class="info-label">Patient:</span> <span id="rx-cust"></span></div>
+                <div><span class="info-label">Phone:</span> <span id="rx-phone"></span></div>
+            </div>
+            <div style="text-align:right;">
+                <div><span class="info-label">Total Prescriptions:</span> <span id="rx-total"></span></div>
+            </div>
+        </div>
+
+        <div class="report-table-wrap">
+            <table class="report-table">
+                <thead>
+                    <tr>
+                        <th>S.No</th>
+                        <th>Date</th>
+                        <th>Bill</th>
+                        <th>Medicine</th>
+                        <th>Batch</th>
+                        <th>Manufacturer</th>
+                        <th class="text-center">Qty</th>
+                        <th>Expiry</th>
+                        <th>Doctor</th>
+                        <th>Dispensed By</th>
+                    </tr>
+                </thead>
+                <tbody id="rx-tbody"></tbody>
+            </table>
+        </div>
+
+        <div id="rx-empty" class="report-empty" style="display:none;">
+            <i class="fas fa-clipboard-list"></i>
+            <p>No prescription records found for this patient.</p>
+        </div>
+
+        <div class="report-footer">
+            <div class="footer-note">
+                This is a computer-generated prescription register extract.
+                Maintained as per the Drugs and Cosmetics Act, 1940.
+            </div>
+            <div class="footer-sign">
+                <div class="sign-line"></div>
+                <div>Pharmacist</div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+const CUSTOMER_ID = {{ customer_id }};
+
+async function loadHistory() {
+    const startDate = document.getElementById('filter-start').value;
+    const endDate = document.getElementById('filter-end').value;
+
+    let url = `/api/reports/prescription-history/${CUSTOMER_ID}`;
+    const params = [];
+    if (startDate) params.push('start_date=' + startDate);
+    if (endDate) params.push('end_date=' + endDate);
+    if (params.length) url += '?' + params.join('&');
+
+    document.getElementById('report-loading').style.display = '';
+    document.getElementById('report-content').style.display = 'none';
+
+    try {
+        const res = await fetch(url);
+        if (!res.ok) {
+            document.getElementById('report-loading').innerHTML =
+                '<div class="report-empty"><i class="fas fa-exclamation-triangle"></i><p>Patient not found.</p></div>';
+            return;
+        }
+        const d = await res.json();
+
+        document.getElementById('rx-cust').textContent = d.customer_name;
+        document.getElementById('rx-phone').textContent = d.customer_phone || '—';
+        document.getElementById('rx-total').textContent = d.total_prescriptions;
+
+        let periodHtml = '';
+        if (d.start_date || d.end_date) {
+            periodHtml = `<div><strong>Period:</strong> ${d.start_date || 'Beginning'} — ${d.end_date || 'Today'}</div>`;
+        } else {
+            periodHtml = '<div>All records</div>';
+        }
+        document.getElementById('rx-period').innerHTML = periodHtml;
+
+        const tbody = document.getElementById('rx-tbody');
+        tbody.innerHTML = '';
+        const emptyEl = document.getElementById('rx-empty');
+
+        if (d.entries.length === 0) {
+            emptyEl.style.display = '';
+        } else {
+            emptyEl.style.display = 'none';
+            d.entries.forEach(rx => {
+                tbody.innerHTML += `<tr>
+                    <td class="text-center">${rx.sno}</td>
+                    <td>${rx.rx_date}</td>
+                    <td>${rx.bill_id}</td>
+                    <td>${rx.item_name}</td>
+                    <td>${rx.batch_no}</td>
+                    <td>${rx.manufacturer}</td>
+                    <td class="text-center">${rx.qty}</td>
+                    <td>${rx.expiry_date}</td>
+                    <td>${rx.doctor_name || '—'}</td>
+                    <td>${rx.dispensed_by || '—'}</td>
+                </tr>`;
+            });
+        }
+
+        document.title = `Prescriptions — ${d.customer_name} — Selvam Medicals`;
+        document.getElementById('report-loading').style.display = 'none';
+        document.getElementById('report-content').style.display = '';
+    } catch (e) {
+        console.error(e);
+        document.getElementById('report-loading').innerHTML =
+            '<div class="report-empty"><i class="fas fa-exclamation-triangle"></i><p>Failed to load prescription history.</p></div>';
+    }
+}
+
+loadHistory();
+</script>
+</body>
+</html>

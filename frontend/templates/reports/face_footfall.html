@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Facial Recognition Footfall Analytics — Selvam Medicals</title>
+    <meta name="description" content="AI Facial Recognition Footfall Analytics Report."/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+    <link rel="stylesheet" href="/static/css/reports.css"/>
+    <style>
+        .bar-container { display:flex; align-items:flex-end; gap:4px; height:100px; padding:10px 0; border-bottom:1px solid #e2e8f0; margin-bottom:10px; }
+        .bar { background:#3b82f6; width:20px; border-radius:4px 4px 0 0; position:relative; transition:height 0.3s ease; }
+        .bar:hover::after { content:attr(data-val); position:absolute; top:-20px; left:50%; transform:translateX(-50%); font-size:10px; font-weight:700; color:#1a1a2e; background:#f1f5f9; padding:2px 4px; border-radius:4px; border:1px solid #cbd5e1; z-index:10; }
+        .bar-labels { display:flex; gap:4px; font-size:9px; color:#777; }
+        .bar-label { width:20px; text-align:center; }
+    </style>
+</head>
+<body>
+
+<div class="report-toolbar">
+    <div class="toolbar-left">
+        <a href="/" class="toolbar-brand"><div class="logo-circle">SM</div><span>SELVAM MEDICALS</span></a>
+        <span class="toolbar-title"><i class="fas fa-camera"></i>&nbsp; Facial Footfall Analytics</span>
+    </div>
+    <div class="toolbar-actions">
+        <button class="btn-toolbar btn-back" onclick="history.back()"><i class="fas fa-arrow-left"></i> Back</button>
+        <button class="btn-toolbar btn-print" onclick="window.print()"><i class="fas fa-print"></i> Print</button>
+    </div>
+</div>
+
+<div class="report-filters">
+    <label>From:</label><input type="date" id="f-start"/>
+    <label>To:</label><input type="date" id="f-end"/>
+    <button class="btn-filter" onclick="loadReport()"><i class="fas fa-filter"></i> Load</button>
+</div>
+
+<div class="report-container" id="report-loading">
+    <div class="report-loading"><i class="fas fa-spinner fa-spin"></i><p>Loading footfall data…</p></div>
+</div>
+
+<div class="report-container" id="report-content" style="display:none;">
+    <div class="report-page">
+        <div class="store-header">
+            <h1>SELVAM MEDICALS</h1>
+            <div class="store-subtitle">Retail & Wholesale Chemists</div>
+            <div class="store-details">No.1, Main Road, Chennai — 600001</div>
+        </div>
+
+        <div class="report-title-bar">
+            <h2><i class="fas fa-camera" style="margin-right:6px;"></i> FACIAL RECOGNITION FOOTFALL ANALYTICS</h2>
+            <div class="report-meta"><div id="ff-period"></div></div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-bottom:1px solid #ddd;">
+            <div style="padding:14px 20px;text-align:center;border-right:1px solid #eee;">
+                <div style="font-size:10px;color:#777;text-transform:uppercase;">Total Walk-ins Detected</div>
+                <div style="font-size:20px;font-weight:800;color:#1a1a2e;" id="ff-total">0</div>
+            </div>
+            <div style="padding:14px 20px;text-align:center;border-right:1px solid #eee;">
+                <div style="font-size:10px;color:#777;text-transform:uppercase;">Unique Customers (Identified)</div>
+                <div style="font-size:20px;font-weight:800;color:#3b82f6;" id="ff-unique">0</div>
+            </div>
+            <div style="padding:14px 20px;text-align:center;">
+                <div style="font-size:10px;color:#777;text-transform:uppercase;">Fraud / Wanted Alerts</div>
+                <div style="font-size:20px;font-weight:800;color:#dc2626;" id="ff-fraud">0</div>
+            </div>
+        </div>
+
+        <div style="padding:16px 24px;">
+            <div style="font-size:13px;font-weight:700;color:#1a1a2e;margin-bottom:8px;">Hourly Footfall Distribution</div>
+            <div class="bar-container" id="ff-chart"></div>
+            <div class="bar-labels" id="ff-chart-labels"></div>
+        </div>
+
+        <div style="padding:12px 24px 4px;font-size:13px;font-weight:700;color:#1a1a2e;">Peak Hours Top 5</div>
+        <div class="report-table-wrap">
+            <table class="report-table" style="max-width:300px;">
+                <thead><tr><th>Hour</th><th class="text-center">Detections</th></tr></thead>
+                <tbody id="ff-peak-tbody"></tbody>
+            </table>
+        </div>
+
+        <div style="padding:12px 24px 4px;font-size:13px;font-weight:700;color:#dc2626;">Recent Security Alerts</div>
+        <div class="report-table-wrap">
+            <table class="report-table">
+                <thead><tr><th>Detected At</th><th>Camera ID</th><th class="text-right">Confidence</th><th>Action Triggered</th></tr></thead>
+                <tbody id="ff-alerts-tbody"></tbody>
+            </table>
+        </div>
+
+        <div class="report-footer">
+            <div class="footer-note">Analytics generated from AI Face Log camera detections. Fraud alerts indicate matches against the Wanted List. E & O.E.</div>
+            <div class="footer-sign"><div class="sign-line"></div><div>Manager / Security</div></div>
+        </div>
+    </div>
+</div>
+
+<script>
+async function loadReport() {
+    const start = document.getElementById('f-start').value;
+    const end = document.getElementById('f-end').value;
+    let url = '/api/reports/face-footfall';
+    const params = [];
+    if (start) params.push('start_date=' + start);
+    if (end) params.push('end_date=' + end);
+    if (params.length) url += '?' + params.join('&');
+
+    document.getElementById('report-loading').style.display = '';
+    document.getElementById('report-content').style.display = 'none';
+
+    try {
+        const res = await fetch(url);
+        const d = await res.json();
+
+        document.getElementById('ff-period').innerHTML = `<strong>Period:</strong> ${d.start_date} to ${d.end_date}`;
+        document.getElementById('ff-total').textContent = d.total_walkins;
+        document.getElementById('ff-unique').textContent = d.unique_customers;
+        document.getElementById('ff-fraud').textContent = d.fraud_alerts;
+
+        // Peak Hours
+        const ptbody = document.getElementById('ff-peak-tbody');
+        ptbody.innerHTML = '';
+        if (!d.peak_hours.length) {
+            ptbody.innerHTML = '<tr><td colspan="2" class="text-center" style="color:#999;">No data</td></tr>';
+        } else {
+            d.peak_hours.forEach(p => {
+                ptbody.innerHTML += `<tr><td><strong>${p.hour}</strong></td><td class="text-center">${p.count}</td></tr>`;
+            });
+        }
+
+        // Alerts
+        const atbody = document.getElementById('ff-alerts-tbody');
+        atbody.innerHTML = '';
+        if (!d.recent_alerts.length) {
+            atbody.innerHTML = '<tr><td colspan="4" class="text-center" style="color:#16a34a;"><i class="fas fa-check-circle"></i> No security alerts found.</td></tr>';
+        } else {
+            d.recent_alerts.forEach(a => {
+                atbody.innerHTML += `<tr><td>${a.detected_at}</td><td>${a.camera_id}</td><td class="text-right">${a.confidence}%</td><td><span style="color:#dc2626;font-weight:600;">${a.action}</span></td></tr>`;
+            });
+        }
+
+        // Chart
+        const chart = document.getElementById('ff-chart');
+        const labels = document.getElementById('ff-chart-labels');
+        chart.innerHTML = '';
+        labels.innerHTML = '';
+        
+        let maxCount = 0;
+        d.hourly_distribution.forEach(h => { if(h.count > maxCount) maxCount = h.count; });
+        
+        d.hourly_distribution.forEach(h => {
+            const hPct = maxCount > 0 ? (h.count / maxCount) * 100 : 0;
+            chart.innerHTML += `<div class="bar" style="height:${hPct}%" data-val="${h.count}"></div>`;
+            labels.innerHTML += `<div class="bar-label">${h.hour}</div>`;
+        });
+
+        document.getElementById('report-loading').style.display = 'none';
+        document.getElementById('report-content').style.display = '';
+    } catch (e) {
+        console.error(e);
+        document.getElementById('report-loading').innerHTML = '<div class="report-empty"><i class="fas fa-exclamation-triangle"></i><p>Failed to load footfall analytics.</p></div>';
+    }
+}
+
+const now = new Date();
+document.getElementById('f-start').value = now.toISOString().slice(0, 10);
+document.getElementById('f-end').value = now.toISOString().slice(0, 10);
+loadReport();
+</script>
+</body>
+</html>

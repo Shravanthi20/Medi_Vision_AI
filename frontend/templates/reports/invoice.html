@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Sales Invoice — Selvam Medicals</title>
+    <meta name="description" content="Sales Invoice / Bill printout for Selvam Medicals."/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+    <link rel="stylesheet" href="/static/css/reports.css"/>
+</head>
+<body>
+
+<!-- Toolbar (screen only) -->
+<div class="report-toolbar">
+    <div class="toolbar-left">
+        <a href="/" class="toolbar-brand">
+            <div class="logo-circle">SM</div>
+            <span>SELVAM MEDICALS</span>
+        </a>
+        <span class="toolbar-title"><i class="fas fa-file-invoice"></i>&nbsp; Sales Invoice</span>
+    </div>
+    <div class="toolbar-actions">
+        <button class="btn-toolbar btn-back" onclick="history.back()"><i class="fas fa-arrow-left"></i> Back</button>
+        <button class="btn-toolbar btn-print" onclick="window.print()"><i class="fas fa-print"></i> Print</button>
+    </div>
+</div>
+
+<!-- Loading -->
+<div class="report-container" id="report-loading">
+    <div class="report-loading">
+        <i class="fas fa-spinner fa-spin"></i>
+        <p>Loading invoice…</p>
+    </div>
+</div>
+
+<!-- Report Content (hidden until data loads) -->
+<div class="report-container" id="report-content" style="display:none;">
+    <div class="report-page">
+
+        <!-- Store Header -->
+        <div class="store-header">
+            <h1>SELVAM MEDICALS</h1>
+            <div class="store-subtitle">Retail & Wholesale Chemists</div>
+            <div class="store-details">
+                No.1, Main Road, Chennai — 600001 &nbsp;|&nbsp; Ph: 044-XXXXXXXX<br/>
+                <strong>GSTIN:</strong> 33AAAAA1234A1Z5 &nbsp;&nbsp;
+                <strong>DL No:</strong> TN-01-XXXXX / TN-01-XXXXX
+            </div>
+        </div>
+
+        <!-- Title Bar -->
+        <div class="report-title-bar">
+            <h2 id="invoice-title">TAX INVOICE</h2>
+            <div class="report-meta">
+                <div><strong>Invoice No:</strong> <span id="inv-no"></span></div>
+                <div><strong>Date:</strong> <span id="inv-date"></span> &nbsp; <span id="inv-time"></span></div>
+            </div>
+        </div>
+
+        <!-- Customer / Doctor Info -->
+        <div class="report-info">
+            <div>
+                <div><span class="info-label">Customer:</span> <span id="inv-cust"></span></div>
+                <div><span class="info-label">Phone:</span> <span id="inv-phone"></span></div>
+                <div><span class="info-label">Address:</span> <span id="inv-addr"></span></div>
+                <div id="inv-gstin-row" style="display:none"><span class="info-label">GSTIN:</span> <span id="inv-gstin"></span></div>
+            </div>
+            <div style="text-align:right;">
+                <div><span class="info-label">Doctor:</span> <span id="inv-doctor"></span></div>
+                <div><span class="info-label">Bill Type:</span> <span id="inv-type"></span></div>
+                <span id="inv-cancelled-badge"></span>
+            </div>
+        </div>
+
+        <!-- Line Items Table -->
+        <div class="report-table-wrap">
+            <table class="report-table" id="inv-table">
+                <thead>
+                    <tr>
+                        <th>S.No</th>
+                        <th>Item Name</th>
+                        <th>HSN</th>
+                        <th>Batch</th>
+                        <th>Exp</th>
+                        <th class="text-center">Qty</th>
+                        <th class="text-right">MRP</th>
+                        <th class="text-right">Rate</th>
+                        <th class="text-right">Disc%</th>
+                        <th class="text-right">GST%</th>
+                        <th class="text-right">Amount</th>
+                    </tr>
+                </thead>
+                <tbody id="inv-tbody"></tbody>
+            </table>
+        </div>
+
+        <!-- Amount Summary -->
+        <div class="report-summary">
+            <table>
+                <tr><td>Gross Amount</td><td id="sum-gross"></td></tr>
+                <tr><td>Discount</td><td id="sum-disc"></td></tr>
+                <tr><td>Taxable Amount</td><td id="sum-taxable"></td></tr>
+                <tr><td>CGST</td><td id="sum-cgst"></td></tr>
+                <tr><td>SGST</td><td id="sum-sgst"></td></tr>
+                <tr id="sum-igst-row" style="display:none"><td>IGST</td><td id="sum-igst"></td></tr>
+                <tr><td>Round Off</td><td id="sum-round"></td></tr>
+                <tr class="total-row"><td>NET TOTAL</td><td id="sum-net"></td></tr>
+            </table>
+        </div>
+
+        <!-- Amount in Words -->
+        <div class="amount-words" id="inv-words"></div>
+
+        <!-- Footer -->
+        <div class="report-footer">
+            <div class="footer-note">
+                <strong>Terms:</strong> Goods once sold will not be taken back or exchanged.
+                E & O.E. — Subject to Chennai Jurisdiction.
+            </div>
+            <div class="footer-sign">
+                <div class="sign-line"></div>
+                <div>Authorised Signatory</div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+const BILL_ID = "{{ bill_id }}";
+const API = `/api/reports/invoice/${BILL_ID}`;
+
+function fmt(n) { return '₹' + Number(n || 0).toFixed(2); }
+
+function numberToWords(num) {
+    if (num === 0) return 'Zero';
+    const ones = ['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine',
+                   'Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen',
+                   'Seventeen','Eighteen','Nineteen'];
+    const tens = ['','','Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
+    function chunk(n) {
+        if (n < 20) return ones[n];
+        if (n < 100) return tens[Math.floor(n / 10)] + (n % 10 ? ' ' + ones[n % 10] : '');
+        return ones[Math.floor(n / 100)] + ' Hundred' + (n % 100 ? ' ' + chunk(n % 100) : '');
+    }
+    const intPart = Math.floor(Math.abs(num));
+    const decPart = Math.round((Math.abs(num) - intPart) * 100);
+    let words = '';
+    if (intPart >= 10000000) words += chunk(Math.floor(intPart / 10000000)) + ' Crore ';
+    if (intPart >= 100000) words += chunk(Math.floor((intPart % 10000000) / 100000)) + ' Lakh ';
+    if (intPart >= 1000) words += chunk(Math.floor((intPart % 100000) / 1000)) + ' Thousand ';
+    if (intPart >= 100) words += chunk(Math.floor((intPart % 1000) / 100)) + ' Hundred ';
+    const rem = intPart % 100;
+    if (rem) words += chunk(rem);
+    words = words.trim() + ' Rupees';
+    if (decPart > 0) words += ' and ' + chunk(decPart) + ' Paise';
+    return words + ' Only';
+}
+
+async function loadInvoice() {
+    try {
+        const res = await fetch(API);
+        if (!res.ok) {
+            document.getElementById('report-loading').innerHTML =
+                '<div class="report-empty"><i class="fas fa-exclamation-triangle"></i><p>Invoice not found.</p></div>';
+            return;
+        }
+        const d = await res.json();
+
+        document.getElementById('inv-no').textContent = d.bill_id;
+        document.getElementById('inv-date').textContent = d.bill_date;
+        document.getElementById('inv-time').textContent = d.bill_time;
+        document.getElementById('inv-cust').textContent = d.customer_name;
+        document.getElementById('inv-phone').textContent = d.customer_phone || '—';
+        document.getElementById('inv-addr').textContent = d.customer_address || '—';
+        document.getElementById('inv-doctor').textContent = d.doctor_name;
+        document.getElementById('inv-type').textContent = d.bill_type;
+
+        if (d.customer_gstin) {
+            document.getElementById('inv-gstin-row').style.display = '';
+            document.getElementById('inv-gstin').textContent = d.customer_gstin;
+        }
+
+        if (d.is_cancelled) {
+            document.getElementById('inv-cancelled-badge').innerHTML =
+                '<span class="badge badge-cancelled"><i class="fas fa-ban"></i> CANCELLED</span>';
+        }
+
+        // Items
+        const tbody = document.getElementById('inv-tbody');
+        tbody.innerHTML = '';
+        d.items.forEach(item => {
+            const gstPct = item.cgst_pct + item.sgst_pct + item.igst_pct;
+            tbody.innerHTML += `<tr>
+                <td class="text-center">${item.sno}</td>
+                <td>${item.item_name}</td>
+                <td>${item.hsn_code}</td>
+                <td>${item.batch_no}</td>
+                <td>${item.expiry}</td>
+                <td class="text-center">${item.qty}${item.free_qty ? '+' + item.free_qty : ''}</td>
+                <td class="text-right">${fmt(item.mrp)}</td>
+                <td class="text-right">${fmt(item.rate)}</td>
+                <td class="text-right">${item.discount_pct}%</td>
+                <td class="text-right">${gstPct.toFixed(1)}%</td>
+                <td class="text-right">${fmt(item.value)}</td>
+            </tr>`;
+        });
+
+        // Summary
+        document.getElementById('sum-gross').textContent = fmt(d.gross_amount);
+        document.getElementById('sum-disc').textContent = fmt(d.discount_amount);
+        document.getElementById('sum-taxable').textContent = fmt(d.taxable_amount);
+        document.getElementById('sum-cgst').textContent = fmt(d.cgst_amount);
+        document.getElementById('sum-sgst').textContent = fmt(d.sgst_amount);
+        if (d.igst_amount > 0) {
+            document.getElementById('sum-igst-row').style.display = '';
+            document.getElementById('sum-igst').textContent = fmt(d.igst_amount);
+        }
+        document.getElementById('sum-round').textContent = fmt(d.round_off);
+        document.getElementById('sum-net').textContent = fmt(d.net_amount);
+
+        // Words
+        document.getElementById('inv-words').innerHTML =
+            '<strong>Amount in Words:</strong> ' + numberToWords(d.net_amount);
+
+        document.title = `Invoice ${d.bill_id} — Selvam Medicals`;
+
+        document.getElementById('report-loading').style.display = 'none';
+        document.getElementById('report-content').style.display = '';
+    } catch (e) {
+        console.error(e);
+        document.getElementById('report-loading').innerHTML =
+            '<div class="report-empty"><i class="fas fa-exclamation-triangle"></i><p>Failed to load invoice.</p></div>';
+    }
+}
+
+loadInvoice();
+</script>
+</body>
+</html>

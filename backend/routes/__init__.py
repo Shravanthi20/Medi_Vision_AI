@@ -1,0 +1,29 @@
+from flask import Flask
+
+from .bills import bills_bp
+from .core import core_bp
+from .inventory import inventory_bp
+from .masters import masters_bp
+
+from .purchases import purchases_bp
+from .communications import communications_bp
+from .auth import auth_bp
+from .finance import finance_bp
+from .analytics import analytics_bp
+from .wanted_list import wanted_list_bp
+from .reports import reports_bp
+
+
+def register_blueprints(app: Flask) -> None:
+    app.register_blueprint(auth_bp)
+    app.register_blueprint(core_bp)
+    app.register_blueprint(bills_bp)
+    app.register_blueprint(inventory_bp)
+    app.register_blueprint(purchases_bp)
+    app.register_blueprint(masters_bp)
+    app.register_blueprint(communications_bp)
+
+    app.register_blueprint(finance_bp)
+    app.register_blueprint(analytics_bp)
+    app.register_blueprint(wanted_list_bp)
+    app.register_blueprint(reports_bp)

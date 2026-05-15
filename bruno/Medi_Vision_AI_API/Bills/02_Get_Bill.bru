@@ -1,0 +1,25 @@
+meta {
+  name: Get Bill
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/bills/{{billId}}
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("Get bill returns a bill object", function() {
+    const body = res.getBody();
+    expect(res.getStatus()).to.equal(200);
+    expect(body).to.have.property('id');
+    expect(body).to.have.property('items');
+    expect(body.items).to.be.an('array');
+  });
+}

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <link rel="stylesheet" href="/static/css/header.css">
+</head>
+
+<body>
+    <header class="main-header">
+        <div class="header-left">
+            <div class="search-container">
+                <i data-lucide="search" class="search-icon"></i>
+                <input type="text" placeholder="Search" id="header-search-input">
+            </div>
+        </div>
+
+        <div class="header-right">
+            <div class="header-segment center-text">
+                <span class="fy-text" id="dynamic-fy">FY: 0000-0000</span>
+            </div>
+            <div class="header-segment">
+                <div class="date-stack">
+                    <span class="orange-date" id="current-date">Loading...</span>
+                    <span class="day-label" id="current-day"></span>
+                </div>
+            </div>
+
+            <div class="header-segment">
+                <div class="clock" id="clock">01:04:32</div>
+            </div>
+
+            <div class="header-segment user-segment">
+                <div class="user-pill">
+                    <img src="/static/images/user-profile.jpg" class="user-avatar" alt="User">
+                    <h5>Name</h5>
+                </div>
+            </div>
+        </div>
+    </header>
+    </div>
+    <script src="/static/js/header.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+
+</html>

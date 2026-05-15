@@ -1,0 +1,32 @@
+meta {
+  name: Create Supplier
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/suppliers
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "name": "Test Supplier",
+    "phone": "9000000001",
+    "gst": "33ABCDE1234F1Z5",
+    "status": "Active"
+  }
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("Create supplier succeeds", function() {
+    const body = res.getBody();
+    expect(res.getStatus()).to.equal(200);
+    expect(body).to.have.property('status', 'success');
+  });
+}

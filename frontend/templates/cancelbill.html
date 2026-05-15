@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Selvam Medicals - Cancel Bill</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #09111b;
+      --panel: #101a29;
+      --panel-2: #182538;
+      --line: rgba(148, 163, 184, 0.18);
+      --text: #e5eefb;
+      --muted: #8ea2bf;
+      --accent: #f59e0b;
+      --danger: #f87171;
+      --success: #34d399;
+      --shadow: 0 28px 60px rgba(0, 0, 0, 0.35);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Inter", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top right, rgba(248, 113, 113, 0.13), transparent 22%),
+        radial-gradient(circle at bottom left, rgba(245, 158, 11, 0.1), transparent 24%),
+        linear-gradient(135deg, #060b12, #0c1623 50%, #09111b);
+    }
+
+    .page {
+      max-width: 1360px;
+      margin: 0 auto;
+      padding: 28px;
+    }
+
+    .hero {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 18px;
+      margin-bottom: 24px;
+    }
+
+    .heading {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .badge {
+      width: 56px;
+      height: 56px;
+      border-radius: 18px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, #fb7185, #f59e0b);
+      color: #111827;
+      font-family: "JetBrains Mono", monospace;
+      font-weight: 700;
+      box-shadow: var(--shadow);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 28px;
+      line-height: 1.05;
+    }
+
+    .sub {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .pill,
+    .hero-actions a {
+      border-radius: 999px;
+      padding: 10px 14px;
+      background: rgba(15, 23, 42, 0.72);
+      border: 1px solid var(--line);
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 13px;
+    }
+
+    .hero-actions a {
+      color: var(--text);
+      transition: 0.2s ease;
+    }
+
+    .hero-actions a:hover {
+      border-color: rgba(248, 113, 113, 0.35);
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(620px, 1.5fr) minmax(280px, 0.85fr);
+      gap: 24px;
+    }
+
+    .card {
+      border-radius: 28px;
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(16, 26, 41, 0.97), rgba(10, 18, 29, 0.98));
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .card-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 24px 24px 18px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .card-head h2 {
+      margin: 0;
+      font-size: 21px;
+    }
+
+    .card-head p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .status {
+      min-width: 120px;
+      text-align: center;
+      padding: 10px 12px;
+      border-radius: 14px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      background: rgba(59, 130, 246, 0.14);
+      color: #bfdbfe;
+      border: 1px solid rgba(59, 130, 246, 0.28);
+    }
+
+    .search-row {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr auto;
+      gap: 14px;
+      padding: 24px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .field,
+    .meta-card {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .field label,
+    .meta-card span {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .field input,
+    .field textarea {
+      width: 100%;
+      border-radius: 16px;
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      background: rgba(15, 23, 42, 0.72);
+      color: var(--text);
+      font: inherit;
+      padding: 14px 15px;
+      outline: none;
+      transition: 0.2s ease;
+    }
+
+    .field textarea {
+      min-height: 96px;
+      resize: vertical;
+    }
+
+    .field input:focus,
+    .field textarea:focus {
+      border-color: rgba(248, 113, 113, 0.55);
+      box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.14);
+    }
+
+    .load-btn,
+    .cancel-btn,
+    .secondary-btn {
+      border: none;
+      border-radius: 16px;
+      padding: 14px 16px;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      transition: 0.2s ease;
+    }
+
+    .load-btn {
+      align-self: end;
+      background: linear-gradient(135deg, var(--accent), #f97316);
+      color: #111827;
+    }
+
+    .secondary-btn {
+      background: rgba(30, 41, 59, 0.92);
+      color: var(--text);
+      border: 1px solid var(--line);
+    }
+
+    .cancel-btn {
+      background: linear-gradient(135deg, #ef4444, #fb7185);
+      color: white;
+    }
+
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      padding: 24px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .meta-card {
+      border-radius: 18px;
+      border: 1px solid rgba(148, 163, 184, 0.12);
+      background: rgba(15, 23, 42, 0.58);
+      padding: 16px;
+      min-height: 88px;
+    }
+
+    .meta-card strong {
+      font-size: 15px;
+      line-height: 1.45;
+    }
+
+    .table-wrap {
+      padding: 24px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      overflow: hidden;
+      border-radius: 18px;
+      border: 1px solid rgba(148, 163, 184, 0.12);
+      background: rgba(15, 23, 42, 0.58);
+    }
+
+    th, td {
+      padding: 14px 12px;
+      text-align: left;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+      font-size: 14px;
+    }
+
+    th {
+      color: #cbd5e1;
+      background: rgba(30, 41, 59, 0.72);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-size: 12px;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    .num {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .summary-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      padding: 0 24px 24px;
+    }
+
+    .summary-pill {
+      border-radius: 18px;
+      padding: 12px 16px;
+      border: 1px solid rgba(148, 163, 184, 0.12);
+      background: rgba(15, 23, 42, 0.58);
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .summary-pill strong {
+      color: var(--text);
+    }
+
+    .actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      padding: 0 24px 24px;
+    }
+
+    .side {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .recent {
+      padding: 20px 24px 24px;
+    }
+
+    .recent button {
+      width: 100%;
+      text-align: left;
+      margin-bottom: 12px;
+      padding: 14px 15px;
+      border-radius: 18px;
+      border: 1px solid rgba(148, 163, 184, 0.12);
+      background: rgba(15, 23, 42, 0.58);
+      color: var(--text);
+      cursor: pointer;
+      transition: 0.2s ease;
+    }
+
+    .recent button:hover,
+    .recent button.active {
+      border-color: rgba(245, 158, 11, 0.36);
+      background: rgba(245, 158, 11, 0.08);
+    }
+
+    .empty {
+      padding: 18px;
+      border-radius: 18px;
+      border: 1px dashed rgba(148, 163, 184, 0.2);
+      background: rgba(15, 23, 42, 0.48);
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    @media (max-width: 1080px) {
+      .layout { grid-template-columns: 1fr; }
+      .search-row { grid-template-columns: 1fr; }
+      .meta-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="hero">
+      <div class="heading">
+        <div class="badge">CB</div>
+        <div>
+          <h1>Cancel Bill</h1>
+          <div class="sub">Review a bill, inspect its line items, and cancel it with a tracked reason.</div>
+        </div>
+      </div>
+      <div class="hero-actions">
+        <div class="pill">Signed in as {{ current_user.name or current_user.username or 'User' }}</div>
+        <a href="/">Dashboard</a>
+        <a href="/logout">Logout</a>
+      </div>
+    </div>
+
+    <div class="layout">
+      <section class="card">
+        <div class="card-head">
+          <div>
+            <h2>Cancellation Workbench</h2>
+            <p>This mockup now loads live bill data and uses a dedicated cancel endpoint with reason tracking.</p>
+          </div>
+          <div class="status" id="status">Idle</div>
+        </div>
+
+        <div class="search-row">
+          <div class="field">
+            <label for="bill_id">Bill Id</label>
+            <input id="bill_id" type="text" placeholder="B-123 or 123">
+          </div>
+          <div class="field">
+            <label for="reason">Cancellation Reason</label>
+            <textarea id="reason" placeholder="Why is this bill being cancelled?"></textarea>
+          </div>
+          <button class="load-btn" id="load-btn">Load Bill</button>
+        </div>
+
+        <div class="meta-grid">
+          <div class="meta-card"><span>Doctor</span><strong id="doctor_name">-</strong></div>
+          <div class="meta-card"><span>Salesman</span><strong id="salesman_name">-</strong></div>
+          <div class="meta-card"><span>Customer</span><strong id="customer_name">-</strong></div>
+          <div class="meta-card"><span>Address</span><strong id="customer_address">-</strong></div>
+          <div class="meta-card"><span>Bill No</span><strong id="bill_no">-</strong></div>
+          <div class="meta-card"><span>Cashbill No</span><strong id="cashbill_no">-</strong></div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Item Code</th>
+                <th>Item Name</th>
+                <th>Batch</th>
+                <th>Expiry</th>
+                <th class="num">Qty</th>
+                <th class="num">MRP</th>
+                <th class="num">Value</th>
+              </tr>
+            </thead>
+            <tbody id="bill-items">
+              <tr><td colspan="7" class="empty">Load a bill to inspect its items.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="summary-bar">
+          <div class="summary-pill">Total: <strong id="bill_total">Rs. 0.00</strong></div>
+          <div class="summary-pill">Remarks: <strong id="bill_remarks">-</strong></div>
+        </div>
+
+        <div class="actions">
+          <button class="cancel-btn" id="cancel-btn">Cancel This Bill</button>
+          <button class="secondary-btn" id="clear-btn">Clear</button>
+        </div>
+      </section>
+
+      <aside class="side">
+        <section class="card">
+          <div class="card-head">
+            <div>
+              <h2>Recent Bills</h2>
+              <p>Quick-open the latest active bills for review.</p>
+            </div>
+          </div>
+          <div class="recent" id="recent-bills">
+            <div class="empty">Loading recent bills...</div>
+          </div>
+        </section>
+      </aside>
+    </div>
+  </div>
+
+  <script>
+    const refs = {
+      status: document.getElementById("status"),
+      billId: document.getElementById("bill_id"),
+      reason: document.getElementById("reason"),
+      loadBtn: document.getElementById("load-btn"),
+      cancelBtn: document.getElementById("cancel-btn"),
+      clearBtn: document.getElementById("clear-btn"),
+      recent: document.getElementById("recent-bills"),
+      items: document.getElementById("bill-items"),
+      doctor: document.getElementById("doctor_name"),
+      salesman: document.getElementById("salesman_name"),
+      customer: document.getElementById("customer_name"),
+      address: document.getElementById("customer_address"),
+      billNo: document.getElementById("bill_no"),
+      cashbill: document.getElementById("cashbill_no"),
+      total: document.getElementById("bill_total"),
+      remarks: document.getElementById("bill_remarks"),
+    };
+
+    let loadedBill = null;
+    let recentBills = [];
+
+    function setStatus(text, tone) {
+      refs.status.textContent = text;
+      const themes = {
+        idle: ["rgba(59, 130, 246, 0.14)", "#bfdbfe", "rgba(59, 130, 246, 0.28)"],
+        ready: ["rgba(52, 211, 153, 0.15)", "#bbf7d0", "rgba(52, 211, 153, 0.28)"],
+        warning: ["rgba(245, 158, 11, 0.14)", "#fde68a", "rgba(245, 158, 11, 0.28)"],
+      };
+      const theme = themes[tone] || themes.idle;
+      refs.status.style.background = theme[0];
+      refs.status.style.color = theme[1];
+      refs.status.style.borderColor = theme[2];
+    }
+
+    function normalizedBillId(raw) {
+      const trimmed = String(raw || "").trim();
+      if (!trimmed) {
+        return "";
+      }
+      return trimmed.toUpperCase().startsWith("B-") ? trimmed.toUpperCase() : `B-${trimmed}`;
+    }
+
+    function clearBill() {
+      loadedBill = null;
+      refs.billId.value = "";
+      refs.reason.value = "";
+      refs.doctor.textContent = "-";
+      refs.salesman.textContent = "-";
+      refs.customer.textContent = "-";
+      refs.address.textContent = "-";
+      refs.billNo.textContent = "-";
+      refs.cashbill.textContent = "-";
+      refs.total.textContent = "Rs. 0.00";
+      refs.remarks.textContent = "-";
+      refs.items.innerHTML = '<tr><td colspan="7" class="empty">Load a bill to inspect its items.</td></tr>';
+      setStatus("Idle", "idle");
+      renderRecent();
+    }
+
+    function renderBill(data) {
+      loadedBill = data;
+      refs.billId.value = data.id || "";
+      refs.doctor.textContent = data.doctor_name || "Self";
+      refs.salesman.textContent = data.salesman_name || "System";
+      refs.customer.textContent = data.customer_name || "Walk-in";
+      refs.address.textContent = data.customer_address || "-";
+      refs.billNo.textContent = data.bill_no || "-";
+      refs.cashbill.textContent = data.cashbill_no || "-";
+      refs.total.textContent = `Rs. ${(data.total || 0).toFixed(2)}`;
+      refs.remarks.textContent = data.remarks || "-";
+      if (!data.items || !data.items.length) {
+        refs.items.innerHTML = '<tr><td colspan="7" class="empty">No bill items found.</td></tr>';
+      } else {
+        refs.items.innerHTML = data.items.map((item) => `
+          <tr>
+            <td>${item.item_code || ""}</td>
+            <td>${item.item_name || ""}</td>
+            <td>${item.batch || "-"}</td>
+            <td>${item.expiry || "-"}</td>
+            <td class="num">${item.qty || 0}</td>
+            <td class="num">${(item.mrp || 0).toFixed(2)}</td>
+            <td class="num">${(item.value || 0).toFixed(2)}</td>
+          </tr>
+        `).join("");
+      }
+      setStatus("Ready", "ready");
+      renderRecent();
+    }
+
+    function renderRecent() {
+      if (!recentBills.length) {
+        refs.recent.innerHTML = '<div class="empty">No active bills available.</div>';
+        return;
+      }
+      refs.recent.innerHTML = "";
+      recentBills.forEach((bill) => {
+        const btn = document.createElement("button");
+        if (loadedBill && loadedBill.id === bill.id) {
+          btn.classList.add("active");
+        }
+        btn.innerHTML = `<strong>${bill.id}</strong><div style="color: var(--muted); font-size: 12px; margin-top: 4px;">${bill.cust || "Walk-in"} · Rs. ${(bill.total || 0).toFixed(2)}</div>`;
+        btn.addEventListener("click", () => {
+          refs.billId.value = bill.id;
+          loadBill();
+        });
+        refs.recent.appendChild(btn);
+      });
+    }
+
+    async function fetchRecentBills() {
+      const res = await fetch(`/api/bills?t=${Date.now()}`);
+      const data = await res.json();
+      recentBills = Array.isArray(data) ? data.slice(0, 12) : [];
+      renderRecent();
+    }
+
+    async function loadBill() {
+      const billId = normalizedBillId(refs.billId.value);
+      if (!billId) {
+        alert("Enter a bill id first.");
+        refs.billId.focus();
+        return;
+      }
+      setStatus("Loading", "idle");
+      try {
+        const res = await fetch(`/api/bills/${encodeURIComponent(billId)}/cancel-preview?t=${Date.now()}`);
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || "Failed to load bill");
+        }
+        renderBill(data);
+      } catch (error) {
+        setStatus("Not found", "warning");
+        alert(error.message);
+      }
+    }
+
+    async function cancelBill() {
+      if (!loadedBill) {
+        alert("Load a bill before trying to cancel it.");
+        return;
+      }
+      const reason = refs.reason.value.trim();
+      if (!reason) {
+        alert("Enter a cancellation reason.");
+        refs.reason.focus();
+        return;
+      }
+      if (!confirm(`Cancel bill ${loadedBill.id}? Stock will be restored.`)) {
+        return;
+      }
+
+      refs.cancelBtn.disabled = true;
+      setStatus("Cancelling", "warning");
+      try {
+        const res = await fetch(`/api/bills/${encodeURIComponent(loadedBill.id)}/cancel`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ reason }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || "Failed to cancel bill");
+        }
+        alert(`Bill ${data.id} cancelled.`);
+        clearBill();
+        await fetchRecentBills();
+      } catch (error) {
+        setStatus("Error", "warning");
+        alert(error.message);
+      } finally {
+        refs.cancelBtn.disabled = false;
+      }
+    }
+
+    refs.loadBtn.addEventListener("click", loadBill);
+    refs.cancelBtn.addEventListener("click", cancelBill);
+    refs.clearBtn.addEventListener("click", clearBill);
+    refs.billId.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        loadBill();
+      }
+    });
+
+    clearBill();
+    fetchRecentBills().catch((error) => {
+      refs.recent.innerHTML = `<div class="empty">Failed to load recent bills: ${error.message}</div>`;
+    });
+  </script>
+</body>
+</html>

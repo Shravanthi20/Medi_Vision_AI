@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Daily Sales Register — Selvam Medicals</title>
+    <meta name="description" content="Daily Sales Register and Day Book for Selvam Medicals."/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+    <link rel="stylesheet" href="/static/css/reports.css"/>
+</head>
+<body>
+
+<div class="report-toolbar">
+    <div class="toolbar-left">
+        <a href="/" class="toolbar-brand"><div class="logo-circle">SM</div><span>SELVAM MEDICALS</span></a>
+        <span class="toolbar-title"><i class="fas fa-cash-register"></i>&nbsp; Daily Sales Register</span>
+    </div>
+    <div class="toolbar-actions">
+        <button class="btn-toolbar btn-back" onclick="history.back()"><i class="fas fa-arrow-left"></i> Back</button>
+        <button class="btn-toolbar btn-print" onclick="window.print()"><i class="fas fa-print"></i> Print</button>
+    </div>
+</div>
+
+<div class="report-filters">
+    <label>Date:</label>
+    <input type="date" id="filter-date"/>
+    <button class="btn-filter" onclick="loadReport()"><i class="fas fa-filter"></i> Load</button>
+</div>
+
+<div class="report-container" id="report-loading">
+    <div class="report-loading"><i class="fas fa-spinner fa-spin"></i><p>Loading daily sales…</p></div>
+</div>
+
+<div class="report-container" id="report-content" style="display:none;">
+    <div class="report-page">
+
+        <div class="store-header">
+            <h1>SELVAM MEDICALS</h1>
+            <div class="store-subtitle">Retail & Wholesale Chemists</div>
+            <div class="store-details">No.1, Main Road, Chennai — 600001 &nbsp;|&nbsp; Ph: 044-XXXXXXXX<br/><strong>GSTIN:</strong> 33AAAAA1234A1Z5</div>
+        </div>
+
+        <div class="report-title-bar">
+            <h2><i class="fas fa-cash-register" style="margin-right:6px;"></i> DAILY SALES REGISTER</h2>
+            <div class="report-meta"><div><strong>Date:</strong> <span id="ds-date"></span></div></div>
+        </div>
+
+        <!-- KPI Cards -->
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-bottom:1px solid #ddd;">
+            <div style="padding:14px 20px;text-align:center;border-right:1px solid #eee;">
+                <div style="font-size:10px;color:#777;text-transform:uppercase;letter-spacing:0.05em;">Total Bills</div>
+                <div style="font-size:20px;font-weight:800;color:#1a1a2e;" id="ds-bills">0</div>
+            </div>
+            <div style="padding:14px 20px;text-align:center;border-right:1px solid #eee;">
+                <div style="font-size:10px;color:#777;text-transform:uppercase;letter-spacing:0.05em;">Items Sold</div>
+                <div style="font-size:20px;font-weight:800;color:#3b82f6;" id="ds-items">0</div>
+            </div>
+            <div style="padding:14px 20px;text-align:center;border-right:1px solid #eee;">
+                <div style="font-size:10px;color:#777;text-transform:uppercase;letter-spacing:0.05em;">Net Sales</div>
+                <div style="font-size:20px;font-weight:800;color:#16a34a;" id="ds-net">₹0</div>
+            </div>
+            <div style="padding:14px 20px;text-align:center;">
+                <div style="font-size:10px;color:#777;text-transform:uppercase;letter-spacing:0.05em;">Net Cash</div>
+                <div style="font-size:20px;font-weight:800;color:#f59e0b;" id="ds-cash">₹0</div>
+            </div>
+        </div>
+
+        <!-- Bills Table -->
+        <div style="padding:12px 24px 4px;font-size:13px;font-weight:700;color:#1a1a2e;">Sales Bills</div>
+        <div class="report-table-wrap">
+            <table class="report-table">
+                <thead><tr>
+                    <th>Bill</th><th>Time</th><th>Customer</th><th class="text-center">Items</th>
+                    <th class="text-right">Gross</th><th class="text-right">Disc</th>
+                    <th class="text-right">Tax</th><th class="text-right">Net</th>
+                </tr></thead>
+                <tbody id="ds-bills-tbody"></tbody>
+                <tfoot><tr>
+                    <td colspan="4" class="text-right"><strong>TOTALS</strong></td>
+                    <td class="text-right" id="ds-t-gross"></td>
+                    <td class="text-right" id="ds-t-disc"></td>
+                    <td class="text-right" id="ds-t-tax"></td>
+                    <td class="text-right" id="ds-t-net"></td>
+                </tr></tfoot>
+            </table>
+        </div>
+
+        <!-- Payment Breakdown -->
+        <div style="padding:12px 24px 4px;font-size:13px;font-weight:700;color:#1a1a2e;">Payment Mode Breakdown</div>
+        <div class="report-table-wrap">
+            <table class="report-table" style="max-width:400px;">
+                <thead><tr><th>Payment Mode</th><th class="text-right">Amount (₹)</th></tr></thead>
+                <tbody id="ds-payment-tbody"></tbody>
+            </table>
+        </div>
+
+        <!-- Expenses -->
+        <div style="padding:12px 24px 4px;font-size:13px;font-weight:700;color:#1a1a2e;">Expenses</div>
+        <div class="report-table-wrap">
+            <table class="report-table">
+                <thead><tr><th>Category</th><th>Description</th><th>Voucher</th><th class="text-right">Amount (₹)</th></tr></thead>
+                <tbody id="ds-exp-tbody"></tbody>
+                <tfoot><tr>
+                    <td colspan="3" class="text-right"><strong>Total Expenses</strong></td>
+                    <td class="text-right" id="ds-t-exp"></td>
+                </tr></tfoot>
+            </table>
+        </div>
+
+        <div class="report-footer">
+            <div class="footer-note">This is a system-generated Daily Sales Register. E & O.E.</div>
+            <div class="footer-sign"><div class="sign-line"></div><div>Manager / Accountant</div></div>
+        </div>
+    </div>
+</div>
+
+<script>
+function fmt(n) { return '₹' + Number(n || 0).toFixed(2); }
+
+async function loadReport() {
+    const dateVal = document.getElementById('filter-date').value;
+    let url = '/api/reports/daily-sales';
+    if (dateVal) url += '?date=' + dateVal;
+
+    document.getElementById('report-loading').style.display = '';
+    document.getElementById('report-content').style.display = 'none';
+
+    try {
+        const res = await fetch(url);
+        const d = await res.json();
+
+        document.getElementById('ds-date').textContent = d.report_date;
+        document.getElementById('ds-bills').textContent = d.total_bills;
+        document.getElementById('ds-items').textContent = d.total_items_sold;
+        document.getElementById('ds-net').textContent = fmt(d.total_net);
+        document.getElementById('ds-cash').textContent = fmt(d.net_cash_position);
+
+        // Bills
+        const tbody = document.getElementById('ds-bills-tbody');
+        tbody.innerHTML = '';
+        if (!d.bills.length) {
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#999;padding:24px;">No bills on this date.</td></tr>';
+        } else {
+            d.bills.forEach(b => {
+                tbody.innerHTML += `<tr>
+                    <td><strong>${b.bill_id}</strong></td><td>${b.time}</td><td>${b.customer_name}</td>
+                    <td class="text-center">${b.items_count}</td>
+                    <td class="text-right">${fmt(b.gross)}</td><td class="text-right">${fmt(b.discount)}</td>
+                    <td class="text-right">${fmt(b.tax)}</td><td class="text-right">${fmt(b.net)}</td>
+                </tr>`;
+            });
+        }
+        document.getElementById('ds-t-gross').textContent = fmt(d.total_gross);
+        document.getElementById('ds-t-disc').textContent = fmt(d.total_discount);
+        document.getElementById('ds-t-tax').textContent = fmt(d.total_tax);
+        document.getElementById('ds-t-net').textContent = fmt(d.total_net);
+
+        // Payment breakdown
+        const ptbody = document.getElementById('ds-payment-tbody');
+        ptbody.innerHTML = '';
+        const modes = Object.entries(d.payment_breakdown);
+        if (!modes.length) {
+            ptbody.innerHTML = '<tr><td colspan="2" style="text-align:center;color:#999;">No payment data.</td></tr>';
+        } else {
+            modes.forEach(([mode, amt]) => {
+                ptbody.innerHTML += `<tr><td>${mode}</td><td class="text-right">${fmt(amt)}</td></tr>`;
+            });
+        }
+
+        // Expenses
+        const etbody = document.getElementById('ds-exp-tbody');
+        etbody.innerHTML = '';
+        if (!d.expenses.length) {
+            etbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#999;">No expenses recorded.</td></tr>';
+        } else {
+            d.expenses.forEach(e => {
+                etbody.innerHTML += `<tr><td>${e.category}</td><td>${e.description}</td><td>${e.voucher_no}</td><td class="text-right">${fmt(e.amount)}</td></tr>`;
+            });
+        }
+        document.getElementById('ds-t-exp').textContent = fmt(d.total_expenses);
+
+        document.title = `Daily Sales ${d.report_date} — Selvam Medicals`;
+        document.getElementById('report-loading').style.display = 'none';
+        document.getElementById('report-content').style.display = '';
+    } catch (e) {
+        console.error(e);
+        document.getElementById('report-loading').innerHTML = '<div class="report-empty"><i class="fas fa-exclamation-triangle"></i><p>Failed to load daily sales.</p></div>';
+    }
+}
+
+// Default to today
+document.getElementById('filter-date').valueAsDate = new Date();
+loadReport();
+</script>
+</body>
+</html>
