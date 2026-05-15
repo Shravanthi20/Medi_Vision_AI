@@ -131,3 +131,53 @@ body {
 .nav-item:hover {
     color: #f39c12;
 }
+
+/* Sub-menu Flyout Styles */
+.nav-item-container {
+    position: relative;
+}
+
+.sub-menu {
+    position: absolute;
+    left: 100%;
+    top: 0;
+    width: 200px;
+    background-color: #16191e;
+    border: 1px solid #252930;
+    border-radius: 8px;
+    padding: 8px;
+    display: none;
+    flex-direction: column;
+    box-shadow: 10px 0 30px rgba(0,0,0,0.5);
+    z-index: 1000;
+    margin-left: 10px;
+}
+
+.nav-item-container:hover .sub-menu {
+    display: flex;
+}
+
+.sub-nav-item {
+    color: #8a8d91;
+    text-decoration: none;
+    padding: 8px 12px;
+    font-size: 12px;
+    border-radius: 6px;
+    transition: 0.2s;
+}
+
+.sub-nav-item:hover {
+    background-color: #23282f;
+    color: #f39c12;
+}
+
+/* Ensure the sub-menu triangle/connector */
+.sub-menu::before {
+    content: '';
+    position: absolute;
+    right: 100%;
+    top: 12px;
+    border-width: 6px;
+    border-style: solid;
+    border-color: transparent #252930 transparent transparent;
+}
