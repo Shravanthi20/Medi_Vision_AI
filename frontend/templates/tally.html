@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Tally & Accounts — Selvam Medicals</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@600&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<style>
+:root{--bg:#0b0e16;--sb:#111827;--card:#151d2b;--card2:#1a2236;--brd:#1f2d40;--tx:#e2e8f0;--mt:#64748b;--acc:#f97316;--grn:#22c55e;--red:#ef4444;--blu:#3b82f6;--yel:#eab308;--pur:#a855f7;}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;background:var(--bg);color:var(--tx);font-family:Inter,sans-serif;font-size:13px;overflow-y:auto;}
+.topbar{height:54px;background:var(--sb);border-bottom:1px solid var(--brd);display:flex;align-items:center;gap:12px;padding:0 20px;position:sticky;top:0;z-index:50;}
+.topbar a{display:flex;align-items:center;gap:7px;color:var(--mt);font-size:12px;text-decoration:none;padding:5px 10px;border-radius:6px;border:1px solid var(--brd);}
+.topbar a:hover{border-color:var(--acc);color:var(--acc);}
+.tab-bar{display:flex;gap:4px;padding:14px 20px 0;}
+.tab{padding:8px 18px;border-radius:8px 8px 0 0;cursor:pointer;font-size:12.5px;font-weight:500;color:var(--mt);border:1px solid transparent;border-bottom:none;}
+.tab.active{background:var(--card2);border-color:var(--brd);color:var(--tx);}
+.tab:hover:not(.active){color:var(--acc);}
+.page{padding:0 20px 30px;}
+.tab-content{display:none;} .tab-content.active{display:block;}
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:16px 0;}
+.kpi{background:var(--card2);border:1px solid var(--brd);border-radius:12px;padding:16px;}
+.kpi .kv{font-size:24px;font-weight:700;font-family:'JetBrains Mono',monospace;margin-bottom:3px;}
+.kpi .kl{font-size:11px;color:var(--mt);text-transform:uppercase;letter-spacing:.05em;}
+.kpi.green .kv{color:var(--grn);} .kpi.red .kv{color:var(--red);} .kpi.blue .kv{color:var(--blu);} .kpi.orange .kv{color:var(--acc);}
+.card{background:var(--card2);border:1px solid var(--brd);border-radius:14px;overflow:hidden;margin-bottom:16px;}
+.card-header{padding:13px 16px;border-bottom:1px solid var(--brd);display:flex;align-items:center;gap:8px;font-weight:600;font-size:13px;}
+.card-body{padding:16px;}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;border:1px solid var(--brd);background:var(--card2);color:var(--tx);font-size:12px;font-family:Inter,sans-serif;cursor:pointer;transition:all .2s;}
+.btn:hover{border-color:var(--acc);color:var(--acc);}
+.btn.primary{background:var(--acc);border-color:var(--acc);color:#fff;}
+.btn.primary:hover{background:#ea6c0a;}
+.btn.danger{border-color:var(--red);color:var(--red);}
+.btn.green{background:var(--grn);border-color:var(--grn);color:#fff;}
+table{width:100%;border-collapse:collapse;}
+th{padding:9px 14px;text-align:left;font-size:10.5px;font-weight:600;color:var(--mt);text-transform:uppercase;letter-spacing:.05em;background:var(--sb);white-space:nowrap;}
+td{padding:9px 14px;border-top:1px solid var(--brd);font-size:12px;vertical-align:middle;}
+tbody tr:hover{background:rgba(249,115,22,.04);}
+.badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:10.5px;font-weight:600;}
+.b-green{background:rgba(34,197,94,.12);color:var(--grn);}
+.b-red{background:rgba(239,68,68,.12);color:var(--red);}
+.b-yel{background:rgba(234,179,8,.12);color:var(--yel);}
+.b-blue{background:rgba(59,130,246,.12);color:var(--blu);}
+.b-pur{background:rgba(168,85,247,.12);color:var(--pur);}
+.fi{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
+input,select,textarea{background:var(--card);border:1px solid var(--brd);border-radius:8px;padding:7px 11px;color:var(--tx);font-size:12px;font-family:Inter,sans-serif;outline:none;transition:border .2s;}
+input:focus,select:focus,textarea:focus{border-color:var(--acc);}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin-bottom:14px;}
+.form-field{display:flex;flex-direction:column;gap:5px;}
+.form-field label{font-size:11px;color:var(--mt);font-weight:500;}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--card);border:1px solid var(--brd);border-radius:16px;padding:24px;width:580px;max-width:95vw;max-height:90vh;overflow-y:auto;}
+.modal h3{font-size:15px;margin-bottom:18px;display:flex;align-items:center;gap:8px;}
+.modal-footer{display:flex;gap:8px;margin-top:18px;justify-content:flex-end;}
+.empty{text-align:center;padding:40px 20px;color:var(--mt);font-size:13px;}
+.chip{display:inline-block;padding:1px 8px;border-radius:4px;font-size:10px;font-weight:600;margin-right:4px;}
+.dr{color:var(--red);font-weight:600;} .cr{color:var(--grn);font-weight:600;}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <a href="/internal"><i class="fas fa-arrow-left"></i> POS</a>
+  <i class="fas fa-book-open" style="color:var(--acc)"></i>
+  <span style="font-size:15px;font-weight:600">Tally & Accounts</span>
+  <span style="margin-left:auto;display:flex;gap:8px;">
+    <button class="btn" onclick="exportCSV()"><i class="fas fa-file-csv"></i> Export</button>
+    <button class="btn primary" onclick="openEntryModal()"><i class="fas fa-plus"></i> New Entry</button>
+  </span>
+</div>
+
+<div class="tab-bar">
+  <div class="tab active" onclick="switchTab('ledger',this)"><i class="fas fa-list"></i> Ledger</div>
+  <div class="tab" onclick="switchTab('cheques',this)"><i class="fas fa-money-check"></i> Cheques</div>
+  <div class="tab" onclick="switchTab('bank',this)"><i class="fas fa-landmark"></i> Bank Statement</div>
+  <div class="tab" onclick="switchTab('pl',this)"><i class="fas fa-chart-pie"></i> P&L Summary</div>
+</div>
+
+<div class="page">
+  <!-- KPI -->
+  <div class="kpi-row">
+    <div class="kpi green"><div class="kv" id="kk-income">—</div><div class="kl">Total Income (Cr)</div></div>
+    <div class="kpi red"><div class="kv" id="kk-expense">—</div><div class="kl">Total Expense (Dr)</div></div>
+    <div class="kpi blue"><div class="kv" id="kk-net">—</div><div class="kl">Net Balance</div></div>
+    <div class="kpi orange"><div class="kv" id="kk-entries">—</div><div class="kl">Journal Entries</div></div>
+  </div>
+
+  <!-- LEDGER TAB -->
+  <div class="tab-content active" id="tab-ledger">
+    <div class="card">
+      <div class="card-header">
+        <i class="fas fa-list" style="color:var(--acc)"></i> Journal Ledger
+        <span style="margin-left:auto;display:flex;gap:8px;align-items:center;">
+          <input type="date" id="f-from" onchange="loadEntries()" style="width:130px"/>
+          <input type="date" id="f-to" onchange="loadEntries()" style="width:130px"/>
+          <input type="text" id="f-account" placeholder="Account..." onkeyup="loadEntries()" style="width:140px"/>
+          <select id="f-type" onchange="loadEntries()" style="width:120px">
+            <option value="">All Types</option>
+            <option value="sales">Sales</option>
+            <option value="purchase">Purchase</option>
+            <option value="expense">Expense</option>
+            <option value="payment">Payment</option>
+            <option value="receipt">Receipt</option>
+            <option value="journal">Journal</option>
+            <option value="contra">Contra</option>
+          </select>
+          <button class="btn" onclick="loadEntries()"><i class="fas fa-refresh"></i></button>
+        </span>
+      </div>
+      <table>
+        <thead><tr>
+          <th>#</th><th>Date</th><th>Type</th><th>Narration</th>
+          <th>Debit A/c</th><th>Credit A/c</th>
+          <th style="text-align:right">Debit (Dr)</th>
+          <th style="text-align:right">Credit (Cr)</th>
+          <th>Ref</th><th>Action</th>
+        </tr></thead>
+        <tbody id="entries-tbody"><tr><td colspan="10" class="empty"><i class="fas fa-spinner fa-spin"></i> Loading…</td></tr></tbody>
+      </table>
+      <div id="entries-foot" style="padding:10px 14px;font-size:11.5px;color:var(--mt);border-top:1px solid var(--brd)"></div>
+    </div>
+  </div>
+
+  <!-- CHEQUES TAB -->
+  <div class="tab-content" id="tab-cheques">
+    <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
+      <button class="btn primary" onclick="openChequeModal()"><i class="fas fa-plus"></i> Add Cheque</button>
+    </div>
+    <div class="card">
+      <div class="card-header"><i class="fas fa-money-check" style="color:var(--yel)"></i> Cheque Register</div>
+      <table>
+        <thead><tr>
+          <th>Cheque No</th><th>Date</th><th>Bank</th><th>Payee/Payer</th>
+          <th>Type</th><th style="text-align:right">Amount</th><th>Status</th><th>Narration</th><th>Action</th>
+        </tr></thead>
+        <tbody id="cheques-tbody"><tr><td colspan="9" class="empty"><i class="fas fa-spinner fa-spin"></i></td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- BANK STATEMENT TAB -->
+  <div class="tab-content" id="tab-bank">
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:12px">
+      <button class="btn primary" onclick="openBankModal()"><i class="fas fa-plus"></i> Add Transaction</button>
+    </div>
+    <div class="card">
+      <div class="card-header"><i class="fas fa-landmark" style="color:var(--blu)"></i> Bank Statement</div>
+      <table>
+        <thead><tr>
+          <th>Date</th><th>Bank</th><th>Description</th>
+          <th style="text-align:right">Debit</th>
+          <th style="text-align:right">Credit</th>
+          <th style="text-align:right">Balance</th>
+        </tr></thead>
+        <tbody id="bank-tbody"><tr><td colspan="6" class="empty"><i class="fas fa-spinner fa-spin"></i></td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- P&L TAB -->
+  <div class="tab-content" id="tab-pl">
+    <div id="pl-content" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px;">
+      <div class="card">
+        <div class="card-header"><i class="fas fa-arrow-trend-up" style="color:var(--grn)"></i> Income (Credits)</div>
+        <div id="pl-income" class="card-body"><div class="empty">Loading…</div></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><i class="fas fa-arrow-trend-down" style="color:var(--red)"></i> Expenses (Debits)</div>
+        <div id="pl-expense" class="card-body"><div class="empty">Loading…</div></div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <div class="card-header"><i class="fas fa-scale-balanced" style="color:var(--acc)"></i> Net P&L</div>
+      <div class="card-body" id="pl-net"></div>
+    </div>
+  </div>
+</div><!-- /page -->
+
+<!-- ENTRY MODAL -->
+<div class="modal-overlay" id="entry-modal">
+  <div class="modal">
+    <h3><i class="fas fa-plus" style="color:var(--acc)"></i> New Journal Entry</h3>
+    <div class="form-grid">
+      <div class="form-field"><label>Date *</label><input type="date" id="e-date" required/></div>
+      <div class="form-field"><label>Entry Type *</label>
+        <select id="e-type">
+          <option value="sales">Sales (Income)</option>
+          <option value="receipt">Receipt (Income)</option>
+          <option value="purchase">Purchase (Expense)</option>
+          <option value="expense">Expense</option>
+          <option value="payment">Payment</option>
+          <option value="journal" selected>Journal</option>
+          <option value="contra">Contra</option>
+        </select>
+      </div>
+      <div class="form-field"><label>Party / Account Name *</label>
+        <input type="text" id="e-debit-acc" placeholder="Supplier / Customer / Account" list="accs"/></div>
+      <div class="form-field"><label>Amount (₹) *</label>
+        <input type="number" id="e-amount" placeholder="0.00" step="0.01"/></div>
+      <div class="form-field"><label>Payment Mode</label>
+        <select id="e-pay-mode">
+          <option value="cash">Cash</option><option value="bank">Bank</option>
+          <option value="upi">UPI</option><option value="cheque">Cheque</option>
+          <option value="credit">Credit</option>
+        </select>
+      </div>
+      <div class="form-field"><label>Invoice / Ref No.</label>
+        <input type="text" id="e-ref" placeholder="Invoice/Bill no."/></div>
+    </div>
+    <div class="form-field" style="margin-bottom:10px"><label>Narration / Description *</label>
+      <textarea id="e-narration" rows="2" style="resize:vertical" placeholder="Description of transaction…"></textarea></div>
+    <datalist id="accs">
+      <option>Cash A/c</option><option>Bank A/c</option><option>Sales A/c</option>
+      <option>Purchases A/c</option><option>Sundry Debtors</option><option>Sundry Creditors</option>
+      <option>GST Payable</option><option>GST Input Credit</option><option>Capital A/c</option>
+      <option>Salary Expense</option><option>Rent Expense</option><option>Electricity Expense</option>
+      <option>Drug License Fee</option><option>Freight Charges</option><option>Discount A/c</option>
+    </datalist>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('entry-modal')">Cancel</button>
+      <button class="btn primary" onclick="submitEntry()"><i class="fas fa-save"></i> Save Entry</button>
+    </div>
+  </div>
+</div>
+
+<!-- CHEQUE MODAL -->
+<div class="modal-overlay" id="cheque-modal">
+  <div class="modal">
+    <h3><i class="fas fa-money-check" style="color:var(--yel)"></i> Add Cheque</h3>
+    <div class="form-grid">
+      <div class="form-field"><label>Cheque No *</label><input type="text" id="c-no" placeholder="123456"/></div>
+      <div class="form-field"><label>Date *</label><input type="date" id="c-date"/></div>
+      <div class="form-field"><label>Bank *</label>
+        <input type="text" id="c-bank" list="banks" placeholder="Bank name"/>
+        <datalist id="banks"><option>SBI</option><option>HDFC</option><option>ICICI</option>
+          <option>Axis</option><option>Indian Bank</option><option>Bank of Baroda</option></datalist>
+      </div>
+      <div class="form-field"><label>Payee / Payer *</label><input type="text" id="c-payee" placeholder="Name"/></div>
+      <div class="form-field"><label>Amount (₹) *</label><input type="number" id="c-amount" step="0.01"/></div>
+      <div class="form-field"><label>Type</label>
+        <select id="c-type"><option value="issued">Issued</option><option value="received">Received</option></select>
+      </div>
+      <div class="form-field"><label>Status</label>
+        <select id="c-status"><option value="pending">Pending</option><option value="cleared">Cleared</option><option value="bounced">Bounced</option></select>
+      </div>
+    </div>
+    <div class="form-field"><label>Narration</label>
+      <input type="text" id="c-narration" placeholder="Purpose…" style="width:100%"/></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('cheque-modal')">Cancel</button>
+      <button class="btn primary" onclick="submitCheque()"><i class="fas fa-save"></i> Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- BANK MODAL -->
+<div class="modal-overlay" id="bank-modal">
+  <div class="modal">
+    <h3><i class="fas fa-landmark" style="color:var(--blu)"></i> Add Bank Transaction</h3>
+    <div class="form-grid">
+      <div class="form-field"><label>Date *</label><input type="date" id="b-date"/></div>
+      <div class="form-field"><label>Bank *</label>
+        <input type="text" id="b-bank" list="banks2" placeholder="Bank name"/>
+        <datalist id="banks2"><option>SBI</option><option>HDFC</option><option>ICICI</option><option>Axis</option></datalist>
+      </div>
+      <div class="form-field"><label>Description *</label><input type="text" id="b-desc" placeholder="Transaction details"/></div>
+      <div class="form-field"><label>Debit (Dr) ₹</label><input type="number" id="b-debit" step="0.01" value="0"/></div>
+      <div class="form-field"><label>Credit (Cr) ₹</label><input type="number" id="b-credit" step="0.01" value="0"/></div>
+      <div class="form-field"><label>Balance ₹</label><input type="number" id="b-balance" step="0.01" value="0"/></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('bank-modal')">Cancel</button>
+      <button class="btn primary" onclick="submitBank()"><i class="fas fa-save"></i> Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const fmt = n => '₹'+Number(n||0).toLocaleString('en-IN',{maximumFractionDigits:2});
+const today = new Date().toISOString().split('T')[0];
+
+let entries=[], cheques=[], bankStmts=[];
+
+async function init(){
+  document.getElementById('e-date').value = today;
+  document.getElementById('c-date').value = today;
+  document.getElementById('b-date').value = today;
+  await loadSummary();
+  await loadEntries();
+}
+
+async function loadSummary(){
+  const s = await fetch('/api/open/tally/summary').then(r=>r.json());
+  document.getElementById('kk-income').textContent  = fmt(s.total_income);
+  document.getElementById('kk-expense').textContent = fmt(s.total_expense);
+  document.getElementById('kk-net').textContent     = fmt(s.net_balance);
+  document.getElementById('kk-entries').textContent = s.entry_count||0;
+  renderPL(s);
+}
+
+function renderPL(s){
+  document.getElementById('pl-net').innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;text-align:center;">
+      <div><div style="font-size:28px;font-weight:700;color:var(--grn);font-family:'JetBrains Mono',monospace">${fmt(s.total_income)}</div><div style="color:var(--mt);font-size:11px">Total Income</div></div>
+      <div><div style="font-size:28px;font-weight:700;color:var(--red);font-family:'JetBrains Mono',monospace">${fmt(s.total_expense)}</div><div style="color:var(--mt);font-size:11px">Total Expense</div></div>
+      <div><div style="font-size:32px;font-weight:700;color:${s.net_balance>=0?'var(--grn)':'var(--red)'};font-family:'JetBrains Mono',monospace">${fmt(s.net_balance)}</div><div style="color:var(--mt);font-size:11px">Net ${s.net_balance>=0?'Profit':'Loss'}</div></div>
+    </div>`;
+}
+
+async function loadEntries(){
+  const params = new URLSearchParams({
+    from: document.getElementById('f-from').value,
+    to:   document.getElementById('f-to').value,
+    account: document.getElementById('f-account').value,
+    type: document.getElementById('f-type').value,
+  });
+  entries = await fetch('/api/open/tally/entries?'+params).then(r=>r.json());
+  const tb = document.getElementById('entries-tbody');
+  if(!entries.length){tb.innerHTML='<tr><td colspan="10" class="empty">No entries found.</td></tr>';return;}
+  let totalDr=0,totalCr=0;
+  tb.innerHTML = entries.map((e,i)=>{
+    totalDr+=parseFloat(e.debit||0); totalCr+=parseFloat(e.credit||0);
+    const typeCls={sales:'b-green',purchase:'b-blue',expense:'b-red',payment:'b-yel',receipt:'b-green',journal:'b-pur',contra:'b-blue'}[e.entry_type]||'b-pur';
+    return `<tr>
+      <td style="color:var(--mt)">${e.id}</td>
+      <td>${e.entry_date||''}</td>
+      <td><span class="badge ${typeCls}">${e.entry_type||''}</span></td>
+      <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${e.narration||''}</td>
+      <td class="dr">${e.debit_account||''}</td>
+      <td class="cr">${e.credit_account||''}</td>
+      <td style="text-align:right" class="dr">${e.debit?fmt(e.debit):''}</td>
+      <td style="text-align:right" class="cr">${e.credit?fmt(e.credit):''}</td>
+      <td style="color:var(--mt)">${e.reference_no||''}</td>
+      <td><button class="btn danger" style="padding:3px 8px;font-size:11px" onclick="deleteEntry(${e.id})"><i class="fas fa-trash"></i></button></td>
+    </tr>`;
+  }).join('');
+  document.getElementById('entries-foot').innerHTML =
+    `Showing ${entries.length} entries &nbsp;|&nbsp; Total Dr: <span class="dr">${fmt(totalDr)}</span> &nbsp;|&nbsp; Total Cr: <span class="cr">${fmt(totalCr)}</span>`;
+}
+
+async function loadCheques(){
+  cheques = await fetch('/api/open/tally/cheques').then(r=>r.json());
+  const tb = document.getElementById('cheques-tbody');
+  if(!cheques.length){tb.innerHTML='<tr><td colspan="9" class="empty">No cheques found.</td></tr>';return;}
+  tb.innerHTML = cheques.map(c=>{
+    const stCls={cleared:'b-green',pending:'b-yel',bounced:'b-red'}[c.status]||'b-pur';
+    const tyCls=c.cheque_type==='issued'?'b-red':'b-green';
+    return `<tr>
+      <td style="font-family:'JetBrains Mono',monospace">${c.cheque_no}</td>
+      <td>${c.cheque_date||''}</td>
+      <td>${c.bank_name||''}</td>
+      <td>${c.payee||''}</td>
+      <td><span class="badge ${tyCls}">${c.cheque_type}</span></td>
+      <td style="text-align:right;font-weight:600">${fmt(c.amount)}</td>
+      <td><span class="badge ${stCls}">${c.status}</span></td>
+      <td style="color:var(--mt)">${c.narration||''}</td>
+      <td style="display:flex;gap:4px;">
+        ${c.status==='pending'?`<button class="btn green" style="padding:3px 8px;font-size:11px" onclick="updateCheque(${c.id},'cleared')">Clear</button>
+        <button class="btn danger" style="padding:3px 8px;font-size:11px" onclick="updateCheque(${c.id},'bounced')">Bounce</button>`:'<span style="color:var(--mt)">—</span>'}
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+async function loadBank(){
+  bankStmts = await fetch('/api/open/tally/bank-statements').then(r=>r.json());
+  const tb = document.getElementById('bank-tbody');
+  if(!bankStmts.length){tb.innerHTML='<tr><td colspan="6" class="empty">No bank transactions found.</td></tr>';return;}
+  tb.innerHTML = bankStmts.map(b=>`<tr>
+    <td>${b.statement_date||''}</td>
+    <td>${b.bank_name||''}</td>
+    <td>${b.description||''}</td>
+    <td style="text-align:right;color:var(--red)">${b.debit?fmt(b.debit):''}</td>
+    <td style="text-align:right;color:var(--grn)">${b.credit?fmt(b.credit):''}</td>
+    <td style="text-align:right;font-weight:600">${fmt(b.balance)}</td>
+  </tr>`).join('');
+}
+
+function switchTab(id, el){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('tab-'+id).classList.add('active');
+  if(id==='cheques') loadCheques();
+  else if(id==='bank') loadBank();
+  else if(id==='pl') loadSummary();
+}
+
+function openEntryModal(){document.getElementById('entry-modal').classList.add('open');}
+function openChequeModal(){document.getElementById('cheque-modal').classList.add('open');}
+function openBankModal(){document.getElementById('bank-modal').classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+
+async function submitEntry(){
+  const body={
+    entry_date:   document.getElementById('e-date').value,
+    entry_type:   document.getElementById('e-type').value,
+    debit_account: document.getElementById('e-debit-acc').value.trim(),
+    amount:        parseFloat(document.getElementById('e-amount').value)||0,
+    payment_mode:  document.getElementById('e-pay-mode').value,
+    reference_no:  document.getElementById('e-ref').value.trim(),
+    narration:     document.getElementById('e-narration').value.trim(),
+  };
+  if(!body.entry_date||!body.debit_account||!body.amount||!body.narration)
+    return alert('Please fill all required fields.');
+  const r=await fetch('/api/open/tally/entries',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const j=await r.json();
+  if(j.status==='success'){closeModal('entry-modal');loadEntries();loadSummary();}
+  else alert(j.error||'Failed');
+}
+
+async function submitCheque(){
+  const body={
+    cheque_no: document.getElementById('c-no').value.trim(),
+    cheque_date: document.getElementById('c-date').value,
+    bank_name: document.getElementById('c-bank').value.trim(),
+    payee: document.getElementById('c-payee').value.trim(),
+    amount: parseFloat(document.getElementById('c-amount').value)||0,
+    cheque_type: document.getElementById('c-type').value,
+    status: document.getElementById('c-status').value,
+    narration: document.getElementById('c-narration').value.trim(),
+  };
+  if(!body.cheque_no||!body.payee||!body.amount) return alert('Fill required fields');
+  const r=await fetch('/api/open/tally/cheques',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const j=await r.json();
+  if(j.status==='success'){closeModal('cheque-modal');loadCheques();}
+  else alert(j.error||'Failed');
+}
+
+async function submitBank(){
+  const body={
+    statement_date: document.getElementById('b-date').value,
+    bank_name: document.getElementById('b-bank').value.trim(),
+    description: document.getElementById('b-desc').value.trim(),
+    debit: parseFloat(document.getElementById('b-debit').value)||0,
+    credit: parseFloat(document.getElementById('b-credit').value)||0,
+    balance: parseFloat(document.getElementById('b-balance').value)||0,
+  };
+  if(!body.description) return alert('Fill description');
+  const r=await fetch('/api/open/tally/bank-statements',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const j=await r.json();
+  if(j.status==='success'){closeModal('bank-modal');loadBank();}
+  else alert(j.error||'Failed');
+}
+
+async function deleteEntry(id){
+  if(!confirm('Delete this entry?')) return;
+  await fetch('/api/open/tally/entries/'+id,{method:'DELETE'});
+  loadEntries(); loadSummary();
+}
+
+async function updateCheque(id, status){
+  await fetch('/api/open/tally/cheques/'+id,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({status})});
+  loadCheques();
+}
+
+function exportCSV(){
+  if(!entries.length) return alert('No entries to export');
+  const rows=[['ID','Date','Type','Narration','Debit A/c','Credit A/c','Debit','Credit','Ref']];
+  entries.forEach(e=>rows.push([e.id,e.entry_date,e.entry_type,e.narration,e.debit_account,e.credit_account,e.debit,e.credit,e.reference_no]));
+  const csv=rows.map(r=>r.map(c=>`"${c||''}"`).join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download='tally_entries_'+today+'.csv';
+  a.click();
+}
+
+init();
+</script>
+</body>
+</html>

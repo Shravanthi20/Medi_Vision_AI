@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Pick & Pack Queue — MediVision AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:Inter,sans-serif;background:#0b0e16;color:#e2e8f0;min-height:100vh;}
+.mono{font-family:'JetBrains Mono',monospace;}
+.topbar{background:#111827;border-bottom:1px solid rgba(255,255,255,.08);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;}
+.brand{font-weight:800;color:#f97316;font-size:1.05rem;}
+.nav-links{display:flex;gap:14px;}
+.nav-links a{color:#94a3b8;font-size:.85rem;text-decoration:none;}
+.wrap{max-width:1500px;margin:0 auto;padding:24px;}
+h1{font-size:1.6rem;font-weight:800;color:#fff;}
+.sub{color:#94a3b8;font-size:.9rem;margin-bottom:18px;}
+
+/* BUSY MODE BAR */
+.busy-bar{background:linear-gradient(145deg,#141824,#0f1320);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:16px 22px;margin-bottom:20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+.busy-bar.active{background:linear-gradient(145deg,rgba(239,68,68,.12),#0f1320);border-color:rgba(239,68,68,.35);}
+.busy-bar h3{font-size:.95rem;color:#fff;font-weight:700;}
+.busy-bar h3 i{margin-right:8px;}
+.busy-bar.active h3 i{color:#fca5a5;}
+.busy-bar .msg{flex:1;color:#94a3b8;font-size:.85rem;}
+.toggle{position:relative;width:50px;height:26px;background:rgba(255,255,255,.1);border-radius:99px;cursor:pointer;transition:background .2s;border:none;padding:0;}
+.toggle.on{background:#ef4444;}
+.toggle::after{content:'';position:absolute;top:3px;left:3px;width:20px;height:20px;background:#fff;border-radius:50%;transition:transform .2s;}
+.toggle.on::after{transform:translateX(24px);}
+
+/* KANBAN BOARD */
+.kanban{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;}
+@media(max-width:1200px){.kanban{grid-template-columns:repeat(3,1fr);}}
+@media(max-width:768px){.kanban{grid-template-columns:1fr;}}
+
+.lane{background:#141824;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:14px;min-height:200px;}
+.lane h4{font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+.lane h4 .count{background:rgba(255,255,255,.06);color:#cbd5e1;padding:2px 10px;border-radius:99px;font-size:.7rem;margin-left:auto;}
+.lane.queued h4{color:#fcd34d;}
+.lane.picking h4{color:#60a5fa;}
+.lane.packing h4{color:#a78bfa;}
+.lane.ready h4{color:#4ade80;}
+.lane.dispatched h4{color:#94a3b8;}
+
+/* CARD */
+.card{background:#0d111a;border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:11px;margin-bottom:8px;cursor:grab;}
+.card:hover{border-color:rgba(249,115,22,.3);}
+.card .bill-id{font-family:monospace;font-size:.74rem;color:#64748b;}
+.card .cust{font-weight:700;color:#fff;font-size:.92rem;margin:2px 0;}
+.card .phone{color:#94a3b8;font-size:.76rem;font-family:monospace;}
+.card .total{font-family:monospace;color:#4ade80;font-weight:700;font-size:.92rem;margin-top:4px;}
+.card .items-count{color:#94a3b8;font-size:.74rem;margin-top:2px;}
+.card .source{display:inline-block;background:rgba(249,115,22,.15);color:#fb923c;padding:1px 8px;border-radius:99px;font-size:.66rem;font-weight:700;margin-top:5px;}
+.card .source.call{background:rgba(34,197,94,.15);color:#4ade80;}
+.card .source.shop{background:rgba(59,130,246,.15);color:#60a5fa;}
+.card .actions{display:flex;gap:5px;margin-top:8px;flex-wrap:wrap;}
+.card .actions button{flex:1;padding:5px 8px;border-radius:6px;font-size:.72rem;font-weight:700;border:none;cursor:pointer;font-family:inherit;}
+.btn-pick{background:rgba(96,165,250,.18);color:#60a5fa;}
+.btn-pack{background:rgba(168,85,247,.18);color:#c084fc;}
+.btn-ready{background:rgba(34,197,94,.18);color:#4ade80;}
+.btn-dispatch{background:rgba(148,163,184,.18);color:#cbd5e1;}
+.btn-revert{background:rgba(239,68,68,.15);color:#fca5a5;}
+.priority{position:absolute;top:8px;right:8px;font-size:.65rem;padding:1px 6px;border-radius:99px;font-weight:700;}
+.card{position:relative;}
+.pri-urgent{background:#ef4444;color:#fff;}
+.pri-high{background:#f97316;color:#fff;}
+.pri-normal{background:rgba(255,255,255,.05);color:#94a3b8;}
+
+.empty{text-align:center;padding:24px 8px;color:#475569;font-size:.85rem;}
+
+/* DETAIL MODAL */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);align-items:center;justify-content:center;z-index:200;backdrop-filter:blur(4px);}
+.modal-bg.show{display:flex;}
+.modal{background:#141824;border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:24px;width:540px;max-width:92vw;max-height:90vh;overflow-y:auto;}
+.modal h3{color:#f97316;font-size:1rem;margin-bottom:14px;}
+
+.item-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed rgba(255,255,255,.05);font-size:.85rem;}
+.item-row:last-child{border-bottom:none;}
+
+.kpi-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:18px;}
+.kpi-card{background:linear-gradient(145deg,#141824,#0f1320);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:12px;text-align:center;}
+.kpi-card .lbl{color:#94a3b8;font-size:.66rem;text-transform:uppercase;letter-spacing:.05em;}
+.kpi-card .val{font-size:1.25rem;font-weight:800;color:#fff;font-family:'JetBrains Mono',monospace;margin-top:3px;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand"><i class="fas fa-tasks"></i> Pick &amp; Pack Queue</div>
+  <div class="nav-links">
+    <a href="/portal">Portal</a>
+    <a href="/call-dashboard">Call Dashboard</a>
+    <a href="/internal">POS</a>
+  </div>
+</div>
+
+<div class="wrap">
+  <h1>📦 Pick &amp; Pack Workflow</h1>
+  <p class="sub">Auto-bills from refill calls land here · staff pick → pack → ready → dispatched · drag-or-click to advance</p>
+
+  <!-- BUSY BAR -->
+  <div class="busy-bar" id="busyBar">
+    <h3><i class="fas fa-store"></i> Shop Status</h3>
+    <div class="msg" id="busyMsg">Shop is open — bills processed in real time</div>
+    <button class="toggle" id="busyToggle" onclick="toggleBusy()"></button>
+    <span style="color:#94a3b8;font-size:.82rem;">Mark "Later" mode (queue without printing)</span>
+  </div>
+
+  <!-- KPI Strip -->
+  <div class="kpi-strip" id="kpiStrip"></div>
+
+  <!-- KANBAN -->
+  <div class="kanban">
+    <div class="lane queued" data-status="queued">
+      <h4>📥 Queued <span class="count" id="cnt-queued">0</span></h4>
+      <div id="lane-queued"></div>
+    </div>
+    <div class="lane picking" data-status="picking">
+      <h4>📦 Picking <span class="count" id="cnt-picking">0</span></h4>
+      <div id="lane-picking"></div>
+    </div>
+    <div class="lane packing" data-status="packing">
+      <h4>📦 Packing <span class="count" id="cnt-packing">0</span></h4>
+      <div id="lane-packing"></div>
+    </div>
+    <div class="lane ready" data-status="ready">
+      <h4>✓ Ready <span class="count" id="cnt-ready">0</span></h4>
+      <div id="lane-ready"></div>
+    </div>
+    <div class="lane dispatched" data-status="dispatched">
+      <h4>🚚 Dispatched <span class="count" id="cnt-dispatched">0</span></h4>
+      <div id="lane-dispatched"></div>
+    </div>
+  </div>
+</div>
+
+<!-- DETAIL MODAL -->
+<div class="modal-bg" id="detailModal" onclick="if(event.target===this)closeDetail()">
+  <div class="modal">
+    <h3 id="dmTitle">Bill Detail</h3>
+    <div id="dmBody"></div>
+    <div style="display:flex;gap:8px;margin-top:14px;">
+      <button class="btn-pick" onclick="closeDetail()" style="flex:1;padding:10px;border-radius:8px;border:none;cursor:pointer;font-weight:700;">Close</button>
+      <button onclick="openBillReceipt()" style="flex:1;padding:10px;border-radius:8px;border:none;cursor:pointer;font-weight:700;background:#f97316;color:#fff;"><i class="fas fa-print"></i> Print Bill</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let currentBill = null;
+
+async function loadShop(){
+  const r = await fetch('/api/shop/state');
+  const d = await r.json();
+  const busy = d.busy_mode === '1';
+  document.getElementById('busyBar').classList.toggle('active', busy);
+  document.getElementById('busyToggle').classList.toggle('on', busy);
+  document.getElementById('busyMsg').textContent = busy ? (d.busy_message || 'Currently busy') : 'Shop is open — bills processed in real time';
+}
+
+async function toggleBusy(){
+  const isOn = document.getElementById('busyToggle').classList.contains('on');
+  await fetch('/api/shop/busy', {method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({busy: !isOn})});
+  loadShop();
+}
+
+async function loadQueue(){
+  const r = await fetch('/api/pickpack');
+  const d = await r.json();
+
+  // KPIs
+  const items = d.items;
+  const totalValue = items.filter(i => i.status !== 'cancelled').reduce((s,i)=>s+(i.total||0), 0);
+  const calls = items.filter(i => i.source === 'call_press1').length;
+  document.getElementById('kpiStrip').innerHTML = `
+    <div class="kpi-card"><div class="lbl">Total Queue</div><div class="val">${items.filter(i=>['queued','picking','packing','ready'].includes(i.status)).length}</div></div>
+    <div class="kpi-card"><div class="lbl">From Calls</div><div class="val" style="color:#4ade80;">${calls}</div></div>
+    <div class="kpi-card"><div class="lbl">Total Value</div><div class="val" style="color:#fb923c;">₹${totalValue.toFixed(0)}</div></div>
+    <div class="kpi-card"><div class="lbl">Dispatched Today</div><div class="val" style="color:#cbd5e1;">${items.filter(i=>i.status==='dispatched').length}</div></div>
+    <div class="kpi-card"><div class="lbl">Urgent</div><div class="val" style="color:#fca5a5;">${items.filter(i=>i.priority==='urgent'&&i.status!=='dispatched').length}</div></div>
+  `;
+
+  ['queued','picking','packing','ready','dispatched'].forEach(s => {
+    document.getElementById('cnt-' + s).textContent = d.stats[s];
+    const lane = document.getElementById('lane-' + s);
+    const itemsInLane = items.filter(i => i.status === s);
+    if(!itemsInLane.length){
+      lane.innerHTML = '<div class="empty">— empty —</div>';
+    } else {
+      lane.innerHTML = itemsInLane.map(it => renderCard(it)).join('');
+    }
+  });
+}
+
+function renderCard(it){
+  const sourceCls = it.source === 'call_press1' ? 'call' : (it.source === 'shop_portal' ? 'shop' : '');
+  const sourceLabel = it.source === 'call_press1' ? '📞 Refill Call' : (it.source === 'shop_portal' ? '🏪 Shop Portal' : '✏ Manual');
+  const items = JSON.parse(it.items_json || '[]');
+  let actions = '';
+  if(it.status === 'queued') actions = `<button class="btn-pick" onclick="advance(${it.id},'picking')">Start Pick</button>`;
+  else if(it.status === 'picking') actions = `<button class="btn-pack" onclick="advance(${it.id},'packing')">→ Pack</button><button class="btn-revert" onclick="advance(${it.id},'queued')">Revert</button>`;
+  else if(it.status === 'packing') actions = `<button class="btn-ready" onclick="advance(${it.id},'ready')">→ Ready</button>`;
+  else if(it.status === 'ready') actions = `<button class="btn-dispatch" onclick="advance(${it.id},'dispatched')">📦 Dispatch</button>`;
+
+  return `<div class="card" onclick="showDetail(${JSON.stringify(it).replace(/"/g,'&quot;')})">
+    <span class="priority pri-${it.priority}">${it.priority.toUpperCase()}</span>
+    <div class="bill-id">${it.bill_id}</div>
+    <div class="cust">${it.customer_name || 'Walk-in'}</div>
+    <div class="phone">${it.customer_phone || ''}</div>
+    <div class="total">₹${(it.total||0).toFixed(0)}</div>
+    <div class="items-count">${items.length} items</div>
+    <span class="source ${sourceCls}">${sourceLabel}</span>
+    <div class="actions" onclick="event.stopPropagation();">${actions}</div>
+  </div>`;
+}
+
+async function advance(id, newStatus){
+  await fetch(`/api/pickpack/${id}/status`, {method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({status: newStatus, assigned_to:'Current Staff'})});
+  loadQueue();
+}
+
+function showDetail(it){
+  if(typeof it === 'string') it = JSON.parse(it);
+  currentBill = it;
+  document.getElementById('dmTitle').textContent = `Bill ${it.bill_id} · ${it.customer_name||'Walk-in'}`;
+  const items = JSON.parse(it.items_json || '[]');
+  let html = `<div style="background:#0d111a;padding:14px;border-radius:10px;margin-bottom:14px;">
+    <div style="display:flex;justify-content:space-between;font-size:.84rem;margin-bottom:5px;"><span style="color:#94a3b8;">Phone</span><span style="font-family:monospace;">${it.customer_phone||'-'}</span></div>
+    <div style="display:flex;justify-content:space-between;font-size:.84rem;margin-bottom:5px;"><span style="color:#94a3b8;">Source</span><span>${it.source}</span></div>
+    <div style="display:flex;justify-content:space-between;font-size:.84rem;margin-bottom:5px;"><span style="color:#94a3b8;">Status</span><span>${it.status.toUpperCase()}</span></div>
+    <div style="display:flex;justify-content:space-between;font-size:.84rem;"><span style="color:#94a3b8;">Total</span><span style="color:#4ade80;font-weight:700;">₹${(it.total||0).toFixed(2)}</span></div>
+    ${it.notes?`<div style="margin-top:10px;color:#94a3b8;font-size:.82rem;font-style:italic;">${it.notes}</div>`:''}
+  </div>
+  <div style="font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;color:#fb923c;font-weight:700;margin-bottom:8px;">Items to pick (${items.length})</div>`;
+  items.forEach(i => {
+    html += `<div class="item-row">
+      <span>${i.name} <span style="color:#94a3b8;">× ${i.qty}</span></span>
+      <span style="font-family:monospace;color:#4ade80;">₹${(i.amount||i.price*i.qty).toFixed(2)}</span>
+    </div>`;
+  });
+  document.getElementById('dmBody').innerHTML = html;
+  document.getElementById('detailModal').classList.add('show');
+}
+
+function closeDetail(){ document.getElementById('detailModal').classList.remove('show'); }
+
+function openBillReceipt(){
+  if(currentBill) window.open('/bill/' + currentBill.bill_id, '_blank');
+}
+
+loadShop();
+loadQueue();
+setInterval(loadQueue, 15000);
+</script>
+</body>
+</html>

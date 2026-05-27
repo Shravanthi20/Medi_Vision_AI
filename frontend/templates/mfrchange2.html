@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Manufacturer Change — MediVision AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:Inter,sans-serif;background:#0b0e16;color:#e2e8f0;min-height:100vh;}
+.topbar{background:#111827;border-bottom:1px solid rgba(255,255,255,.08);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;}
+.brand{font-weight:800;color:#f97316;}
+.back{color:#94a3b8;font-size:.9rem;}
+.back:hover{color:#fff;}
+.wrap{max-width:980px;margin:0 auto;padding:36px 24px;}
+h1{font-size:1.7rem;font-weight:800;color:#fff;margin-bottom:6px;}
+.sub{color:#94a3b8;font-size:.92rem;margin-bottom:28px;}
+.card{background:#141824;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:24px;margin-bottom:18px;}
+.card h3{color:#f97316;font-size:1rem;font-weight:700;margin-bottom:14px;text-transform:uppercase;letter-spacing:.05em;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:.74rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px;}
+.field input,.field select{width:100%;background:#0b0e16;border:1.5px solid rgba(255,255,255,.1);border-radius:9px;padding:10px 14px;color:#e2e8f0;font-family:inherit;font-size:.9rem;}
+.field input:focus,.field select:focus{outline:none;border-color:#f97316;}
+.btn-row{display:flex;gap:10px;margin-top:8px;}
+.btn{padding:11px 22px;border-radius:9px;font-weight:700;font-size:.9rem;border:none;cursor:pointer;}
+.btn-primary{background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;}
+.btn-ghost{background:rgba(255,255,255,.05);color:#94a3b8;border:1px solid rgba(255,255,255,.1);}
+.info-banner{background:rgba(249,115,22,.08);border:1px solid rgba(249,115,22,.25);border-radius:10px;padding:14px 18px;font-size:.85rem;color:#fb923c;margin-bottom:24px;}
+.info-banner i{margin-right:8px;}
+@media(max-width:640px){.grid2{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="brand">🏭 Manufacturer Change</div>
+  <a href="/portal" class="back"><i class="fas fa-arrow-left"></i> Back to Portal</a>
+</div>
+
+<div class="wrap">
+  <h1>Manufacturer / Location Change</h1>
+  <div class="sub">Update manufacturer info or storage location for an existing medicine.</div>
+
+  <div class="info-banner">
+    <i class="fas fa-info-circle"></i>
+    Use this form to update mfr name, address, or storage rack/location. Changes are logged in the audit trail.
+  </div>
+
+  <div class="card">
+    <h3>Medicine Selection</h3>
+    <div class="field">
+      <label>Medicine Name / Code</label>
+      <input type="text" id="medName" placeholder="Start typing medicine name..."/>
+    </div>
+    <div class="grid2">
+      <div class="field"><label>Current Manufacturer</label><input type="text" id="curMfr" placeholder="-"/></div>
+      <div class="field"><label>Current Location</label><input type="text" id="curLoc" placeholder="-"/></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>New Details</h3>
+    <div class="grid2">
+      <div class="field"><label>New Manufacturer</label><input type="text" id="newMfr"/></div>
+      <div class="field"><label>New Location / Rack</label><input type="text" id="newLoc" placeholder="e.g. Rack A-3"/></div>
+    </div>
+    <div class="field"><label>Reason for Change</label><input type="text" id="reason" placeholder="Optional"/></div>
+
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="save()">Save Change</button>
+      <button class="btn btn-ghost" onclick="window.history.back()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function save(){
+  const name = document.getElementById('medName').value.trim();
+  if(!name){alert('Enter medicine name');return;}
+  alert('Manufacturer/location change recorded.\nMedicine: '+name+'\n(Backend endpoint pending.)');
+}
+</script>
+</body>
+</html>

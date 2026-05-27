@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Reports Hub — MediVision AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:Inter,sans-serif;background:#0b0e16;color:#e2e8f0;min-height:100vh;}
+.mono{font-family:'JetBrains Mono',monospace;}
+.topbar{background:#111827;border-bottom:1px solid rgba(255,255,255,.08);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;}
+.brand{font-weight:800;color:#f97316;}
+.brand i{margin-right:8px;}
+.nav-links a{color:#94a3b8;font-size:.85rem;text-decoration:none;margin-left:14px;}
+
+.wrap{max-width:1500px;margin:0 auto;padding:18px;}
+
+/* DATE BAR */
+.date-bar{background:#141824;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:12px 16px;margin-bottom:18px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.preset{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:#cbd5e1;padding:8px 14px;border-radius:8px;font-size:.82rem;cursor:pointer;font-family:inherit;transition:all .15s;}
+.preset:hover{background:rgba(249,115,22,.15);color:#fb923c;}
+.preset.active{background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;border-color:#f97316;}
+.dt-input{background:#0b0e16;border:1.5px solid rgba(255,255,255,.1);border-radius:8px;padding:8px 12px;color:#e2e8f0;font-family:inherit;font-size:.85rem;}
+.apply{background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;border:none;padding:9px 18px;border-radius:8px;font-weight:700;cursor:pointer;font-family:inherit;font-size:.85rem;}
+
+/* KPI STRIP */
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:18px;}
+.kpi{background:linear-gradient(145deg,#141824,#0f1320);border:1px solid rgba(255,255,255,.08);border-radius:11px;padding:13px 15px;}
+.kpi .lbl{color:#94a3b8;font-size:.66rem;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;}
+.kpi .val{font-size:1.3rem;font-weight:800;font-family:'JetBrains Mono',monospace;color:#fff;}
+.kpi.g .val{color:#4ade80;}.kpi.o .val{color:#fb923c;}.kpi.r .val{color:#fca5a5;}.kpi.b .val{color:#60a5fa;}
+
+/* LAYOUT */
+.main-grid{display:grid;grid-template-columns:220px 1fr;gap:16px;}
+@media(max-width:900px){.main-grid{grid-template-columns:1fr;}}
+
+/* CATEGORY SIDEBAR */
+.cat-side{background:#141824;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:10px;position:sticky;top:14px;height:fit-content;max-height:90vh;overflow-y:auto;}
+.cat-header{font-size:.7rem;text-transform:uppercase;letter-spacing:.07em;color:#64748b;padding:8px 10px 4px;font-weight:700;}
+.cat-item{padding:8px 12px;border-radius:8px;cursor:pointer;font-size:.85rem;color:#cbd5e1;display:flex;align-items:center;gap:8px;margin-bottom:2px;}
+.cat-item:hover{background:rgba(249,115,22,.07);color:#fb923c;}
+.cat-item.active{background:rgba(249,115,22,.13);color:#fb923c;font-weight:600;}
+.cat-item .ic{width:18px;text-align:center;}
+.cat-item .badge{margin-left:auto;font-size:.62rem;background:rgba(168,85,247,.22);color:#c084fc;padding:1px 6px;border-radius:99px;font-weight:700;}
+
+/* REPORT AREA */
+.panel{background:#141824;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:16px;margin-bottom:14px;}
+.panel-head{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+.panel-head h2{color:#f97316;font-size:.95rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;}
+.panel-head .sub{color:#94a3b8;font-size:.82rem;flex:1;}
+.panel-head .btn{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:#cbd5e1;padding:5px 12px;border-radius:7px;font-size:.74rem;cursor:pointer;font-family:inherit;}
+.panel-head .btn:hover{background:rgba(249,115,22,.1);color:#fb923c;}
+
+/* TABLE */
+.tbl-wrap{overflow-x:auto;border-radius:10px;border:1px solid rgba(255,255,255,.05);}
+.tbl{width:100%;border-collapse:collapse;font-size:.84rem;}
+.tbl th{background:#0d111a;color:#94a3b8;font-size:.7rem;text-transform:uppercase;letter-spacing:.04em;text-align:left;padding:9px 12px;border-bottom:1px solid rgba(255,255,255,.05);}
+.tbl th.r,.tbl td.r{text-align:right;}
+.tbl th.c,.tbl td.c{text-align:center;}
+.tbl td{padding:8px 12px;border-bottom:1px solid rgba(255,255,255,.04);}
+.tbl tr:hover td{background:rgba(255,255,255,.02);}
+.mono-tbl td{font-family:'JetBrains Mono',monospace;font-size:.8rem;}
+.r-green{color:#4ade80;}
+.r-orange{color:#fb923c;}
+.r-red{color:#fca5a5;}
+
+.chart-wrap{position:relative;height:280px;margin-bottom:14px;}
+
+/* PILL */
+.pill{padding:2px 9px;border-radius:99px;font-size:.7rem;font-weight:700;display:inline-block;}
+.coh-champions{background:rgba(34,197,94,.22);color:#4ade80;}
+.coh-loyal{background:rgba(96,165,250,.2);color:#60a5fa;}
+.coh-at_risk{background:rgba(251,191,36,.2);color:#fcd34d;}
+.coh-lost{background:rgba(239,68,68,.2);color:#fca5a5;}
+.coh-new{background:rgba(168,85,247,.2);color:#c084fc;}
+
+.tier-expired{background:rgba(239,68,68,.22);color:#fca5a5;}
+.tier-30d{background:rgba(251,113,133,.2);color:#fda4af;}
+.tier-60d{background:rgba(251,191,36,.18);color:#fde68a;}
+.tier-90d{background:rgba(74,222,128,.15);color:#86efac;}
+
+/* HEATMAP */
+.heatmap{display:grid;grid-template-columns:50px repeat(24, 1fr);gap:2px;font-size:.7rem;}
+.heatmap .lab{color:#64748b;text-align:right;padding:3px 6px;font-family:monospace;}
+.heatmap .head{color:#94a3b8;text-align:center;font-family:monospace;font-size:.68rem;padding:3px 0;}
+.heatmap .cell{height:22px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-family:monospace;font-size:.65rem;cursor:pointer;}
+
+.empty{text-align:center;padding:36px;color:#64748b;}
+.empty .ic{font-size:2.2rem;margin-bottom:8px;opacity:.5;}
+
+.loading{text-align:center;padding:30px;color:#fb923c;}
+.loading i{margin-right:8px;}
+
+.search-input{background:#0b0e16;border:1.5px solid rgba(255,255,255,.1);border-radius:8px;padding:8px 12px;color:#e2e8f0;font-family:inherit;font-size:.85rem;width:240px;}
+
+.suggestion{background:rgba(34,197,94,.08);border-left:3px solid #22c55e;padding:6px 10px;font-size:.78rem;color:#86efac;border-radius:0 6px 6px 0;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand"><i class="fas fa-chart-mixed"></i> Reports Universe</div>
+  <div>
+    <a href="/portal" class="nav-links">Portal</a>
+    <a href="/insights" class="nav-links">Insights</a>
+    <a href="/security-dashboard" class="nav-links">Security</a>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- DATE BAR -->
+  <div class="date-bar">
+    <span style="color:#94a3b8;font-size:.78rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;">Period:</span>
+    <button class="preset" data-p="today">Today</button>
+    <button class="preset" data-p="yesterday">Yesterday</button>
+    <button class="preset" data-p="week">7 Days</button>
+    <button class="preset active" data-p="month">This Month</button>
+    <button class="preset" data-p="last_month">Last Month</button>
+    <button class="preset" data-p="year">This Year</button>
+    <button class="preset" data-p="all">All time</button>
+    <span style="color:#475569;margin:0 6px;">|</span>
+    <input type="date" id="dtFrom" class="dt-input"/>
+    <span style="color:#64748b;">→</span>
+    <input type="date" id="dtTo" class="dt-input"/>
+    <button class="apply" onclick="applyCustom()"><i class="fas fa-filter"></i> Apply</button>
+  </div>
+
+  <!-- KPI -->
+  <div class="kpi-row" id="kpiRow"><div class="loading"><i class="fas fa-spinner fa-spin"></i> Loading…</div></div>
+
+  <div class="main-grid">
+
+    <!-- SIDEBAR -->
+    <div class="cat-side">
+      <div class="cat-header">📊 Sales</div>
+      <div class="cat-item active" data-r="overview"><span class="ic">📈</span>Overview</div>
+      <div class="cat-item" data-r="item-sales"><span class="ic">💊</span>Item-wise Sales</div>
+      <div class="cat-item" data-r="daily-timeline"><span class="ic">📅</span>Daily Timeline</div>
+      <div class="cat-item" data-r="customer-sales"><span class="ic">👤</span>Customer-wise</div>
+      <div class="cat-item" data-r="doctor-sales"><span class="ic">🩺</span>Doctor-wise</div>
+      <div class="cat-item" data-r="staff-performance"><span class="ic">👨‍💼</span>Staff Performance</div>
+      <div class="cat-item" data-r="sales-returns"><span class="ic">↩</span>Sales Returns</div>
+
+      <div class="cat-header">🤖 AI / ML</div>
+      <div class="cat-item" data-r="market-basket"><span class="ic">🧺</span>Market Basket<span class="badge">ML</span></div>
+      <div class="cat-item" data-r="customer-rfm"><span class="ic">🎯</span>Customer RFM<span class="badge">ML</span></div>
+      <div class="cat-item" data-r="abandoned-customers"><span class="ic">⚠</span>Abandoned<span class="badge">ML</span></div>
+      <div class="cat-item" data-r="hourly-heatmap"><span class="ic">🔥</span>Hourly Heatmap<span class="badge">ML</span></div>
+      <div class="cat-item" data-r="forecast"><span class="ic">🔮</span>Sales Forecast<span class="badge">ML</span></div>
+      <div class="cat-item" data-r="price-elasticity"><span class="ic">💹</span>Price Insights<span class="badge">ML</span></div>
+      <div class="cat-item" data-r="patient-reminder"><span class="ic">🔔</span>Refill Reminder<span class="badge">ML</span></div>
+
+      <div class="cat-header">📦 Inventory</div>
+      <div class="cat-item" data-r="expiry"><span class="ic">📅</span>Expiry Report</div>
+      <div class="cat-item" data-r="slow-movers"><span class="ic">🐢</span>Slow Movers</div>
+      <div class="cat-item" data-r="new-items"><span class="ic">✨</span>New Items</div>
+      <div class="cat-item" data-r="item-ledger"><span class="ic">📚</span>Item Ledger</div>
+
+      <div class="cat-header">💰 Finance</div>
+      <div class="cat-item" data-r="customer-balance"><span class="ic">💳</span>Customer Credit</div>
+      <div class="cat-item" data-r="denomination"><span class="ic">💵</span>Denomination</div>
+      <div class="cat-item" data-r="gst"><span class="ic">📋</span>GST Reports</div>
+
+      <div class="cat-header">🛡 Compliance</div>
+      <div class="cat-item" data-r="drug-register"><span class="ic">⚖</span>Drug Register</div>
+      <div class="cat-item" data-r="audit-log"><span class="ic">🔒</span>Audit Log</div>
+    </div>
+
+    <!-- REPORT AREA -->
+    <div id="reportArea"><div class="loading"><i class="fas fa-spinner fa-spin"></i> Loading…</div></div>
+
+  </div>
+</div>
+
+<script>
+let curRange = {preset:'month', from:'', to:''};
+let curReport = 'overview';
+
+document.querySelectorAll('.preset').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('.preset').forEach(x => x.classList.remove('active'));
+  b.classList.add('active');
+  curRange = {preset: b.dataset.p, from:'', to:''};
+  loadSummary();
+  loadReport();
+}));
+
+function applyCustom(){
+  const f = document.getElementById('dtFrom').value;
+  const t = document.getElementById('dtTo').value;
+  if(!f || !t){ alert('Pick both dates'); return; }
+  document.querySelectorAll('.preset').forEach(x => x.classList.remove('active'));
+  curRange = {preset:'', from:f, to:t};
+  loadSummary();
+  loadReport();
+}
+
+function rangeParams(){
+  const p = new URLSearchParams();
+  if(curRange.preset) p.set('preset', curRange.preset);
+  if(curRange.from) p.set('from', curRange.from);
+  if(curRange.to) p.set('to', curRange.to);
+  return p;
+}
+
+async function loadSummary(){
+  const r = await fetch('/api/reports/summary?' + rangeParams());
+  const d = await r.json();
+  document.getElementById('kpiRow').innerHTML = `
+    <div class="kpi g"><div class="lbl">Revenue</div><div class="val">₹${(d.revenue||0).toLocaleString('en-IN')}</div></div>
+    <div class="kpi"><div class="lbl">Bills</div><div class="val">${d.bills}</div></div>
+    <div class="kpi b"><div class="lbl">Avg Basket</div><div class="val">₹${d.avg_basket}</div></div>
+    <div class="kpi"><div class="lbl">Customers</div><div class="val">${d.unique_customers}</div></div>
+    <div class="kpi o"><div class="lbl">GST</div><div class="val">₹${(d.gst||0).toLocaleString('en-IN')}</div></div>
+    <div class="kpi r"><div class="lbl">Discount</div><div class="val">₹${(d.discount||0).toLocaleString('en-IN')}</div></div>
+    <div class="kpi g"><div class="lbl">Profit</div><div class="val">₹${(d.profit||0).toLocaleString('en-IN')}</div></div>
+    <div class="kpi r"><div class="lbl">Expenses</div><div class="val">₹${(d.expenses||0).toLocaleString('en-IN')}</div></div>
+    <div class="kpi g"><div class="lbl">Net</div><div class="val">₹${(d.net||0).toLocaleString('en-IN')}</div></div>`;
+}
+
+document.querySelectorAll('.cat-item').forEach(el => el.addEventListener('click', () => {
+  document.querySelectorAll('.cat-item').forEach(x => x.classList.remove('active'));
+  el.classList.add('active');
+  curReport = el.dataset.r;
+  loadReport();
+}));
+
+async function loadReport(){
+  const area = document.getElementById('reportArea');
+  area.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Loading…</div>';
+  try {
+    if(curReport === 'overview')       return renderOverview(area);
+    if(curReport === 'item-sales')     return renderItemSales(area);
+    if(curReport === 'daily-timeline') return renderTimeline(area);
+    if(curReport === 'customer-sales') return renderCustomerSales(area);
+    if(curReport === 'doctor-sales')   return renderDoctorSales(area);
+    if(curReport === 'staff-performance') return renderStaffPerf(area);
+    if(curReport === 'sales-returns')  return renderReturns(area);
+    if(curReport === 'market-basket')  return renderBasket(area);
+    if(curReport === 'customer-rfm')   return renderRFM(area);
+    if(curReport === 'abandoned-customers') return renderAbandoned(area);
+    if(curReport === 'hourly-heatmap') return renderHeatmap(area);
+    if(curReport === 'forecast')       return renderForecast(area);
+    if(curReport === 'price-elasticity') return renderElasticity(area);
+    if(curReport === 'patient-reminder') return renderPatientRem(area);
+    if(curReport === 'expiry')         return renderExpiry(area);
+    if(curReport === 'slow-movers')    return renderSlowMovers(area);
+    if(curReport === 'new-items')      return renderNewItems(area);
+    if(curReport === 'item-ledger')    return renderItemLedger(area);
+    if(curReport === 'customer-balance') return renderCustomerBalance(area);
+    if(curReport === 'denomination')   return renderDenomination(area);
+    if(curReport === 'gst') window.location = '/gst';
+    if(curReport === 'drug-register') window.location = '/drug-register';
+    if(curReport === 'audit-log') window.location = '/audit-log';
+  } catch(e){
+    area.innerHTML = '<div class="empty"><div class="ic">⚠</div>Error: ' + e.message + '</div>';
+  }
+}
+
+// ─── RENDERERS ───
+function panel(title, sub, body, exportName){
+  const exp = exportName ? `<button class="btn" onclick="exportCSV('${exportName}')"><i class="fas fa-file-csv"></i> CSV</button>` : '';
+  return `<div class="panel">
+    <div class="panel-head">
+      <h2>${title}</h2>
+      <div class="sub">${sub}</div>
+      ${exp}
+    </div>
+    ${body}
+  </div>`;
+}
+
+async function renderOverview(area){
+  // Timeline chart + top items + top customers
+  const [tl, items, custs] = await Promise.all([
+    fetch('/api/reports/daily-timeline?' + rangeParams()).then(r=>r.json()),
+    fetch('/api/reports/item-sales?limit=10&' + rangeParams()).then(r=>r.json()),
+    fetch('/api/reports/customer-sales?limit=10&' + rangeParams()).then(r=>r.json()),
+  ]);
+  area.innerHTML = panel('📊 Daily Revenue Trend', 'Hover to see exact values', '<div class="chart-wrap"><canvas id="cTL"></canvas></div>')
+    + `<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">`
+    + panel('🏆 Top 10 Items', 'By revenue', renderItemTbl(items.items))
+    + panel('👤 Top 10 Customers', 'By revenue', renderCustTbl(custs.customers))
+    + `</div>`;
+  drawTimeline('cTL', tl.days);
+}
+
+function renderItemTbl(items){
+  if(!items || !items.length) return '<div class="empty"><div class="ic">📭</div>No data</div>';
+  return `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Item</th><th class="r">Qty</th><th class="r">Revenue</th></tr></thead><tbody>${
+    items.map(it => `<tr><td>${it.name}</td><td class="r mono">${it.qty}</td><td class="r mono r-green">₹${(it.revenue).toLocaleString('en-IN')}</td></tr>`).join('')
+  }</tbody></table></div>`;
+}
+function renderCustTbl(custs){
+  if(!custs || !custs.length) return '<div class="empty"><div class="ic">📭</div>No data</div>';
+  return `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Customer</th><th class="r">Visits</th><th class="r">Revenue</th></tr></thead><tbody>${
+    custs.map(c => `<tr><td>${c.name}<div style="color:#64748b;font-size:.72rem;font-family:monospace;">${c.phone}</div></td><td class="r mono">${c.visits}</td><td class="r mono r-green">₹${c.revenue.toLocaleString('en-IN')}</td></tr>`).join('')
+  }</tbody></table></div>`;
+}
+
+function drawTimeline(canvasId, days){
+  const ctx = document.getElementById(canvasId);
+  if(!ctx) return;
+  new Chart(ctx, {type:'line', data:{
+    labels: days.map(d => d.date.slice(5)),
+    datasets:[{
+      label:'Revenue', data: days.map(d => d.revenue),
+      borderColor:'#fb923c', backgroundColor:'rgba(249,115,22,.12)',
+      fill:true, tension:0.35, pointRadius:3
+    },{
+      label:'Profit', data: days.map(d => d.profit),
+      borderColor:'#4ade80', backgroundColor:'rgba(34,197,94,.08)',
+      fill:true, tension:0.35, pointRadius:2, hidden: days.every(d => d.profit === 0)
+    }]
+  }, options:{responsive:true, maintainAspectRatio:false,
+    plugins:{legend:{labels:{color:'#cbd5e1'}}},
+    scales:{x:{ticks:{color:'#94a3b8'},grid:{color:'rgba(255,255,255,.05)'}},
+            y:{ticks:{color:'#94a3b8'},grid:{color:'rgba(255,255,255,.05)'}}}
+  }});
+}
+
+async function renderItemSales(area){
+  const sort = area.dataset.sort || 'revenue';
+  const r = await fetch('/api/reports/item-sales?sort='+sort+'&limit=100&' + rangeParams());
+  const d = await r.json();
+  const body = `<div style="display:flex;gap:6px;margin-bottom:10px;">
+    <button class="btn ${sort==='revenue'?'active':''}" onclick="setSort('revenue')">By Revenue</button>
+    <button class="btn ${sort==='qty'?'active':''}" onclick="setSort('qty')">By Qty</button>
+    <button class="btn ${sort==='profit'?'active':''}" onclick="setSort('profit')">By Profit</button>
+  </div>` + (d.items.length ?
+    `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>#</th><th>Item</th><th class="r">Qty Sold</th><th class="r">Bills</th><th class="r">Revenue</th><th class="r">Est. Profit</th></tr></thead><tbody>${
+      d.items.map((it,i) => `<tr><td>${i+1}</td><td><strong>${it.name}</strong></td><td class="r mono">${it.qty}</td><td class="r mono">${it.bills}</td><td class="r mono r-green">₹${it.revenue.toLocaleString('en-IN')}</td><td class="r mono r-orange">₹${it.profit.toLocaleString('en-IN')}</td></tr>`).join('')
+    }</tbody></table></div>` :
+    '<div class="empty"><div class="ic">📭</div>No items sold in this period</div>');
+  area.innerHTML = panel('💊 Item-wise Sales', d.items.length + ' unique items out of ' + d.total_unique, body, 'item-sales');
+}
+function setSort(s){
+  document.getElementById('reportArea').dataset.sort = s;
+  renderItemSales(document.getElementById('reportArea'));
+}
+
+async function renderTimeline(area){
+  const r = await fetch('/api/reports/daily-timeline?' + rangeParams());
+  const d = await r.json();
+  const body = `<div class="chart-wrap"><canvas id="ctTL"></canvas></div>` +
+    `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Date</th><th class="r">Bills</th><th class="r">Revenue</th><th class="r">Profit</th></tr></thead><tbody>${
+      d.days.slice().reverse().map(x => `<tr><td class="mono">${x.date}</td><td class="r mono">${x.bills}</td><td class="r mono r-green">₹${x.revenue.toLocaleString('en-IN')}</td><td class="r mono r-orange">₹${x.profit.toLocaleString('en-IN')}</td></tr>`).join('')
+    }</tbody></table></div>`;
+  area.innerHTML = panel('📅 Daily Sales Timeline', d.days.length + ' days', body, 'daily-timeline');
+  drawTimeline('ctTL', d.days);
+}
+
+async function renderCustomerSales(area){
+  const r = await fetch('/api/reports/customer-sales?limit=200&' + rangeParams());
+  const d = await r.json();
+  area.innerHTML = panel('👤 Customer-wise Sales', d.customers.length + ' customers',
+    d.customers.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>#</th><th>Customer</th><th>Phone</th><th class="r">Visits</th><th class="r">Revenue</th><th class="r">Profit</th></tr></thead><tbody>${
+      d.customers.map((c,i) => `<tr><td>${i+1}</td><td><strong>${c.name||'-'}</strong></td><td class="mono" style="font-size:.78rem;color:#94a3b8;">${c.phone}</td><td class="r mono">${c.visits}</td><td class="r mono r-green">₹${c.revenue.toLocaleString('en-IN')}</td><td class="r mono r-orange">₹${c.profit.toLocaleString('en-IN')}</td></tr>`).join('')
+    }</tbody></table></div>` : '<div class="empty"><div class="ic">📭</div>No data</div>', 'customer-sales');
+}
+
+async function renderDoctorSales(area){
+  const r = await fetch('/api/reports/doctor-sales?' + rangeParams());
+  const d = await r.json();
+  area.innerHTML = panel('🩺 Doctor-wise Sales', d.doctors.length + ' prescribing doctors',
+    d.doctors.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Doctor</th><th class="r">Prescriptions</th><th class="r">Unique Patients</th><th class="r">Revenue</th><th class="r">Profit</th></tr></thead><tbody>${
+      d.doctors.map(c => `<tr><td><strong>${c.name}</strong></td><td class="r mono">${c.rx_count}</td><td class="r mono">${c.patients}</td><td class="r mono r-green">₹${c.revenue.toLocaleString('en-IN')}</td><td class="r mono r-orange">₹${c.profit.toLocaleString('en-IN')}</td></tr>`).join('')
+    }</tbody></table></div>` : '<div class="empty"><div class="ic">🩺</div>No prescribing doctors in this period</div>', 'doctor-sales');
+}
+
+async function renderStaffPerf(area){
+  const r = await fetch('/api/reports/staff-performance?' + rangeParams());
+  const d = await r.json();
+  area.innerHTML = panel('👨‍💼 Staff Performance', d.staff.length + ' staff with bills',
+    d.staff.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Staff</th><th class="r">Bills</th><th class="r">Revenue</th><th class="r">Avg Bill</th></tr></thead><tbody>${
+      d.staff.map(s => `<tr><td><strong>${s.name}</strong></td><td class="r mono">${s.bills}</td><td class="r mono r-green">₹${s.revenue.toLocaleString('en-IN')}</td><td class="r mono">₹${s.avg_bill.toLocaleString('en-IN')}</td></tr>`).join('')
+    }</tbody></table></div>` : '<div class="empty"><div class="ic">👥</div>No staff bills</div>', 'staff-performance');
+}
+
+async function renderReturns(area){
+  const r = await fetch('/api/reports/sales-returns?' + rangeParams());
+  const d = await r.json();
+  area.innerHTML = panel('↩ Sales Returns', d.returns.length + ' returns · ₹' + Math.abs(d.total_refunded).toLocaleString('en-IN') + ' refunded',
+    d.returns.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Bill</th><th>Date</th><th>Customer</th><th class="r">Amount</th></tr></thead><tbody>${
+      d.returns.map(r => `<tr><td class="mono">${r.id}</td><td class="mono">${r.date}</td><td>${r.cust}</td><td class="r mono r-red">₹${r.amount}</td></tr>`).join('')
+    }</tbody></table></div>` : '<div class="empty"><div class="ic">✓</div>No returns in this period</div>', 'sales-returns');
+}
+
+async function renderBasket(area){
+  const r = await fetch('/api/reports/market-basket?min=2&limit=80&' + rangeParams());
+  const d = await r.json();
+  area.innerHTML = panel('🧺 Market Basket Analysis', d.baskets + ' baskets analysed · pairs sorted by Lift (correlation strength)',
+    d.pairs.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Item A</th><th>Item B</th><th class="r">Together</th><th class="r">P(B|A)</th><th class="r">P(A|B)</th><th class="r">Lift</th><th>Insight</th></tr></thead><tbody>${
+      d.pairs.map(p => {
+        const insight = p.lift > 4 ? '🔥 Strong combo' : p.lift > 2 ? '✓ Likely combo' : '~ Weak link';
+        return `<tr><td><strong>${p.a}</strong></td><td><strong>${p.b}</strong></td><td class="r mono">${p.count}</td><td class="r mono">${(p.conf_ab*100).toFixed(0)}%</td><td class="r mono">${(p.conf_ba*100).toFixed(0)}%</td><td class="r mono r-orange">${p.lift}×</td><td>${insight}</td></tr>`;
+      }).join('')
+    }</tbody></table></div>
+    <div class="suggestion" style="margin-top:14px;">💡 <strong>Use these for upsell:</strong> When a customer buys Item A, suggest Item B (highest lift = most likely combo).</div>` :
+    '<div class="empty"><div class="ic">🧺</div>Need at least 2 bills with same items co-occurring</div>', 'market-basket');
+}
+
+async function renderRFM(area){
+  const r = await fetch('/api/reports/customer-rfm?preset=all');
+  const d = await r.json();
+  const c = d.cohorts;
+  area.innerHTML = panel('🎯 Customer RFM Cohorts', 'Recency-Frequency-Monetary segmentation',
+    `<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:14px;">
+      <div class="kpi"><div class="lbl">🏆 Champions</div><div class="val" style="color:#4ade80;">${c.champions}</div></div>
+      <div class="kpi"><div class="lbl">💜 Loyal</div><div class="val" style="color:#60a5fa;">${c.loyal}</div></div>
+      <div class="kpi"><div class="lbl">✨ New</div><div class="val" style="color:#c084fc;">${c.new}</div></div>
+      <div class="kpi"><div class="lbl">⚠ At Risk</div><div class="val" style="color:#fcd34d;">${c.at_risk}</div></div>
+      <div class="kpi"><div class="lbl">💔 Lost</div><div class="val" style="color:#fca5a5;">${c.lost}</div></div>
+    </div>
+    <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Customer</th><th>Phone</th><th class="r">Days Since</th><th class="r">Visits</th><th class="r">Spend</th><th class="r">Avg Bill</th><th>Segment</th></tr></thead><tbody>${
+      d.customers.slice(0,100).map(x => `<tr><td><strong>${x.name}</strong></td><td class="mono" style="font-size:.78rem;color:#94a3b8;">${x.phone}</td><td class="r mono">${x.days_since}</td><td class="r mono">${x.freq}</td><td class="r mono r-green">₹${x.monetary.toLocaleString('en-IN')}</td><td class="r mono">₹${x.avg_bill}</td><td><span class="pill coh-${x.cohort}">${x.cohort.toUpperCase().replace('_',' ')}</span></td></tr>`).join('')
+    }</tbody></table></div>`, 'customer-rfm');
+}
+
+async function renderAbandoned(area){
+  const r = await fetch('/api/reports/abandoned-customers?days=60');
+  const d = await r.json();
+  area.innerHTML = panel('⚠ Abandoned Customers', d.customers.length + ' regulars who stopped visiting (60+ days)',
+    d.customers.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Customer</th><th>Phone</th><th class="r">Last Visit</th><th class="r">Days Away</th><th class="r">Visits</th><th class="r">Lifetime Spend</th><th>Action</th></tr></thead><tbody>${
+      d.customers.map(c => `<tr>
+        <td><strong>${c.name}</strong></td>
+        <td class="mono" style="font-size:.78rem;color:#94a3b8;">${c.phone}</td>
+        <td class="mono">${c.last_visit}</td>
+        <td class="r mono r-red">${c.days_away}d</td>
+        <td class="r mono">${c.visits}</td>
+        <td class="r mono r-green">₹${c.spend.toLocaleString('en-IN')}</td>
+        <td><a href="https://wa.me/91${c.phone.replace(/[^0-9]/g,'')}?text=${encodeURIComponent('வணக்கம் ' + c.name + ', நீங்கள் ' + c.days_away + ' நாட்களாக வரவில்லை. நலமாக இருக்கிறீர்களா?')}" target="_blank" style="background:#22c55e;color:#fff;padding:4px 10px;border-radius:6px;font-size:.74rem;font-weight:700;text-decoration:none;"><i class="fab fa-whatsapp"></i></a></td>
+      </tr>`).join('')
+    }</tbody></table></div>` : '<div class="empty"><div class="ic">✓</div>All customers active</div>', 'abandoned-customers');
+}
+
+async function renderHeatmap(area){
+  const r = await fetch('/api/reports/hourly-heatmap?' + rangeParams());
+  const d = await r.json();
+  // Max value for normalization
+  let maxv = 1;
+  d.revenue_grid.forEach(row => row.forEach(v => { if(v > maxv) maxv = v; }));
+  const head = '<div class="cell head"></div>' + Array.from({length:24}, (_,h) => `<div class="cell head">${h}h</div>`).join('');
+  const rows = d.weekdays.map((wd, wi) => {
+    const cells = Array.from({length:24}, (_, h) => {
+      const v = d.revenue_grid[wi][h];
+      const opacity = v / maxv;
+      const bg = opacity > 0 ? `rgba(249,115,22,${0.15 + opacity*0.7})` : 'rgba(255,255,255,.02)';
+      const color = opacity > 0.5 ? '#fff' : '#94a3b8';
+      return `<div class="cell" style="background:${bg};color:${color};" title="${wd} ${h}h: ₹${v.toFixed(0)}">${v > maxv*0.2 ? Math.round(v) : ''}</div>`;
+    }).join('');
+    return `<div class="lab">${wd}</div>${cells}`;
+  }).join('');
+  area.innerHTML = panel('🔥 Hourly Revenue Heatmap', 'Weekday × Hour · darker = busier',
+    `<div class="heatmap">${head}${rows}</div>
+    <div class="suggestion" style="margin-top:14px;">💡 <strong>Use this for:</strong> Staff scheduling, when to take breaks, when to run special offers, when to send WhatsApp blasts.</div>`);
+}
+
+async function renderForecast(area){
+  const r = await fetch('/api/reports/forecast?days=30');
+  const d = await r.json();
+  area.innerHTML = panel('🔮 30-Day Revenue Forecast', 'Expected ₹' + d.expected_revenue.toLocaleString('en-IN') + ' over ' + d.days + ' days · Daily avg ₹' + d.daily_avg,
+    '<div class="chart-wrap"><canvas id="fcCh"></canvas></div>' +
+    `<div class="tbl-wrap" style="margin-top:10px;"><table class="tbl"><thead><tr><th>Date</th><th>Day</th><th class="r">Expected Revenue</th></tr></thead><tbody>${
+      d.forecast.map(f => `<tr><td class="mono">${f.date}</td><td>${f.weekday}</td><td class="r mono r-green">₹${f.expected.toLocaleString('en-IN')}</td></tr>`).join('')
+    }</tbody></table></div>`);
+  setTimeout(() => {
+    const ctx = document.getElementById('fcCh');
+    new Chart(ctx, {type:'line', data:{
+      labels: d.forecast.map(f => f.date.slice(5) + '\n' + f.weekday),
+      datasets:[{label:'Expected ₹', data: d.forecast.map(f => f.expected),
+                 borderColor:'#a78bfa', backgroundColor:'rgba(168,85,247,.15)', fill:true, tension:0.3}]
+    }, options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#cbd5e1'}}},
+      scales:{x:{ticks:{color:'#94a3b8'},grid:{display:false}},
+              y:{ticks:{color:'#94a3b8'},grid:{color:'rgba(255,255,255,.05)'}}}}});
+  }, 80);
+}
+
+async function renderElasticity(area){
+  const r = await fetch('/api/reports/price-elasticity?' + rangeParams());
+  const d = await r.json();
+  area.innerHTML = panel('💹 Price & Stock Intelligence', d.items.length + ' items with movement',
+    `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Item</th><th>Category</th><th class="r">Price</th><th class="r">Stock</th><th class="r">Sold</th><th class="r">Velocity/day</th><th class="r">Days to Stockout</th><th>Suggestion</th></tr></thead><tbody>${
+      d.items.map(it => `<tr><td><strong>${it.name}</strong></td><td>${it.category||'-'}</td><td class="r mono">₹${it.price}</td><td class="r mono">${it.stock}</td><td class="r mono">${it.qty_sold}</td><td class="r mono r-orange">${it.velocity}</td><td class="r mono ${it.days_to_stockout < 7 ? 'r-red' : it.days_to_stockout > 180 ? 'r-orange' : 'r-green'}">${it.days_to_stockout}</td><td style="font-size:.78rem;">${it.suggestion}</td></tr>`).join('')
+    }</tbody></table></div>`, 'price-elasticity');
+}
+
+async function renderPatientRem(area){
+  const r = await fetch('/api/reports/patient-reminder');
+  const d = await r.json();
+  area.innerHTML = panel('🔔 Patients Due for Refill', d.patients.length + ' patients had last refill 25-32 days ago',
+    d.patients.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Patient</th><th>Phone</th><th class="r">Last Visit</th><th class="r">Days Ago</th><th>Last Items</th><th>Action</th></tr></thead><tbody>${
+      d.patients.map(p => `<tr><td><strong>${p.name}</strong></td><td class="mono" style="font-size:.78rem;color:#94a3b8;">${p.phone}</td><td class="mono">${p.last_visit}</td><td class="r mono">${p.days_ago}d</td><td style="font-size:.78rem;color:#cbd5e1;">${p.last_items.join(', ')}</td><td><a href="https://wa.me/91${p.phone.replace(/[^0-9]/g,'')}?text=${encodeURIComponent('வணக்கம் ' + p.name + ', உங்கள் மருந்து விரைவில் முடியப் போகிறது. மீண்டும் ஆர்டர் செய்ய REORDER என்று பதிலளிக்கவும்.')}" target="_blank" style="background:#22c55e;color:#fff;padding:4px 10px;border-radius:6px;font-size:.74rem;font-weight:700;text-decoration:none;"><i class="fab fa-whatsapp"></i> WA</a></td></tr>`).join('')
+    }</tbody></table></div>` : '<div class="empty"><div class="ic">✓</div>No patients due right now</div>');
+}
+
+async function renderExpiry(area){
+  const r = await fetch('/api/reports/expiry?days=90');
+  const d = await r.json();
+  area.innerHTML = panel('📅 Expiry Report', d.items.length + ' items expiring in 90 days · ₹' + d.total_value.toLocaleString('en-IN') + ' at risk',
+    d.items.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Item</th><th>Batch</th><th class="r">Stock</th><th class="r">Value</th><th class="r">Expiry</th><th>Tier</th></tr></thead><tbody>${
+      d.items.map(it => `<tr><td><strong>${it.name}</strong></td><td class="mono">${it.batch||'-'}</td><td class="r mono">${it.stock}</td><td class="r mono r-orange">₹${it.stock_value.toLocaleString('en-IN')}</td><td class="r mono">${it.expiry}</td><td><span class="pill tier-${it.tier}">${it.tier.toUpperCase()}</span></td></tr>`).join('')
+    }</tbody></table></div>` : '<div class="empty"><div class="ic">✓</div>No expiry alerts</div>', 'expiry');
+}
+
+async function renderSlowMovers(area){
+  const r = await fetch('/api/reports/slow-movers?days=60');
+  const d = await r.json();
+  area.innerHTML = panel('🐢 Slow-Moving Stock', d.items.length + ' items not sold in last ' + d.days + ' days · ₹' + d.total_value.toLocaleString('en-IN') + ' tied up',
+    d.items.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Item</th><th>Category</th><th class="r">Stock</th><th class="r">Price</th><th class="r">Value Tied</th></tr></thead><tbody>${
+      d.items.map(it => `<tr><td><strong>${it.name}</strong></td><td>${it.category||'-'}</td><td class="r mono">${it.stock}</td><td class="r mono">₹${it.price}</td><td class="r mono r-orange">₹${it.stock_value.toLocaleString('en-IN')}</td></tr>`).join('')
+    }</tbody></table></div>
+    <div class="suggestion" style="margin-top:14px;">💡 Consider: clearance offer · push to wholesale · return to supplier · bundle with fast movers</div>` :
+    '<div class="empty"><div class="ic">✓</div>Everything's moving!</div>', 'slow-movers');
+}
+
+async function renderNewItems(area){
+  const r = await fetch('/api/reports/new-items?limit=80');
+  const d = await r.json();
+  area.innerHTML = panel('✨ Recently Added Items', d.items.length + ' newest items',
+    `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>ID</th><th>Name</th><th>Category</th><th class="r">Price</th><th class="r">Stock</th></tr></thead><tbody>${
+      d.items.map(it => `<tr><td class="mono">${it.id}</td><td><strong>${it.n}</strong></td><td>${it.c||'-'}</td><td class="r mono">₹${it.p}</td><td class="r mono">${it.s}</td></tr>`).join('')
+    }</tbody></table></div>`);
+}
+
+async function renderItemLedger(area){
+  area.innerHTML = panel('📚 Item Movement Ledger', 'Search for any medicine to see its complete sales history',
+    `<input class="search-input" id="ledgerSearch" placeholder="🔍 Type medicine name (e.g. DOLO, PAN, CROCIN)..."/>
+    <div id="ledgerResults" style="margin-top:14px;"></div>`);
+  const inp = document.getElementById('ledgerSearch');
+  let tm = null;
+  inp.addEventListener('input', e => {
+    clearTimeout(tm);
+    tm = setTimeout(async () => {
+      if(!e.target.value || e.target.value.length < 3) return;
+      const r = await fetch('/api/reports/item-ledger?name=' + encodeURIComponent(e.target.value));
+      const d = await r.json();
+      if(d.error){ document.getElementById('ledgerResults').innerHTML = '<div class="empty"><div class="ic">📭</div>'+d.error+'</div>'; return; }
+      document.getElementById('ledgerResults').innerHTML = `
+        <div style="background:#0d111a;padding:12px;border-radius:9px;margin-bottom:10px;">
+          <strong style="font-size:1.05rem;">${d.medicine.n}</strong>
+          <div style="color:#94a3b8;font-size:.82rem;margin-top:3px;">Stock: ${d.medicine.s} · MRP: ₹${d.medicine.p} · Category: ${d.medicine.c||'-'}</div>
+          <div style="margin-top:8px;font-family:monospace;color:#4ade80;font-weight:700;">Total Sold: ${d.total_sold} units · Revenue: ₹${d.total_revenue.toLocaleString('en-IN')}</div>
+        </div>
+        <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Date</th><th>Bill</th><th>Customer</th><th class="r">Qty</th><th class="r">Rate</th><th class="r">Amount</th></tr></thead><tbody>${
+          d.moves.map(m => `<tr><td class="mono">${m.date}</td><td class="mono">${m.bill_id}</td><td>${m.customer}</td><td class="r mono">${m.qty_out}</td><td class="r mono">₹${m.rate}</td><td class="r mono r-green">₹${m.amount.toLocaleString('en-IN')}</td></tr>`).join('')
+        }</tbody></table></div>`;
+    }, 350);
+  });
+}
+
+async function renderCustomerBalance(area){
+  const r = await fetch('/api/reports/customer-balance');
+  const d = await r.json();
+  area.innerHTML = panel('💳 Customer Credit / Outstanding', d.customers.length + ' customers with outstanding balance',
+    d.customers.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Customer</th><th>Phone</th><th class="r">Total Billed</th><th class="r">Credit Outstanding</th><th class="r">Bills</th></tr></thead><tbody>${
+      d.customers.map(c => `<tr><td><strong>${c.name||'-'}</strong></td><td class="mono" style="font-size:.78rem;color:#94a3b8;">${c.phone}</td><td class="r mono">₹${c.total_billed.toLocaleString('en-IN')}</td><td class="r mono r-red">₹${c.credit.toLocaleString('en-IN')}</td><td class="r mono">${c.bills}</td></tr>`).join('')
+    }</tbody></table></div>` : '<div class="empty"><div class="ic">✓</div>No customer has credit pending</div>', 'customer-balance');
+}
+
+async function renderDenomination(area){
+  const r = await fetch('/api/reports/denomination');
+  const d = await r.json();
+  area.innerHTML = panel('💵 Cash Drawer Denomination', 'Total ₹' + d.total.toLocaleString('en-IN'),
+    `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Denomination</th><th>Type</th><th class="r">Count</th><th class="r">Alert at</th><th class="r">Value</th></tr></thead><tbody>${
+      d.items.map(it => `<tr><td><strong>₹${it.denomination}</strong></td><td>${it.kind}</td><td class="r mono ${it.count <= it.min_alert ? 'r-red' : ''}">${it.count}</td><td class="r mono">${it.min_alert}</td><td class="r mono r-green">₹${it.value.toLocaleString('en-IN')}</td></tr>`).join('')
+    }<tr style="background:rgba(34,197,94,.08);"><td colspan="4" style="text-align:right;"><strong>TOTAL</strong></td><td class="r mono r-green"><strong>₹${d.total.toLocaleString('en-IN')}</strong></td></tr></tbody></table></div>`);
+}
+
+function exportCSV(reportName){
+  window.location = '/api/reports/export?report=' + reportName + '&' + rangeParams();
+}
+
+// INIT
+loadSummary();
+loadReport();
+</script>
+</body>
+</html>

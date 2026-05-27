@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Patient Health Records — MediVision AI</title>
+<style>
+:root{--bg:#0b0e16;--card:#141824;--card2:#1a1f2e;--brd:#2a3045;--acc:#f97316;--red:#ef4444;--grn:#22c55e;--ylw:#eab308;--blue:#3b82f6;--purple:#a855f7;--txt:#e2e8f0;--muted:#64748b;--font:'Inter',system-ui,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--txt);font-family:var(--font);min-height:100vh}
+.topbar{display:flex;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid var(--brd);background:var(--card)}
+.topbar a{color:var(--muted);text-decoration:none;font-size:.85rem}
+.topbar h1{font-size:1.1rem;font-weight:700}
+.badge{background:linear-gradient(135deg,#0ea5e9,#6366f1);color:#fff;font-size:.65rem;font-weight:700;padding:2px 8px;border-radius:20px;letter-spacing:.5px}
+.tb-right{margin-left:auto;display:flex;gap:10px}
+.btn{padding:8px 16px;border-radius:8px;font-size:.82rem;font-weight:600;cursor:pointer;border:none;display:flex;align-items:center;gap:6px;transition:.2s}
+.btn-primary{background:var(--acc);color:#fff}.btn-primary:hover{opacity:.9}
+.btn-outline{background:transparent;border:1px solid var(--brd);color:var(--txt)}.btn-outline:hover{border-color:var(--acc);color:var(--acc)}
+
+.page{padding:24px;max-width:1400px;margin:0 auto}
+
+/* KPI */
+.kpi-row{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:24px}
+.kpi{background:var(--card);border:1px solid var(--brd);border-radius:12px;padding:16px;position:relative;overflow:hidden}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.kpi.k1::before{background:var(--blue)}.kpi.k2::before{background:var(--grn)}.kpi.k3::before{background:var(--acc)}.kpi.k4::before{background:var(--red)}.kpi.k5::before{background:var(--purple)}
+.kpi .val{font-size:1.9rem;font-weight:800;font-family:'JetBrains Mono',monospace}
+.kpi.k1 .val{color:var(--blue)}.kpi.k2 .val{color:var(--grn)}.kpi.k3 .val{color:var(--acc)}.kpi.k4 .val{color:var(--red)}.kpi.k5 .val{color:var(--purple)}
+.kpi .lbl{font-size:.72rem;color:var(--muted);margin-top:6px;text-transform:uppercase;letter-spacing:.5px}
+
+/* Controls */
+.controls{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+.search-box{flex:1;max-width:340px;background:var(--card);border:1px solid var(--brd);color:var(--txt);padding:9px 14px;border-radius:9px;font-size:.84rem}
+.search-box:focus{outline:none;border-color:var(--acc)}
+select.filter{background:var(--card);border:1px solid var(--brd);color:var(--txt);padding:9px 12px;border-radius:9px;font-size:.82rem}
+
+/* Patient grid */
+.patient-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+.patient-card{background:var(--card);border:1px solid var(--brd);border-radius:14px;padding:18px;cursor:pointer;transition:.2s}
+.patient-card:hover{border-color:var(--acc);transform:translateY(-2px)}
+.pc-header{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.pc-avatar{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.2rem;font-weight:700;color:#fff;flex-shrink:0}
+.pc-name{font-weight:700;font-size:.95rem}
+.pc-phone{font-size:.78rem;color:var(--muted)}
+.pc-tags{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px}
+.tag{font-size:.68rem;padding:2px 8px;border-radius:8px;font-weight:600}
+.tag.allergy{background:rgba(239,68,68,.15);color:var(--red);border:1px solid rgba(239,68,68,.25)}
+.tag.condition{background:rgba(234,179,8,.12);color:var(--ylw);border:1px solid rgba(234,179,8,.25)}
+.tag.blood{background:rgba(239,68,68,.1);color:#fca5a5;border:1px solid rgba(239,68,68,.2)}
+.pc-stats{display:flex;gap:16px;padding-top:10px;border-top:1px solid var(--brd)}
+.pc-stat{text-align:center}
+.pc-stat .sv{font-size:.95rem;font-weight:700;color:var(--acc);font-family:'JetBrains Mono',monospace}
+.pc-stat .sl{font-size:.68rem;color:var(--muted)}
+
+/* Empty */
+.empty{text-align:center;padding:64px;color:var(--muted)}
+.empty .ei{font-size:3rem;margin-bottom:14px;opacity:.3}
+
+/* Modal */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:100;display:none;align-items:center;justify-content:center}
+.overlay.open{display:flex}
+.modal{background:var(--card);border:1px solid var(--brd);border-radius:16px;width:min(700px,96vw);max-height:92vh;display:flex;flex-direction:column}
+.modal-hdr{padding:18px 22px;border-bottom:1px solid var(--brd);display:flex;align-items:center;justify-content:space-between}
+.modal-hdr h2{font-size:1rem;font-weight:700}
+.modal-close{background:none;border:none;color:var(--muted);font-size:1.4rem;cursor:pointer}
+.modal-close:hover{color:var(--txt)}
+.modal-body{padding:22px;overflow-y:auto;flex:1}
+.modal-footer{padding:14px 22px;border-top:1px solid var(--brd);display:flex;justify-content:flex-end;gap:10px}
+
+/* Form */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.form-group{display:flex;flex-direction:column;gap:5px}
+.form-group.full{grid-column:1/-1}
+.form-group label{font-size:.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.form-group input,.form-group select,.form-group textarea{background:var(--card2);border:1px solid var(--brd);color:var(--txt);padding:9px 12px;border-radius:8px;font-size:.85rem;font-family:var(--font)}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{outline:none;border-color:var(--acc)}
+.form-group textarea{resize:vertical;min-height:70px}
+
+/* Detail modal tabs */
+.dtab-row{display:flex;gap:0;border-bottom:1px solid var(--brd);margin-bottom:18px}
+.dtab{padding:10px 18px;font-size:.82rem;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:.15s}
+.dtab.active{color:var(--acc);border-bottom-color:var(--acc)}
+
+/* Info grid */
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.info-item{background:var(--card2);border-radius:8px;padding:12px}
+.info-item .il{font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px}
+.info-item .iv{font-size:.88rem;font-weight:600}
+
+/* History table */
+.hist-table{width:100%;border-collapse:collapse;font-size:.82rem}
+.hist-table th{padding:8px 12px;text-align:left;color:var(--muted);font-size:.7rem;font-weight:700;text-transform:uppercase;border-bottom:1px solid var(--brd)}
+.hist-table td{padding:10px 12px;border-bottom:1px solid rgba(42,48,69,.5)}
+.hist-table tr:last-child td{border-bottom:none}
+
+.section-title{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:10px;margin-top:16px}
+.section-title:first-child{margin-top:0}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a href="/portal">← Portal</a>
+  <span style="color:var(--brd)">|</span>
+  <span style="font-size:1.2rem">🏥</span>
+  <h1>Patient Health Records</h1>
+  <span class="badge">STAGE 8</span>
+  <div class="tb-right">
+    <button class="btn btn-primary" onclick="openAddModal()">+ Add Patient</button>
+  </div>
+</div>
+
+<div class="page">
+  <div class="kpi-row">
+    <div class="kpi k1"><div class="val" id="kTotal">—</div><div class="lbl">👥 Total Patients</div></div>
+    <div class="kpi k2"><div class="val" id="kActive">—</div><div class="lbl">✅ Active (30d)</div></div>
+    <div class="kpi k3"><div class="val" id="kVisits">—</div><div class="lbl">📋 Total Visits</div></div>
+    <div class="kpi k4"><div class="val" id="kAllergy">—</div><div class="lbl">⚠️ Allergy Alerts</div></div>
+    <div class="kpi k5"><div class="val" id="kChronic">—</div><div class="lbl">💊 Chronic Conditions</div></div>
+  </div>
+
+  <div class="controls">
+    <input class="search-box" type="search" id="searchBox" placeholder="🔍 Search by name or phone…" oninput="applyFilter()">
+    <select class="filter" id="bgFilter" onchange="applyFilter()">
+      <option value="">All Blood Groups</option>
+      <option>A+</option><option>A-</option><option>B+</option><option>B-</option>
+      <option>O+</option><option>O-</option><option>AB+</option><option>AB-</option>
+    </select>
+    <select class="filter" id="condFilter" onchange="applyFilter()">
+      <option value="">All Conditions</option>
+      <option>Diabetes</option><option>Hypertension</option><option>Asthma</option>
+      <option>Thyroid</option><option>Cardiac</option><option>Arthritis</option>
+    </select>
+    <span style="margin-left:auto;font-size:.78rem;color:var(--muted)" id="countLbl"></span>
+  </div>
+
+  <div class="patient-grid" id="patientGrid"></div>
+  <div class="empty" id="emptyState" style="display:none">
+    <div class="ei">🏥</div>
+    <p>No patients yet.<br><strong style="color:var(--acc)">Add your first patient →</strong></p>
+  </div>
+</div>
+
+<!-- Detail Modal -->
+<div class="overlay" id="detailOverlay">
+  <div class="modal" style="width:min(780px,96vw)">
+    <div class="modal-hdr">
+      <h2 id="detailName">Patient Details</h2>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn btn-outline" style="font-size:.75rem;padding:5px 12px" onclick="editCurrent()">✏️ Edit</button>
+        <button class="modal-close" onclick="closeDetail()">✕</button>
+      </div>
+    </div>
+    <div class="modal-body">
+      <div class="dtab-row">
+        <div class="dtab active" onclick="switchDTab('info',this)">👤 Profile</div>
+        <div class="dtab" onclick="switchDTab('history',this)">🧾 Purchase History</div>
+        <div class="dtab" onclick="switchDTab('notes',this)">📝 Notes</div>
+      </div>
+      <div id="dtab-info"></div>
+      <div id="dtab-history" style="display:none"></div>
+      <div id="dtab-notes" style="display:none"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Add/Edit Modal -->
+<div class="overlay" id="formOverlay">
+  <div class="modal">
+    <div class="modal-hdr">
+      <h2 id="formTitle">Add Patient</h2>
+      <button class="modal-close" onclick="closeForm()">✕</button>
+    </div>
+    <div class="modal-body">
+      <form id="patientForm">
+        <div class="form-grid">
+          <div class="form-group"><label>Full Name *</label><input id="fName" placeholder="Patient name" required></div>
+          <div class="form-group"><label>Phone *</label><input id="fPhone" placeholder="10-digit mobile" required></div>
+          <div class="form-group"><label>Date of Birth</label><input id="fDob" type="date"></div>
+          <div class="form-group"><label>Blood Group</label>
+            <select id="fBg"><option value="">Select</option>
+              <option>A+</option><option>A-</option><option>B+</option><option>B-</option>
+              <option>O+</option><option>O-</option><option>AB+</option><option>AB-</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Address</label><input id="fAddr" placeholder="Address"></div>
+          <div class="form-group"><label>Email</label><input id="fEmail" type="email" placeholder="Email address"></div>
+          <div class="form-group"><label>Emergency Contact Name</label><input id="fEmgName" placeholder="Name"></div>
+          <div class="form-group"><label>Emergency Contact Phone</label><input id="fEmgPhone" placeholder="Phone"></div>
+          <div class="form-group full"><label>Allergies (comma-separated)</label><input id="fAllergies" placeholder="e.g. Penicillin, Sulfa, NSAIDs"></div>
+          <div class="form-group full"><label>Chronic Conditions (comma-separated)</label><input id="fConditions" placeholder="e.g. Diabetes, Hypertension, Asthma"></div>
+          <div class="form-group full"><label>Notes</label><textarea id="fNotes" placeholder="Medical history, preferred doctor, special instructions…"></textarea></div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeForm()">Cancel</button>
+      <button class="btn btn-primary" onclick="savePatient()">💾 Save Patient</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let patients = [];
+let currentPatient = null;
+let editId = null;
+const COLORS = ['#f97316','#3b82f6','#22c55e','#a855f7','#ef4444','#eab308','#06b6d4','#ec4899'];
+
+async function loadPatients() {
+  const res = await fetch('/api/patients');
+  const d = await res.json();
+  patients = d.patients || [];
+  const s = d.summary || {};
+  document.getElementById('kTotal').textContent = s.total || 0;
+  document.getElementById('kActive').textContent = s.active_30d || 0;
+  document.getElementById('kVisits').textContent = s.total_visits || 0;
+  document.getElementById('kAllergy').textContent = s.allergy_count || 0;
+  document.getElementById('kChronic').textContent = s.chronic_count || 0;
+  applyFilter();
+}
+
+function applyFilter() {
+  const q = document.getElementById('searchBox').value.toLowerCase();
+  const bg = document.getElementById('bgFilter').value;
+  const cond = document.getElementById('condFilter').value.toLowerCase();
+  const filtered = patients.filter(p => {
+    if(q && !p.name.toLowerCase().includes(q) && !p.phone.includes(q)) return false;
+    if(bg && p.blood_group !== bg) return false;
+    if(cond && !p.conditions.some(c => c.toLowerCase().includes(cond))) return false;
+    return true;
+  });
+  document.getElementById('countLbl').textContent = filtered.length + ' patients';
+  renderGrid(filtered);
+}
+
+function renderGrid(list) {
+  const grid = document.getElementById('patientGrid');
+  const empty = document.getElementById('emptyState');
+  if(!list.length) { grid.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+  grid.innerHTML = list.map((p,i) => {
+    const color = COLORS[i % COLORS.length];
+    const initials = p.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+    const tags = [
+      ...p.allergies.map(a => `<span class="tag allergy">⚠️ ${esc(a)}</span>`),
+      ...p.conditions.map(c => `<span class="tag condition">💊 ${esc(c)}</span>`),
+      p.blood_group ? `<span class="tag blood">🩸 ${esc(p.blood_group)}</span>` : '',
+    ].filter(Boolean).slice(0,4).join('');
+    const age = p.dob ? calcAge(p.dob) + 'y' : '—';
+    return `<div class="patient-card" onclick="openDetail('${p.phone}')">
+      <div class="pc-header">
+        <div class="pc-avatar" style="background:${color}">${initials}</div>
+        <div>
+          <div class="pc-name">${esc(p.name)}</div>
+          <div class="pc-phone">📞 ${esc(p.phone)} · Age ${age}</div>
+        </div>
+      </div>
+      <div class="pc-tags">${tags || '<span style="color:var(--muted);font-size:.75rem">No allergies/conditions recorded</span>'}</div>
+      <div class="pc-stats">
+        <div class="pc-stat"><div class="sv">${p.visits}</div><div class="sl">Visits</div></div>
+        <div class="pc-stat"><div class="sv">₹${(p.total||0).toFixed(0)}</div><div class="sl">Total Spend</div></div>
+        <div class="pc-stat"><div class="sv">${p.last_visit||'—'}</div><div class="sl">Last Visit</div></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function calcAge(dob) {
+  const diff = Date.now() - new Date(dob).getTime();
+  return Math.floor(diff / (365.25*24*60*60*1000));
+}
+
+// ── Detail modal ──────────────────────────────────────────────────────────
+async function openDetail(phone) {
+  const res = await fetch('/api/patients/' + encodeURIComponent(phone));
+  const d = await res.json();
+  currentPatient = d.patient;
+  document.getElementById('detailName').textContent = d.patient.name;
+
+  // Profile tab
+  const p = d.patient;
+  const age = p.dob ? calcAge(p.dob) + ' years' : '—';
+  const allergyTags = p.allergies.length
+    ? p.allergies.map(a=>`<span class="tag allergy">⚠️ ${esc(a)}</span>`).join(' ')
+    : '<span style="color:var(--grn);font-size:.82rem">✓ No allergies recorded</span>';
+  const condTags = p.conditions.length
+    ? p.conditions.map(c=>`<span class="tag condition">💊 ${esc(c)}</span>`).join(' ')
+    : '<span style="color:var(--muted);font-size:.82rem">None recorded</span>';
+
+  document.getElementById('dtab-info').innerHTML = `
+    <div class="info-grid">
+      <div class="info-item"><div class="il">Phone</div><div class="iv">📞 ${esc(p.phone)}</div></div>
+      <div class="info-item"><div class="il">Blood Group</div><div class="iv">🩸 ${p.blood_group||'Not recorded'}</div></div>
+      <div class="info-item"><div class="il">Date of Birth</div><div class="iv">${p.dob||'—'} (${age})</div></div>
+      <div class="info-item"><div class="il">Total Spend</div><div class="iv" style="color:var(--acc)">₹${(p.total||0).toFixed(2)}</div></div>
+      <div class="info-item"><div class="il">Address</div><div class="iv">${p.address||'—'}</div></div>
+      <div class="info-item"><div class="il">Email</div><div class="iv">${p.email||'—'}</div></div>
+      <div class="info-item"><div class="il">Emergency Contact</div><div class="iv">${p.emergency_name||'—'} ${p.emergency_phone?'· '+p.emergency_phone:''}</div></div>
+      <div class="info-item"><div class="il">Last Visit</div><div class="iv">${p.last_visit||'—'}</div></div>
+    </div>
+    <div class="section-title">⚠️ Allergies</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px">${allergyTags}</div>
+    <div class="section-title">💊 Chronic Conditions</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px">${condTags}</div>
+  `;
+
+  // History tab
+  const bills = d.bills || [];
+  document.getElementById('dtab-history').innerHTML = bills.length ? `
+    <table class="hist-table">
+      <thead><tr><th>DATE</th><th>BILL ID</th><th>ITEMS</th><th>DOCTOR</th><th>AMOUNT</th></tr></thead>
+      <tbody>${bills.map(b=>`<tr>
+        <td>${b.date||b.ts?.slice(0,10)||'—'}</td>
+        <td style="font-family:'JetBrains Mono',monospace;color:var(--muted)">${b.id}</td>
+        <td style="font-size:.78rem;color:var(--muted)">${summariseItems(b.items)}</td>
+        <td>${b.doctor||'—'}</td>
+        <td style="font-weight:700;color:var(--acc)">₹${(b.total||0).toFixed(2)}</td>
+      </tr>`).join('')}</tbody>
+    </table>
+  ` : '<div class="empty"><div class="ei">🧾</div><p>No purchase history</p></div>';
+
+  // Notes
+  document.getElementById('dtab-notes').innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div class="section-title">📝 Clinical Notes</div>
+      <div style="background:var(--card2);border:1px solid var(--brd);border-radius:10px;padding:14px;min-height:120px;font-size:.85rem;line-height:1.6;white-space:pre-wrap">${esc(p.notes)||'<span style="color:var(--muted)">No notes recorded.</span>'}</div>
+    </div>
+  `;
+
+  switchDTab('info', document.querySelector('.dtab'));
+  document.getElementById('detailOverlay').classList.add('open');
+}
+
+function summariseItems(items) {
+  try {
+    const arr = typeof items === 'string' ? JSON.parse(items) : items;
+    if(!Array.isArray(arr)) return '—';
+    return arr.slice(0,2).map(i=>i.name).join(', ') + (arr.length>2?' +' + (arr.length-2) + ' more':'');
+  } catch { return '—'; }
+}
+
+function closeDetail() { document.getElementById('detailOverlay').classList.remove('open'); }
+
+function switchDTab(tab, el) {
+  document.querySelectorAll('.dtab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('[id^="dtab-"]').forEach(p=>p.style.display='none');
+  if(el) el.classList.add('active');
+  document.getElementById('dtab-'+tab).style.display='block';
+}
+
+// ── Add/Edit modal ────────────────────────────────────────────────────────
+function openAddModal() {
+  editId = null;
+  document.getElementById('formTitle').textContent = 'Add Patient';
+  ['fName','fPhone','fDob','fAddr','fEmail','fEmgName','fEmgPhone','fAllergies','fConditions','fNotes'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.value = '';
+  });
+  document.getElementById('fBg').value = '';
+  document.getElementById('formOverlay').classList.add('open');
+}
+
+function editCurrent() {
+  closeDetail();
+  const p = currentPatient;
+  editId = p.phone;
+  document.getElementById('formTitle').textContent = 'Edit Patient';
+  document.getElementById('fName').value = p.name||'';
+  document.getElementById('fPhone').value = p.phone||'';
+  document.getElementById('fDob').value = p.dob||'';
+  document.getElementById('fBg').value = p.blood_group||'';
+  document.getElementById('fAddr').value = p.address||'';
+  document.getElementById('fEmail').value = p.email||'';
+  document.getElementById('fEmgName').value = p.emergency_name||'';
+  document.getElementById('fEmgPhone').value = p.emergency_phone||'';
+  document.getElementById('fAllergies').value = (p.allergies||[]).join(', ');
+  document.getElementById('fConditions').value = (p.conditions||[]).join(', ');
+  document.getElementById('fNotes').value = p.notes||'';
+  document.getElementById('formOverlay').classList.add('open');
+}
+
+function closeForm() { document.getElementById('formOverlay').classList.remove('open'); }
+
+async function savePatient() {
+  const body = {
+    name: document.getElementById('fName').value.trim(),
+    phone: document.getElementById('fPhone').value.trim(),
+    dob: document.getElementById('fDob').value,
+    blood_group: document.getElementById('fBg').value,
+    address: document.getElementById('fAddr').value.trim(),
+    email: document.getElementById('fEmail').value.trim(),
+    emergency_name: document.getElementById('fEmgName').value.trim(),
+    emergency_phone: document.getElementById('fEmgPhone').value.trim(),
+    allergies: document.getElementById('fAllergies').value.split(',').map(s=>s.trim()).filter(Boolean),
+    conditions: document.getElementById('fConditions').value.split(',').map(s=>s.trim()).filter(Boolean),
+    notes: document.getElementById('fNotes').value.trim(),
+  };
+  if(!body.name || !body.phone) { alert('Name and phone are required.'); return; }
+  const url = editId ? '/api/patients/' + encodeURIComponent(editId) : '/api/patients';
+  const method = editId ? 'PUT' : 'POST';
+  await fetch(url, { method, headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  closeForm();
+  loadPatients();
+}
+
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+loadPatients();
+</script>
+</body>
+</html>

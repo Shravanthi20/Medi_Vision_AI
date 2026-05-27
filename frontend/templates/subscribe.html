@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Subscribe — MediVision AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:Inter,sans-serif;background:#0b0e16;color:#e2e8f0;min-height:100vh;padding:24px 16px;}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 70% 50% at 50% 30%,rgba(249,115,22,.08) 0%,transparent 60%);pointer-events:none;}
+.wrap{max-width:1200px;margin:0 auto;position:relative;z-index:1;}
+.brand{text-align:center;margin-bottom:30px;}
+.brand .ic{width:60px;height:60px;border-radius:14px;background:linear-gradient(135deg,#f97316,#ea580c);display:inline-flex;align-items:center;justify-content:center;font-weight:900;font-size:1.3rem;color:#fff;margin-bottom:10px;}
+.brand h1{font-size:1.8rem;font-weight:900;color:#fff;}
+.brand h1 em{color:#16a34a;font-style:normal;}
+.brand p{color:#94a3b8;font-size:.92rem;margin-top:6px;}
+
+.tabs{display:flex;justify-content:center;gap:10px;margin-bottom:24px;}
+.client-tab{padding:10px 24px;background:#141824;border:1.5px solid rgba(255,255,255,.08);border-radius:9px;color:#94a3b8;cursor:pointer;font-weight:700;font-size:.88rem;}
+.client-tab.active{background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;border-color:#f97316;}
+
+.plans-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px;margin-bottom:32px;}
+.plan{background:#141824;border:2px solid rgba(255,255,255,.06);border-radius:14px;padding:24px;cursor:pointer;transition:all .15s;position:relative;}
+.plan:hover{transform:translateY(-3px);border-color:rgba(249,115,22,.3);}
+.plan.featured{border-color:#f97316;background:linear-gradient(160deg,rgba(249,115,22,.06),#141824);}
+.plan.selected{border-color:#16a34a;box-shadow:0 0 0 4px rgba(22,163,74,.15);}
+.plan .badge{position:absolute;top:-10px;right:16px;background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;padding:3px 12px;border-radius:99px;font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;}
+.plan h3{font-size:1.1rem;font-weight:800;color:#fff;}
+.plan .tag{color:#94a3b8;font-size:.82rem;margin:3px 0 14px;}
+.plan .price{font-size:2.3rem;font-weight:900;color:#fff;font-family:'JetBrains Mono',monospace;}
+.plan .price small{font-size:.84rem;color:#94a3b8;font-weight:500;}
+.plan ul{list-style:none;margin-top:14px;}
+.plan ul li{padding:5px 0;color:#cbd5e1;font-size:.84rem;display:flex;align-items:flex-start;gap:8px;}
+.plan ul li::before{content:'✓';color:#4ade80;font-weight:800;flex-shrink:0;}
+.plan .limits{margin-top:12px;color:#94a3b8;font-size:.74rem;border-top:1px dashed rgba(255,255,255,.06);padding-top:10px;}
+
+.pay-section{background:#141824;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:28px;max-width:780px;margin:0 auto;display:none;}
+.pay-section.show{display:block;}
+.pay-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;}
+@media(max-width:680px){.pay-grid{grid-template-columns:1fr;}}
+
+.qr-box{background:#fff;border-radius:14px;padding:20px;text-align:center;}
+.qr-box .upi-id{font-family:monospace;font-size:1.05rem;color:#0f172a;font-weight:700;margin-top:10px;}
+.qr-box .upi-name{color:#475569;font-size:.85rem;}
+.qr-img{width:240px;height:240px;background:#f1f5f9;border-radius:9px;display:flex;align-items:center;justify-content:center;margin:0 auto;color:#64748b;font-size:.85rem;}
+.qr-img img{width:100%;height:100%;object-fit:contain;}
+
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:.74rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px;}
+.input{width:100%;background:#0b0e16;border:1.5px solid rgba(255,255,255,.1);border-radius:9px;padding:11px 14px;color:#e2e8f0;font-family:inherit;font-size:.92rem;}
+.input:focus{outline:none;border-color:#f97316;}
+.amt-display{font-family:monospace;font-size:1.8rem;font-weight:900;color:#4ade80;text-align:center;padding:14px;background:#0b0e16;border-radius:10px;border:1px solid rgba(34,197,94,.25);margin-bottom:14px;}
+
+.btn-pay{width:100%;background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;padding:14px;border-radius:11px;font-weight:800;font-size:.95rem;border:none;cursor:pointer;font-family:inherit;}
+
+.steps{margin-bottom:18px;}
+.step{display:flex;gap:12px;align-items:flex-start;padding:10px;background:rgba(34,197,94,.06);border-left:3px solid #16a34a;border-radius:6px;margin-bottom:6px;font-size:.85rem;}
+.step .n{background:#16a34a;color:#fff;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.78rem;flex-shrink:0;}
+.step .t strong{color:#fff;}
+
+.contact-strip{margin-top:24px;text-align:center;color:#94a3b8;font-size:.85rem;}
+.contact-strip a{color:#fb923c;font-weight:700;text-decoration:none;}
+
+.success-box{background:rgba(34,197,94,.1);border:2px solid #16a34a;border-radius:14px;padding:30px;text-align:center;display:none;max-width:560px;margin:30px auto;}
+.success-box.show{display:block;}
+.success-box .ic{font-size:3.5rem;margin-bottom:10px;}
+.success-box h2{color:#4ade80;font-size:1.4rem;margin-bottom:8px;}
+.success-box p{color:#cbd5e1;margin-bottom:14px;}
+
+.toast{position:fixed;bottom:30px;right:30px;background:#16a34a;color:#fff;padding:14px 22px;border-radius:10px;font-weight:700;z-index:300;display:none;}
+.toast.show{display:block;}
+.toast.err{background:#ef4444;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand">
+    <div class="ic">MV</div>
+    <h1>MediVision <em>AI</em></h1>
+    <p>Choose your subscription plan — pay via GPay, get activated in 24 hours</p>
+  </div>
+
+  <div class="tabs">
+    <div class="client-tab active" data-t="retail" onclick="switchType('retail')">🏪 Retail Pharmacy</div>
+    <div class="client-tab" data-t="wholesale" onclick="switchType('wholesale')">🏭 Wholesale Distributor</div>
+  </div>
+
+  <div class="plans-grid" id="plansGrid">Loading plans...</div>
+
+  <!-- PAYMENT SECTION -->
+  <div class="pay-section" id="paySection">
+    <h2 style="color:#f97316;font-weight:800;margin-bottom:18px;">💳 Pay for <span id="payPlanName"></span></h2>
+    <div class="amt-display" id="payAmount">₹0</div>
+
+    <div class="steps">
+      <div class="step"><div class="n">1</div><div class="t"><strong>Open GPay/PhonePe/PayTM</strong> and scan the QR (or use UPI ID)</div></div>
+      <div class="step"><div class="n">2</div><div class="t"><strong>Pay the exact amount shown above</strong></div></div>
+      <div class="step"><div class="n">3</div><div class="t"><strong>Take screenshot of payment success</strong> & copy transaction ID</div></div>
+      <div class="step"><div class="n">4</div><div class="t"><strong>Fill the form below</strong> and upload the screenshot</div></div>
+      <div class="step"><div class="n">5</div><div class="t"><strong>Activation within 24 hours</strong> — you'll get WhatsApp confirmation</div></div>
+    </div>
+
+    <div class="pay-grid">
+      <div>
+        <div class="qr-box">
+          <div class="qr-img" id="qrImg">
+            <div>
+              <div style="font-size:3rem;margin-bottom:10px;">📱</div>
+              <strong>Scan to pay</strong><br/>
+              or use UPI ID below
+            </div>
+          </div>
+          <div class="upi-id" id="payUpiId">vendor@oksbi</div>
+          <div class="upi-name" id="payUpiName">Vendor Name</div>
+        </div>
+      </div>
+
+      <div>
+        <div class="field"><label>Shop Name *</label><input id="pay-shop_name" class="input" required/></div>
+        <div class="field"><label>Your Name (payer)</label><input id="pay-payer_name" class="input"/></div>
+        <div class="field"><label>Phone / WhatsApp *</label><input id="pay-payer_phone" class="input" maxlength="10" required/></div>
+        <div class="field"><label>Transaction ID *</label><input id="pay-txn_id" class="input mono" placeholder="From GPay confirmation" required/></div>
+        <div class="field"><label>Machine Code (from /license)</label><input id="pay-machine" class="input mono" placeholder="Optional"/></div>
+        <div class="field"><label>Payment Screenshot</label><input type="file" id="pay-proof" class="input" accept="image/*"/></div>
+        <div class="field"><label>Notes (optional)</label><input id="pay-notes" class="input"/></div>
+        <button class="btn-pay" onclick="submitProof()"><i class="fas fa-paper-plane"></i> Submit Payment Proof</button>
+      </div>
+    </div>
+
+    <div class="contact-strip">
+      Need help? WhatsApp <a id="contactWA" href="#" target="_blank">vendor</a> · <a id="contactEmail" href="#">email</a>
+    </div>
+  </div>
+
+  <!-- SUCCESS -->
+  <div class="success-box" id="successBox">
+    <div class="ic">✅</div>
+    <h2>Payment Proof Submitted!</h2>
+    <p>We'll verify your transaction and activate your subscription within <strong>24 hours</strong>. You'll get a confirmation on WhatsApp.</p>
+    <p style="color:#94a3b8;font-size:.85rem;">Reference ID: <strong id="refId" style="color:#fb923c;font-family:monospace;"></strong></p>
+    <a href="/portal" style="display:inline-block;margin-top:14px;background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;padding:11px 24px;border-radius:9px;text-decoration:none;font-weight:700;">← Back to App</a>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let curType = 'retail';
+let selectedPlan = null;
+let vendor = {};
+
+async function loadPlans(){
+  const r = await fetch('/api/saas/plans/public?type=' + curType);
+  const d = await r.json();
+  vendor = d.vendor;
+  document.getElementById('payUpiId').textContent = vendor.upi_id || 'vendor@oksbi';
+  document.getElementById('payUpiName').textContent = vendor.upi_name || '';
+  if(vendor.qr_image_url){
+    document.getElementById('qrImg').innerHTML = `<img src="${vendor.qr_image_url}" alt="GPay QR"/>`;
+  }
+  if(vendor.phone){
+    document.getElementById('contactWA').href = 'https://wa.me/' + vendor.phone.replace(/[^0-9]/g, '');
+    document.getElementById('contactWA').textContent = vendor.phone;
+  }
+  if(vendor.email){
+    document.getElementById('contactEmail').href = 'mailto:' + vendor.email;
+    document.getElementById('contactEmail').textContent = vendor.email;
+  }
+
+  if(!d.plans.length){
+    document.getElementById('plansGrid').innerHTML = '<div style="text-align:center;padding:40px;color:#64748b;">No plans available for ' + curType + '</div>';
+    return;
+  }
+  document.getElementById('plansGrid').innerHTML = d.plans.map(p => `
+    <div class="plan ${p.is_featured?'featured':''}" data-id="${p.id}" onclick='selectPlan(${JSON.stringify(p).replace(/'/g,"&apos;")})'>
+      ${p.is_featured ? '<div class="badge">RECOMMENDED</div>' : ''}
+      <h3>${p.name}</h3>
+      <div class="tag">${p.tagline}</div>
+      <div class="price">₹${p.price}<small>/${p.billing_cycle.slice(0,2)}</small></div>
+      <ul>${p.features.slice(0,7).map(f => '<li>' + (f === '*' ? 'All features unlocked' : f.replace(/_/g,' ')) + '</li>').join('')}</ul>
+      ${Object.keys(p.limits).length ? '<div class="limits">' + Object.entries(p.limits).map(([k,v]) => `<div>${k}: <strong style="color:#cbd5e1;">${v}</strong></div>`).join('') + '</div>' : ''}
+    </div>`).join('');
+}
+
+function selectPlan(p){
+  if(typeof p === 'string') p = JSON.parse(p);
+  selectedPlan = p;
+  document.querySelectorAll('.plan').forEach(el => el.classList.toggle('selected', parseInt(el.dataset.id) === p.id));
+  document.getElementById('payPlanName').textContent = p.name;
+  document.getElementById('payAmount').textContent = '₹' + p.price;
+  document.getElementById('paySection').classList.add('show');
+  document.getElementById('paySection').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function switchType(t){
+  curType = t;
+  document.querySelectorAll('.client-tab').forEach(el => el.classList.toggle('active', el.dataset.t === t));
+  document.getElementById('paySection').classList.remove('show');
+  loadPlans();
+}
+
+async function submitProof(){
+  if(!selectedPlan){ showToast('Choose a plan first', true); return; }
+
+  const shop = document.getElementById('pay-shop_name').value.trim();
+  const phone = document.getElementById('pay-payer_phone').value.trim();
+  const txn = document.getElementById('pay-txn_id').value.trim();
+  if(!shop || !phone || !txn){ showToast('Fill shop, phone, transaction ID', true); return; }
+
+  const fd = new FormData();
+  fd.append('shop_name', shop);
+  fd.append('payer_name', document.getElementById('pay-payer_name').value);
+  fd.append('payer_phone', phone);
+  fd.append('transaction_id', txn);
+  fd.append('plan_id', selectedPlan.id);
+  fd.append('amount', selectedPlan.price);
+  fd.append('machine_code', document.getElementById('pay-machine').value);
+  fd.append('notes', document.getElementById('pay-notes').value);
+  const f = document.getElementById('pay-proof').files[0];
+  if(f) fd.append('proof', f);
+
+  const r = await fetch('/api/saas/proof/submit', {method:'POST', body: fd});
+  const d = await r.json();
+  if(d.status === 'ok'){
+    document.getElementById('paySection').classList.remove('show');
+    document.getElementById('refId').textContent = '#' + d.id;
+    document.getElementById('successBox').classList.add('show');
+    document.getElementById('successBox').scrollIntoView({behavior:'smooth'});
+  } else {
+    showToast(d.error || 'Submission failed', true);
+  }
+}
+
+function showToast(m, e){
+  const t = document.getElementById('toast');
+  t.textContent = m; t.classList.toggle('err', !!e); t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+loadPlans();
+</script>
+</body>
+</html>

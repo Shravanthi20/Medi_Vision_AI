@@ -58,7 +58,7 @@ form.addEventListener('submit', async (e) => {
         const result = await response.json().catch(() => ({ message: 'Server error: Invalid response' }));
 
         if (response.ok) {
-            window.location.href = '/';
+            window.location.href = '/dashboard';
         } else {
             errorMsg.textContent = result.message || 'Invalid credentials';
             errorMsg.classList.add('show');

@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tally / Accounts — MediVision AI</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',sans-serif;background:#f0f4f8;min-height:100vh}
+.topbar{background:#1a237e;color:#fff;padding:14px 24px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.topbar a{color:#90caf9;text-decoration:none;font-size:.85rem;white-space:nowrap}
+.topbar h2{font-size:1.1rem;flex:1}
+.nav-tabs{display:flex;gap:4px;background:#f0f4f8;padding:4px;border-radius:8px;margin:16px 16px 0}
+.nav-tab{padding:10px 16px;border:none;background:none;cursor:pointer;border-radius:6px;font-size:.9rem;font-weight:600;color:#666;transition:.2s}
+.nav-tab.active{background:#1a237e;color:#fff}
+.container{max-width:1200px;margin:0 auto;padding:16px}
+.panel{display:none}
+.panel.active{display:block}
+/* KPI cards */
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:20px}
+.kpi{background:#fff;border-radius:10px;padding:16px;box-shadow:0 2px 6px rgba(0,0,0,.07);text-align:center}
+.kpi-val{font-size:1.6rem;font-weight:800;color:#1a237e}
+.kpi-lbl{font-size:.8rem;color:#888;margin-top:4px}
+/* Tables */
+.table-card{background:#fff;border-radius:10px;box-shadow:0 2px 6px rgba(0,0,0,.07);overflow:hidden;margin-bottom:16px}
+.table-card-header{padding:12px 16px;background:#1a237e;color:#fff;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.table-card-header h3{font-size:.95rem}
+.btn{padding:8px 16px;border:none;border-radius:6px;font-size:.85rem;font-weight:600;cursor:pointer;transition:.2s}
+.btn-primary{background:#1a237e;color:#fff}
+.btn-primary:hover{background:#283593}
+.btn-success{background:#43a047;color:#fff}
+.btn-danger{background:#e53935;color:#fff}
+.btn-outline{background:#fff;color:#1a237e;border:2px solid #1a237e}
+.btn-sm{padding:5px 10px;font-size:.78rem}
+table{width:100%;border-collapse:collapse}
+th{background:#f5f5f5;padding:10px 12px;text-align:left;font-size:.82rem;color:#555;font-weight:600;border-bottom:2px solid #e0e0e0}
+td{padding:10px 12px;font-size:.88rem;border-bottom:1px solid #f0f0f0;vertical-align:middle}
+tr:hover{background:#fafafa}
+/* Forms */
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:16px}
+.form-group{display:flex;flex-direction:column;gap:4px}
+.form-group label{font-size:.8rem;font-weight:600;color:#555}
+.form-group input,.form-group select,.form-group textarea{padding:8px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:.9rem;outline:none;transition:.2s}
+.form-group input:focus,.form-group select:focus{border-color:#1a237e}
+.form-group textarea{resize:vertical;min-height:80px}
+/* Cheque print */
+.cheque-card{background:#fff;border:2px solid #1a237e;border-radius:8px;padding:20px;max-width:600px;font-family:monospace;position:relative}
+.cheque-card h4{text-align:center;color:#1a237e;margin-bottom:16px}
+.cheque-field{border-bottom:1px solid #333;min-width:200px;display:inline-block;margin-bottom:8px}
+/* Status badges */
+.badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:.75rem;font-weight:600}
+.badge-paid{background:#e8f5e9;color:#2e7d32}
+.badge-pending{background:#fff8e1;color:#f57f17}
+.badge-overdue{background:#ffebee;color:#c62828}
+.badge-issued{background:#e3f2fd;color:#1565c0}
+.badge-cleared{background:#e8f5e9;color:#2e7d32}
+.badge-bounced{background:#ffebee;color:#c62828}
+/* Modal */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:flex-start;justify-content:center;padding:16px;overflow-y:auto}
+.modal-overlay.open{display:flex}
+.modal{background:#fff;border-radius:12px;padding:24px;width:100%;max-width:600px;margin:auto}
+.modal h3{color:#1a237e;margin-bottom:16px;font-size:1.1rem}
+.modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+/* Filter bar */
+.filter-bar{padding:12px 16px;background:#f9f9f9;border-bottom:1px solid #eee;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.filter-bar input,.filter-bar select{padding:6px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:.85rem;outline:none}
+.toast{position:fixed;bottom:24px;right:24px;background:#323232;color:#fff;padding:12px 20px;border-radius:8px;display:none;z-index:9999;max-width:300px}
+@media print{.topbar,.nav-tabs,.btn,.filter-bar,#entryModal,.toast{display:none!important}.cheque-print-area{border:2px solid #000!important}}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <a href="/portal">← Dashboard</a>
+  <h2>Tally / Accounts</h2>
+  <select id="companySelect" onchange="loadAll()" style="padding:6px 10px;border-radius:6px;border:none;font-size:.9rem;max-width:200px">
+    <option value="">All Companies</option>
+  </select>
+  <button class="btn btn-outline btn-sm" onclick="openModal('companyModal')">+ Company</button>
+</div>
+
+<div class="nav-tabs">
+  <button class="nav-tab active" onclick="switchTab('ledger')">📋 Ledger</button>
+  <button class="nav-tab" onclick="switchTab('suppliers')">🏭 Suppliers</button>
+  <button class="nav-tab" onclick="switchTab('bank')">🏦 Bank</button>
+  <button class="nav-tab" onclick="switchTab('cheques')">📝 Cheques</button>
+  <button class="nav-tab" onclick="switchTab('summary')">📊 Summary</button>
+  <button class="nav-tab" onclick="switchTab('recent')">🕐 Recent</button>
+</div>
+
+<div class="container">
+
+<!-- LEDGER PANEL -->
+<div class="panel active" id="panel-ledger">
+  <div class="kpi-row" id="ledgerKpi"></div>
+  <div class="table-card">
+    <div class="table-card-header">
+      <h3>All Ledger Entries</h3>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-primary btn-sm" onclick="openModal('entryModal')">+ New Entry</button>
+      </div>
+    </div>
+    <div class="filter-bar">
+      <select id="entryTypeFilter" onchange="loadEntries()">
+        <option value="">All Types</option>
+        <option value="purchase">Purchase</option>
+        <option value="payment">Payment</option>
+        <option value="receipt">Receipt</option>
+        <option value="expense">Expense</option>
+        <option value="salary">Salary</option>
+        <option value="other">Other</option>
+      </select>
+      <input type="text" id="partyFilter" placeholder="Search party..." oninput="loadEntries()" style="width:150px">
+      <input type="date" id="dateFrom" onchange="loadEntries()">
+      <span>to</span>
+      <input type="date" id="dateTo" onchange="loadEntries()">
+      <button class="btn btn-outline btn-sm" onclick="clearFilters()">Clear</button>
+    </div>
+    <div style="overflow-x:auto">
+      <table>
+        <thead><tr><th>Date</th><th>Type</th><th>Party</th><th>Invoice</th><th>Amount</th><th>GST</th><th>Total</th><th>Mode</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody id="entriesBody"><tr><td colspan="10" style="text-align:center;padding:20px;color:#888">Loading...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- SUPPLIERS PANEL -->
+<div class="panel" id="panel-suppliers">
+  <div class="table-card">
+    <div class="table-card-header">
+      <h3>Supplier Ledger</h3>
+      <button class="btn btn-primary btn-sm" onclick="openModal('entryModal', {party_type:'supplier'})">+ Add Entry</button>
+    </div>
+    <div style="overflow-x:auto">
+      <table>
+        <thead><tr><th>Supplier</th><th>Total Purchases</th><th>Total Paid</th><th>Outstanding</th><th>Last Transaction</th><th>Action</th></tr></thead>
+        <tbody id="supplierBody"><tr><td colspan="6" style="text-align:center;padding:20px;color:#888">Loading...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- BANK PANEL -->
+<div class="panel" id="panel-bank">
+  <div class="table-card">
+    <div class="table-card-header">
+      <h3>Bank Statements</h3>
+      <button class="btn btn-primary btn-sm" onclick="openModal('bankModal')">+ Upload Statement</button>
+    </div>
+    <table>
+      <thead><tr><th>Month</th><th>Bank</th><th>Account</th><th>Opening</th><th>Credits</th><th>Debits</th><th>Closing</th><th>Uploaded</th></tr></thead>
+      <tbody id="bankBody"><tr><td colspan="8" style="text-align:center;padding:20px;color:#888">No statements uploaded</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- CHEQUES PANEL -->
+<div class="panel" id="panel-cheques">
+  <div class="table-card">
+    <div class="table-card-header">
+      <h3>Cheque Register</h3>
+      <button class="btn btn-primary btn-sm" onclick="openModal('chequeModal')">+ Issue Cheque</button>
+    </div>
+    <div class="filter-bar">
+      <select id="chequeStatusFilter" onchange="loadCheques()">
+        <option value="">All Status</option>
+        <option value="issued">Issued</option>
+        <option value="printed">Printed</option>
+        <option value="cleared">Cleared</option>
+        <option value="bounced">Bounced</option>
+        <option value="cancelled">Cancelled</option>
+      </select>
+    </div>
+    <div style="overflow-x:auto">
+      <table>
+        <thead><tr><th>Cheque No</th><th>Date</th><th>Payee</th><th>Bank</th><th>Amount</th><th>Memo</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody id="chequeBody"><tr><td colspan="8" style="text-align:center;padding:20px;color:#888">Loading...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- SUMMARY PANEL -->
+<div class="panel" id="panel-summary">
+  <div style="display:flex;gap:8px;align-items:center;margin-bottom:16px;flex-wrap:wrap">
+    <input type="date" id="summaryFrom" onchange="loadSummary()">
+    <span>to</span>
+    <input type="date" id="summaryTo" onchange="loadSummary()">
+  </div>
+  <div class="kpi-row" id="summaryKpi"></div>
+  <div class="table-card">
+    <div class="table-card-header"><h3>Outstanding by Supplier</h3></div>
+    <table>
+      <thead><tr><th>Supplier / Party</th><th>Outstanding</th><th>Status</th></tr></thead>
+      <tbody id="outstandingBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- RECENT PANEL -->
+<div class="panel" id="panel-recent">
+  <div class="table-card">
+    <div class="table-card-header"><h3>Recently Edited Entries</h3></div>
+    <div style="overflow-x:auto">
+      <table>
+        <thead><tr><th>Date</th><th>Type</th><th>Party</th><th>Amount</th><th>Modified</th><th>Actions</th></tr></thead>
+        <tbody id="recentBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+</div><!-- /container -->
+
+<!-- ENTRY MODAL -->
+<div class="modal-overlay" id="entryModal">
+  <div class="modal">
+    <h3 id="entryModalTitle">New Ledger Entry</h3>
+    <input type="hidden" id="editEntryId">
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Entry Type *</label>
+        <select id="eType">
+          <option value="purchase">Purchase (from supplier)</option>
+          <option value="payment">Payment (to supplier)</option>
+          <option value="receipt">Receipt (from customer)</option>
+          <option value="expense">Expense</option>
+          <option value="salary">Salary</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Party Name *</label>
+        <input type="text" id="eParty" placeholder="Supplier/Customer name">
+      </div>
+      <div class="form-group">
+        <label>Date *</label>
+        <input type="date" id="eDate">
+      </div>
+      <div class="form-group">
+        <label>Due Date</label>
+        <input type="date" id="eDueDate">
+      </div>
+      <div class="form-group">
+        <label>Invoice/Ref No</label>
+        <input type="text" id="eInvoice" placeholder="INV-2024-001">
+      </div>
+      <div class="form-group">
+        <label>Amount (₹) *</label>
+        <input type="number" id="eAmount" step="0.01" min="0" oninput="calcTotal()">
+      </div>
+      <div class="form-group">
+        <label>GST Amount (₹)</label>
+        <input type="number" id="eGst" step="0.01" min="0" value="0" oninput="calcTotal()">
+      </div>
+      <div class="form-group">
+        <label>Total (₹)</label>
+        <input type="number" id="eTotal" step="0.01" min="0" style="background:#f5f5f5">
+      </div>
+      <div class="form-group">
+        <label>Payment Mode</label>
+        <select id="eMode">
+          <option value="cash">Cash</option>
+          <option value="cheque">Cheque</option>
+          <option value="upi">UPI</option>
+          <option value="neft">NEFT/RTGS</option>
+          <option value="credit">Credit</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Cheque No</label>
+        <input type="text" id="eCheque" placeholder="Only if cheque">
+      </div>
+      <div class="form-group">
+        <label>Status</label>
+        <select id="eStatus">
+          <option value="pending">Pending</option>
+          <option value="paid">Paid</option>
+          <option value="partial">Partial</option>
+          <option value="overdue">Overdue</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group" style="margin-bottom:0">
+      <label>Description</label>
+      <textarea id="eDesc" placeholder="Optional notes..."></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('entryModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveEntry()">Save Entry</button>
+    </div>
+  </div>
+</div>
+
+<!-- BANK MODAL -->
+<div class="modal-overlay" id="bankModal">
+  <div class="modal">
+    <h3>Upload Bank Statement</h3>
+    <div class="form-grid">
+      <div class="form-group"><label>Bank Name</label><input type="text" id="bBankName" placeholder="SBI, HDFC..."></div>
+      <div class="form-group"><label>Account Number</label><input type="text" id="bAccNo"></div>
+      <div class="form-group"><label>Month (YYYY-MM)</label><input type="month" id="bMonth"></div>
+      <div class="form-group"><label>Opening Balance (₹)</label><input type="number" id="bOpen" step="0.01" value="0"></div>
+      <div class="form-group"><label>Closing Balance (₹)</label><input type="number" id="bClose" step="0.01" value="0"></div>
+    </div>
+    <div class="form-group" style="margin-bottom:12px">
+      <label>Paste statement rows (Tab-separated: Date, Description, Debit, Credit, Balance)</label>
+      <textarea id="bPaste" rows="8" placeholder="Paste from Excel bank statement here...&#10;Format: Date&#9;Description&#9;Debit&#9;Credit&#9;Balance" style="font-family:monospace;font-size:.8rem"></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('bankModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveStatement()">Upload Statement</button>
+    </div>
+  </div>
+</div>
+
+<!-- CHEQUE MODAL -->
+<div class="modal-overlay" id="chequeModal">
+  <div class="modal" id="chequeModalContent">
+    <h3>Issue New Cheque</h3>
+    <div class="form-grid">
+      <div class="form-group"><label>Payee *</label><input type="text" id="cPayee" placeholder="Supplier / Party name"></div>
+      <div class="form-group"><label>Date *</label><input type="date" id="cDate"></div>
+      <div class="form-group"><label>Amount (₹) *</label><input type="number" id="cAmount" step="0.01" min="0"></div>
+      <div class="form-group"><label>Cheque No</label><input type="text" id="cNo" placeholder="Auto if blank"></div>
+      <div class="form-group"><label>Bank Name</label><input type="text" id="cBank" placeholder="Issuing bank"></div>
+      <div class="form-group"><label>Account No</label><input type="text" id="cAccNo"></div>
+    </div>
+    <div class="form-group" style="margin-bottom:0"><label>Memo</label><textarea id="cMemo" rows="2" placeholder="Purpose / notes..."></textarea></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('chequeModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="issueCheque()">Issue Cheque</button>
+    </div>
+  </div>
+</div>
+
+<!-- COMPANY MODAL -->
+<div class="modal-overlay" id="companyModal">
+  <div class="modal">
+    <h3>Add Company</h3>
+    <div class="form-grid">
+      <div class="form-group" style="grid-column:1/-1"><label>Company Name *</label><input type="text" id="coName" placeholder="Your business name"></div>
+      <div class="form-group"><label>GSTIN</label><input type="text" id="coGstin"></div>
+      <div class="form-group"><label>PAN</label><input type="text" id="coPan"></div>
+      <div class="form-group"><label>Phone</label><input type="tel" id="coPhone"></div>
+      <div class="form-group"><label>Email</label><input type="email" id="coEmail"></div>
+      <div class="form-group"><label>Bank Name</label><input type="text" id="coBankName"></div>
+      <div class="form-group"><label>Bank Account</label><input type="text" id="coBankAcc"></div>
+      <div class="form-group"><label>IFSC</label><input type="text" id="coBankIfsc"></div>
+      <div class="form-group"><label>Opening Balance (₹)</label><input type="number" id="coBalance" value="0" step="0.01"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('companyModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveCompany()">Save Company</button>
+    </div>
+  </div>
+</div>
+
+<!-- PRINT CHEQUE MODAL -->
+<div class="modal-overlay" id="printModal">
+  <div class="modal" style="max-width:700px">
+    <h3 style="margin-bottom:16px">Print Cheque</h3>
+    <div class="cheque-card" id="chequePrintArea">
+      <h4>CHEQUE</h4>
+      <table style="width:100%;border:none;font-size:.9rem">
+        <tr><td>Date:</td><td><span class="cheque-field" id="pDate"></span></td><td>Cheque No:</td><td><span class="cheque-field" id="pNo"></span></td></tr>
+        <tr><td>Pay to:</td><td colspan="3"><span class="cheque-field" style="width:80%" id="pPayee"></span></td></tr>
+        <tr><td>Amount (₹):</td><td colspan="3"><span class="cheque-field" style="width:80%" id="pAmount"></span></td></tr>
+        <tr><td>Bank:</td><td><span class="cheque-field" id="pBank"></span></td><td>A/c:</td><td><span class="cheque-field" id="pAcc"></span></td></tr>
+        <tr><td>Memo:</td><td colspan="3"><span class="cheque-field" style="width:80%" id="pMemo"></span></td></tr>
+      </table>
+      <div style="text-align:right;margin-top:20px;font-style:italic;color:#888">Authorised Signatory</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('printModal')">Close</button>
+      <button class="btn btn-primary" onclick="window.print()">Print</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let currentTab = 'ledger';
+let companies = [];
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.nav-tab').forEach((t,i)=>{
+    const tabs=['ledger','suppliers','bank','cheques','summary','recent'];
+    t.classList.toggle('active', tabs[i]===tab);
+  });
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  const el = document.getElementById('panel-'+tab);
+  if(el) el.classList.add('active');
+  loadTab(tab);
+}
+
+function loadTab(tab) {
+  if(tab==='ledger') loadEntries();
+  else if(tab==='suppliers') loadSupplierLedger();
+  else if(tab==='bank') loadBankStatements();
+  else if(tab==='cheques') loadCheques();
+  else if(tab==='summary') loadSummary();
+  else if(tab==='recent') loadRecent();
+}
+
+async function loadAll() {
+  loadEntries();
+  loadSummaryKpis();
+}
+
+async function loadCompanies() {
+  companies = await fetch('/api/tally/companies').then(r=>r.json()).catch(()=>[]);
+  const sel = document.getElementById('companySelect');
+  sel.innerHTML = '<option value="">All Companies</option>' +
+    companies.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+}
+
+function getCompanyId() { return document.getElementById('companySelect').value || ''; }
+
+async function loadEntries() {
+  const type    = document.getElementById('entryTypeFilter')?.value || '';
+  const party   = document.getElementById('partyFilter')?.value || '';
+  const dfrom   = document.getElementById('dateFrom')?.value || '';
+  const dto     = document.getElementById('dateTo')?.value || '';
+  const cid     = getCompanyId();
+  let url = '/api/tally/entries?limit=100';
+  if(cid) url+=`&company_id=${cid}`;
+  if(type) url+=`&entry_type=${type}`;
+  if(party) url+=`&party_name=${encodeURIComponent(party)}`;
+  if(dfrom) url+=`&date_from=${dfrom}`;
+  if(dto) url+=`&date_to=${dto}`;
+  const entries = await fetch(url).then(r=>r.json()).catch(()=>[]);
+  renderEntries(entries);
+}
+
+function renderEntries(entries) {
+  const tbody = document.getElementById('entriesBody');
+  if(!entries.length){tbody.innerHTML='<tr><td colspan="10" style="text-align:center;padding:20px;color:#888">No entries found</td></tr>';return;}
+  const total = entries.reduce((s,e)=>s+e.total_amount,0);
+  document.getElementById('ledgerKpi').innerHTML = `
+    <div class="kpi"><div class="kpi-val">${entries.length}</div><div class="kpi-lbl">Entries</div></div>
+    <div class="kpi"><div class="kpi-val">₹${total.toLocaleString('en-IN',{maximumFractionDigits:0})}</div><div class="kpi-lbl">Total Amount</div></div>
+    <div class="kpi"><div class="kpi-val">${entries.filter(e=>e.entry_type==='purchase').length}</div><div class="kpi-lbl">Purchases</div></div>
+    <div class="kpi"><div class="kpi-val">${entries.filter(e=>e.status==='pending').length}</div><div class="kpi-lbl">Pending</div></div>`;
+  tbody.innerHTML = entries.map(e=>`<tr>
+    <td>${e.date||'-'}</td>
+    <td><span class="badge" style="background:#e3f2fd;color:#1565c0">${e.entry_type}</span></td>
+    <td>${e.party_name||'-'}</td>
+    <td style="font-size:.8rem">${e.invoice_no||e.reference_no||'-'}</td>
+    <td>₹${(e.amount||0).toLocaleString('en-IN',{maximumFractionDigits:2})}</td>
+    <td>₹${(e.gst_amount||0).toFixed(2)}</td>
+    <td><strong>₹${(e.total_amount||0).toLocaleString('en-IN',{maximumFractionDigits:2})}</strong></td>
+    <td>${e.payment_mode||'-'}</td>
+    <td><span class="badge badge-${e.status||'pending'}">${e.status||'pending'}</span></td>
+    <td style="white-space:nowrap">
+      <button class="btn btn-sm btn-outline" onclick="editEntry(${e.id})">Edit</button>
+      <button class="btn btn-sm btn-danger" onclick="deleteEntry(${e.id})">Del</button>
+    </td>
+  </tr>`).join('');
+}
+
+async function loadSupplierLedger() {
+  const cid = getCompanyId();
+  let url = '/api/tally/entries?entry_type=purchase&limit=500';
+  if(cid) url+=`&company_id=${cid}`;
+  const purchases = await fetch(url).then(r=>r.json()).catch(()=>[]);
+  const payments  = await fetch(`/api/tally/entries?entry_type=payment${cid?'&company_id='+cid:''}`)
+                         .then(r=>r.json()).catch(()=>[]);
+
+  const map = {};
+  purchases.forEach(e=>{
+    const p = e.party_name||'Unknown';
+    if(!map[p]) map[p]={party:p,total_purchase:0,total_paid:0,last_date:''};
+    map[p].total_purchase+=e.total_amount||0;
+    if(!map[p].last_date||e.date>map[p].last_date) map[p].last_date=e.date;
+  });
+  payments.forEach(e=>{
+    const p = e.party_name||'Unknown';
+    if(!map[p]) map[p]={party:p,total_purchase:0,total_paid:0,last_date:''};
+    map[p].total_paid+=e.total_amount||0;
+    if(!map[p].last_date||e.date>map[p].last_date) map[p].last_date=e.date;
+  });
+
+  const rows = Object.values(map).sort((a,b)=>b.total_purchase-a.total_purchase);
+  const tbody = document.getElementById('supplierBody');
+  if(!rows.length){tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:20px;color:#888">No supplier data</td></tr>';return;}
+  tbody.innerHTML=rows.map(r=>{
+    const out=r.total_purchase-r.total_paid;
+    return`<tr>
+      <td><strong>${r.party}</strong></td>
+      <td>₹${r.total_purchase.toLocaleString('en-IN',{maximumFractionDigits:0})}</td>
+      <td>₹${r.total_paid.toLocaleString('en-IN',{maximumFractionDigits:0})}</td>
+      <td><strong style="color:${out>0?'#e53935':'#43a047'}">₹${out.toLocaleString('en-IN',{maximumFractionDigits:0})}</strong></td>
+      <td>${r.last_date||'-'}</td>
+      <td><button class="btn btn-sm btn-primary" onclick="openModal('entryModal',{party_name:'${r.party}',entry_type:'payment'})">Pay</button></td>
+    </tr>`;
+  }).join('');
+}
+
+async function loadBankStatements() {
+  const cid = getCompanyId();
+  let url = '/api/tally/bank-statements';
+  if(cid) url+=`?company_id=${cid}`;
+  const stmts = await fetch(url).then(r=>r.json()).catch(()=>[]);
+  const tbody = document.getElementById('bankBody');
+  if(!stmts.length){tbody.innerHTML='<tr><td colspan="8" style="text-align:center;padding:20px;color:#888">No statements uploaded</td></tr>';return;}
+  tbody.innerHTML=stmts.map(s=>`<tr>
+    <td>${s.statement_month||'-'}</td>
+    <td>${s.bank_name||'-'}</td>
+    <td>${s.account_no||'-'}</td>
+    <td>₹${(s.opening_balance||0).toLocaleString('en-IN',{maximumFractionDigits:0})}</td>
+    <td style="color:#2e7d32">+₹${(s.total_credits||0).toLocaleString('en-IN',{maximumFractionDigits:0})}</td>
+    <td style="color:#c62828">-₹${(s.total_debits||0).toLocaleString('en-IN',{maximumFractionDigits:0})}</td>
+    <td>₹${(s.closing_balance||0).toLocaleString('en-IN',{maximumFractionDigits:0})}</td>
+    <td style="font-size:.8rem">${s.uploaded_at?.substring(0,10)||'-'}</td>
+  </tr>`).join('');
+}
+
+async function loadCheques() {
+  const status = document.getElementById('chequeStatusFilter')?.value || '';
+  const cid    = getCompanyId();
+  let url = '/api/tally/cheques?';
+  if(cid) url+=`company_id=${cid}&`;
+  if(status) url+=`status=${status}`;
+  const cheques = await fetch(url).then(r=>r.json()).catch(()=>[]);
+  const tbody = document.getElementById('chequeBody');
+  if(!cheques.length){tbody.innerHTML='<tr><td colspan="8" style="text-align:center;padding:20px;color:#888">No cheques found</td></tr>';return;}
+  tbody.innerHTML=cheques.map(c=>`<tr>
+    <td>${c.cheque_no||'Auto'}</td>
+    <td>${c.date||'-'}</td>
+    <td>${c.payee||'-'}</td>
+    <td>${c.bank_name||'-'}</td>
+    <td><strong>₹${(c.amount||0).toLocaleString('en-IN',{maximumFractionDigits:0})}</strong></td>
+    <td style="font-size:.8rem">${c.memo||'-'}</td>
+    <td><span class="badge badge-${c.status}">${c.status}</span></td>
+    <td style="white-space:nowrap">
+      <button class="btn btn-sm btn-outline" onclick="printCheque(${JSON.stringify(c).replace(/"/g,'&quot;')})">Print</button>
+      ${c.status==='issued'?`<button class="btn btn-sm btn-success" onclick="updateChequeStatus(${c.id},'cleared')">Clear</button>`:''}
+      ${c.status==='issued'?`<button class="btn btn-sm btn-danger" onclick="updateChequeStatus(${c.id},'bounced')">Bounce</button>`:''}
+    </td>
+  </tr>`).join('');
+}
+
+async function loadSummary() {
+  const from = document.getElementById('summaryFrom')?.value || new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
+  const to   = document.getElementById('summaryTo')?.value || new Date().toISOString().split('T')[0];
+  const cid  = getCompanyId();
+  let url = `/api/tally/summary?date_from=${from}&date_to=${to}`;
+  if(cid) url+=`&company_id=${cid}`;
+  const data = await fetch(url).then(r=>r.json()).catch(()=>({}));
+  document.getElementById('summaryKpi').innerHTML=`
+    <div class="kpi"><div class="kpi-val">₹${(data.total_payable||0).toLocaleString('en-IN',{maximumFractionDigits:0})}</div><div class="kpi-lbl">Total Payable</div></div>
+    <div class="kpi"><div class="kpi-val" style="color:#43a047">₹${(data.total_paid||0).toLocaleString('en-IN',{maximumFractionDigits:0})}</div><div class="kpi-lbl">Total Paid</div></div>
+    <div class="kpi"><div class="kpi-val" style="color:#e53935">₹${(data.net_balance||0).toLocaleString('en-IN',{maximumFractionDigits:0})}</div><div class="kpi-lbl">Net Balance (Due)</div></div>
+    <div class="kpi"><div class="kpi-val" style="color:#1565c0">₹${(data.total_receipts||0).toLocaleString('en-IN',{maximumFractionDigits:0})}</div><div class="kpi-lbl">Receipts</div></div>
+    <div class="kpi"><div class="kpi-val">${data.pending_cheques||0}</div><div class="kpi-lbl">Pending Cheques</div></div>`;
+  const obs = data.outstanding_by_supplier||[];
+  document.getElementById('outstandingBody').innerHTML=obs.length?obs.map(r=>`<tr>
+    <td>${r.party_name||'-'}</td>
+    <td style="color:${r.outstanding>0?'#e53935':'#43a047'}"><strong>₹${(r.outstanding||0).toLocaleString('en-IN',{maximumFractionDigits:0})}</strong></td>
+    <td><span class="badge ${r.outstanding>0?'badge-pending':'badge-paid'}">${r.outstanding>0?'Due':'Settled'}</span></td>
+  </tr>`).join('') : '<tr><td colspan="3" style="text-align:center;padding:20px;color:#888">No outstanding</td></tr>';
+}
+
+async function loadRecent() {
+  const entries = await fetch('/api/tally/entries/recent').then(r=>r.json()).catch(()=>[]);
+  document.getElementById('recentBody').innerHTML=entries.length?entries.map(e=>`<tr>
+    <td>${e.date||'-'}</td>
+    <td><span class="badge" style="background:#e3f2fd;color:#1565c0">${e.entry_type}</span></td>
+    <td>${e.party_name||'-'}</td>
+    <td>₹${(e.total_amount||0).toLocaleString('en-IN',{maximumFractionDigits:0})}</td>
+    <td style="font-size:.8rem">${e.updated_at?.substring(0,16)||'-'}</td>
+    <td><button class="btn btn-sm btn-outline" onclick="editEntry(${e.id})">Edit</button></td>
+  </tr>`).join(''):'<tr><td colspan="6" style="text-align:center;padding:20px;color:#888">No recent entries</td></tr>';
+}
+
+function loadSummaryKpis() { loadSummary(); }
+
+function clearFilters() {
+  ['entryTypeFilter','partyFilter','dateFrom','dateTo'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  loadEntries();
+}
+
+function calcTotal() {
+  const a=parseFloat(document.getElementById('eAmount').value)||0;
+  const g=parseFloat(document.getElementById('eGst').value)||0;
+  document.getElementById('eTotal').value=(a+g).toFixed(2);
+}
+
+function openModal(id, prefill={}) {
+  if(id==='entryModal') {
+    document.getElementById('editEntryId').value='';
+    document.getElementById('entryModalTitle').textContent='New Ledger Entry';
+    document.getElementById('eDate').value=new Date().toISOString().split('T')[0];
+    if(prefill.party_name) document.getElementById('eParty').value=prefill.party_name;
+    if(prefill.entry_type) document.getElementById('eType').value=prefill.entry_type;
+  }
+  if(id==='chequeModal') document.getElementById('cDate').value=new Date().toISOString().split('T')[0];
+  document.getElementById(id).classList.add('open');
+}
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+
+async function saveEntry() {
+  const editId = document.getElementById('editEntryId').value;
+  const payload={
+    entry_type:document.getElementById('eType').value,
+    party_name:document.getElementById('eParty').value,
+    date:document.getElementById('eDate').value,
+    due_date:document.getElementById('eDueDate').value,
+    invoice_no:document.getElementById('eInvoice').value,
+    amount:parseFloat(document.getElementById('eAmount').value)||0,
+    gst_amount:parseFloat(document.getElementById('eGst').value)||0,
+    total_amount:parseFloat(document.getElementById('eTotal').value)||0,
+    payment_mode:document.getElementById('eMode').value,
+    cheque_no:document.getElementById('eCheque').value,
+    status:document.getElementById('eStatus').value,
+    description:document.getElementById('eDesc').value,
+    company_id:getCompanyId()||null
+  };
+  if(!payload.amount||!payload.date){showToast('Amount and date required');return;}
+  const url  = editId ? `/api/tally/entries/${editId}` : '/api/tally/entries';
+  const meth = editId ? 'PUT' : 'POST';
+  const res  = await fetch(url,{method:meth,headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}).then(r=>r.json());
+  if(res.status==='success'){closeModal('entryModal');loadEntries();showToast(editId?'Entry updated':'Entry saved');}
+  else showToast('Error: '+res.message);
+}
+
+async function editEntry(id) {
+  const entries = await fetch(`/api/tally/entries?limit=500`).then(r=>r.json()).catch(()=>[]);
+  const e = entries.find(x=>x.id===id);
+  if(!e) return;
+  document.getElementById('editEntryId').value=id;
+  document.getElementById('entryModalTitle').textContent='Edit Entry #'+id;
+  document.getElementById('eType').value=e.entry_type||'purchase';
+  document.getElementById('eParty').value=e.party_name||'';
+  document.getElementById('eDate').value=e.date||'';
+  document.getElementById('eDueDate').value=e.due_date||'';
+  document.getElementById('eInvoice').value=e.invoice_no||'';
+  document.getElementById('eAmount').value=e.amount||0;
+  document.getElementById('eGst').value=e.gst_amount||0;
+  document.getElementById('eTotal').value=e.total_amount||0;
+  document.getElementById('eMode').value=e.payment_mode||'cash';
+  document.getElementById('eCheque').value=e.cheque_no||'';
+  document.getElementById('eStatus').value=e.status||'pending';
+  document.getElementById('eDesc').value=e.description||'';
+  openModal('entryModal');
+}
+
+async function deleteEntry(id) {
+  if(!confirm('Delete this entry?')) return;
+  await fetch(`/api/tally/entries/${id}`,{method:'DELETE'});
+  loadEntries(); showToast('Entry deleted');
+}
+
+async function saveCompany() {
+  const payload={
+    name:document.getElementById('coName').value.trim(),
+    gstin:document.getElementById('coGstin').value,
+    pan:document.getElementById('coPan').value,
+    phone:document.getElementById('coPhone').value,
+    email:document.getElementById('coEmail').value,
+    bank_name:document.getElementById('coBankName').value,
+    bank_account:document.getElementById('coBankAcc').value,
+    bank_ifsc:document.getElementById('coBankIfsc').value,
+    opening_balance:parseFloat(document.getElementById('coBalance').value)||0
+  };
+  if(!payload.name){showToast('Company name required');return;}
+  const res=await fetch('/api/tally/companies',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}).then(r=>r.json());
+  if(res.status==='success'){closeModal('companyModal');loadCompanies();showToast('Company saved');}
+}
+
+async function saveStatement() {
+  const raw = document.getElementById('bPaste').value.trim();
+  const entries = [];
+  if(raw) {
+    raw.split('\n').forEach(line=>{
+      const cols=line.split('\t');
+      if(cols.length>=2 && cols[0].trim()){
+        entries.push({date:cols[0].trim(),description:cols[1]?.trim()||'',
+          debit:parseFloat(cols[2])||0,credit:parseFloat(cols[3])||0,balance:parseFloat(cols[4])||0});
+      }
+    });
+  }
+  const payload={
+    company_id:getCompanyId()||null,
+    bank_name:document.getElementById('bBankName').value,
+    account_no:document.getElementById('bAccNo').value,
+    statement_month:document.getElementById('bMonth').value,
+    opening_balance:parseFloat(document.getElementById('bOpen').value)||0,
+    closing_balance:parseFloat(document.getElementById('bClose').value)||0,
+    entries,file_name:'paste'
+  };
+  const res=await fetch('/api/tally/bank-statements',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}).then(r=>r.json());
+  if(res.status==='success'){closeModal('bankModal');loadBankStatements();showToast(`Statement saved (${res.entries} rows)`);}
+}
+
+async function issueCheque() {
+  const payload={
+    company_id:getCompanyId()||null,
+    payee:document.getElementById('cPayee').value.trim(),
+    date:document.getElementById('cDate').value,
+    amount:parseFloat(document.getElementById('cAmount').value)||0,
+    cheque_no:document.getElementById('cNo').value,
+    bank_name:document.getElementById('cBank').value,
+    account_no:document.getElementById('cAccNo').value,
+    memo:document.getElementById('cMemo').value
+  };
+  if(!payload.payee||!payload.amount){showToast('Payee and amount required');return;}
+  const res=await fetch('/api/tally/cheques',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}).then(r=>r.json());
+  if(res.status==='success'){closeModal('chequeModal');loadCheques();showToast('Cheque issued');}
+}
+
+async function updateChequeStatus(id, status) {
+  await fetch(`/api/tally/cheques/${id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({status})});
+  loadCheques(); showToast('Cheque status updated');
+}
+
+function printCheque(c) {
+  document.getElementById('pDate').textContent=c.date||'';
+  document.getElementById('pNo').textContent=c.cheque_no||'';
+  document.getElementById('pPayee').textContent=c.payee||'';
+  document.getElementById('pAmount').textContent='₹'+(c.amount||0).toLocaleString('en-IN',{minimumFractionDigits:2});
+  document.getElementById('pBank').textContent=c.bank_name||'';
+  document.getElementById('pAcc').textContent=c.account_no||'';
+  document.getElementById('pMemo').textContent=c.memo||'';
+  document.getElementById('printModal').classList.add('open');
+  // Mark as printed
+  fetch(`/api/tally/cheques/${c.id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'printed'})});
+}
+
+function showToast(msg) {
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.style.display='block';
+  setTimeout(()=>t.style.display='none',2500);
+}
+
+// Init default dates
+const now=new Date();
+const monthStart=new Date(now.getFullYear(),now.getMonth(),1).toISOString().split('T')[0];
+const today=now.toISOString().split('T')[0];
+document.getElementById('summaryFrom').value=monthStart;
+document.getElementById('summaryTo').value=today;
+document.getElementById('bMonth').value=today.substring(0,7);
+
+loadCompanies().then(()=>loadAll());
+</script>
+</body>
+</html>

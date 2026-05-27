@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Wholesale Login — MediVision AI</title>
+<style>
+  :root{--bg:#0b0e16;--card:#141824;--border:#1e2535;--blue:#3b82f6;--green:#22c55e;--text:#e2e8f0;--muted:#64748b;--red:#ef4444;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
+  .wrap{width:100%;max-width:420px;}
+  .logo{text-align:center;margin-bottom:32px;}
+  .logo-icon{width:64px;height:64px;background:var(--blue);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:2rem;margin:0 auto 14px;}
+  .logo h1{font-size:1.4rem;font-weight:800;}
+  .logo p{font-size:.83rem;color:var(--muted);margin-top:4px;}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:32px;}
+  .field{margin-bottom:16px;}
+  .field label{display:block;font-size:.78rem;font-weight:700;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.6px;}
+  .field input{width:100%;background:#0b0e16;border:1.5px solid var(--border);border-radius:9px;padding:11px 14px;color:var(--text);font-family:'Inter',sans-serif;font-size:.9rem;}
+  .field input:focus{outline:none;border-color:var(--blue);}
+  .login-btn{width:100%;background:var(--blue);color:#fff;border:none;border-radius:9px;padding:13px;font-family:'Inter',sans-serif;font-size:.92rem;font-weight:700;cursor:pointer;transition:opacity .2s;margin-top:4px;}
+  .login-btn:hover{opacity:.88;}
+  .err{color:var(--red);font-size:.82rem;margin-bottom:10px;display:none;}
+  .credentials{background:#0d111a;border:1px solid var(--border);border-radius:10px;padding:16px;margin-top:20px;font-size:.78rem;}
+  .credentials h4{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);margin-bottom:12px;}
+  .cred-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border);}
+  .cred-row:last-child{border-bottom:none;}
+  .cred-role{font-size:.72rem;font-weight:700;color:var(--blue);width:90px;flex-shrink:0;}
+  .cred-detail{color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:.72rem;}
+  .cred-detail strong{color:var(--text);}
+  .back{text-align:center;margin-top:20px;font-size:.82rem;color:var(--muted);}
+  .back a{color:var(--blue);text-decoration:none;}
+</style>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="wrap">
+  <div class="logo">
+    <div class="logo-icon">🏭</div>
+    <h1>Wholesale Hub</h1>
+    <p>Selvam Medicals Distribution Portal</p>
+  </div>
+  <div class="card">
+    <p class="err" id="errMsg"></p>
+    <div class="field">
+      <label>Username</label>
+      <input type="text" id="username" placeholder="Enter username" autocomplete="username">
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <input type="password" id="password" placeholder="Enter password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="login-btn" onclick="doLogin()">Sign In to Wholesale Portal</button>
+
+    <div class="credentials">
+      <h4>📋 Demo Credentials</h4>
+      <div class="cred-row"><span class="cred-role">Admin</span><span class="cred-detail">User: <strong>admin</strong> · Pass: <strong>admin123</strong></span></div>
+      <div class="cred-row"><span class="cred-role">Manager</span><span class="cred-detail">User: <strong>wsmanager</strong> · Pass: <strong>wholesale@123</strong></span></div>
+      <div class="cred-row"><span class="cred-role">Sales Rep</span><span class="cred-detail">User: <strong>salesrep1</strong> · Pass: <strong>sales@123</strong></span></div>
+      <div class="cred-row"><span class="cred-role">Accounts</span><span class="cred-detail">User: <strong>accounts</strong> · Pass: <strong>acc@2024</strong></span></div>
+    </div>
+  </div>
+  <div class="back"><a href="/portal">← Back to Main Portal</a></div>
+</div>
+<script>
+const WS_USERS = [
+  {username:'admin',      password:'admin123',      name:'Selvam Ramaswamy', role:'Administrator',  perms:['all']},
+  {username:'wsmanager',  password:'wholesale@123', name:'Arun Kumar',       role:'Wholesale Manager', perms:['orders','billing','shops','stock']},
+  {username:'salesrep1',  password:'sales@123',     name:'Vijay S.',         role:'Sales Representative', perms:['orders','shops']},
+  {username:'accounts',   password:'acc@2024',      name:'Priya Accounts',   role:'Accounts',       perms:['billing','ledger','receivables']},
+];
+function doLogin(){
+  const u = document.getElementById('username').value.trim();
+  const p = document.getElementById('password').value;
+  const user = WS_USERS.find(x=>x.username===u && x.password===p);
+  const errEl = document.getElementById('errMsg');
+  if(!user){ errEl.textContent='Invalid username or password.'; errEl.style.display='block'; return; }
+  errEl.style.display='none';
+  sessionStorage.setItem('wsUser', JSON.stringify(user));
+  window.location.href='/wholesale';
+}
+</script>
+</body>
+</html>

@@ -47,3 +47,7 @@ from .finance import GstTransaction, Expense
 
 # System / Audit
 from .system import AuditLog, SystemSetting
+
+
+# Compliance — Stage 6
+from .compliance import ExpiryReturn, ExpiryReturnItem, LicenseDocument

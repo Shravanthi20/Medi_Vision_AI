@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Staff Commission Tracker — Selvam Medicals</title>
+<style>
+/* ── Design tokens ─────────────────────────────────────────────── */
+:root{
+  --bg:#0b0e16; --panel:#131720; --card:#1a1f2e; --border:#232840;
+  --acc:#f97316; --acc2:#fb923c; --text:#e8eaf0; --muted:#7a82a0;
+  --green:#22c55e; --red:#ef4444; --blue:#3b82f6; --purple:#a855f7;
+  --yellow:#eab308; --cyan:#06b6d4;
+  --radius:12px; --gap:16px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh}
+
+/* ── Topbar ─────────────────────────────────────────────────────── */
+.topbar{
+  display:flex;align-items:center;gap:12px;padding:14px 24px;
+  background:var(--panel);border-bottom:1px solid var(--border);
+  position:sticky;top:0;z-index:100;
+}
+.topbar a{color:var(--muted);text-decoration:none;font-size:.85rem;transition:color .2s}
+.topbar a:hover{color:var(--acc)}
+.topbar .sep{color:var(--border)}
+.topbar h1{font-size:1.1rem;font-weight:700;color:var(--text);flex:1}
+.topbar h1 span{color:var(--acc)}
+
+/* ── Month picker ───────────────────────────────────────────────── */
+.controls{
+  display:flex;align-items:center;gap:12px;padding:16px 24px;
+  background:var(--panel);border-bottom:1px solid var(--border);
+  flex-wrap:wrap;
+}
+.controls label{color:var(--muted);font-size:.82rem}
+.controls input[type=month]{
+  background:var(--card);border:1px solid var(--border);color:var(--text);
+  padding:7px 12px;border-radius:8px;font-size:.9rem;cursor:pointer;
+}
+.controls input[type=month]:focus{outline:none;border-color:var(--acc)}
+.btn{
+  padding:8px 18px;border:none;border-radius:8px;cursor:pointer;
+  font-size:.85rem;font-weight:600;transition:all .2s;
+}
+.btn-acc{background:var(--acc);color:#fff}
+.btn-acc:hover{background:var(--acc2)}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--muted)}
+.btn-ghost:hover{border-color:var(--acc);color:var(--acc)}
+.btn-green{background:var(--green);color:#fff}
+.btn-green:hover{opacity:.85}
+.btn-red{background:var(--red);color:#fff}
+.btn-red:hover{opacity:.85}
+
+/* ── Tabs ───────────────────────────────────────────────────────── */
+.tabs{display:flex;gap:4px;padding:16px 24px 0;border-bottom:1px solid var(--border)}
+.tab{
+  padding:10px 22px;border-radius:8px 8px 0 0;cursor:pointer;font-size:.88rem;
+  font-weight:600;color:var(--muted);border:1px solid transparent;
+  border-bottom:none;transition:all .2s;
+}
+.tab.active{background:var(--card);color:var(--acc);border-color:var(--border)}
+.tab:hover:not(.active){color:var(--text)}
+
+/* ── KPI strip ──────────────────────────────────────────────────── */
+.kpi-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:var(--gap);padding:var(--gap) 24px}
+.kpi{
+  background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+  padding:18px 20px;display:flex;flex-direction:column;gap:6px;
+}
+.kpi .kpi-label{font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.kpi .kpi-val{font-size:1.8rem;font-weight:800;line-height:1}
+.kpi .kpi-sub{font-size:.78rem;color:var(--muted)}
+
+/* ── Main content ───────────────────────────────────────────────── */
+.page-content{padding:var(--gap) 24px 40px;display:none}
+.page-content.active{display:block}
+
+/* ── Staff commission cards ─────────────────────────────────────── */
+.staff-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:var(--gap)}
+.staff-card{
+  background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+  padding:20px;transition:border-color .2s;
+}
+.staff-card:hover{border-color:var(--acc)}
+.sc-header{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.sc-avatar{
+  width:44px;height:44px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-size:1.2rem;font-weight:800;flex-shrink:0;
+}
+.sc-name{font-size:1rem;font-weight:700}
+.sc-role{font-size:.75rem;color:var(--muted)}
+.sc-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.sc-stat{background:var(--bg);border-radius:8px;padding:10px 12px}
+.sc-stat .sl{font-size:.72rem;color:var(--muted);margin-bottom:3px}
+.sc-stat .sv{font-size:.95rem;font-weight:700}
+.prog-bar{height:6px;background:var(--border);border-radius:3px;margin:10px 0 4px;overflow:hidden}
+.prog-fill{height:100%;border-radius:3px;transition:width .5s ease}
+.prog-label{display:flex;justify-content:space-between;font-size:.72rem;color:var(--muted)}
+.badge{
+  display:inline-flex;align-items:center;gap:4px;padding:3px 10px;
+  border-radius:20px;font-size:.72rem;font-weight:600;
+}
+.badge-green{background:rgba(34,197,94,.15);color:var(--green)}
+.badge-yellow{background:rgba(234,179,8,.15);color:var(--yellow)}
+.badge-red{background:rgba(239,68,68,.15);color:var(--red)}
+.sc-actions{display:flex;gap:8px;margin-top:12px}
+.sc-actions .btn{flex:1;padding:7px 10px;font-size:.8rem}
+
+/* ── Commission log table ───────────────────────────────────────── */
+.table-wrap{overflow-x:auto;border-radius:var(--radius);border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:.85rem}
+thead th{
+  background:var(--panel);color:var(--muted);text-align:left;
+  padding:11px 14px;font-weight:600;font-size:.78rem;
+  text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border);
+}
+tbody tr{border-bottom:1px solid rgba(35,40,64,.5);transition:background .15s}
+tbody tr:hover{background:rgba(249,115,22,.04)}
+tbody tr:last-child{border-bottom:none}
+td{padding:11px 14px;vertical-align:middle}
+td .pill{
+  display:inline-block;padding:2px 8px;border-radius:10px;
+  font-size:.72rem;font-weight:600;
+}
+
+/* ── Birthday section ───────────────────────────────────────────── */
+.bday-section{display:flex;flex-direction:column;gap:var(--gap)}
+.bday-today{
+  background:linear-gradient(135deg,rgba(168,85,247,.12),rgba(249,115,22,.08));
+  border:1px solid rgba(168,85,247,.3);border-radius:var(--radius);padding:20px;
+}
+.bday-today h3{font-size:1rem;margin-bottom:14px;color:var(--purple)}
+.bday-cards{display:flex;flex-wrap:wrap;gap:12px}
+.bday-card{
+  background:var(--card);border:1px solid var(--border);border-radius:10px;
+  padding:16px 20px;display:flex;align-items:center;gap:14px;min-width:260px;
+}
+.bday-icon{font-size:2rem}
+.bday-info .bname{font-weight:700;font-size:.95rem}
+.bday-info .brole{font-size:.75rem;color:var(--muted)}
+.bday-info .bphone{font-size:.78rem;color:var(--cyan);margin-top:3px}
+.bday-send{margin-left:auto}
+.staff-bday-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+.staff-bday-row{
+  background:var(--card);border:1px solid var(--border);border-radius:10px;
+  padding:14px 16px;display:flex;align-items:center;gap:12px;
+}
+.sbd-info{flex:1}
+.sbd-info .sbd-name{font-weight:600;font-size:.9rem}
+.sbd-info .sbd-meta{font-size:.75rem;color:var(--muted)}
+.bday-input{
+  background:var(--bg);border:1px solid var(--border);color:var(--text);
+  padding:5px 10px;border-radius:6px;font-size:.8rem;
+}
+.bday-input:focus{outline:none;border-color:var(--acc)}
+
+/* ── Empty state ────────────────────────────────────────────────── */
+.empty{text-align:center;padding:50px 20px;color:var(--muted)}
+.empty .ei{font-size:3rem;margin-bottom:12px}
+.empty p{font-size:.9rem}
+
+/* ── Toast ──────────────────────────────────────────────────────── */
+.toast{
+  position:fixed;bottom:24px;right:24px;background:var(--card);
+  border:1px solid var(--border);border-radius:10px;padding:12px 20px;
+  font-size:.85rem;z-index:9999;opacity:0;transform:translateY(8px);
+  transition:all .3s;max-width:320px;pointer-events:none;
+}
+.toast.show{opacity:1;transform:translateY(0)}
+.toast.success{border-color:var(--green);color:var(--green)}
+.toast.error{border-color:var(--red);color:var(--red)}
+
+/* ── Spinner ────────────────────────────────────────────────────── */
+.spin{display:inline-block;width:18px;height:18px;border:2px solid var(--border);
+  border-top-color:var(--acc);border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── Modal ──────────────────────────────────────────────────────── */
+.modal-bg{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);
+  z-index:1000;align-items:center;justify-content:center;
+}
+.modal-bg.open{display:flex}
+.modal{
+  background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);
+  padding:28px;width:min(480px,94vw);max-height:90vh;overflow-y:auto;
+}
+.modal h2{font-size:1.05rem;font-weight:700;margin-bottom:20px}
+.form-row{margin-bottom:14px}
+.form-row label{display:block;font-size:.78rem;color:var(--muted);margin-bottom:5px}
+.form-row input,.form-row textarea{
+  width:100%;background:var(--card);border:1px solid var(--border);
+  color:var(--text);padding:9px 12px;border-radius:8px;font-size:.88rem;
+}
+.form-row input:focus,.form-row textarea:focus{outline:none;border-color:var(--acc)}
+.modal-footer{display:flex;gap:10px;margin-top:20px;justify-content:flex-end}
+</style>
+</head>
+<body>
+
+<!-- Topbar -->
+<div class="topbar">
+  <a href="/portal">← Dashboard</a>
+  <span class="sep">›</span>
+  <h1>Staff <span>Commission Tracker</span></h1>
+  <button class="btn btn-acc" onclick="openBirthdayModal()">🎂 Birthday WA</button>
+</div>
+
+<!-- Controls -->
+<div class="controls">
+  <label>Month</label>
+  <input type="month" id="monthPicker" onchange="loadAll()">
+  <button class="btn btn-acc" onclick="loadAll()">🔄 Refresh</button>
+  <button class="btn btn-ghost" onclick="exportCSV()">⬇ Export CSV</button>
+</div>
+
+<!-- KPI Strip -->
+<div class="kpi-strip" id="kpiStrip">
+  <div class="kpi"><div class="kpi-label">Total Commission</div><div class="kpi-val" id="kTotal">₹ —</div><div class="kpi-sub">This month</div></div>
+  <div class="kpi"><div class="kpi-label">Bills Processed</div><div class="kpi-val" id="kBills">—</div><div class="kpi-sub">Across all staff</div></div>
+  <div class="kpi"><div class="kpi-label">Top Earner</div><div class="kpi-val" style="font-size:1.3rem" id="kTop">—</div><div class="kpi-sub">Highest commission</div></div>
+  <div class="kpi"><div class="kpi-label">Active Staff</div><div class="kpi-val" id="kStaff">—</div><div class="kpi-sub">With sales data</div></div>
+</div>
+
+<!-- Tabs -->
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('overview')">📊 Overview</div>
+  <div class="tab" onclick="switchTab('log')">📋 Bill Log</div>
+  <div class="tab" onclick="switchTab('birthdays')">🎂 Birthdays</div>
+</div>
+
+<!-- Overview Tab -->
+<div class="page-content active" id="tab-overview">
+  <div class="staff-grid" id="staffGrid">
+    <div class="empty"><div class="ei">⏳</div><p>Loading commission data…</p></div>
+  </div>
+</div>
+
+<!-- Bill Log Tab -->
+<div class="page-content" id="tab-log">
+  <div style="display:flex;gap:12px;align-items:center;margin-bottom:16px;flex-wrap:wrap">
+    <select id="logStaffFilter" onchange="loadLog()"
+      style="background:var(--card);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;font-size:.85rem">
+      <option value="">All Staff</option>
+    </select>
+    <span style="color:var(--muted);font-size:.83rem" id="logCount"></span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Bill ID</th>
+          <th>Date</th>
+          <th>Staff</th>
+          <th>Bill Total</th>
+          <th>Comm %</th>
+          <th>Commission</th>
+        </tr>
+      </thead>
+      <tbody id="logBody">
+        <tr><td colspan="6" class="empty" style="padding:30px;text-align:center;color:var(--muted)">Loading…</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Birthdays Tab -->
+<div class="page-content" id="tab-birthdays">
+  <div class="bday-section">
+    <div class="bday-today" id="bdayToday">
+      <h3>🎂 Today's Birthdays</h3>
+      <div class="bday-cards" id="bdayCards">
+        <span style="color:var(--muted);font-size:.85rem">Checking…</span>
+      </div>
+    </div>
+    <div>
+      <h3 style="font-size:.95rem;color:var(--muted);margin-bottom:12px">All Staff — Manage Birthdays</h3>
+      <div class="staff-bday-list" id="bdayList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Birthday WhatsApp Quick Modal -->
+<div class="modal-bg" id="birthdayModal">
+  <div class="modal">
+    <h2>🎂 Send Birthday WhatsApp</h2>
+    <div class="form-row">
+      <label>Staff Member</label>
+      <select id="bdWaStaff"
+        style="width:100%;background:var(--card);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:8px;font-size:.88rem">
+        <option value="">— select staff —</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <label>Custom Message (optional)</label>
+      <textarea id="bdWaMsg" rows="5" placeholder="Leave blank for default birthday greeting…"></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeBirthdayModal()">Cancel</button>
+      <button class="btn btn-green" onclick="sendBirthdayWA()">📲 Send WhatsApp</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+/* ── helpers ──────────────────────────────────────────────────── */
+const qs = id => document.getElementById(id);
+const fmt = n => '₹' + Number(n||0).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+
+let _staffAll = [];   // full staff list from summary
+let _month    = '';
+
+function showToast(msg, type='success'){
+  const t = qs('toast');
+  t.textContent = msg;
+  t.className = `toast ${type} show`;
+  setTimeout(() => t.classList.remove('show'), 3200);
+}
+
+function switchTab(name){
+  document.querySelectorAll('.tab').forEach((t,i) => {
+    const names = ['overview','log','birthdays'];
+    t.classList.toggle('active', names[i] === name);
+  });
+  document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active'));
+  qs(`tab-${name}`).classList.add('active');
+  if(name === 'log') loadLog();
+  if(name === 'birthdays') loadBirthdays();
+}
+
+/* ── init ───────────────────────────────────────────────────────── */
+(function(){
+  const now = new Date();
+  const m   = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  qs('monthPicker').value = m;
+  _month = m;
+  loadAll();
+})();
+
+/* ── load summary + KPIs ─────────────────────────────────────────── */
+async function loadAll(){
+  _month = qs('monthPicker').value;
+  qs('staffGrid').innerHTML = '<div class="empty"><div class="spin"></div></div>';
+
+  const res  = await fetch(`/api/stage14/commission-summary?month=${_month}`);
+  const data = await res.json();
+  _staffAll  = data.staff || [];
+  const s    = data.summary || {};
+
+  // KPIs
+  qs('kTotal').textContent = fmt(s.total_commission);
+  qs('kBills').textContent = (s.total_bills||0).toLocaleString();
+  qs('kTop').textContent   = s.top_earner || '—';
+  qs('kStaff').textContent = s.staff_count || 0;
+
+  // Staff cards
+  renderStaffCards(_staffAll);
+
+  // Populate log staff filter
+  const sel = qs('logStaffFilter');
+  sel.innerHTML = '<option value="">All Staff</option>';
+  _staffAll.forEach(s => {
+    const o = document.createElement('option');
+    o.value = s.staff_id; o.textContent = s.staff_name;
+    sel.appendChild(o);
+  });
+
+  // Populate WA modal staff list
+  const bdSel = qs('bdWaStaff');
+  bdSel.innerHTML = '<option value="">— select staff —</option>';
+  _staffAll.forEach(s => {
+    const o = document.createElement('option');
+    o.value = s.staff_id; o.textContent = s.staff_name;
+    bdSel.appendChild(o);
+  });
+}
+
+/* ── render staff cards ──────────────────────────────────────────── */
+const COLORS = ['#f97316','#06b6d4','#22c55e','#a855f7','#eab308','#ef4444','#3b82f6'];
+function renderStaffCards(list){
+  const grid = qs('staffGrid');
+  if(!list.length){ grid.innerHTML = '<div class="empty"><div class="ei">👥</div><p>No staff data for this month</p></div>'; return; }
+
+  grid.innerHTML = list.map((s,i) => {
+    const color   = COLORS[i % COLORS.length];
+    const initials = s.staff_name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+    const pct     = Math.min(100, s.target_pct||0);
+    const badge   = s.target_pct >= 100 ? '<span class="badge badge-green">✓ Target Met</span>'
+                  : s.target_pct >= 60  ? '<span class="badge badge-yellow">⚡ In Progress</span>'
+                  : s.has_target        ? '<span class="badge badge-red">⚠ Below Target</span>'
+                  :                       '<span class="badge badge-yellow">— No Target</span>';
+    const fillColor = pct >= 100 ? 'var(--green)' : pct >= 60 ? 'var(--acc)' : 'var(--red)';
+    return `
+    <div class="staff-card">
+      <div class="sc-header">
+        <div class="sc-avatar" style="background:${color}22;color:${color}">${initials}</div>
+        <div>
+          <div class="sc-name">${s.staff_name} ${badge}</div>
+          <div class="sc-role">${s.role}</div>
+        </div>
+      </div>
+      <div class="sc-stats">
+        <div class="sc-stat">
+          <div class="sl">Sales Achieved</div>
+          <div class="sv" style="color:${color}">${fmt(s.sales_achieved)}</div>
+        </div>
+        <div class="sc-stat">
+          <div class="sl">Sales Target</div>
+          <div class="sv">${s.sales_target > 0 ? fmt(s.sales_target) : '—'}</div>
+        </div>
+        <div class="sc-stat">
+          <div class="sl">Commission (${s.commission_pct}%)</div>
+          <div class="sv" style="color:var(--green)">${fmt(s.commission_earned)}</div>
+        </div>
+        <div class="sc-stat">
+          <div class="sl">Bills Count</div>
+          <div class="sv">${s.bills_count}</div>
+        </div>
+      </div>
+      ${s.has_target ? `
+      <div class="prog-bar"><div class="prog-fill" style="width:${pct}%;background:${fillColor}"></div></div>
+      <div class="prog-label"><span>0%</span><span style="color:${fillColor}">${pct}% achieved</span><span>100%</span></div>
+      ` : ''}
+      <div class="sc-actions">
+        <button class="btn btn-ghost" onclick="viewLog(${s.staff_id},'${s.staff_name}')">📋 Bill Log</button>
+        <button class="btn btn-acc" onclick="sendBirthdayQuick(${s.staff_id})">🎂 Wish</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ── commission log ─────────────────────────────────────────────── */
+async function loadLog(){
+  const sid = qs('logStaffFilter').value;
+  const res = await fetch(`/api/stage14/commission-log?month=${_month}${sid?'&staff_id='+sid:''}`);
+  const rows = await res.json();
+  qs('logCount').textContent = `${rows.length} entries`;
+  qs('logBody').innerHTML = rows.length === 0
+    ? `<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--muted)">No commission entries for this period</td></tr>`
+    : rows.map(r => `
+        <tr>
+          <td style="font-family:monospace;font-size:.8rem;color:var(--acc)">${r.bill_id}</td>
+          <td>${r.bill_date}</td>
+          <td>${r.staff_name}</td>
+          <td>${fmt(r.bill_total)}</td>
+          <td><span class="pill" style="background:rgba(249,115,22,.15);color:var(--acc)">${r.commission_pct}%</span></td>
+          <td style="color:var(--green);font-weight:700">${fmt(r.commission_earned)}</td>
+        </tr>`).join('');
+}
+
+function viewLog(staffId, name){
+  qs('logStaffFilter').value = staffId;
+  switchTab('log');
+  loadLog();
+}
+
+/* ── birthdays ──────────────────────────────────────────────────── */
+async function loadBirthdays(){
+  // Today's birthdays
+  const bdRes = await fetch('/api/stage14/birthday-check');
+  const bdData = await bdRes.json();
+  const bdCards = qs('bdayCards');
+  if(!bdData.birthdays || bdData.birthdays.length === 0){
+    bdCards.innerHTML = '<span style="color:var(--muted);font-size:.85rem">🎂 No birthdays today (' + bdData.today + ')</span>';
+  } else {
+    bdCards.innerHTML = bdData.birthdays.map(s => `
+      <div class="bday-card">
+        <div class="bday-icon">🎂</div>
+        <div class="bday-info">
+          <div class="bname">${s.name}</div>
+          <div class="brole">${s.role}</div>
+          <div class="bphone">${s.phone || 'No phone'}</div>
+        </div>
+        <div class="bday-send">
+          <button class="btn btn-green" style="font-size:.78rem;padding:6px 12px"
+            onclick="quickSendBD(${s.id},'${s.name}')">📲 Wish</button>
+        </div>
+      </div>`).join('');
+  }
+
+  // All staff birthday manager
+  const sRes  = await fetch('/api/staff/list');
+  const sData = await sRes.json();
+  const staffList = Array.isArray(sData) ? sData : (sData.staff || []);
+  qs('bdayList').innerHTML = staffList.map(s => `
+    <div class="staff-bday-row">
+      <div style="width:38px;height:38px;border-radius:50%;background:var(--border);
+        display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0">
+        ${(s.name||'?')[0].toUpperCase()}
+      </div>
+      <div class="sbd-info">
+        <div class="sbd-name">${s.name}</div>
+        <div class="sbd-meta">${s.role} · ${s.phone||'—'}</div>
+      </div>
+      <input type="date" class="bday-input" id="bd_${s.id}"
+        value="${s.birthday||''}"
+        onchange="saveBirthday(${s.id},this.value)"
+        title="Set birthday">
+    </div>`).join('');
+}
+
+async function saveBirthday(sid, value){
+  const res = await fetch(`/api/staff/${sid}/birthday`, {
+    method:'PUT', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({birthday: value})
+  });
+  if(res.ok) showToast('Birthday saved ✓');
+  else showToast('Save failed', 'error');
+}
+
+async function quickSendBD(staffId, name){
+  const res = await fetch('/api/stage14/birthday-wa-send', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({staff_id: staffId})
+  });
+  const d = await res.json();
+  if(res.ok && (d.status === 'sent' || d.status === 'mocked')){
+    showToast(`🎂 Birthday WA sent to ${name}!`);
+  } else {
+    showToast(d.message || 'Failed to send', 'error');
+  }
+}
+
+/* ── Birthday modal ─────────────────────────────────────────────── */
+function openBirthdayModal(){ qs('birthdayModal').classList.add('open') }
+function closeBirthdayModal(){ qs('birthdayModal').classList.remove('open') }
+function sendBirthdayQuick(staffId){ qs('bdWaStaff').value = staffId; openBirthdayModal() }
+
+async function sendBirthdayWA(){
+  const sid = qs('bdWaStaff').value;
+  if(!sid){ showToast('Select a staff member', 'error'); return; }
+  const msg = qs('bdWaMsg').value.trim();
+  const res = await fetch('/api/stage14/birthday-wa-send', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({staff_id: parseInt(sid), message: msg})
+  });
+  const d = await res.json();
+  if(res.ok){
+    showToast(`📲 ${d.status === 'mocked' ? 'Mocked (no Twilio creds)' : 'Sent!'} — ${d.staff}`);
+    closeBirthdayModal();
+    qs('bdWaMsg').value = '';
+  } else {
+    showToast(d.message || 'Failed', 'error');
+  }
+}
+
+/* ── CSV export ─────────────────────────────────────────────────── */
+function exportCSV(){
+  const rows = [['Staff','Role','Bills','Sales','Target','Achieved%','Comm%','Commission','Bonus']];
+  _staffAll.forEach(s => {
+    rows.push([s.staff_name,s.role,s.bills_count,s.sales_achieved,s.sales_target,
+               s.target_pct,s.commission_pct,s.commission_earned,s.bonus_earned]);
+  });
+  const csv  = rows.map(r => r.map(c => `"${c}"`).join(',')).join('\n');
+  const blob = new Blob([csv],{type:'text/csv'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = `commission_${_month}.csv`; a.click();
+  URL.revokeObjectURL(url);
+  showToast('CSV exported');
+}
+</script>
+</body>
+</html>

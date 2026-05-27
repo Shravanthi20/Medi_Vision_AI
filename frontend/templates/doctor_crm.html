@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Doctor CRM — MediVision AI</title>
+<style>
+:root{--bg:#0b0e16;--card:#141824;--card2:#1a1f2e;--brd:#2a3045;--acc:#f97316;--red:#ef4444;--grn:#22c55e;--ylw:#eab308;--blue:#3b82f6;--purple:#a855f7;--teal:#14b8a6;--txt:#e2e8f0;--muted:#64748b;--font:'Inter',system-ui,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--txt);font-family:var(--font);min-height:100vh}
+.topbar{display:flex;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid var(--brd);background:var(--card)}
+.topbar a{color:var(--muted);text-decoration:none;font-size:.85rem}
+.topbar h1{font-size:1.1rem;font-weight:700}
+.badge{background:linear-gradient(135deg,#14b8a6,#0ea5e9);color:#fff;font-size:.65rem;font-weight:700;padding:2px 8px;border-radius:20px;letter-spacing:.5px}
+.tb-right{margin-left:auto;display:flex;gap:10px}
+.btn{padding:8px 16px;border-radius:8px;font-size:.82rem;font-weight:600;cursor:pointer;border:none;display:flex;align-items:center;gap:6px;transition:.2s}
+.btn-primary{background:var(--acc);color:#fff}.btn-primary:hover{opacity:.9}
+.btn-outline{background:transparent;border:1px solid var(--brd);color:var(--txt)}.btn-outline:hover{border-color:var(--acc);color:var(--acc)}
+
+.page{padding:24px;max-width:1400px;margin:0 auto}
+
+.kpi-row{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:24px}
+.kpi{background:var(--card);border:1px solid var(--brd);border-radius:12px;padding:16px;position:relative;overflow:hidden}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.kpi.k1::before{background:var(--teal)}.kpi.k2::before{background:var(--grn)}.kpi.k3::before{background:var(--acc)}.kpi.k4::before{background:var(--purple)}.kpi.k5::before{background:var(--blue)}
+.kpi .val{font-size:1.8rem;font-weight:800;font-family:'JetBrains Mono',monospace}
+.kpi.k1 .val{color:var(--teal)}.kpi.k2 .val{color:var(--grn)}.kpi.k3 .val{color:var(--acc)}.kpi.k4 .val{color:var(--purple)}.kpi.k5 .val{color:var(--blue)}
+.kpi .lbl{font-size:.72rem;color:var(--muted);margin-top:6px;text-transform:uppercase;letter-spacing:.5px}
+
+.controls{display:flex;gap:12px;margin-bottom:20px}
+.search-box{flex:1;max-width:340px;background:var(--card);border:1px solid var(--brd);color:var(--txt);padding:9px 14px;border-radius:9px;font-size:.84rem}
+.search-box:focus{outline:none;border-color:var(--acc)}
+select.filter{background:var(--card);border:1px solid var(--brd);color:var(--txt);padding:9px 12px;border-radius:9px;font-size:.82rem}
+
+/* Doctor cards */
+.doctor-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+.doc-card{background:var(--card);border:1px solid var(--brd);border-radius:14px;padding:20px;cursor:pointer;transition:.2s}
+.doc-card:hover{border-color:var(--teal);transform:translateY(-2px)}
+.dc-hdr{display:flex;align-items:center;gap:14px;margin-bottom:14px}
+.dc-avatar{width:50px;height:50px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;background:linear-gradient(135deg,#14b8a6,#0ea5e9)}
+.dc-name{font-weight:700;font-size:.98rem}
+.dc-spec{font-size:.78rem;color:var(--teal);font-weight:600}
+.dc-hosp{font-size:.75rem;color:var(--muted)}
+.dc-meta{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.meta-tag{font-size:.72rem;padding:3px 8px;border-radius:6px;background:var(--card2);color:var(--muted)}
+.dc-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding-top:12px;border-top:1px solid var(--brd)}
+.dc-stat{text-align:center}
+.dc-stat .sv{font-size:1.05rem;font-weight:800;font-family:'JetBrains Mono',monospace;color:var(--acc)}
+.dc-stat .sl{font-size:.68rem;color:var(--muted);margin-top:2px}
+
+.empty{text-align:center;padding:64px;color:var(--muted)}
+.empty .ei{font-size:3rem;margin-bottom:14px;opacity:.3}
+
+/* Modal */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:100;display:none;align-items:center;justify-content:center}
+.overlay.open{display:flex}
+.modal{background:var(--card);border:1px solid var(--brd);border-radius:16px;width:min(760px,96vw);max-height:92vh;display:flex;flex-direction:column}
+.modal-hdr{padding:18px 22px;border-bottom:1px solid var(--brd);display:flex;align-items:center;justify-content:space-between}
+.modal-hdr h2{font-size:1rem;font-weight:700}
+.modal-close{background:none;border:none;color:var(--muted);font-size:1.4rem;cursor:pointer}
+.modal-close:hover{color:var(--txt)}
+.modal-body{padding:22px;overflow-y:auto;flex:1}
+.modal-footer{padding:14px 22px;border-top:1px solid var(--brd);display:flex;justify-content:flex-end;gap:10px}
+
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.form-group{display:flex;flex-direction:column;gap:5px}
+.form-group.full{grid-column:1/-1}
+.form-group label{font-size:.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.form-group input,.form-group select,.form-group textarea{background:var(--card2);border:1px solid var(--brd);color:var(--txt);padding:9px 12px;border-radius:8px;font-size:.85rem;font-family:var(--font)}
+.form-group input:focus,.form-group select:focus{outline:none;border-color:var(--acc)}
+
+/* Detail tabs */
+.dtab-row{display:flex;border-bottom:1px solid var(--brd);margin-bottom:18px}
+.dtab{padding:10px 18px;font-size:.82rem;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent}
+.dtab.active{color:var(--teal);border-bottom-color:var(--teal)}
+
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.info-item{background:var(--card2);border-radius:8px;padding:12px}
+.info-item .il{font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px}
+.info-item .iv{font-size:.88rem;font-weight:600}
+
+.section-title{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:10px;margin-top:16px}
+.section-title:first-child{margin-top:0}
+
+.hist-table{width:100%;border-collapse:collapse;font-size:.82rem}
+.hist-table th{padding:8px 12px;text-align:left;color:var(--muted);font-size:.7rem;font-weight:700;text-transform:uppercase;border-bottom:1px solid var(--brd)}
+.hist-table td{padding:10px 12px;border-bottom:1px solid rgba(42,48,69,.5)}
+
+/* Top meds bar chart */
+.med-bar{display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:.8rem}
+.med-bar .ml{width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted)}
+.med-bar .track{flex:1;height:16px;background:var(--card2);border-radius:4px;overflow:hidden}
+.med-bar .fill{height:100%;background:linear-gradient(90deg,#14b8a6,#0ea5e9);border-radius:4px;display:flex;align-items:center;padding-left:6px;font-size:.7rem;color:#fff;font-weight:600}
+.med-bar .mv{width:40px;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--txt)}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a href="/portal">← Portal</a>
+  <span style="color:var(--brd)">|</span>
+  <span style="font-size:1.2rem">👨‍⚕️</span>
+  <h1>Doctor CRM</h1>
+  <span class="badge">STAGE 8</span>
+  <div class="tb-right">
+    <button class="btn btn-primary" onclick="openAddDoctor()">+ Add Doctor</button>
+  </div>
+</div>
+
+<div class="page">
+  <div class="kpi-row">
+    <div class="kpi k1"><div class="val" id="kTotal">—</div><div class="lbl">👨‍⚕️ Total Doctors</div></div>
+    <div class="kpi k2"><div class="val" id="kActive">—</div><div class="lbl">✅ Active (30d)</div></div>
+    <div class="kpi k3"><div class="val" id="kRx">—</div><div class="lbl">📋 Prescriptions</div></div>
+    <div class="kpi k4"><div class="val" id="kRevenue">—</div><div class="lbl">💰 Revenue via Rx</div></div>
+    <div class="kpi k5"><div class="val" id="kPatients">—</div><div class="lbl">👥 Unique Patients</div></div>
+  </div>
+
+  <div class="controls">
+    <input class="search-box" type="search" id="searchBox" placeholder="🔍 Search doctor name…" oninput="applyFilter()">
+    <select class="filter" id="specFilter" onchange="applyFilter()">
+      <option value="">All Specialties</option>
+      <option>General Physician</option><option>Cardiologist</option><option>Diabetologist</option>
+      <option>Dermatologist</option><option>ENT</option><option>Gynaecologist</option>
+      <option>Neurologist</option><option>Orthopaedic</option><option>Paediatrician</option>
+      <option>Psychiatrist</option><option>Pulmonologist</option>
+    </select>
+    <span style="margin-left:auto;font-size:.78rem;color:var(--muted)" id="countLbl"></span>
+  </div>
+
+  <div class="doctor-grid" id="doctorGrid"></div>
+  <div class="empty" id="emptyState" style="display:none">
+    <div class="ei">👨‍⚕️</div>
+    <p>No doctors yet. <strong style="color:var(--acc)">Add your first doctor →</strong></p>
+  </div>
+</div>
+
+<!-- Detail Modal -->
+<div class="overlay" id="detailOverlay">
+  <div class="modal" style="width:min(820px,96vw)">
+    <div class="modal-hdr">
+      <h2 id="detailName">Doctor Details</h2>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn btn-outline" style="font-size:.75rem;padding:5px 12px" onclick="editCurrentDoc()">✏️ Edit</button>
+        <button class="modal-close" onclick="closeDetail()">✕</button>
+      </div>
+    </div>
+    <div class="modal-body">
+      <div class="dtab-row">
+        <div class="dtab active" onclick="switchDTab('profile',this)">👤 Profile</div>
+        <div class="dtab" onclick="switchDTab('prescriptions',this)">📋 Prescriptions</div>
+        <div class="dtab" onclick="switchDTab('topmeds',this)">💊 Top Medicines</div>
+      </div>
+      <div id="dtab-profile"></div>
+      <div id="dtab-prescriptions" style="display:none"></div>
+      <div id="dtab-topmeds" style="display:none"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Add/Edit Modal -->
+<div class="overlay" id="formOverlay">
+  <div class="modal">
+    <div class="modal-hdr">
+      <h2 id="formTitle">Add Doctor</h2>
+      <button class="modal-close" onclick="closeForm()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group"><label>Full Name *</label><input id="dName" placeholder="Dr. Name"></div>
+        <div class="form-group"><label>Specialty</label>
+          <select id="dSpec">
+            <option value="">Select specialty</option>
+            <option>General Physician</option><option>Cardiologist</option><option>Diabetologist</option>
+            <option>Dermatologist</option><option>ENT</option><option>Gynaecologist</option>
+            <option>Neurologist</option><option>Orthopaedic</option><option>Paediatrician</option>
+            <option>Psychiatrist</option><option>Pulmonologist</option><option>Other</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Hospital / Clinic</label><input id="dHosp" placeholder="Hospital name"></div>
+        <div class="form-group"><label>Phone</label><input id="dPhone" placeholder="Mobile number"></div>
+        <div class="form-group"><label>Email</label><input id="dEmail" type="email" placeholder="Email"></div>
+        <div class="form-group"><label>Registration No.</label><input id="dReg" placeholder="MCI / State reg number"></div>
+        <div class="form-group full"><label>Address</label><input id="dAddr" placeholder="Clinic address"></div>
+        <div class="form-group full"><label>Notes</label><input id="dNotes" placeholder="Any notes…"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeForm()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveDoctor()">💾 Save Doctor</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let doctors = [];
+let currentDoc = null;
+let editId = null;
+const SPEC_ICONS = {'General Physician':'🩺','Cardiologist':'❤️','Diabetologist':'🩸','Dermatologist':'🌿','ENT':'👂','Gynaecologist':'👩‍⚕️','Neurologist':'🧠','Orthopaedic':'🦴','Paediatrician':'👶','Psychiatrist':'🧠','Pulmonologist':'🫁'};
+
+async function loadDoctors() {
+  const res = await fetch('/api/doctors-crm');
+  const d = await res.json();
+  doctors = d.doctors || [];
+  const s = d.summary || {};
+  document.getElementById('kTotal').textContent = s.total || 0;
+  document.getElementById('kActive').textContent = s.active_30d || 0;
+  document.getElementById('kRx').textContent = s.total_rx || 0;
+  document.getElementById('kRevenue').textContent = s.revenue >= 1000 ? '₹' + (s.revenue/1000).toFixed(1) + 'K' : '₹' + (s.revenue||0).toFixed(0);
+  document.getElementById('kPatients').textContent = s.unique_patients || 0;
+  applyFilter();
+}
+
+function applyFilter() {
+  const q = document.getElementById('searchBox').value.toLowerCase();
+  const spec = document.getElementById('specFilter').value;
+  const f = doctors.filter(d => {
+    if(q && !d.name.toLowerCase().includes(q)) return false;
+    if(spec && d.specialty !== spec) return false;
+    return true;
+  });
+  document.getElementById('countLbl').textContent = f.length + ' doctors';
+  renderGrid(f);
+}
+
+function renderGrid(list) {
+  const grid = document.getElementById('doctorGrid');
+  const empty = document.getElementById('emptyState');
+  if(!list.length) { grid.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+  grid.innerHTML = list.map(d => {
+    const icon = SPEC_ICONS[d.specialty] || '👨‍⚕️';
+    const tags = [d.hospital, d.phone, d.email].filter(Boolean).map(t=>`<span class="meta-tag">${esc(t)}</span>`).join('');
+    return `<div class="doc-card" onclick="openDetail(${d.id})">
+      <div class="dc-hdr">
+        <div class="dc-avatar">${icon}</div>
+        <div>
+          <div class="dc-name">${esc(d.name)}</div>
+          <div class="dc-spec">${esc(d.specialty)||'General'}</div>
+          <div class="dc-hosp">${esc(d.hospital)||'—'}</div>
+        </div>
+      </div>
+      <div class="dc-meta">${tags||'<span class="meta-tag">No contact info</span>'}</div>
+      <div class="dc-stats">
+        <div class="dc-stat"><div class="sv">${d.rx_count||0}</div><div class="sl">Prescriptions</div></div>
+        <div class="dc-stat"><div class="sv">${d.patient_count||0}</div><div class="sl">Patients</div></div>
+        <div class="dc-stat"><div class="sv">₹${((d.revenue||0)/1000).toFixed(1)}K</div><div class="sl">Revenue</div></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function openDetail(id) {
+  const res = await fetch('/api/doctors-crm/' + id);
+  const d = await res.json();
+  currentDoc = d.doctor;
+  document.getElementById('detailName').textContent = d.doctor.name;
+
+  const icon = SPEC_ICONS[d.doctor.specialty] || '👨‍⚕️';
+  document.getElementById('dtab-profile').innerHTML = `
+    <div class="info-grid">
+      <div class="info-item"><div class="il">Specialty</div><div class="iv">${icon} ${esc(d.doctor.specialty||'General')}</div></div>
+      <div class="info-item"><div class="il">Hospital</div><div class="iv">🏥 ${esc(d.doctor.hospital||'—')}</div></div>
+      <div class="info-item"><div class="il">Phone</div><div class="iv">📞 ${esc(d.doctor.phone||'—')}</div></div>
+      <div class="info-item"><div class="il">Email</div><div class="iv">📧 ${esc(d.doctor.email||'—')}</div></div>
+      <div class="info-item"><div class="il">Reg Number</div><div class="iv">${esc(d.doctor.reg_no||'—')}</div></div>
+      <div class="info-item"><div class="il">Total Revenue</div><div class="iv" style="color:var(--acc)">₹${(d.doctor.revenue||0).toFixed(2)}</div></div>
+    </div>
+    <div class="section-title">📊 Performance</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+      ${[['📋','Prescriptions',d.doctor.rx_count||0],['👥','Unique Patients',d.doctor.patient_count||0],['📅','Last Prescription',d.doctor.last_rx||'—']].map(([icon,lbl,val])=>`
+        <div class="info-item"><div class="il">${lbl}</div><div class="iv">${icon} ${val}</div></div>
+      `).join('')}
+    </div>
+  `;
+
+  const bills = d.bills || [];
+  document.getElementById('dtab-prescriptions').innerHTML = bills.length ? `
+    <table class="hist-table">
+      <thead><tr><th>DATE</th><th>PATIENT</th><th>ITEMS</th><th>AMOUNT</th></tr></thead>
+      <tbody>${bills.map(b=>`<tr>
+        <td>${b.date||b.ts?.slice(0,10)||'—'}</td>
+        <td>${esc(b.cust||'—')}</td>
+        <td style="font-size:.78rem;color:var(--muted)">${summariseItems(b.items)}</td>
+        <td style="font-weight:700;color:var(--acc)">₹${(b.total||0).toFixed(2)}</td>
+      </tr>`).join('')}</tbody>
+    </table>
+  ` : '<div class="empty"><div class="ei">📋</div><p>No prescriptions yet</p></div>';
+
+  const meds = d.top_medicines || [];
+  const maxV = meds[0]?.count || 1;
+  document.getElementById('dtab-topmeds').innerHTML = meds.length ? `
+    <div class="section-title">Top Medicines Prescribed by ${esc(d.doctor.name)}</div>
+    ${meds.map(m => `
+      <div class="med-bar">
+        <div class="ml" title="${esc(m.name)}">${esc(m.name.length>22?m.name.slice(0,22)+'…':m.name)}</div>
+        <div class="track"><div class="fill" style="width:${Math.max(Math.round(m.count/maxV*100),8)}%">${m.count}</div></div>
+        <div class="mv">${m.count}×</div>
+      </div>
+    `).join('')}
+  ` : '<div class="empty"><div class="ei">💊</div><p>No medicine data yet</p></div>';
+
+  switchDTab('profile', document.querySelector('.dtab'));
+  document.getElementById('detailOverlay').classList.add('open');
+}
+
+function closeDetail() { document.getElementById('detailOverlay').classList.remove('open'); }
+
+function switchDTab(tab, el) {
+  document.querySelectorAll('.dtab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('[id^="dtab-"]').forEach(p=>p.style.display='none');
+  if(el) el.classList.add('active');
+  document.getElementById('dtab-'+tab).style.display='block';
+}
+
+function editCurrentDoc() {
+  closeDetail(); const d = currentDoc; editId = d.id;
+  document.getElementById('formTitle').textContent = 'Edit Doctor';
+  document.getElementById('dName').value = d.name||'';
+  document.getElementById('dSpec').value = d.specialty||'';
+  document.getElementById('dHosp').value = d.hospital||'';
+  document.getElementById('dPhone').value = d.phone||'';
+  document.getElementById('dEmail').value = d.email||'';
+  document.getElementById('dReg').value = d.reg_no||'';
+  document.getElementById('dAddr').value = d.address||'';
+  document.getElementById('dNotes').value = d.notes||'';
+  document.getElementById('formOverlay').classList.add('open');
+}
+
+function openAddDoctor() {
+  editId = null;
+  document.getElementById('formTitle').textContent = 'Add Doctor';
+  ['dName','dHosp','dPhone','dEmail','dReg','dAddr','dNotes'].forEach(id => document.getElementById(id).value='');
+  document.getElementById('dSpec').value='';
+  document.getElementById('formOverlay').classList.add('open');
+}
+
+function closeForm() { document.getElementById('formOverlay').classList.remove('open'); }
+
+async function saveDoctor() {
+  const body = {
+    name: document.getElementById('dName').value.trim(),
+    specialty: document.getElementById('dSpec').value,
+    hospital: document.getElementById('dHosp').value.trim(),
+    phone: document.getElementById('dPhone').value.trim(),
+    email: document.getElementById('dEmail').value.trim(),
+    reg_no: document.getElementById('dReg').value.trim(),
+    address: document.getElementById('dAddr').value.trim(),
+    notes: document.getElementById('dNotes').value.trim(),
+  };
+  if(!body.name) { alert('Doctor name is required.'); return; }
+  const url = editId ? '/api/doctors-crm/' + editId : '/api/doctors-crm';
+  const method = editId ? 'PUT' : 'POST';
+  await fetch(url, { method, headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  closeForm(); loadDoctors();
+}
+
+function summariseItems(items) {
+  try {
+    const arr = typeof items==='string' ? JSON.parse(items) : items;
+    if(!Array.isArray(arr)) return '—';
+    return arr.slice(0,2).map(i=>i.name).join(', ') + (arr.length>2?' +' + (arr.length-2) + ' more':'');
+  } catch { return '—'; }
+}
+
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+loadDoctors();
+</script>
+</body>
+</html>

@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Loyalty Points — MediVision AI</title>
+<style>
+:root{--bg:#0b0e16;--card:#141824;--card2:#1a1f2e;--brd:#2a3045;--acc:#f97316;--red:#ef4444;--grn:#22c55e;--ylw:#eab308;--blue:#3b82f6;--purple:#a855f7;--gold:#fbbf24;--txt:#e2e8f0;--muted:#64748b;--font:'Inter',system-ui,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--txt);font-family:var(--font);min-height:100vh}
+.topbar{display:flex;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid var(--brd);background:var(--card)}
+.topbar a{color:var(--muted);text-decoration:none;font-size:.85rem}
+.topbar h1{font-size:1.1rem;font-weight:700}
+.badge{background:linear-gradient(135deg,#f59e0b,#f97316);color:#fff;font-size:.65rem;font-weight:700;padding:2px 8px;border-radius:20px;letter-spacing:.5px}
+.tb-right{margin-left:auto;display:flex;gap:10px;align-items:center}
+.btn{padding:8px 16px;border-radius:8px;font-size:.82rem;font-weight:600;cursor:pointer;border:none;display:flex;align-items:center;gap:6px;transition:.2s}
+.btn-primary{background:var(--acc);color:#fff}.btn-primary:hover{opacity:.9}
+.btn-outline{background:transparent;border:1px solid var(--brd);color:var(--txt)}.btn-outline:hover{border-color:var(--acc);color:var(--acc)}
+.btn-gold{background:linear-gradient(135deg,#f59e0b,#f97316);color:#fff}.btn-gold:hover{opacity:.9}
+
+.page{padding:24px;max-width:1400px;margin:0 auto}
+
+/* KPI row */
+.kpi-row{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-bottom:24px}
+.kpi{background:var(--card);border:1px solid var(--brd);border-radius:12px;padding:15px;position:relative;overflow:hidden;text-align:center}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.kpi .val{font-size:1.6rem;font-weight:800;font-family:'JetBrains Mono',monospace;line-height:1}
+.kpi .lbl{font-size:.68rem;color:var(--muted);margin-top:6px;text-transform:uppercase;letter-spacing:.5px}
+
+/* Tier overview */
+.tier-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
+.tier-card{border-radius:14px;padding:18px;text-align:center;position:relative;overflow:hidden;border:1px solid}
+.tier-card.bronze{background:rgba(205,127,50,.08);border-color:rgba(205,127,50,.3)}
+.tier-card.silver{background:rgba(192,192,192,.08);border-color:rgba(192,192,192,.3)}
+.tier-card.gold{background:rgba(251,191,36,.08);border-color:rgba(251,191,36,.3)}
+.tier-card.platinum{background:rgba(168,85,247,.1);border-color:rgba(168,85,247,.3)}
+.tier-icon{font-size:2.2rem;margin-bottom:8px}
+.tier-name{font-size:.85rem;font-weight:800;margin-bottom:4px;letter-spacing:.5px}
+.tier-card.bronze .tier-name{color:#cd7f32}.tier-card.silver .tier-name{color:#a8a8b0}.tier-card.gold .tier-name{color:var(--gold)}.tier-card.platinum .tier-name{color:var(--purple)}
+.tier-range{font-size:.72rem;color:var(--muted);margin-bottom:8px}
+.tier-count{font-size:1.5rem;font-weight:800;font-family:'JetBrains Mono',monospace}
+.tier-card.bronze .tier-count{color:#cd7f32}.tier-card.silver .tier-count{color:#a8a8b0}.tier-card.gold .tier-count{color:var(--gold)}.tier-card.platinum .tier-count{color:var(--purple)}
+.tier-mult{font-size:.72rem;color:var(--muted);margin-top:4px}
+
+/* Table */
+.controls{display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.search-box{flex:1;max-width:320px;background:var(--card);border:1px solid var(--brd);color:var(--txt);padding:9px 14px;border-radius:9px;font-size:.84rem}
+.search-box:focus{outline:none;border-color:var(--acc)}
+.filter-tabs{display:flex;gap:4px;background:var(--card);border:1px solid var(--brd);border-radius:8px;padding:3px}
+.ftab{padding:5px 12px;border-radius:6px;font-size:.78rem;font-weight:600;cursor:pointer;color:var(--muted);transition:.15s}
+.ftab.active{background:var(--acc);color:#fff}.ftab:hover:not(.active){color:var(--txt)}
+
+.table-card{background:var(--card);border:1px solid var(--brd);border-radius:14px;overflow:hidden}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:.83rem}
+thead th{padding:10px 14px;text-align:left;color:var(--muted);font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--brd)}
+tbody tr{border-bottom:1px solid rgba(42,48,69,.5);cursor:pointer;transition:.15s}
+tbody tr:hover{background:rgba(249,115,22,.04)}
+tbody tr:last-child{border-bottom:none}
+td{padding:11px 14px;vertical-align:middle}
+
+/* Tier badge */
+.tier-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:8px;font-size:.72rem;font-weight:700;letter-spacing:.3px}
+.tier-badge.bronze{background:rgba(205,127,50,.15);color:#cd7f32;border:1px solid rgba(205,127,50,.3)}
+.tier-badge.silver{background:rgba(192,192,192,.12);color:#a8a8b0;border:1px solid rgba(192,192,192,.3)}
+.tier-badge.gold{background:rgba(251,191,36,.15);color:var(--gold);border:1px solid rgba(251,191,36,.3)}
+.tier-badge.platinum{background:rgba(168,85,247,.15);color:var(--purple);border:1px solid rgba(168,85,247,.3)}
+
+/* Points pill */
+.pts-pill{display:inline-block;background:rgba(249,115,22,.12);border:1px solid rgba(249,115,22,.3);color:var(--acc);border-radius:8px;padding:3px 10px;font-family:'JetBrains Mono',monospace;font-size:.82rem;font-weight:700}
+
+/* Modal */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:100;display:none;align-items:center;justify-content:center}
+.overlay.open{display:flex}
+.modal{background:var(--card);border:1px solid var(--brd);border-radius:16px;width:min(700px,96vw);max-height:92vh;display:flex;flex-direction:column}
+.modal-hdr{padding:18px 22px;border-bottom:1px solid var(--brd);display:flex;align-items:center;justify-content:space-between}
+.modal-hdr h2{font-size:1rem;font-weight:700}
+.modal-close{background:none;border:none;color:var(--muted);font-size:1.4rem;cursor:pointer}.modal-close:hover{color:var(--txt)}
+.modal-body{padding:22px;overflow-y:auto;flex:1}
+.modal-footer{padding:14px 22px;border-top:1px solid var(--brd);display:flex;gap:10px;align-items:center}
+
+/* Progress bar to next tier */
+.tier-progress{background:var(--card2);border:1px solid var(--brd);border-radius:10px;padding:14px;margin-bottom:14px}
+.tier-progress h4{font-size:.8rem;font-weight:700;margin-bottom:8px;display:flex;justify-content:space-between}
+.tier-track{height:8px;background:var(--brd);border-radius:4px;overflow:hidden;margin-bottom:6px}
+.tier-fill{height:100%;border-radius:4px;transition:.4s}
+.tier-labels{display:flex;justify-content:space-between;font-size:.72rem;color:var(--muted)}
+
+/* Transaction history */
+.txn-table{width:100%;border-collapse:collapse;font-size:.8rem}
+.txn-table th{padding:7px 10px;text-align:left;color:var(--muted);font-size:.68rem;font-weight:700;text-transform:uppercase;border-bottom:1px solid var(--brd)}
+.txn-table td{padding:9px 10px;border-bottom:1px solid rgba(42,48,69,.4)}
+.txn-earn{color:var(--grn);font-weight:700}.txn-redeem{color:var(--red);font-weight:700}
+.txn-bonus{color:var(--gold);font-weight:700}
+
+.info-2col{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.info-item{background:var(--card2);border-radius:8px;padding:11px}
+.info-item .il{font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px}
+.info-item .iv{font-size:.9rem;font-weight:700}
+
+/* Redeem form */
+.redeem-form{background:var(--card2);border:1px solid var(--brd);border-radius:10px;padding:14px;margin-top:12px}
+.redeem-form h4{font-size:.82rem;font-weight:700;margin-bottom:10px;color:var(--gold)}
+.rf-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.rf-input{background:var(--card);border:1px solid var(--brd);color:var(--txt);padding:8px 12px;border-radius:8px;font-size:.85rem;width:120px}
+.rf-input:focus{outline:none;border-color:var(--acc)}
+.rf-note{font-size:.78rem;color:var(--muted)}
+
+.empty{text-align:center;padding:48px;color:var(--muted)}
+.empty .ei{font-size:2.5rem;margin-bottom:12px;opacity:.3}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a href="/portal">← Portal</a>
+  <span style="color:var(--brd)">|</span>
+  <span style="font-size:1.2rem">🌟</span>
+  <h1>Loyalty Points</h1>
+  <span class="badge">STAGE 8</span>
+  <div class="tb-right">
+    <span style="font-size:.78rem;color:var(--muted)">₹10 = 1 point · 100 pts = ₹1</span>
+    <button class="btn btn-gold" onclick="syncFromBills()">🔄 Sync from Bills</button>
+  </div>
+</div>
+
+<div class="page">
+  <!-- KPIs -->
+  <div class="kpi-row">
+    <div class="kpi" style="--c:var(--acc)"><div style="position:absolute;top:0;left:0;right:0;height:3px;background:var(--acc)"></div><div class="val" id="kMembers" style="color:var(--acc)">—</div><div class="lbl">🌟 Members</div></div>
+    <div class="kpi"><div style="position:absolute;top:0;left:0;right:0;height:3px;background:var(--gold)"></div><div class="val" id="kActivePoints" style="color:var(--gold)">—</div><div class="lbl">✨ Active Points</div></div>
+    <div class="kpi"><div style="position:absolute;top:0;left:0;right:0;height:3px;background:var(--grn)"></div><div class="val" id="kEarned" style="color:var(--grn)">—</div><div class="lbl">📈 Total Earned</div></div>
+    <div class="kpi"><div style="position:absolute;top:0;left:0;right:0;height:3px;background:var(--red)"></div><div class="val" id="kRedeemed" style="color:var(--red)">—</div><div class="lbl">🎁 Total Redeemed</div></div>
+    <div class="kpi"><div style="position:absolute;top:0;left:0;right:0;height:3px;background:var(--blue)"></div><div class="val" id="kRedeemValue" style="color:var(--blue)">—</div><div class="lbl">💰 Redeemed Value</div></div>
+    <div class="kpi"><div style="position:absolute;top:0;left:0;right:0;height:3px;background:var(--purple)"></div><div class="val" id="kAvgPts" style="color:var(--purple)">—</div><div class="lbl">⭐ Avg Points/Member</div></div>
+  </div>
+
+  <!-- Tier Overview -->
+  <div class="tier-row">
+    <div class="tier-card bronze">
+      <div class="tier-icon">🥉</div>
+      <div class="tier-name">BRONZE</div>
+      <div class="tier-range">0 – 999 pts</div>
+      <div class="tier-count" id="tBronze">—</div>
+      <div class="tier-mult">1× multiplier</div>
+    </div>
+    <div class="tier-card silver">
+      <div class="tier-icon">🥈</div>
+      <div class="tier-name">SILVER</div>
+      <div class="tier-range">1,000 – 4,999 pts</div>
+      <div class="tier-count" id="tSilver">—</div>
+      <div class="tier-mult">1.25× multiplier</div>
+    </div>
+    <div class="tier-card gold">
+      <div class="tier-icon">🥇</div>
+      <div class="tier-name">GOLD</div>
+      <div class="tier-range">5,000 – 14,999 pts</div>
+      <div class="tier-count" id="tGold">—</div>
+      <div class="tier-mult">1.5× multiplier</div>
+    </div>
+    <div class="tier-card platinum">
+      <div class="tier-icon">💎</div>
+      <div class="tier-name">PLATINUM</div>
+      <div class="tier-range">15,000+ pts</div>
+      <div class="tier-count" id="tPlatinum">—</div>
+      <div class="tier-mult">2× multiplier</div>
+    </div>
+  </div>
+
+  <!-- Member Table -->
+  <div class="controls">
+    <input class="search-box" type="search" id="searchBox" placeholder="🔍 Search member…" oninput="applyFilter()">
+    <div class="filter-tabs">
+      <div class="ftab active" onclick="setTierFilter('all',this)">All</div>
+      <div class="ftab" onclick="setTierFilter('platinum',this)">💎 Platinum</div>
+      <div class="ftab" onclick="setTierFilter('gold',this)">🥇 Gold</div>
+      <div class="ftab" onclick="setTierFilter('silver',this)">🥈 Silver</div>
+      <div class="ftab" onclick="setTierFilter('bronze',this)">🥉 Bronze</div>
+    </div>
+    <span style="margin-left:auto;font-size:.78rem;color:var(--muted)" id="countLbl"></span>
+  </div>
+
+  <div class="table-card">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th><th>MEMBER</th><th>TIER</th><th>POINTS BALANCE</th>
+            <th>LIFETIME EARNED</th><th>TOTAL REDEEMED</th><th>VISITS</th><th>LAST VISIT</th>
+          </tr>
+        </thead>
+        <tbody id="memberTable"></tbody>
+      </table>
+    </div>
+    <div class="empty" id="emptyState" style="display:none">
+      <div class="ei">🌟</div>
+      <p>No loyalty members yet.<br>Click <strong style="color:var(--acc)">Sync from Bills</strong> to auto-enrol customers.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Member Detail Modal -->
+<div class="overlay" id="detailOverlay">
+  <div class="modal" style="width:min(720px,96vw)">
+    <div class="modal-hdr">
+      <h2 id="detailName">Member Details</h2>
+      <button class="modal-close" onclick="closeDetail()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="info-2col">
+        <div class="info-item"><div class="il">Phone</div><div class="iv" id="dPhone">—</div></div>
+        <div class="info-item"><div class="il">Tier</div><div class="iv" id="dTier">—</div></div>
+        <div class="info-item"><div class="il">Points Balance</div><div class="iv" id="dBalance" style="color:var(--acc)">—</div></div>
+        <div class="info-item"><div class="il">Lifetime Earned</div><div class="iv" id="dEarned" style="color:var(--grn)">—</div></div>
+      </div>
+
+      <!-- Progress to next tier -->
+      <div class="tier-progress" id="tierProgress"></div>
+
+      <!-- Redeem points -->
+      <div class="redeem-form">
+        <h4>🎁 Redeem Points</h4>
+        <div class="rf-row">
+          <input class="rf-input" type="number" id="redeemPts" placeholder="Points" min="100" step="100">
+          <button class="btn btn-gold" onclick="redeemPoints()">Redeem</button>
+          <span class="rf-note" id="redeemNote">100 pts = ₹1 discount</span>
+        </div>
+      </div>
+
+      <!-- Transaction history -->
+      <div style="margin-top:16px">
+        <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:10px">Transaction History</div>
+        <div id="txnList"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <span style="font-size:.78rem;color:var(--muted)">Award bonus points:</span>
+      <input type="number" id="bonusPts" placeholder="e.g. 50" min="1" style="width:90px;background:var(--card2);border:1px solid var(--brd);color:var(--txt);padding:7px 10px;border-radius:8px;font-size:.82rem">
+      <button class="btn btn-outline" onclick="awardBonus()">🎁 Award Bonus</button>
+      <button class="modal-close" style="font-size:.85rem;border:1px solid var(--brd);border-radius:8px;padding:7px 14px;color:var(--txt)" onclick="closeDetail()">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let members = [];
+let filtered = [];
+let tierFilter = 'all';
+let currentMember = null;
+
+const TIER_THRESHOLDS = {bronze:[0,999],silver:[1000,4999],gold:[5000,14999],platinum:[15000,Infinity]};
+const TIER_COLORS = {bronze:'#cd7f32',silver:'#a8a8b0',gold:'#fbbf24',platinum:'#a855f7'};
+const TIER_ICONS = {bronze:'🥉',silver:'🥈',gold:'🥇',platinum:'💎'};
+
+async function loadData() {
+  const res = await fetch('/api/loyalty');
+  const d = await res.json();
+  members = d.members || [];
+  const s = d.summary || {};
+  document.getElementById('kMembers').textContent = s.total || 0;
+  document.getElementById('kActivePoints').textContent = (s.active_points||0).toLocaleString();
+  document.getElementById('kEarned').textContent = (s.total_earned||0).toLocaleString();
+  document.getElementById('kRedeemed').textContent = (s.total_redeemed||0).toLocaleString();
+  document.getElementById('kRedeemValue').textContent = '₹' + ((s.total_redeemed||0)/100).toFixed(0);
+  document.getElementById('kAvgPts').textContent = Math.round(s.avg_points||0);
+  document.getElementById('tBronze').textContent = s.tier_counts?.bronze || 0;
+  document.getElementById('tSilver').textContent = s.tier_counts?.silver || 0;
+  document.getElementById('tGold').textContent = s.tier_counts?.gold || 0;
+  document.getElementById('tPlatinum').textContent = s.tier_counts?.platinum || 0;
+  applyFilter();
+}
+
+function setTierFilter(t, el) {
+  tierFilter = t;
+  document.querySelectorAll('.ftab').forEach(f=>f.classList.remove('active'));
+  el.classList.add('active');
+  applyFilter();
+}
+
+function applyFilter() {
+  const q = document.getElementById('searchBox').value.toLowerCase();
+  filtered = members.filter(m => {
+    if(tierFilter !== 'all' && m.tier !== tierFilter) return false;
+    if(q && !m.name.toLowerCase().includes(q) && !m.phone.includes(q)) return false;
+    return true;
+  });
+  document.getElementById('countLbl').textContent = filtered.length + ' members';
+  renderTable();
+}
+
+function renderTable() {
+  const tbody = document.getElementById('memberTable');
+  const empty = document.getElementById('emptyState');
+  if(!filtered.length) { tbody.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+  tbody.innerHTML = filtered.map((m,i) => `<tr onclick="openDetail('${esc(m.phone)}')">
+    <td style="color:var(--muted);font-size:.75rem">${i+1}</td>
+    <td>
+      <div style="font-weight:600">${esc(m.name)}</div>
+      <div style="font-size:.74rem;color:var(--muted)">${esc(m.phone)}</div>
+    </td>
+    <td><span class="tier-badge ${m.tier}">${TIER_ICONS[m.tier]||''} ${m.tier.charAt(0).toUpperCase()+m.tier.slice(1)}</span></td>
+    <td><span class="pts-pill">${(m.points_balance||0).toLocaleString()} pts</span></td>
+    <td style="color:var(--grn);font-family:'JetBrains Mono',monospace">${(m.total_earned||0).toLocaleString()}</td>
+    <td style="color:var(--red);font-family:'JetBrains Mono',monospace">${(m.total_redeemed||0).toLocaleString()}</td>
+    <td>${m.visits||0}</td>
+    <td style="color:var(--muted);font-size:.8rem">${m.last_visit||'—'}</td>
+  </tr>`).join('');
+}
+
+async function openDetail(phone) {
+  const res = await fetch('/api/loyalty/' + encodeURIComponent(phone));
+  const d = await res.json();
+  currentMember = d.member;
+  const m = d.member;
+
+  document.getElementById('detailName').textContent = m.name + ' · Loyalty Account';
+  document.getElementById('dPhone').textContent = '📞 ' + m.phone;
+  document.getElementById('dTier').innerHTML = `<span class="tier-badge ${m.tier}">${TIER_ICONS[m.tier]} ${m.tier.charAt(0).toUpperCase()+m.tier.slice(1)}</span>`;
+  document.getElementById('dBalance').textContent = (m.points_balance||0).toLocaleString() + ' pts';
+  document.getElementById('dEarned').textContent = (m.total_earned||0).toLocaleString() + ' pts earned';
+
+  // Progress to next tier
+  const tiers = ['bronze','silver','gold','platinum'];
+  const idx = tiers.indexOf(m.tier);
+  const nextTier = idx < 3 ? tiers[idx+1] : null;
+  const pts = m.total_earned || 0;
+  let progressHTML = '';
+  if(nextTier) {
+    const [curMin] = TIER_THRESHOLDS[m.tier];
+    const [nextMin] = TIER_THRESHOLDS[nextTier];
+    const pct = Math.min(100, Math.round(((pts - curMin) / (nextMin - curMin)) * 100));
+    const needed = Math.max(0, nextMin - pts);
+    progressHTML = `
+      <h4 style="font-size:.82rem;font-weight:700;margin-bottom:8px">
+        Progress to ${TIER_ICONS[nextTier]} ${nextTier.charAt(0).toUpperCase()+nextTier.slice(1)}
+        <span style="float:right;color:var(--muted);font-weight:400">${needed.toLocaleString()} pts needed</span>
+      </h4>
+      <div class="tier-track"><div class="tier-fill" style="width:${pct}%;background:${TIER_COLORS[nextTier]||'var(--acc)'}"></div></div>
+      <div class="tier-labels"><span>${TIER_ICONS[m.tier]} ${m.tier}</span><span>${pct}%</span><span>${TIER_ICONS[nextTier]} ${nextTier}</span></div>
+    `;
+  } else {
+    progressHTML = `<div style="text-align:center;color:var(--gold);font-size:.85rem;font-weight:700">💎 Platinum — Highest Tier! Thank you for your loyalty.</div>`;
+  }
+  document.getElementById('tierProgress').innerHTML = progressHTML;
+
+  // Transactions
+  const txns = d.transactions || [];
+  document.getElementById('txnList').innerHTML = txns.length ? `
+    <table class="txn-table">
+      <thead><tr><th>DATE</th><th>TYPE</th><th>POINTS</th><th>BALANCE</th><th>NOTE</th></tr></thead>
+      <tbody>${txns.slice(0,20).map(t => `<tr>
+        <td style="color:var(--muted);font-size:.78rem">${t.created_at?.slice(0,10)||'—'}</td>
+        <td><span class="${'txn-'+t.type.toLowerCase()}">${t.type==='EARN'?'📈':t.type==='REDEEM'?'🎁':'⭐'} ${t.type}</span></td>
+        <td class="${'txn-'+t.type.toLowerCase()}">${t.type==='REDEEM'?'-':'+'}${Math.abs(t.points)}</td>
+        <td style="font-family:'JetBrains Mono',monospace">${t.balance_after?.toLocaleString()||'—'}</td>
+        <td style="font-size:.78rem;color:var(--muted)">${esc(t.note||'—')}</td>
+      </tr>`).join('')}</tbody>
+    </table>
+  ` : '<div class="empty"><div class="ei">📋</div><p>No transactions yet</p></div>';
+
+  document.getElementById('redeemNote').textContent = `100 pts = ₹1 · Balance: ${(m.points_balance||0).toLocaleString()} pts`;
+  document.getElementById('redeemPts').value = '';
+  document.getElementById('bonusPts').value = '';
+  document.getElementById('detailOverlay').classList.add('open');
+}
+
+function closeDetail() { document.getElementById('detailOverlay').classList.remove('open'); }
+
+async function redeemPoints() {
+  const pts = parseInt(document.getElementById('redeemPts').value);
+  if(!pts || pts < 100) { alert('Minimum redemption is 100 points.'); return; }
+  if(pts > currentMember.points_balance) { alert('Insufficient points balance.'); return; }
+  await fetch('/api/loyalty/' + encodeURIComponent(currentMember.phone) + '/redeem', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({points: pts})
+  });
+  closeDetail(); loadData();
+}
+
+async function awardBonus() {
+  const pts = parseInt(document.getElementById('bonusPts').value);
+  if(!pts || pts < 1) { alert('Enter bonus points amount.'); return; }
+  await fetch('/api/loyalty/' + encodeURIComponent(currentMember.phone) + '/bonus', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({points: pts})
+  });
+  closeDetail(); loadData();
+}
+
+async function syncFromBills() {
+  const btn = event.target;
+  btn.disabled = true; btn.textContent = '⏳ Syncing…';
+  await fetch('/api/loyalty/sync', {method:'POST'});
+  btn.disabled = false; btn.textContent = '🔄 Sync from Bills';
+  loadData();
+}
+
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+loadData();
+</script>
+</body>
+</html>

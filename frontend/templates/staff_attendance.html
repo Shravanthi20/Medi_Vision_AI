@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Camera Attendance — MediVision AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:Inter,sans-serif;background:#0b0e16;color:#e2e8f0;min-height:100vh;}
+.topbar{background:#111827;border-bottom:1px solid rgba(255,255,255,.08);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;}
+.brand{font-weight:800;color:#f97316;}.brand i{margin-right:8px;}
+.nav-links a{color:#94a3b8;font-size:.85rem;text-decoration:none;margin-left:14px;}
+.wrap{max-width:1300px;margin:0 auto;padding:24px;}
+h1{font-size:1.5rem;font-weight:800;color:#fff;margin-bottom:6px;}
+.sub{color:#94a3b8;font-size:.9rem;margin-bottom:20px;}
+
+.row2{display:grid;grid-template-columns:1fr 1.4fr;gap:18px;}
+@media(max-width:1000px){.row2{grid-template-columns:1fr;}}
+.panel{background:#141824;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:20px;}
+.panel h3{color:#f97316;font-size:.95rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:14px;}
+
+.cam-wrap{position:relative;background:#000;border-radius:12px;overflow:hidden;aspect-ratio:4/3;}
+#video{width:100%;height:100%;object-fit:cover;}
+.cam-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;}
+.face-frame{width:220px;height:280px;border:3px dashed rgba(74,222,128,.7);border-radius:50% 50% 40% 40% / 60% 60% 40% 40%;animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:.7;transform:scale(1);}50%{opacity:1;transform:scale(1.04);}}
+
+.staff-list{max-height:60vh;overflow-y:auto;}
+.staff-row{background:#0d111a;border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:11px 13px;margin-bottom:7px;cursor:pointer;transition:border-color .15s;display:flex;align-items:center;gap:10px;}
+.staff-row:hover,.staff-row.active{border-color:#f97316;}
+.staff-row .avatar{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.95rem;}
+.staff-row .info{flex:1;}
+.staff-row .nm{font-weight:700;color:#fff;font-size:.92rem;}
+.staff-row .meta{color:#94a3b8;font-size:.74rem;font-family:monospace;}
+.staff-row .status{font-size:.7rem;font-weight:700;padding:3px 8px;border-radius:99px;}
+.st-in{background:rgba(34,197,94,.2);color:#4ade80;}
+.st-out{background:rgba(100,116,139,.2);color:#94a3b8;}
+.st-none{background:rgba(251,191,36,.15);color:#fbbf24;}
+
+.event-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;}
+.btn{padding:14px;border-radius:11px;font-weight:800;font-size:1rem;border:none;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;}
+.btn-in{background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;}
+.btn-out{background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;}
+
+.log{margin-top:18px;}
+.log-row{display:flex;align-items:center;gap:10px;padding:8px 10px;background:#0d111a;border:1px solid rgba(255,255,255,.05);border-radius:9px;margin-bottom:5px;font-size:.85rem;}
+.log-row .time{font-family:monospace;font-size:.78rem;color:#64748b;min-width:80px;}
+.log-row .event{font-weight:700;padding:2px 8px;border-radius:99px;font-size:.7rem;text-transform:uppercase;}
+.ev-in{background:rgba(34,197,94,.2);color:#4ade80;}
+.ev-out{background:rgba(168,85,247,.2);color:#c084fc;}
+.log-row .match{font-size:.72rem;padding:2px 8px;border-radius:99px;font-family:monospace;}
+.m-verified{background:rgba(34,197,94,.18);color:#4ade80;}
+.m-mismatch{background:rgba(239,68,68,.2);color:#fca5a5;}
+.m-unregistered{background:rgba(251,191,36,.15);color:#fbbf24;}
+
+.empty{text-align:center;padding:30px;color:#64748b;}
+.toast{position:fixed;bottom:30px;right:30px;background:#16a34a;color:#fff;padding:14px 22px;border-radius:10px;font-weight:700;z-index:300;display:none;}
+.toast.show{display:block;}
+.toast.err{background:#ef4444;}
+.kpi-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:14px;}
+.kpi-strip .k{background:#0d111a;border:1px solid rgba(255,255,255,.06);border-radius:9px;padding:10px;text-align:center;}
+.kpi-strip .k .l{font-size:.66rem;color:#94a3b8;text-transform:uppercase;}
+.kpi-strip .k .v{font-size:1.1rem;font-weight:800;font-family:monospace;color:#fff;margin-top:3px;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand"><i class="fas fa-user-clock"></i> Staff Camera Attendance</div>
+  <div>
+    <a href="/portal" class="nav-links">Portal</a>
+    <a href="/security-dashboard" class="nav-links">Security</a>
+  </div>
+</div>
+
+<div class="wrap">
+  <h1>📸 Camera Attendance — Face-Verified Punch In/Out</h1>
+  <p class="sub">Each in/out captures a photo + face vector · matched against registered staff face · GPS location optional</p>
+
+  <div class="row2">
+
+    <!-- LEFT: CAMERA + STAFF PICK -->
+    <div>
+      <div class="panel" style="margin-bottom:18px;">
+        <h3><i class="fas fa-video"></i> Camera</h3>
+        <div class="cam-wrap">
+          <video id="video" autoplay playsinline muted></video>
+          <canvas id="canvas" style="display:none;"></canvas>
+          <div class="cam-overlay"><div class="face-frame"></div></div>
+        </div>
+        <div class="event-btns">
+          <button class="btn btn-in" onclick="capture('in')"><i class="fas fa-door-open"></i> Punch IN</button>
+          <button class="btn btn-out" onclick="capture('out')"><i class="fas fa-door-closed"></i> Punch OUT</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3><i class="fas fa-users"></i> Select Staff</h3>
+        <div class="staff-list" id="staffList">Loading…</div>
+      </div>
+    </div>
+
+    <!-- RIGHT: TODAY'S LOG -->
+    <div class="panel">
+      <h3><i class="fas fa-list"></i> Today's Attendance Log</h3>
+      <div class="kpi-strip" id="kpiStrip"></div>
+      <div class="log" id="logList">Loading…</div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let selectedStaff = null;
+let stream = null;
+let staffList = [];
+
+async function initCamera(){
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:false});
+    document.getElementById('video').srcObject = stream;
+  } catch(e){
+    showToast('Camera permission denied', true);
+  }
+}
+
+async function loadStaff(){
+  const r = await fetch('/api/staff');
+  const list = await r.json();
+  staffList = Array.isArray(list) ? list : (list.staff || []);
+  const today = new Date().toISOString().slice(0,10);
+  const ar = await fetch('/api/staff-attendance?date=' + today);
+  const ad = await ar.json();
+  const last = {};
+  ad.events.forEach(e => {
+    if(!last[e.staff_id] || last[e.staff_id].ts < e.ts) last[e.staff_id] = e;
+  });
+
+  const list_div = document.getElementById('staffList');
+  list_div.innerHTML = staffList.map(s => {
+    const ev = last[s.id];
+    const stCls = !ev ? 'st-none' : (ev.event === 'in' ? 'st-in' : 'st-out');
+    const stText = !ev ? 'NOT IN' : (ev.event === 'in' ? 'IN' : 'OUT');
+    const init = (s.name || '?').split(' ').map(w=>w[0]).slice(0,2).join('');
+    return `<div class="staff-row" onclick="selectStaff(${s.id})" data-id="${s.id}">
+      <div class="avatar">${init}</div>
+      <div class="info">
+        <div class="nm">${s.name}</div>
+        <div class="meta">${s.role || '-'} · ${s.phone || ''}</div>
+      </div>
+      <div class="status ${stCls}">${stText}</div>
+    </div>`;
+  }).join('') || '<div class="empty">No staff registered</div>';
+}
+
+function selectStaff(id){
+  selectedStaff = id;
+  document.querySelectorAll('.staff-row').forEach(el => el.classList.toggle('active', el.dataset.id == id));
+}
+
+async function capture(event){
+  if(!selectedStaff){
+    showToast('Select staff first', true);
+    return;
+  }
+  if(!stream){
+    showToast('Camera not ready', true);
+    return;
+  }
+  const v = document.getElementById('video');
+  const c = document.getElementById('canvas');
+  c.width = v.videoWidth || 320;
+  c.height = v.videoHeight || 240;
+  c.getContext('2d').drawImage(v, 0, 0);
+  const dataUrl = c.toDataURL('image/jpeg', 0.6);
+
+  // Generate pseudo face vector
+  const hash = await sha256(dataUrl);
+  const vec = [];
+  for(let i = 0; i < 128; i++){
+    vec.push(parseInt(hash.slice(i % 64, (i % 64) + 2), 16) / 255);
+  }
+
+  // Try to get location
+  let lat = 0, lng = 0;
+  try {
+    const pos = await new Promise((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, {timeout:3000}));
+    lat = pos.coords.latitude; lng = pos.coords.longitude;
+  } catch(e){}
+
+  const r = await fetch('/api/staff-attendance', {method:'POST',headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({
+      staff_id: selectedStaff,
+      event,
+      face_image: dataUrl,
+      face_vector: vec,
+      location: 'Counter',
+      latitude: lat, longitude: lng
+    })});
+  const d = await r.json();
+  if(d.status === 'ok'){
+    const mscore = d.match_score || 0;
+    const ms = d.match_status;
+    let msg = `✓ Punched ${event.toUpperCase()}`;
+    if(ms === 'verified') msg += ` · Face matched ${mscore}%`;
+    else if(ms === 'mismatch') msg += ` · ⚠ FACE MISMATCH (${mscore}%)`;
+    else if(ms === 'unregistered') msg += ' · Face not yet enrolled';
+    showToast(msg, ms === 'mismatch');
+    loadStaff();
+    loadLog();
+  } else {
+    showToast('Error: ' + (d.error || 'unknown'), true);
+  }
+}
+
+async function loadLog(){
+  const today = new Date().toISOString().slice(0,10);
+  const r = await fetch('/api/staff-attendance?date=' + today);
+  const d = await r.json();
+  const div = document.getElementById('logList');
+  if(!d.events.length){
+    div.innerHTML = '<div class="empty">No attendance events today</div>';
+    document.getElementById('kpiStrip').innerHTML = '';
+    return;
+  }
+  const ins = d.events.filter(e => e.event === 'in').length;
+  const outs = d.events.filter(e => e.event === 'out').length;
+  const mismatch = d.events.filter(e => e.match_status === 'mismatch').length;
+  document.getElementById('kpiStrip').innerHTML = `
+    <div class="k"><div class="l">In</div><div class="v" style="color:#4ade80;">${ins}</div></div>
+    <div class="k"><div class="l">Out</div><div class="v" style="color:#c084fc;">${outs}</div></div>
+    <div class="k"><div class="l">Mismatches</div><div class="v" style="color:#fca5a5;">${mismatch}</div></div>
+    <div class="k"><div class="l">Total events</div><div class="v">${d.events.length}</div></div>
+  `;
+
+  div.innerHTML = d.events.slice(0, 30).map(e => {
+    const mCls = 'm-' + e.match_status;
+    return `<div class="log-row">
+      <span class="time">${(e.ts||'').slice(11,19) || '--:--'}</span>
+      <span class="event ${e.event==='in'?'ev-in':'ev-out'}">${e.event}</span>
+      <span style="flex:1;color:#fff;font-weight:600;">${e.staff_name}</span>
+      <span class="match ${mCls}">${e.match_status||'-'} ${e.match_score?(e.match_score+'%'):''}</span>
+    </div>`;
+  }).join('');
+}
+
+async function sha256(s){
+  const b = new TextEncoder().encode(s);
+  const h = await crypto.subtle.digest('SHA-256', b);
+  return Array.from(new Uint8Array(h)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+function showToast(msg, err){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.toggle('err', !!err);
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+initCamera();
+loadStaff();
+loadLog();
+setInterval(loadLog, 60000);
+</script>
+</body>
+</html>

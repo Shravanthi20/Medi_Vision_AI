@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Refill Reminder Settings — MediVision AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Tamil&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:Inter,sans-serif;background:#0b0e16;color:#e2e8f0;min-height:100vh;}
+.tamil{font-family:'Noto Sans Tamil',Inter,sans-serif;}
+.topbar{background:#111827;border-bottom:1px solid rgba(255,255,255,.08);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;}
+.brand{font-weight:800;color:#f97316;font-size:1.05rem;}
+.nav-links{display:flex;gap:14px;}
+.nav-links a{color:#94a3b8;font-size:.85rem;text-decoration:none;}
+.wrap{max-width:980px;margin:0 auto;padding:24px;}
+h1{font-size:1.6rem;font-weight:800;color:#fff;}
+.sub{color:#94a3b8;font-size:.9rem;margin-bottom:24px;}
+
+.panel{background:#141824;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:22px;margin-bottom:18px;}
+.panel h2{color:#f97316;font-size:1rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:14px;}
+
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:.74rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px;}
+.input,select,textarea{width:100%;background:#0b0e16;border:1.5px solid rgba(255,255,255,.1);border-radius:9px;padding:10px 14px;color:#e2e8f0;font-family:inherit;font-size:.9rem;}
+.input:focus,select:focus,textarea:focus{outline:none;border-color:#f97316;}
+textarea{min-height:80px;resize:vertical;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+@media(max-width:640px){.grid2{grid-template-columns:1fr;}}
+
+.btn{display:inline-flex;align-items:center;gap:6px;padding:10px 18px;border-radius:9px;font-weight:700;font-size:.88rem;border:none;cursor:pointer;font-family:inherit;}
+.btn-primary{background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;}
+.btn-green{background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;}
+.btn-ghost{background:rgba(255,255,255,.05);color:#94a3b8;border:1px solid rgba(255,255,255,.1);}
+.btn-red{background:rgba(239,68,68,.15);color:#fca5a5;border:1px solid rgba(239,68,68,.3);padding:5px 10px;font-size:.75rem;}
+
+.tbl{width:100%;border-collapse:collapse;}
+.tbl th{background:#0d111a;color:#94a3b8;font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;text-align:left;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.06);}
+.tbl td{padding:10px 14px;font-size:.85rem;border-bottom:1px solid rgba(255,255,255,.04);}
+
+.scope-badge{padding:2px 10px;border-radius:99px;font-size:.7rem;font-weight:700;}
+.scope-global{background:rgba(34,197,94,.15);color:#4ade80;}
+.scope-customer{background:rgba(59,130,246,.15);color:#60a5fa;}
+
+.preview{background:#0d111a;border:1px dashed rgba(249,115,22,.3);border-radius:10px;padding:14px;margin-top:10px;font-size:.9rem;line-height:1.7;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand"><i class="fas fa-bell"></i> Refill Reminder Settings</div>
+  <div class="nav-links">
+    <a href="/portal">Portal</a>
+    <a href="/call-dashboard">Call Dashboard</a>
+  </div>
+</div>
+
+<div class="wrap">
+  <h1>🔔 Refill Reminder Configuration</h1>
+  <p class="sub">Set global defaults · override per-customer · customise voice script in Tamil/English/Hindi</p>
+
+  <!-- GLOBAL SCHEDULE -->
+  <div class="panel">
+    <h2>⚙ Global Default Schedule</h2>
+    <p style="color:#94a3b8;font-size:.85rem;margin-bottom:14px;">Applies to all customers unless they have a custom rule below.</p>
+    <form id="globalForm">
+      <div class="grid2">
+        <div class="field">
+          <label>Days before stock-out</label>
+          <input type="number" id="gDays" class="input" min="1" max="30"/>
+        </div>
+        <div class="field">
+          <label>Call time</label>
+          <input type="time" id="gTime" class="input"/>
+        </div>
+      </div>
+      <div class="grid2">
+        <div class="field">
+          <label>Language</label>
+          <select id="gLang"><option value="ta">தமிழ் (Tamil)</option><option value="en">English</option><option value="hi">हिंदी (Hindi)</option></select>
+        </div>
+        <div class="field">
+          <label>Channel</label>
+          <select id="gChan"><option value="both">Call + WhatsApp</option><option value="call">Call only</option><option value="whatsapp">WhatsApp only</option></select>
+        </div>
+      </div>
+      <div class="field">
+        <label>Greeting / Script</label>
+        <textarea id="gGreet" class="tamil"></textarea>
+      </div>
+      <div class="preview tamil" id="gPreview"></div>
+      <button class="btn btn-primary" type="button" onclick="saveGlobal()" style="margin-top:14px;"><i class="fas fa-save"></i> Save Global Settings</button>
+    </form>
+  </div>
+
+  <!-- PER-CUSTOMER OVERRIDES -->
+  <div class="panel">
+    <h2>👤 Per-Customer Overrides</h2>
+    <p style="color:#94a3b8;font-size:.85rem;margin-bottom:14px;">Add specific rules for chronic-disease patients, frequent buyers, or special cases.</p>
+
+    <div class="grid2">
+      <div class="field"><label>Customer Phone</label><input type="tel" id="cPhone" class="input" placeholder="10 digit"/></div>
+      <div class="field"><label>Days before</label><input type="number" id="cDays" class="input" placeholder="5" min="1" max="30"/></div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label>Category</label>
+        <select id="cCat">
+          <option value="all">All medicines</option>
+          <option value="chronic">Chronic only (BP, Diabetes, etc.)</option>
+          <option value="antibiotic">Antibiotics only</option>
+          <option value="eye_drops">Eye drops only</option>
+        </select>
+      </div>
+      <div class="field"><label>Language</label>
+        <select id="cLang"><option value="ta">தமிழ்</option><option value="en">English</option><option value="hi">हिंदी</option></select>
+      </div>
+    </div>
+    <button class="btn btn-green" onclick="addCustomerRule()"><i class="fas fa-plus"></i> Add Customer Rule</button>
+
+    <table class="tbl" style="margin-top:18px;" id="rulesTable">
+      <thead><tr><th>Scope</th><th>Customer</th><th>Category</th><th>Days</th><th>Lang</th><th>Channel</th><th></th></tr></thead>
+      <tbody><tr><td colspan="7" style="text-align:center;padding:30px;color:#64748b;">Loading…</td></tr></tbody>
+    </table>
+  </div>
+
+  <!-- TEMPLATES PREVIEW -->
+  <div class="panel">
+    <h2>📝 Voice Script Variables (use in greeting)</h2>
+    <table class="tbl">
+      <tr><td><code style="background:#0d111a;padding:2px 6px;border-radius:4px;">{name}</code></td><td>Customer's name</td></tr>
+      <tr><td><code style="background:#0d111a;padding:2px 6px;border-radius:4px;">{medicine}</code></td><td>Last-bought medicine</td></tr>
+      <tr><td><code style="background:#0d111a;padding:2px 6px;border-radius:4px;">{days}</code></td><td>Days until stock-out</td></tr>
+      <tr><td><code style="background:#0d111a;padding:2px 6px;border-radius:4px;">{shop}</code></td><td>Selvam Medicals</td></tr>
+    </table>
+    <div class="preview tamil" style="margin-top:14px;">
+      <strong style="color:#fb923c;">Sample with variables filled:</strong><br/>
+      வணக்கம் ராமேஷ்! Selvam Medicals-ல் இருந்து அழைக்கிறோம். உங்கள் DOLO 650 மாத்திரை 3 நாட்களில் முடியும். மீண்டும் ஆர்டர் செய்ய 1-ஐ அழுத்தவும், வேண்டாம் என்றால் 2-ஐ அழுத்தவும்.
+    </div>
+  </div>
+</div>
+
+<script>
+async function loadRules(){
+  const r = await fetch('/api/reminders/schedules');
+  const d = await r.json();
+  const glob = d.schedules.find(s => s.scope === 'global');
+  if(glob){
+    document.getElementById('gDays').value = glob.days_before;
+    document.getElementById('gTime').value = glob.call_time;
+    document.getElementById('gLang').value = glob.language;
+    document.getElementById('gChan').value = glob.channel;
+    document.getElementById('gGreet').value = glob.greeting;
+    updatePreview();
+  }
+  const customs = d.schedules.filter(s => s.scope !== 'global');
+  const tb = document.querySelector('#rulesTable tbody');
+  if(!customs.length){
+    tb.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:#64748b;">No custom rules yet</td></tr>';
+  } else {
+    tb.innerHTML = customs.map(s => `
+      <tr>
+        <td><span class="scope-badge scope-${s.scope}">${s.scope.toUpperCase()}</span></td>
+        <td>${s.customer_phone||'-'}</td>
+        <td>${s.category}</td>
+        <td>${s.days_before} days</td>
+        <td>${s.language}</td>
+        <td>${s.channel}</td>
+        <td><button class="btn btn-red" onclick="delRule(${s.id})">×</button></td>
+      </tr>`).join('');
+  }
+}
+
+function updatePreview(){
+  document.getElementById('gPreview').textContent = document.getElementById('gGreet').value || '(empty)';
+}
+document.getElementById('gGreet').addEventListener('input', updatePreview);
+
+async function saveGlobal(){
+  // Delete current global and re-create
+  const r = await fetch('/api/reminders/schedules');
+  const d = await r.json();
+  const glob = d.schedules.find(s => s.scope === 'global');
+  if(glob){
+    await fetch('/api/reminders/schedules/' + glob.id, {method:'DELETE'});
+  }
+  await fetch('/api/reminders/schedules', {method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      scope:'global',
+      category:'all',
+      days_before: parseInt(document.getElementById('gDays').value),
+      call_time: document.getElementById('gTime').value,
+      language: document.getElementById('gLang').value,
+      channel: document.getElementById('gChan').value,
+      greeting: document.getElementById('gGreet').value
+    })});
+  alert('✓ Global settings saved');
+  loadRules();
+}
+
+async function addCustomerRule(){
+  const phone = document.getElementById('cPhone').value;
+  if(!phone){ alert('Phone required'); return; }
+  await fetch('/api/reminders/schedules', {method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      scope:'customer',
+      customer_phone: phone,
+      category: document.getElementById('cCat').value,
+      days_before: parseInt(document.getElementById('cDays').value) || 3,
+      language: document.getElementById('cLang').value,
+      channel: 'both'
+    })});
+  document.getElementById('cPhone').value = '';
+  document.getElementById('cDays').value = '';
+  loadRules();
+}
+
+async function delRule(id){
+  if(!confirm('Delete this rule?')) return;
+  await fetch('/api/reminders/schedules/' + id, {method:'DELETE'});
+  loadRules();
+}
+
+loadRules();
+</script>
+</body>
+</html>

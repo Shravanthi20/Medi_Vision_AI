@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Profit Analytics — MediVision AI</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',sans-serif;background:#f0f4f8;min-height:100vh}
+.topbar{background:#1a237e;color:#fff;padding:14px 24px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.topbar a{color:#90caf9;text-decoration:none;font-size:.85rem}
+.topbar h2{font-size:1.1rem;flex:1}
+.topbar input[type=month]{padding:6px 10px;border:none;border-radius:6px;font-size:.88rem;background:rgba(255,255,255,.2);color:#fff;outline:none}
+.container{max-width:1200px;margin:0 auto;padding:16px}
+.tabs{display:flex;gap:4px;background:#e8eaf6;padding:4px;border-radius:10px;margin-bottom:16px;flex-wrap:wrap}
+.tab{padding:9px 16px;border:none;border-radius:7px;cursor:pointer;font-weight:600;font-size:.87rem;color:#666;background:none;transition:.2s}
+.tab.active{background:#1a237e;color:#fff}
+.panel{display:none}.panel.active{display:block}
+/* KPI */
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px}
+.kpi{background:#fff;border-radius:10px;padding:16px 14px;box-shadow:0 2px 6px rgba(0,0,0,.07);text-align:center;border-top:4px solid #1a237e}
+.kpi.green{border-color:#2e7d32}.kpi.red{border-color:#c62828}.kpi.amber{border-color:#f57f17}
+.kpi-val{font-size:1.7rem;font-weight:800;color:#1a237e}
+.kpi.green .kpi-val{color:#2e7d32}.kpi.red .kpi-val{color:#c62828}.kpi.amber .kpi-val{color:#f57f17}
+.kpi-lbl{font-size:.78rem;color:#888;margin-top:4px;font-weight:600}
+/* Cards */
+.card{background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.08);margin-bottom:16px;overflow:hidden}
+.card-hdr{padding:12px 16px;background:#1a237e;color:#fff;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.card-hdr h3{font-size:.92rem;font-weight:700}
+/* Tables */
+table{width:100%;border-collapse:collapse}
+th{background:#f5f5f5;padding:9px 12px;text-align:left;font-size:.8rem;color:#555;font-weight:700;border-bottom:2px solid #e0e0e0}
+td{padding:9px 12px;font-size:.87rem;border-bottom:1px solid #f0f0f0;vertical-align:middle}
+tr:hover td{background:#fafafa}
+/* Margin bar */
+.margin-bar{height:10px;background:#e0e0e0;border-radius:5px;overflow:hidden;min-width:80px}
+.margin-fill{height:100%;border-radius:5px;transition:.4s}
+/* Tier badges */
+.tier-gold{background:#fff8e1;color:#f57f17;border:1.5px solid #f57f17}
+.tier-silver{background:#eceff1;color:#546e7a;border:1.5px solid #90a4ae}
+.tier-bronze{background:#fbe9e7;color:#bf360c;border:1.5px solid #ff7043}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:12px;font-size:.75rem;font-weight:700}
+.badge-high{background:#e8f5e9;color:#2e7d32}
+.badge-normal{background:#e3f2fd;color:#1565c0}
+.badge-low{background:#ffebee;color:#c62828}
+/* Priority warning */
+.warn-card{background:#fff3e0;border:2px solid #f57f17;border-radius:10px;padding:14px 16px;margin-bottom:12px}
+.warn-card.critical{background:#ffebee;border-color:#c62828}
+.warn-title{font-weight:700;color:#e65100;display:flex;align-items:center;gap:6px;margin-bottom:4px}
+.warn-card.critical .warn-title{color:#c62828}
+/* Chart bars */
+.bar-chart{display:flex;flex-direction:column;gap:8px}
+.bar-row{display:flex;align-items:center;gap:10px}
+.bar-label{width:120px;font-size:.82rem;color:#555;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right;flex-shrink:0}
+.bar-track{flex:1;height:20px;background:#e8eaf6;border-radius:4px;overflow:hidden}
+.bar-fill{height:100%;border-radius:4px;display:flex;align-items:center;padding-left:6px;font-size:.75rem;color:#fff;font-weight:700;transition:.6s}
+.bar-val{font-size:.82rem;color:#333;font-weight:700;min-width:70px;text-align:right}
+/* Staff perf */
+.staff-row{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid #f0f0f0}
+.staff-avatar{width:38px;height:38px;border-radius:50%;background:#1a237e;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.9rem;flex-shrink:0}
+.staff-bar{flex:1}
+.staff-bar .name{font-weight:700;font-size:.9rem}
+.staff-bar .sub{font-size:.78rem;color:#888;margin-top:2px}
+/* Wholesaler */
+.ws-row{padding:12px 16px;border-bottom:1px solid #f5f5f5;display:flex;align-items:center;gap:12px}
+.ws-score{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1rem;flex-shrink:0;color:#fff}
+.btn{padding:7px 14px;border:none;border-radius:6px;font-size:.82rem;font-weight:700;cursor:pointer;transition:.2s}
+.btn-primary{background:#1a237e;color:#fff}.btn-sm{padding:5px 10px;font-size:.78rem}
+.btn-outline{background:#fff;color:#1a237e;border:2px solid #1a237e}
+.btn-gold{background:#f57f17;color:#fff}
+select{padding:6px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:.85rem;outline:none}
+.toast{position:fixed;bottom:24px;right:24px;background:#1a237e;color:#fff;padding:12px 20px;border-radius:8px;display:none;z-index:9999;font-weight:600}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <a href="/portal">← Dashboard</a>
+  <h2>📊 Profit Analytics</h2>
+  <input type="month" id="monthPicker" onchange="loadAll()">
+  <button class="btn btn-primary btn-sm" onclick="loadAll()" style="background:rgba(255,255,255,.2)">↻ Refresh</button>
+</div>
+
+<div class="container">
+  <!-- KPI Summary -->
+  <div class="kpi-row" id="kpiRow">
+    <div class="kpi"><div class="kpi-val">—</div><div class="kpi-lbl">Loading...</div></div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('overview')">📈 Overview</button>
+    <button class="tab" onclick="switchTab('medicines')">💊 Medicines</button>
+    <button class="tab" onclick="switchTab('customers')">👤 Customers</button>
+    <button class="tab" onclick="switchTab('staff')">👥 Staff</button>
+    <button class="tab" onclick="switchTab('wholesalers')">🏭 Wholesalers</button>
+    <button class="tab" onclick="switchTab('demand')">📦 Demand</button>
+  </div>
+
+  <!-- OVERVIEW TAB -->
+  <div class="panel active" id="panel-overview">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px" id="overviewGrid">
+      <div class="card">
+        <div class="card-hdr"><h3>💰 Revenue vs Profit by Day</h3></div>
+        <div class="card-body" id="dayChart" style="padding:16px;max-height:300px;overflow-y:auto"></div>
+      </div>
+      <div class="card">
+        <div class="card-hdr"><h3>💳 By Payment Mode</h3></div>
+        <div class="card-body" id="payChart" style="padding:16px"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-hdr"><h3>👥 Staff Profit Contribution</h3></div>
+      <div id="staffOverview"></div>
+    </div>
+  </div>
+
+  <!-- MEDICINES TAB -->
+  <div class="panel" id="panel-medicines">
+    <div class="card">
+      <div class="card-hdr">
+        <h3>💊 Medicine Profit Analysis (Last 30 Days)</h3>
+        <div style="display:flex;gap:6px">
+          <select id="medSort" onchange="loadMedicines()">
+            <option value="profit">Sort: Profit</option>
+            <option value="margin">Sort: Margin %</option>
+            <option value="volume">Sort: Volume</option>
+          </select>
+        </div>
+      </div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>Medicine</th><th>Buy Price</th><th>Sell Price</th><th>Margin %</th><th>Profit/Unit</th><th>Units Sold</th><th>Total Profit</th><th>Priority</th></tr></thead>
+          <tbody id="medBody"><tr><td colspan="8" style="text-align:center;padding:20px;color:#888">Loading...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- CUSTOMERS TAB -->
+  <div class="panel" id="panel-customers">
+    <div style="background:#fff3e0;border-radius:10px;padding:14px;margin-bottom:14px;border-left:4px solid #f57f17">
+      <strong>⚡ Smart Priority Rule:</strong> Gold customers (≥25% margin) should always have stock reserved.
+      If you're about to sell to a Silver/Bronze customer when stock hits reorder level — you'll get an alert.
+      <span style="color:#2e7d32;font-weight:600"> Set tiers manually to override auto-calculation.</span>
+    </div>
+    <div class="card">
+      <div class="card-hdr">
+        <h3>👤 Customer Profit Ranking</h3>
+        <button class="btn btn-primary btn-sm" onclick="loadCustomers()">↻ Recalculate</button>
+      </div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>Customer</th><th>Phone</th><th>Visits</th><th>Revenue</th><th>Profit</th><th>Margin %</th><th>Tier</th><th>Set Tier</th></tr></thead>
+          <tbody id="custBody"><tr><td colspan="8" style="text-align:center;padding:20px;color:#888">Loading...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+    <!-- Warnings section -->
+    <div id="priorityWarnings"></div>
+  </div>
+
+  <!-- STAFF TAB -->
+  <div class="panel" id="panel-staff">
+    <div class="card">
+      <div class="card-hdr"><h3>👥 Staff Profit Contribution</h3></div>
+      <div id="staffDetail"></div>
+    </div>
+  </div>
+
+  <!-- WHOLESALERS TAB -->
+  <div class="panel" id="panel-wholesalers">
+    <div class="card">
+      <div class="card-hdr">
+        <h3>🏭 Wholesaler Performance</h3>
+        <button class="btn btn-primary btn-sm" onclick="openAddWholesaler()">+ Add Record</button>
+      </div>
+      <div id="wsBody"><div style="padding:20px;text-align:center;color:#888">Loading...</div></div>
+    </div>
+    <div class="card" id="wsFormCard" style="display:none">
+      <div class="card-hdr"><h3>Add Wholesaler Performance Record</h3></div>
+      <div style="padding:16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px">
+        <div style="display:flex;flex-direction:column;gap:4px;grid-column:1/-1">
+          <label style="font-size:.8rem;font-weight:700;color:#555">Wholesaler Name *</label>
+          <input type="text" id="wsName" placeholder="SS & Co, Med Distributors...">
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px"><label style="font-size:.8rem;font-weight:700;color:#555">Order Count</label><input type="number" id="wsOrders" min="1" value="1"></div>
+        <div style="display:flex;flex-direction:column;gap:4px"><label style="font-size:.8rem;font-weight:700;color:#555">On-Time Deliveries</label><input type="number" id="wsOntime" min="0" value="1"></div>
+        <div style="display:flex;flex-direction:column;gap:4px"><label style="font-size:.8rem;font-weight:700;color:#555">Late Deliveries</label><input type="number" id="wsLate" min="0" value="0"></div>
+        <div style="display:flex;flex-direction:column;gap:4px"><label style="font-size:.8rem;font-weight:700;color:#555">Order Value (₹)</label><input type="number" id="wsValue" min="0" value="0"></div>
+        <div style="display:flex;flex-direction:column;gap:4px"><label style="font-size:.8rem;font-weight:700;color:#555">Quality Score (1-10)</label><input type="number" id="wsQuality" min="1" max="10" value="8"></div>
+        <div style="display:flex;flex-direction:column;gap:4px"><label style="font-size:.8rem;font-weight:700;color:#555">Returns Count</label><input type="number" id="wsReturns" min="0" value="0"></div>
+      </div>
+      <div style="padding:0 16px 16px;display:flex;gap:8px">
+        <button class="btn btn-primary btn-sm" onclick="saveWholesaler()">Save</button>
+        <button class="btn btn-outline btn-sm" onclick="document.getElementById('wsFormCard').style.display='none'">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DEMAND TAB -->
+  <div class="panel" id="panel-demand">
+    <div class="card">
+      <div class="card-hdr"><h3>📦 Demand vs Stock Priority</h3></div>
+      <div class="card-body" style="padding:16px">
+        <div id="demandContent"><div style="color:#888;text-align:center;padding:20px">Loading demand data...</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Tier modal -->
+<div id="tierModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:12px;padding:24px;max-width:360px;width:90%">
+    <h3 style="color:#1a237e;margin-bottom:6px">Set Customer Tier</h3>
+    <p id="tierModalName" style="color:#666;font-size:.88rem;margin-bottom:14px"></p>
+    <input type="hidden" id="tierCustId">
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px">
+      <label style="font-size:.8rem;font-weight:700;color:#555">Tier</label>
+      <select id="tierSelect" style="padding:9px;border:1.5px solid #ddd;border-radius:6px;font-size:.92rem">
+        <option value="gold">🥇 Gold — High priority, always serve first</option>
+        <option value="silver" selected>🥈 Silver — Normal customer</option>
+        <option value="bronze">🥉 Bronze — Low margin, serve last when stock low</option>
+      </select>
+      <label style="font-size:.8rem;font-weight:700;color:#555">Reserve Stock Units</label>
+      <input type="number" id="tierReserve" min="0" value="0" placeholder="Units to always keep for this customer">
+      <label style="font-size:.8rem;font-weight:700;color:#555">Notes</label>
+      <input type="text" id="tierNotes" placeholder="Why this tier...">
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-outline btn-sm" onclick="closeTierModal()">Cancel</button>
+      <button class="btn btn-gold btn-sm" onclick="saveTier()">Set Tier</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let profitData = null;
+let customers  = [];
+
+async function loadAll() {
+  const month = document.getElementById('monthPicker').value;
+  const [summary, _] = await Promise.all([
+    fetch(`/api/profit/summary?month=${month}`).then(r=>r.json()).catch(()=>({})),
+    loadMedicines()
+  ]);
+  profitData = summary;
+  renderKPIs(summary);
+  renderOverview(summary);
+  if(document.getElementById('panel-staff').classList.contains('active')) renderStaff(summary);
+}
+
+function renderKPIs(s) {
+  const m = s.margin_pct || 0;
+  document.getElementById('kpiRow').innerHTML = `
+    <div class="kpi"><div class="kpi-val">₹${fmt(s.total_revenue)}</div><div class="kpi-lbl">Total Revenue</div></div>
+    <div class="kpi green"><div class="kpi-val">₹${fmt(s.total_profit)}</div><div class="kpi-lbl">Total Profit</div></div>
+    <div class="kpi ${m>=20?'green':m>=10?'amber':'red'}">
+      <div class="kpi-val">${m}%</div><div class="kpi-lbl">Profit Margin</div></div>
+    <div class="kpi"><div class="kpi-val">₹${fmt(s.total_cost)}</div><div class="kpi-lbl">Total Cost</div></div>
+    <div class="kpi amber"><div class="kpi-val">${s.bill_count||0}</div><div class="kpi-lbl">Bills</div></div>
+    <div class="kpi"><div class="kpi-val">₹${fmt(s.avg_per_bill)}</div><div class="kpi-lbl">Avg Profit/Bill</div></div>`;
+}
+
+function renderOverview(s) {
+  // Day chart
+  const days = s.by_day || [];
+  const maxRev = Math.max(...days.map(d=>d.revenue),1);
+  document.getElementById('dayChart').innerHTML = days.length ? `
+    <div class="bar-chart">${days.slice(-15).map(d=>`
+      <div class="bar-row">
+        <div class="bar-label">${d.date?.slice(5)||d.date}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${d.revenue/maxRev*100}%;background:#1a237e">
+          ${d.profit>0?'+₹'+fmt(d.profit):''}
+        </div></div>
+        <div class="bar-val">₹${fmt(d.revenue)}</div>
+      </div>`).join('')}
+    </div>` : '<div style="color:#888;text-align:center;padding:20px">No data for this period</div>';
+
+  // Pay chart
+  const pays = s.by_payment || [];
+  const maxPay = Math.max(...pays.map(p=>p.revenue),1);
+  document.getElementById('payChart').innerHTML = `<div class="bar-chart">${pays.map(p=>`
+    <div class="bar-row">
+      <div class="bar-label">${p.mode||'other'}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${p.revenue/maxPay*100}%;background:#2e7d32">
+        ${p.count} bills
+      </div></div>
+      <div class="bar-val">₹${fmt(p.revenue)}</div>
+    </div>`).join('')}</div>`;
+
+  renderStaff(s);
+}
+
+function renderStaff(s) {
+  const staff = s.by_staff || [];
+  const html  = staff.length ? staff.map(st=>{
+    const pct = st.margin_pct || 0;
+    return`<div class="staff-row">
+      <div class="staff-avatar">${(st.name||'?')[0]}</div>
+      <div class="staff-bar" style="flex:1">
+        <div class="name">${st.name} <span style="font-size:.75rem;color:#888">(${st.bills} bills)</span></div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+          <div class="margin-bar" style="flex:1"><div class="margin-fill" style="width:${Math.min(pct,100)}%;background:${pct>=20?'#2e7d32':pct>=10?'#f57f17':'#c62828'}"></div></div>
+          <span style="font-size:.78rem;color:#555;min-width:35px">${pct}%</span>
+        </div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-weight:800;color:#1a237e">₹${fmt(st.profit)}</div>
+        <div style="font-size:.75rem;color:#888">₹${fmt(st.revenue)} rev</div>
+      </div>
+    </div>`;
+  }).join('') : '<div style="padding:20px;text-align:center;color:#888">No staff data</div>';
+
+  document.getElementById('staffOverview').innerHTML = html;
+  document.getElementById('staffDetail').innerHTML   = html;
+}
+
+async function loadMedicines() {
+  const sort = document.getElementById('medSort')?.value || 'profit';
+  const meds = await fetch(`/api/profit/medicines?sort=${sort}`).then(r=>r.json()).catch(()=>[]);
+  const tbody = document.getElementById('medBody');
+  if(!meds.length){ tbody.innerHTML='<tr><td colspan="8" style="text-align:center;padding:20px;color:#888">No data. Run billing to generate profit data.</td></tr>'; return; }
+  const maxProfit = Math.max(...meds.map(m=>m.profit_30d||0),1);
+  tbody.innerHTML = meds.map(m=>{
+    const margin = m.margin_pct||0;
+    const barW   = Math.min(margin,100);
+    const col    = margin>=25?'#2e7d32':margin>=15?'#f57f17':'#c62828';
+    return `<tr>
+      <td><strong>${m.medicine_name||'—'}</strong></td>
+      <td>₹${(m.purchase_price||0).toFixed(2)}</td>
+      <td>₹${(m.selling_price||0).toFixed(2)}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:6px">
+          <div class="margin-bar"><div class="margin-fill" style="width:${barW}%;background:${col}"></div></div>
+          <strong style="color:${col}">${margin}%</strong>
+        </div>
+      </td>
+      <td>₹${(m.margin_per_unit||0).toFixed(2)}</td>
+      <td>${m.units_sold_30d||0}</td>
+      <td><strong style="color:#1a237e">₹${fmt(m.profit_30d||0)}</strong></td>
+      <td><span class="badge badge-${m.priority}">${m.priority==='high'?'🟢 High':m.priority==='low'?'🔴 Low':'🔵 Normal'}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+async function loadCustomers() {
+  customers = await fetch('/api/profit/customers?limit=50').then(r=>r.json()).catch(()=>[]);
+  const tbody = document.getElementById('custBody');
+  if(!customers.length){ tbody.innerHTML='<tr><td colspan="8" style="text-align:center;padding:20px;color:#888">No customer data yet. Bill more customers first.</td></tr>'; return; }
+  tbody.innerHTML = customers.map(c=>{
+    const tier = c.tier||'silver';
+    const m    = c.margin_pct||0;
+    const col  = m>=25?'#2e7d32':m>=10?'#f57f17':'#c62828';
+    return `<tr>
+      <td><strong>${c.name}</strong><br><span style="font-size:.75rem;color:#888">${c.bill_count} bills</span></td>
+      <td>${c.phone||'—'}</td>
+      <td>${c.visits||0}</td>
+      <td>₹${fmt(c.revenue)}</td>
+      <td><strong style="color:#1a237e">₹${fmt(c.profit)}</strong></td>
+      <td><strong style="color:${col}">${m}%</strong>
+        <div class="margin-bar" style="margin-top:3px"><div class="margin-fill" style="width:${Math.min(m,100)}%;background:${col}"></div></div>
+      </td>
+      <td><span class="badge tier-${tier}">${tier==='gold'?'🥇':tier==='silver'?'🥈':'🥉'} ${tier.toUpperCase()}</span></td>
+      <td><button class="btn btn-outline btn-sm" onclick="openTierModal(${c.id},'${c.name}','${tier}')">Set Tier</button></td>
+    </tr>`;
+  }).join('');
+
+  // Show warnings for low-margin customers with critical stock
+  renderPriorityWarnings();
+}
+
+function renderPriorityWarnings() {
+  const bronze = customers.filter(c=>c.tier==='bronze'||c.margin_pct<10);
+  const gold   = customers.filter(c=>c.tier==='gold'||c.margin_pct>=25);
+  if(!gold.length) return;
+  const cont = document.getElementById('priorityWarnings');
+  cont.innerHTML = `<div class="warn-card">
+    <div class="warn-title">⚠️ Priority Customers Alert</div>
+    <div style="font-size:.88rem;color:#555">
+      You have <strong>${gold.length} Gold customers</strong> who give you ≥25% margin.
+      When stock hits reorder level, <strong>prioritise Gold customers first</strong> before selling to Bronze (${bronze.length} customers).
+      <br><br>The system will warn you automatically during billing when a low-margin sale risks stock for Gold customers.
+    </div>
+  </div>`;
+}
+
+async function loadWholesalers() {
+  const data = await fetch('/api/profit/wholesaler-performance').then(r=>r.json()).catch(()=>[]);
+  const cont = document.getElementById('wsBody');
+  if(!data.length){ cont.innerHTML='<div style="padding:20px;text-align:center;color:#888">No wholesaler performance records yet. Add records to track delivery quality.</div>'; return; }
+  cont.innerHTML = data.map(w=>{
+    const score = w.quality_score||0;
+    const col   = score>=8?'#2e7d32':score>=5?'#f57f17':'#c62828';
+    const otRate = w.total_orders>0 ? Math.round(w.on_time_deliveries/w.total_orders*100) : 0;
+    return `<div class="ws-row">
+      <div class="ws-score" style="background:${col}">${score.toFixed(1)}</div>
+      <div style="flex:1">
+        <strong>${w.wholesaler_name}</strong>
+        <div style="font-size:.8rem;color:#888;margin-top:2px">
+          ${w.total_orders} orders · On-time: ${otRate}% · Returns: ${w.return_count} · Total: ₹${fmt(w.total_value)}
+        </div>
+        <div style="margin-top:4px">
+          <div class="margin-bar" style="max-width:200px"><div class="margin-fill" style="width:${otRate}%;background:${col}"></div></div>
+        </div>
+      </div>
+      <div style="text-align:right;font-size:.78rem;color:#888">Last: ${w.last_order_date||'—'}</div>
+    </div>`;
+  }).join('');
+}
+
+async function loadDemand() {
+  const data = await fetch('/api/staff/demand-allocation').then(r=>r.json()).catch(()=>({}));
+  const meds = data.top_profit_medicines || [];
+  const gold = data.gold_customers || [];
+  const cont = document.getElementById('demandContent');
+  cont.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:12px">
+      <div>
+        <div style="font-weight:700;color:#1a237e;margin-bottom:8px">🏆 Top Profit Medicines (30d)</div>
+        ${meds.slice(0,10).map(m=>`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #f0f0f0">
+          <div style="flex:1;font-size:.88rem"><strong>${m.medicine_name}</strong>
+            <span style="color:#888;font-size:.78rem"> — ${m.units_sold_30d} units</span></div>
+          <span style="color:${m.margin_pct>=25?'#2e7d32':m.margin_pct>=15?'#f57f17':'#c62828'};font-weight:700">${m.margin_pct||0}%</span>
+          <span style="color:#1a237e;font-weight:700">₹${fmt(m.profit_30d||0)}</span>
+        </div>`).join('')}
+      </div>
+      <div>
+        <div style="font-weight:700;color:#1a237e;margin-bottom:8px">🥇 Gold Customers to Protect Stock For</div>
+        ${gold.slice(0,10).map(g=>`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #f0f0f0">
+          <div style="flex:1;font-size:.88rem"><strong>${g.customer_name}</strong></div>
+          <span style="color:#f57f17;font-weight:700">${(g.avg_margin_pct||0).toFixed(1)}%</span>
+          <span style="color:#1a237e;font-weight:700">₹${fmt(g.total_profit||0)}</span>
+        </div>`).join('')}
+        ${!gold.length?'<div style="color:#888;padding:10px;font-size:.88rem">No gold customers yet. Tiers auto-assign based on margin. Go to Customers tab to manually set.</div>':''}
+      </div>
+    </div>
+    <div style="background:#e8f5e9;border-radius:8px;padding:12px;font-size:.88rem;color:#1b5e20">
+      <strong>💡 Insight:</strong> ${data.insight||'Load customers tab to calculate tiers'}
+    </div>`;
+}
+
+function openTierModal(id, name, currentTier) {
+  document.getElementById('tierCustId').value=id;
+  document.getElementById('tierModalName').textContent='Customer: '+name;
+  document.getElementById('tierSelect').value=currentTier||'silver';
+  document.getElementById('tierReserve').value=0;
+  document.getElementById('tierNotes').value='';
+  document.getElementById('tierModal').style.display='flex';
+}
+function closeTierModal(){ document.getElementById('tierModal').style.display='none'; }
+
+async function saveTier() {
+  const id=document.getElementById('tierCustId').value;
+  const payload={tier:document.getElementById('tierSelect').value,
+    max_stock_reserve:parseInt(document.getElementById('tierReserve').value)||0,
+    notes:document.getElementById('tierNotes').value};
+  await fetch(`/api/profit/customers/${id}/tier`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+  closeTierModal(); loadCustomers(); showToast('Tier updated!');
+}
+
+function openAddWholesaler(){ document.getElementById('wsFormCard').style.display='block'; }
+async function saveWholesaler() {
+  const res=await fetch('/api/profit/wholesaler-performance',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({wholesaler_name:document.getElementById('wsName').value,
+      total_orders:parseInt(document.getElementById('wsOrders').value)||1,
+      on_time:parseInt(document.getElementById('wsOntime').value)||0,
+      late:parseInt(document.getElementById('wsLate').value)||0,
+      value:parseFloat(document.getElementById('wsValue').value)||0,
+      quality:parseFloat(document.getElementById('wsQuality').value)||8,
+      returns:parseInt(document.getElementById('wsReturns').value)||0})}).then(r=>r.json());
+  document.getElementById('wsFormCard').style.display='none';
+  loadWholesalers(); showToast('Wholesaler record saved!');
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach((t,i)=>{
+    t.classList.toggle('active',['overview','medicines','customers','staff','wholesalers','demand'][i]===tab);
+  });
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+tab).classList.add('active');
+  if(tab==='customers') loadCustomers();
+  else if(tab==='wholesalers') loadWholesalers();
+  else if(tab==='demand') loadDemand();
+  else if(tab==='staff' && profitData) renderStaff(profitData);
+}
+
+function fmt(n) {
+  n=parseFloat(n)||0;
+  if(n>=100000) return (n/100000).toFixed(1)+'L';
+  if(n>=1000)   return (n/1000).toFixed(1)+'K';
+  return n.toFixed(0);
+}
+function showToast(msg){
+  const t=document.getElementById('toast'); t.textContent=msg; t.style.display='block';
+  setTimeout(()=>t.style.display='none',2000);
+}
+
+// Init
+document.getElementById('monthPicker').value=new Date().toISOString().substring(0,7);
+loadAll();
+</script>
+</body>
+</html>

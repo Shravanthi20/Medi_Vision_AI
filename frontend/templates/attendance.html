@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Attendance — Selvam Medicals</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<style>
+  :root{
+    --bg:#0b0e16; --sb:#111827; --card:#151d2b; --card2:#1a2236;
+    --brd:#1f2d40; --tx:#e2e8f0; --mt:#64748b; --dim:#374151;
+    --acc:#f97316; --grn:#22c55e; --red:#ef4444; --blu:#3b82f6;
+    --yel:#eab308; --pur:#a855f7;
+  }
+  *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+  html,body{height:100%;background:var(--bg);color:var(--tx);font-family:Inter,sans-serif;font-size:13px;overflow:hidden;}
+
+  /* ── SHELL ── */
+  .shell{display:flex;height:100vh;overflow:hidden;}
+  .main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+
+  /* ── TOPBAR ── */
+  .topbar{
+    height:56px;background:var(--sb);border-bottom:1px solid var(--brd);
+    display:flex;align-items:center;gap:12px;padding:0 20px;flex-shrink:0;
+  }
+  .topbar a.back{
+    display:flex;align-items:center;gap:7px;color:var(--mt);font-size:12px;
+    text-decoration:none;padding:5px 10px;border-radius:6px;
+    border:1px solid var(--brd);transition:all .2s;
+  }
+  .topbar a.back:hover{border-color:var(--acc);color:var(--acc);}
+  .topbar h1{font-size:15px;font-weight:600;}
+  .topbar .date-chip{
+    margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:13px;
+    color:var(--acc);background:rgba(249,115,22,.08);border:1px solid rgba(249,115,22,.2);
+    padding:4px 12px;border-radius:6px;
+  }
+  .topbar .clock{
+    font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:#fff;
+  }
+
+  /* ── CONTENT ── */
+  .content{flex:1;display:flex;gap:0;overflow:hidden;}
+
+  /* ── LEFT PANEL — PUNCH ── */
+  .punch-panel{
+    width:320px;flex-shrink:0;background:var(--sb);border-right:1px solid var(--brd);
+    display:flex;flex-direction:column;overflow-y:auto;padding:20px;gap:16px;
+  }
+
+  .panel-title{font-size:11px;font-weight:600;color:var(--mt);text-transform:uppercase;
+    letter-spacing:.08em;margin-bottom:4px;}
+
+  /* KPI row */
+  .kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  .kpi{
+    background:var(--card2);border:1px solid var(--brd);border-radius:10px;
+    padding:10px 12px;display:flex;flex-direction:column;gap:2px;
+  }
+  .kpi .kv{font-size:22px;font-weight:700;font-family:'JetBrains Mono',monospace;}
+  .kpi .kl{font-size:10px;color:var(--mt);text-transform:uppercase;letter-spacing:.04em;}
+  .kpi.green .kv{color:var(--grn);}
+  .kpi.orange .kv{color:var(--acc);}
+  .kpi.red   .kv{color:var(--red);}
+  .kpi.blue  .kv{color:var(--blu);}
+
+  /* Punch box */
+  .punch-box{
+    background:var(--card2);border:1px solid var(--brd);border-radius:12px;
+    padding:20px;display:flex;flex-direction:column;gap:14px;
+  }
+  .punch-box .pb-title{font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px;}
+  .pb-tabs{display:flex;background:var(--bg);border-radius:8px;padding:3px;gap:2px;}
+  .pb-tab{
+    flex:1;padding:6px;text-align:center;font-size:11.5px;font-weight:500;
+    border-radius:6px;cursor:pointer;color:var(--mt);transition:all .2s;
+  }
+  .pb-tab.on{background:var(--card2);color:var(--tx);border:1px solid var(--brd);}
+
+  .pin-display{
+    background:var(--bg);border:1px solid var(--brd);border-radius:8px;
+    padding:12px;text-align:center;font-family:'JetBrains Mono',monospace;
+    font-size:28px;font-weight:700;letter-spacing:12px;color:var(--acc);
+    min-height:56px;display:flex;align-items:center;justify-content:center;
+  }
+  .numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;}
+  .nkey{
+    background:var(--card2);border:1px solid var(--brd);border-radius:8px;
+    padding:12px;text-align:center;font-size:17px;font-weight:600;cursor:pointer;
+    transition:all .15s;user-select:none;
+  }
+  .nkey:hover{background:var(--brd);color:var(--acc);}
+  .nkey:active{transform:scale(.94);}
+  .nkey.del{font-size:14px;color:var(--red);}
+  .nkey.enter{
+    background:var(--grn);border-color:var(--grn);color:#fff;font-size:13px;
+    letter-spacing:.04em;
+  }
+  .nkey.enter:hover{opacity:.9;}
+
+  /* Staff selector method */
+  .staff-select-wrap{display:flex;flex-direction:column;gap:6px;}
+  .staff-opt{
+    background:var(--card2);border:1px solid var(--brd);border-radius:8px;
+    padding:10px 12px;cursor:pointer;display:flex;align-items:center;gap:10px;
+    transition:all .2s;
+  }
+  .staff-opt:hover{border-color:var(--acc);}
+  .staff-opt.selected{border-color:var(--grn);background:rgba(34,197,94,.07);}
+  .staff-opt .ava{
+    width:32px;height:32px;border-radius:8px;background:var(--dim);
+    display:flex;align-items:center;justify-content:center;font-size:13px;
+    font-weight:700;color:var(--acc);flex-shrink:0;
+  }
+  .staff-opt .sname{font-weight:500;font-size:12.5px;}
+  .staff-opt .srole{font-size:10.5px;color:var(--mt);}
+  .staff-opt .sbadge{
+    margin-left:auto;font-size:10px;padding:2px 7px;border-radius:99px;
+    font-weight:600;text-transform:uppercase;
+  }
+  .staff-opt .sbadge.in {background:rgba(34,197,94,.15);color:var(--grn);}
+  .staff-opt .sbadge.out{background:rgba(100,116,139,.15);color:var(--mt);}
+
+  .punch-btn{
+    width:100%;padding:12px;border-radius:8px;border:none;font-size:13.5px;
+    font-weight:600;font-family:Inter,sans-serif;cursor:pointer;
+    transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px;
+  }
+  .punch-btn.in {background:var(--grn);color:#fff;}
+  .punch-btn.out{background:var(--acc);color:#fff;}
+  .punch-btn:hover{opacity:.88;}
+  .punch-btn:active{transform:scale(.97);}
+  .punch-result{
+    background:var(--bg);border-radius:8px;padding:12px;text-align:center;
+    font-size:12.5px;line-height:1.6;display:none;
+  }
+  .punch-result.show{display:block;}
+  .punch-result.ok {border:1px solid var(--grn);color:var(--grn);}
+  .punch-result.err{border:1px solid var(--red); color:var(--red);}
+
+  /* ── RIGHT PANEL — LOG ── */
+  .log-panel{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+
+  .log-header{
+    padding:14px 20px;background:var(--sb);border-bottom:1px solid var(--brd);
+    display:flex;align-items:center;gap:10px;flex-shrink:0;
+  }
+  .log-header h2{font-size:14px;font-weight:600;}
+  .log-header input[type=date]{
+    background:var(--card2);border:1px solid var(--brd);border-radius:7px;
+    padding:5px 10px;color:var(--tx);font-size:12px;font-family:Inter,sans-serif;
+    outline:none;transition:border-color .2s;
+  }
+  .log-header input[type=date]:focus{border-color:var(--acc);}
+  .log-header .spacer{flex:1;}
+  .btn{
+    display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:7px;
+    border:1px solid var(--brd);background:var(--card2);color:var(--tx);font-size:12px;
+    font-family:Inter,sans-serif;cursor:pointer;transition:all .2s;
+  }
+  .btn:hover{border-color:var(--acc);color:var(--acc);}
+  .btn.acc{background:var(--acc);border-color:var(--acc);color:#fff;}
+  .btn.acc:hover{opacity:.9;}
+
+  /* Tabs */
+  .log-tabs{
+    display:flex;padding:0 20px;background:var(--sb);border-bottom:1px solid var(--brd);
+    flex-shrink:0;
+  }
+  .log-tab{
+    padding:10px 16px;font-size:12.5px;font-weight:500;cursor:pointer;
+    border-bottom:2px solid transparent;color:var(--mt);transition:all .2s;
+  }
+  .log-tab.on{border-bottom-color:var(--acc);color:var(--tx);}
+
+  .tbl-area{flex:1;overflow:auto;padding:16px 20px;}
+
+  table{width:100%;border-collapse:collapse;}
+  thead tr{position:sticky;top:0;z-index:2;background:var(--sb);}
+  th{
+    padding:8px 12px;text-align:left;font-size:10.5px;font-weight:600;
+    color:var(--mt);text-transform:uppercase;letter-spacing:.05em;
+    border-bottom:1px solid var(--brd);white-space:nowrap;
+  }
+  td{padding:10px 12px;border-bottom:1px solid var(--brd);font-size:12.5px;vertical-align:middle;}
+  tbody tr:hover{background:rgba(249,115,22,.03);}
+  .status-badge{
+    display:inline-block;padding:2px 9px;border-radius:99px;font-size:10px;
+    font-weight:600;text-transform:uppercase;letter-spacing:.04em;
+  }
+  .status-badge.present  {background:rgba(34,197,94,.12); color:var(--grn);}
+  .status-badge.late     {background:rgba(234,179,8,.12);  color:var(--yel);}
+  .status-badge.absent   {background:rgba(239,68,68,.12);  color:var(--red);}
+  .status-badge.half-day {background:rgba(59,130,246,.12); color:var(--blu);}
+
+  .worked-bar{
+    display:flex;align-items:center;gap:8px;
+  }
+  .bar-track{flex:1;height:5px;background:var(--brd);border-radius:99px;overflow:hidden;min-width:60px;}
+  .bar-fill {height:100%;border-radius:99px;transition:width .3s;}
+  .bar-fill.good{background:var(--grn);}
+  .bar-fill.ok{background:var(--yel);}
+  .bar-fill.low{background:var(--red);}
+
+  /* Staff management tab */
+  .staff-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;padding:16px 20px;}
+  .staff-card{
+    background:var(--card2);border:1px solid var(--brd);border-radius:12px;
+    padding:16px;display:flex;flex-direction:column;gap:10px;
+  }
+  .staff-card .sc-top{display:flex;align-items:center;gap:10px;}
+  .sc-ava{
+    width:42px;height:42px;border-radius:10px;background:var(--dim);
+    display:flex;align-items:center;justify-content:center;font-size:17px;
+    font-weight:700;color:var(--acc);flex-shrink:0;
+  }
+  .sc-name{font-weight:600;font-size:13.5px;}
+  .sc-role{font-size:11px;color:var(--mt);}
+  .sc-meta{font-size:11px;color:var(--mt);display:flex;flex-direction:column;gap:2px;}
+  .sc-pin{
+    font-family:'JetBrains Mono',monospace;font-size:13px;
+    background:var(--bg);border:1px solid var(--brd);border-radius:6px;
+    padding:4px 10px;color:var(--acc);text-align:center;
+  }
+  .sc-actions{display:flex;gap:6px;margin-top:2px;}
+  .ic-btn{
+    width:28px;height:28px;border-radius:6px;border:1px solid var(--brd);
+    background:transparent;color:var(--mt);font-size:12px;cursor:pointer;
+    display:inline-flex;align-items:center;justify-content:center;transition:all .2s;
+  }
+  .ic-btn:hover.edit{border-color:var(--blu);color:var(--blu);}
+  .ic-btn:hover.del {border-color:var(--red);color:var(--red);}
+
+  /* ── MODAL ── */
+  .overlay{
+    position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:100;
+    display:flex;align-items:center;justify-content:center;
+    opacity:0;pointer-events:none;transition:opacity .2s;
+  }
+  .overlay.on{opacity:1;pointer-events:all;}
+  .modal{
+    background:var(--card2);border:1px solid var(--brd);border-radius:14px;
+    width:min(480px,94vw);
+    transform:translateY(-12px);transition:transform .2s;
+  }
+  .overlay.on .modal{transform:translateY(0);}
+  .mh{padding:16px 20px;border-bottom:1px solid var(--brd);display:flex;align-items:center;gap:10px;}
+  .mh .title{font-size:14px;font-weight:600;flex:1;}
+  .mclose{
+    width:28px;height:28px;border-radius:6px;border:1px solid var(--brd);
+    background:transparent;color:var(--mt);font-size:14px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;transition:all .2s;
+  }
+  .mclose:hover{border-color:var(--red);color:var(--red);}
+  .mform{padding:20px;display:flex;flex-direction:column;gap:12px;}
+  .frow{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .fg{display:flex;flex-direction:column;gap:4px;}
+  .fg label{font-size:10.5px;color:var(--mt);text-transform:uppercase;letter-spacing:.04em;}
+  .fg input,.fg select{
+    background:var(--bg);border:1px solid var(--brd);border-radius:7px;
+    padding:8px 10px;color:var(--tx);font-size:12.5px;font-family:Inter,sans-serif;
+    outline:none;transition:border-color .2s;
+  }
+  .fg input:focus,.fg select:focus{border-color:var(--acc);}
+  .mfooter{padding:12px 20px;border-top:1px solid var(--brd);display:flex;gap:8px;justify-content:flex-end;}
+
+  /* ── TOAST ── */
+  #toast{
+    position:fixed;bottom:24px;right:24px;z-index:200;
+    display:flex;align-items:center;gap:10px;
+    background:var(--card2);border:1px solid var(--brd);border-radius:10px;
+    padding:10px 16px;font-size:12.5px;box-shadow:0 4px 20px rgba(0,0,0,.5);
+    transform:translateY(20px);opacity:0;transition:all .3s;pointer-events:none;
+  }
+  #toast.show{transform:translateY(0);opacity:1;}
+  #toast.ok {border-color:var(--grn);}
+  #toast.err{border-color:var(--red);}
+
+  .spin{animation:spin .8s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .empty{text-align:center;padding:40px;color:var(--mt);font-size:12px;}
+</style>
+</head>
+<body>
+<div class="shell">
+<div class="main">
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <a href="/internal" class="back"><i class="fas fa-arrow-left"></i> POS</a>
+    <i class="fas fa-user-clock" style="color:var(--acc)"></i>
+    <h1>Staff Attendance</h1>
+    <div class="date-chip" id="today-label">—</div>
+    <div class="clock" id="live-clock">00:00:00</div>
+  </div>
+
+  <div class="content">
+
+    <!-- LEFT — PUNCH PANEL -->
+    <div class="punch-panel">
+
+      <!-- KPIs -->
+      <div>
+        <div class="panel-title">Today's Status</div>
+        <div class="kpi-grid">
+          <div class="kpi green"><span class="kv" id="kpi-present">—</span><span class="kl">Present</span></div>
+          <div class="kpi red">  <span class="kv" id="kpi-absent">—</span><span class="kl">Absent</span></div>
+          <div class="kpi orange"><span class="kv" id="kpi-late">—</span><span class="kl">Late</span></div>
+          <div class="kpi blue"> <span class="kv" id="kpi-total">—</span><span class="kl">Total Staff</span></div>
+        </div>
+      </div>
+
+      <!-- Punch Interface -->
+      <div class="punch-box">
+        <div class="pb-title"><i class="fas fa-fingerprint" style="color:var(--acc)"></i> Quick Punch</div>
+
+        <!-- Method toggle -->
+        <div class="pb-tabs">
+          <div class="pb-tab on" id="tab-pin" onclick="switchPunchTab('pin')">PIN</div>
+          <div class="pb-tab" id="tab-pick" onclick="switchPunchTab('pick')">Select Staff</div>
+        </div>
+
+        <!-- PIN input -->
+        <div id="punch-pin-area">
+          <div class="pin-display" id="pin-display">_ _ _ _</div>
+          <div class="numpad">
+            <div class="nkey" onclick="addPin(1)">1</div>
+            <div class="nkey" onclick="addPin(2)">2</div>
+            <div class="nkey" onclick="addPin(3)">3</div>
+            <div class="nkey" onclick="addPin(4)">4</div>
+            <div class="nkey" onclick="addPin(5)">5</div>
+            <div class="nkey" onclick="addPin(6)">6</div>
+            <div class="nkey" onclick="addPin(7)">7</div>
+            <div class="nkey" onclick="addPin(8)">8</div>
+            <div class="nkey" onclick="addPin(9)">9</div>
+            <div class="nkey del" onclick="delPin()"><i class="fas fa-delete-left"></i></div>
+            <div class="nkey" onclick="addPin(0)">0</div>
+            <div class="nkey enter" onclick="submitPIN()">PUNCH</div>
+          </div>
+        </div>
+
+        <!-- Staff pick -->
+        <div id="punch-pick-area" style="display:none">
+          <div class="staff-select-wrap" id="staff-pick-list">
+            <div class="empty"><i class="fas fa-circle-notch spin"></i> Loading…</div>
+          </div>
+          <button class="punch-btn in" id="pick-punch-btn" onclick="submitPick()" style="margin-top:6px">
+            <i class="fas fa-right-to-bracket"></i> Punch Selected
+          </button>
+        </div>
+
+        <div class="punch-result" id="punch-result"></div>
+      </div>
+
+      <!-- Staff list shortcut -->
+      <div>
+        <div class="panel-title">Staff on Floor</div>
+        <div id="floor-list" style="display:flex;flex-direction:column;gap:5px">
+          <div class="empty" style="padding:12px">Loading…</div>
+        </div>
+      </div>
+
+    </div><!-- /punch-panel -->
+
+    <!-- RIGHT — LOG -->
+    <div class="log-panel">
+
+      <div class="log-header">
+        <h2><i class="fas fa-table-list" style="color:var(--acc);margin-right:6px"></i>Attendance Log</h2>
+        <input type="date" id="log-date" onchange="loadLog()"/>
+        <div class="spacer"></div>
+        <button class="btn acc" onclick="openAddStaff()">
+          <i class="fas fa-user-plus"></i> Add Staff
+        </button>
+      </div>
+
+      <div class="log-tabs">
+        <div class="log-tab on" id="tab-log" onclick="switchTab('log')">Today's Log</div>
+        <div class="log-tab" id="tab-staff" onclick="switchTab('staff')">Staff List</div>
+        <div class="log-tab" id="tab-monthly" onclick="switchTab('monthly')">Monthly View</div>
+      </div>
+
+      <!-- TODAY LOG -->
+      <div class="tbl-area" id="view-log">
+        <table>
+          <thead><tr>
+            <th>Staff Name</th><th>Role</th>
+            <th>Punch In</th><th>Punch Out</th>
+            <th>Worked Hours</th><th>Status</th>
+          </tr></thead>
+          <tbody id="log-body">
+            <tr><td colspan="6" class="empty">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- STAFF LIST -->
+      <div class="staff-grid" id="view-staff" style="display:none"></div>
+
+      <!-- MONTHLY VIEW -->
+      <div class="tbl-area" id="view-monthly" style="display:none">
+        <table>
+          <thead><tr>
+            <th>Staff</th><th>Role</th>
+            <th>Days Present</th><th>Days Absent</th><th>Days Late</th>
+            <th>Total Hours</th><th>Avg Hours/Day</th>
+          </tr></thead>
+          <tbody id="monthly-body">
+            <tr><td colspan="7" class="empty">Select a month view</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div><!-- /log-panel -->
+
+  </div><!-- /content -->
+</div><!-- /main -->
+</div><!-- /shell -->
+
+<!-- ADD/EDIT STAFF MODAL -->
+<div class="overlay" id="staff-overlay" onclick="closeStaffModal(event)">
+  <div class="modal">
+    <div class="mh">
+      <i class="fas fa-user-gear" style="color:var(--acc)"></i>
+      <span class="title" id="staff-modal-title">Add Staff Member</span>
+      <button class="mclose" onclick="closeStaffModalDirect()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="mform">
+      <input type="hidden" id="sf-id"/>
+      <div class="frow">
+        <div class="fg">
+          <label>Full Name *</label>
+          <input type="text" id="sf-name" placeholder="e.g. Selvam Kumar"/>
+        </div>
+        <div class="fg">
+          <label>Role</label>
+          <select id="sf-role">
+            <option value="Cashier">Cashier</option>
+            <option value="Pharmacist">Pharmacist</option>
+            <option value="Manager">Manager</option>
+            <option value="Delivery">Delivery</option>
+            <option value="Owner">Owner</option>
+          </select>
+        </div>
+      </div>
+      <div class="frow">
+        <div class="fg">
+          <label>Phone</label>
+          <input type="tel" id="sf-phone" placeholder="10-digit number"/>
+        </div>
+        <div class="fg">
+          <label>4-Digit PIN (for punch)</label>
+          <input type="text" id="sf-pin" maxlength="4" placeholder="e.g. 1234"
+            style="font-family:'JetBrains Mono',monospace;letter-spacing:6px;font-size:16px;"/>
+        </div>
+      </div>
+      <div class="frow">
+        <div class="fg">
+          <label>Monthly Salary (₹)</label>
+          <input type="number" id="sf-salary" placeholder="0" min="0"/>
+        </div>
+        <div class="fg">
+          <label>Joined Date</label>
+          <input type="date" id="sf-joined"/>
+        </div>
+      </div>
+    </div>
+    <div class="mfooter">
+      <button class="btn" onclick="closeStaffModalDirect()">Cancel</button>
+      <button class="btn acc" onclick="saveStaff()"><i class="fas fa-floppy-disk"></i> Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+// ── STATE ─────────────────────────────────────────────────────────────
+let pinBuffer   = '';
+let allStaff    = [];
+let selectedPick = null;
+let todayLog    = [];
+
+const today = new Date().toISOString().slice(0,10);
+
+// ── INIT ─────────────────────────────────────────────────────────────
+document.getElementById('log-date').value = today;
+
+(function initClock(){
+  const tick = () => {
+    const now = new Date();
+    document.getElementById('live-clock').textContent =
+      now.toTimeString().slice(0,8);
+    document.getElementById('today-label').textContent =
+      now.toLocaleDateString('en-IN',{weekday:'long',day:'2-digit',month:'short',year:'numeric'});
+  };
+  tick(); setInterval(tick, 1000);
+})();
+
+loadAll();
+
+async function loadAll(){
+  await Promise.all([loadSummary(), loadLog(), loadStaff()]);
+}
+
+// ── SUMMARY KPIs ─────────────────────────────────────────────────────
+async function loadSummary(date){
+  date = date || today;
+  const res  = await fetch(`/api/attendance/summary?date=${date}`);
+  const data = await res.json();
+  document.getElementById('kpi-present').textContent = data.present;
+  document.getElementById('kpi-absent').textContent  = data.absent;
+  document.getElementById('kpi-late').textContent    = data.late;
+  document.getElementById('kpi-total').textContent   = data.total_staff;
+}
+
+// ── LOG TABLE ────────────────────────────────────────────────────────
+async function loadLog(){
+  const date = document.getElementById('log-date').value || today;
+  loadSummary(date);
+  const res  = await fetch(`/api/attendance?date=${date}`);
+  todayLog   = await res.json();
+  renderLog(todayLog);
+  renderFloor(todayLog);
+}
+
+function renderLog(logs){
+  const tbody = document.getElementById('log-body');
+  if(!logs.length){
+    tbody.innerHTML = `<tr><td colspan="6" class="empty">No attendance records for this date.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = logs.map(r => {
+    const worked  = parseFloat(r.worked_hours||0);
+    const pct     = Math.min(100, (worked/8)*100);
+    const barCls  = pct>=80?'good':pct>=40?'ok':'low';
+    const statusCls = r.status||'present';
+    return `<tr>
+      <td style="font-weight:600">${esc(r.staff_name||'Unknown')}</td>
+      <td style="color:var(--mt)">${esc(r.role||'—')}</td>
+      <td><span style="font-family:'JetBrains Mono',monospace;color:var(--grn)">${r.punch_in||'—'}</span></td>
+      <td><span style="font-family:'JetBrains Mono',monospace;color:var(--acc)">${r.punch_out||'Still In'}</span></td>
+      <td>
+        <div class="worked-bar">
+          <div class="bar-track"><div class="bar-fill ${barCls}" style="width:${pct}%"></div></div>
+          <span style="font-size:11px;color:var(--mt);white-space:nowrap">${worked?worked.toFixed(1)+'h':'—'}</span>
+        </div>
+      </td>
+      <td><span class="status-badge ${statusCls}">${statusCls}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+function renderFloor(logs){
+  const punchedIn = logs.filter(l => l.punch_in && !l.punch_out);
+  const div = document.getElementById('floor-list');
+  if(!punchedIn.length){
+    div.innerHTML = `<div style="font-size:11.5px;color:var(--mt);padding:8px 0">No staff currently clocked in.</div>`;
+    return;
+  }
+  div.innerHTML = punchedIn.map(r => `
+    <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--brd)">
+      <div class="sc-ava" style="width:28px;height:28px;font-size:11px;">${initials(r.staff_name)}</div>
+      <div>
+        <div style="font-size:12px;font-weight:500">${esc(r.staff_name)}</div>
+        <div style="font-size:10.5px;color:var(--grn)">IN since ${r.punch_in||''}</div>
+      </div>
+    </div>`).join('');
+}
+
+// ── STAFF LIST ───────────────────────────────────────────────────────
+async function loadStaff(){
+  const res  = await fetch('/api/staff');
+  allStaff   = await res.json();
+  renderStaffCards();
+  renderPickList();
+}
+
+function renderStaffCards(){
+  const div = document.getElementById('view-staff');
+  if(!allStaff.length){
+    div.innerHTML = `<div class="empty" style="grid-column:1/-1">No staff found. Add your first staff member.</div>`;
+    return;
+  }
+  div.innerHTML = allStaff.map(s => `
+    <div class="staff-card ${s.is_active?'':''}">
+      <div class="sc-top">
+        <div class="sc-ava">${initials(s.name)}</div>
+        <div>
+          <div class="sc-name">${esc(s.name)}</div>
+          <div class="sc-role">${esc(s.role||'Staff')}</div>
+        </div>
+      </div>
+      <div class="sc-meta">
+        ${s.phone?`<span><i class="fas fa-phone" style="width:14px"></i> ${esc(s.phone)}</span>`:''}
+        ${s.salary?`<span><i class="fas fa-indian-rupee-sign" style="width:14px"></i> ₹${s.salary.toLocaleString('en-IN')}/mo</span>`:''}
+        ${s.joined_date?`<span><i class="fas fa-calendar-days" style="width:14px"></i> ${s.joined_date}</span>`:''}
+      </div>
+      <div class="sc-pin">PIN: ${s.pin||'—'}</div>
+      <div class="sc-actions">
+        <button class="ic-btn edit" onclick="editStaff(${JSON.stringify(s).replace(/"/g,'&quot;')})"
+          title="Edit"><i class="fas fa-pen"></i></button>
+        <button class="ic-btn del" onclick="deleteStaff(${s.id},'${esc(s.name)}')"
+          title="Deactivate"><i class="fas fa-trash"></i></button>
+        <span style="flex:1"></span>
+        <span style="font-size:10px;padding:2px 7px;border-radius:99px;
+          background:${s.is_active?'rgba(34,197,94,.12)':'rgba(100,116,139,.12)'};
+          color:${s.is_active?'var(--grn)':'var(--mt)'}">
+          ${s.is_active?'Active':'Inactive'}
+        </span>
+      </div>
+    </div>`).join('');
+}
+
+function renderPickList(){
+  const div = document.getElementById('staff-pick-list');
+  if(!allStaff.length){
+    div.innerHTML = `<div class="empty">No staff found.</div>`;
+    return;
+  }
+  div.innerHTML = allStaff.filter(s=>s.is_active).map(s => {
+    const log = todayLog.find(l => l.staff_id===s.id);
+    const isIn = log && log.punch_in && !log.punch_out;
+    return `
+    <div class="staff-opt ${selectedPick===s.id?'selected':''}" onclick="pickStaff(${s.id},this)">
+      <div class="sc-ava" style="width:32px;height:32px;font-size:12px">${initials(s.name)}</div>
+      <div>
+        <div class="sname">${esc(s.name)}</div>
+        <div class="srole">${esc(s.role||'Staff')}</div>
+      </div>
+      <span class="sbadge ${isIn?'in':'out'}">${isIn?'IN':'OUT'}</span>
+    </div>`;
+  }).join('');
+}
+
+function pickStaff(id, el){
+  selectedPick = id;
+  document.querySelectorAll('.staff-opt').forEach(e=>e.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+// ── PIN NUMPAD ────────────────────────────────────────────────────────
+function addPin(n){
+  if(pinBuffer.length>=4) return;
+  pinBuffer += String(n);
+  updatePinDisplay();
+  if(pinBuffer.length===4) setTimeout(submitPIN, 200);
+}
+function delPin(){ pinBuffer = pinBuffer.slice(0,-1); updatePinDisplay(); }
+function updatePinDisplay(){
+  const filled = pinBuffer.replace(/./g,'●');
+  const empty  = '_ '.repeat(4-pinBuffer.length).trim();
+  document.getElementById('pin-display').textContent =
+    (filled + (filled&&empty?' ':'')+empty)||'_ _ _ _';
+}
+
+async function submitPIN(){
+  if(pinBuffer.length!==4){ toast('Enter 4-digit PIN','err'); return; }
+  await doPunch({pin: pinBuffer});
+  pinBuffer = '';
+  updatePinDisplay();
+}
+async function submitPick(){
+  if(!selectedPick){ toast('Select a staff member','err'); return; }
+  await doPunch({staff_id: selectedPick});
+  selectedPick = null;
+}
+
+async function doPunch(body){
+  const res  = await fetch('/api/attendance/punch',{
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(body)
+  });
+  const data = await res.json();
+  const el   = document.getElementById('punch-result');
+
+  if(res.status===404){
+    el.className = 'punch-result show err';
+    el.innerHTML = '<i class="fas fa-circle-xmark"></i> Staff not found or PIN incorrect';
+  } else if(data.status==='already_complete'){
+    el.className = 'punch-result show err';
+    el.innerHTML = `<i class="fas fa-info-circle"></i> ${data.message}`;
+  } else if(data.status==='success'){
+    const dir   = data.direction;
+    const icon  = dir==='in'?'fa-right-to-bracket':'fa-right-from-bracket';
+    const color = dir==='in'?'var(--grn)':'var(--acc)';
+    el.className = 'punch-result show ok';
+    el.innerHTML = `
+      <div style="font-size:17px;margin-bottom:4px">
+        <i class="fas ${icon}" style="color:${color}"></i>
+        <strong style="color:${color}">${data.staff.name}</strong>
+      </div>
+      <div>${dir==='in'?'Punched IN':'Punched OUT'} at ${data.time}</div>
+      ${data.worked_hours?`<div style="margin-top:4px;color:var(--mt)">Worked: ${data.worked_hours}h</div>`:''}`;
+    loadAll();
+    renderPickList();
+  }
+  setTimeout(() => el.classList.remove('show'), 5000);
+}
+
+// ── MONTHLY VIEW ─────────────────────────────────────────────────────
+async function loadMonthly(){
+  const month = today.slice(0,7);
+  const res   = await fetch(`/api/attendance?month=${month}`);
+  const logs  = await res.json();
+
+  const map   = {};
+  logs.forEach(l => {
+    if(!map[l.staff_name]) map[l.staff_name]={name:l.staff_name,role:l.role||'',days:0,late:0,absent:0,hours:0};
+    map[l.staff_name].days++;
+    if(l.status==='late') map[l.staff_name].late++;
+    map[l.staff_name].hours += parseFloat(l.worked_hours||0);
+  });
+
+  const tbody = document.getElementById('monthly-body');
+  const rows  = Object.values(map);
+  if(!rows.length){ tbody.innerHTML=`<tr><td colspan="7" class="empty">No data this month.</td></tr>`; return; }
+  tbody.innerHTML = rows.map(r => `<tr>
+    <td style="font-weight:600">${esc(r.name)}</td>
+    <td style="color:var(--mt)">${esc(r.role)}</td>
+    <td style="color:var(--grn)">${r.days}</td>
+    <td style="color:var(--red)">0</td>
+    <td style="color:var(--yel)">${r.late}</td>
+    <td>${r.hours.toFixed(1)}h</td>
+    <td style="color:var(--mt)">${r.days?(r.hours/r.days).toFixed(1)+'h':'—'}</td>
+  </tr>`).join('');
+}
+
+// ── TABS ─────────────────────────────────────────────────────────────
+function switchTab(tab){
+  ['log','staff','monthly'].forEach(t => {
+    document.getElementById(`view-${t}`).style.display = t===tab?
+      (t==='staff'?'grid':'flex'):'none';
+    document.getElementById(`tab-${t}`).classList.toggle('on', t===tab);
+  });
+  // Fix display mode
+  document.getElementById('view-log').style.display     = tab==='log'     ? 'block' : 'none';
+  document.getElementById('view-staff').style.display   = tab==='staff'   ? 'grid'  : 'none';
+  document.getElementById('view-monthly').style.display = tab==='monthly' ? 'block' : 'none';
+
+  if(tab==='monthly') loadMonthly();
+  if(tab==='staff')   renderStaffCards();
+}
+
+function switchPunchTab(tab){
+  document.getElementById('punch-pin-area').style.display  = tab==='pin'  ? '' : 'none';
+  document.getElementById('punch-pick-area').style.display = tab==='pick' ? '' : 'none';
+  document.getElementById('tab-pin').classList.toggle('on',  tab==='pin');
+  document.getElementById('tab-pick').classList.toggle('on', tab==='pick');
+}
+
+// ── STAFF CRUD ────────────────────────────────────────────────────────
+function openAddStaff(){
+  document.getElementById('staff-modal-title').textContent = 'Add Staff Member';
+  document.getElementById('sf-id').value    = '';
+  document.getElementById('sf-name').value  = '';
+  document.getElementById('sf-role').value  = 'Cashier';
+  document.getElementById('sf-phone').value = '';
+  document.getElementById('sf-pin').value   = '';
+  document.getElementById('sf-salary').value= '';
+  document.getElementById('sf-joined').value= '';
+  document.getElementById('staff-overlay').classList.add('on');
+}
+function editStaff(s){
+  document.getElementById('staff-modal-title').textContent = 'Edit Staff Member';
+  document.getElementById('sf-id').value    = s.id;
+  document.getElementById('sf-name').value  = s.name;
+  document.getElementById('sf-role').value  = s.role;
+  document.getElementById('sf-phone').value = s.phone||'';
+  document.getElementById('sf-pin').value   = s.pin||'';
+  document.getElementById('sf-salary').value= s.salary||'';
+  document.getElementById('sf-joined').value= s.joined_date||'';
+  document.getElementById('staff-overlay').classList.add('on');
+}
+async function saveStaff(){
+  const name = document.getElementById('sf-name').value.trim();
+  if(!name){ toast('Name is required','err'); return; }
+
+  const payload = {
+    id:         document.getElementById('sf-id').value||undefined,
+    name,
+    role:        document.getElementById('sf-role').value,
+    phone:       document.getElementById('sf-phone').value.trim(),
+    pin:         document.getElementById('sf-pin').value.trim(),
+    salary:      parseFloat(document.getElementById('sf-salary').value)||0,
+    joined_date: document.getElementById('sf-joined').value,
+  };
+
+  const res = await fetch('/api/staff',{
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(payload)
+  });
+  const data = await res.json();
+  if(data.status==='success'){
+    toast('Staff saved ✓','ok');
+    closeStaffModalDirect();
+    loadStaff();
+  } else {
+    toast('Save failed: '+(data.message||'unknown'),'err');
+  }
+}
+async function deleteStaff(id, name){
+  if(!confirm(`Deactivate ${name}?`)) return;
+  const res = await fetch(`/api/staff/${id}`,{method:'DELETE'});
+  const data = await res.json();
+  if(data.status==='success'){
+    toast(`${name} deactivated`,'ok');
+    loadStaff();
+  } else {
+    toast('Failed','err');
+  }
+}
+
+function closeStaffModal(e){ if(e.target.id==='staff-overlay') closeStaffModalDirect(); }
+function closeStaffModalDirect(){ document.getElementById('staff-overlay').classList.remove('on'); }
+
+// ── HELPERS ──────────────────────────────────────────────────────────
+function initials(name){
+  return (name||'?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+}
+function esc(s){ const d=document.createElement('span'); d.textContent=String(s||''); return d.innerHTML; }
+function toast(msg, type=''){
+  const t = document.getElementById('toast');
+  t.innerHTML = type==='ok'
+    ? `<i class="fas fa-check-circle" style="color:var(--grn)"></i> ${msg}`
+    : type==='err'
+    ? `<i class="fas fa-circle-xmark" style="color:var(--red)"></i> ${msg}`
+    : `<i class="fas fa-circle-notch spin"></i> ${msg}`;
+  t.className = `show ${type}`;
+  if(type) setTimeout(() => t.className='', 3000);
+}
+</script>
+</body>
+</html>

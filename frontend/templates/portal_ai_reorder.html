@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Reorder — MediVision AI</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --green: #16a34a; --green-dark: #15803d; --green-light: #dcfce7;
+      --blue: #2563eb; --blue-light: #dbeafe; --indigo: #4f46e5;
+      --orange: #ea580c; --err: #dc2626; --yellow: #f59e0b;
+      --gray: #6b7280; --gray-light: #f9fafb; --gray-border: #e5e7eb;
+      --text: #111827; --sidebar-w: 220px;
+    }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--gray-light); color: var(--text); display: flex; min-height: 100vh; }
+
+    /* SIDEBAR */
+    .sidebar { width: var(--sidebar-w); background: #0f172a; color: white; position: fixed; top: 0; left: 0; height: 100vh; display: flex; flex-direction: column; z-index: 50; }
+    .sb-logo { padding: 20px 18px; border-bottom: 1px solid rgba(255,255,255,.07); }
+    .sb-logo .row { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: .98rem; }
+    .sb-logo .cross { width: 30px; height: 30px; background: var(--green); border-radius: 7px; display: flex; align-items: center; justify-content: center; }
+    .sb-logo .cross svg { fill: white; }
+    .sb-nav { flex: 1; padding: 12px 10px; }
+    .sb-section { font-size: .63rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; color: rgba(255,255,255,.3); padding: 12px 8px 4px; }
+    .nav-item { display: flex; align-items: center; gap: 9px; padding: 9px 10px; border-radius: 7px; font-size: .84rem; color: rgba(255,255,255,.6); transition: all .2s; margin-bottom: 2px; text-decoration: none; }
+    .nav-item:hover { background: rgba(255,255,255,.07); color: white; }
+    .nav-item.active { background: var(--green); color: white; }
+    .nav-item .icon { width: 18px; text-align: center; }
+    .sb-footer { padding: 14px; border-top: 1px solid rgba(255,255,255,.07); }
+    .logout-btn { width: 100%; padding: 7px; background: rgba(255,255,255,.06); color: rgba(255,255,255,.55); border: none; border-radius: 6px; cursor: pointer; font-size: .78rem; }
+
+    /* MAIN */
+    .main { margin-left: var(--sidebar-w); flex: 1; }
+    .topbar { background: white; border-bottom: 1px solid var(--gray-border); padding: 0 24px; height: 56px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 40; }
+    .topbar h1 { font-size: 1rem; font-weight: 700; }
+    .content { padding: 24px; }
+
+    /* TABS */
+    .tab-bar { display: flex; background: white; border: 1px solid var(--gray-border); border-radius: 12px; padding: 5px; gap: 4px; margin-bottom: 24px; width: fit-content; }
+    .tab-btn { padding: 9px 20px; border: none; background: none; border-radius: 9px; font-weight: 600; font-size: .88rem; cursor: pointer; color: var(--gray); transition: all .2s; }
+    .tab-btn.active { background: var(--green); color: white; box-shadow: 0 2px 8px rgba(22,163,74,.3); }
+
+    /* AI INSIGHT BANNER */
+    .ai-banner { background: linear-gradient(135deg, #1e293b, #1e3a5f); color: white; border-radius: 14px; padding: 20px 24px; margin-bottom: 24px; display: flex; align-items: center; gap: 20px; }
+    .ai-banner .brain { font-size: 2.4rem; flex-shrink: 0; }
+    .ai-banner h3 { font-size: 1.05rem; font-weight: 700; margin-bottom: 4px; }
+    .ai-banner p { font-size: .84rem; opacity: .78; line-height: 1.5; }
+    .ai-stats { display: flex; gap: 28px; margin-left: auto; flex-shrink: 0; }
+    .ai-stat { text-align: center; }
+    .ai-stat .val { font-size: 1.6rem; font-weight: 800; }
+    .ai-stat .lbl { font-size: .7rem; opacity: .65; margin-top: 2px; }
+    .ai-stat.red .val { color: #fca5a5; }
+    .ai-stat.yellow .val { color: #fde68a; }
+    .ai-stat.green .val { color: #86efac; }
+
+    /* FILTER ROW */
+    .filter-row { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+    .search-input { padding: 9px 14px; border: 1.5px solid var(--gray-border); border-radius: 8px; font-size: .84rem; outline: none; min-width: 220px; }
+    .search-input:focus { border-color: var(--green); }
+    .filter-sel { padding: 8px 12px; border: 1.5px solid var(--gray-border); border-radius: 8px; font-size: .84rem; outline: none; background: white; }
+    .filter-sel:focus { border-color: var(--green); }
+    .btn { padding: 8px 16px; border-radius: 8px; font-weight: 600; font-size: .82rem; cursor: pointer; border: none; transition: all .2s; }
+    .btn-green { background: var(--green); color: white; }
+    .btn-green:hover { background: var(--green-dark); }
+    .btn-outline { background: transparent; border: 1.5px solid var(--gray-border); color: var(--gray); }
+    .btn-outline:hover { border-color: var(--green); color: var(--green); }
+    .btn-sm { padding: 5px 12px; font-size: .76rem; border-radius: 6px; }
+    .btn-blue { background: var(--blue); color: white; }
+    .btn-indigo { background: var(--indigo); color: white; }
+
+    /* REORDER TABLE */
+    .card { background: white; border-radius: 12px; border: 1px solid var(--gray-border); overflow: hidden; margin-bottom: 20px; }
+    .card-header { padding: 14px 20px; border-bottom: 1px solid var(--gray-border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+    .card-header h3 { font-size: .95rem; font-weight: 700; }
+    table { width: 100%; border-collapse: collapse; font-size: .84rem; }
+    th { background: var(--gray-light); padding: 9px 12px; text-align: left; font-size: .72rem; font-weight: 700; color: var(--gray); text-transform: uppercase; letter-spacing: .4px; position: sticky; top: 0; z-index: 5; }
+    td { padding: 10px 12px; border-bottom: 1px solid #f3f4f6; vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #fafafa; }
+
+    .pill { display: inline-flex; padding: 3px 9px; border-radius: 12px; font-size: .71rem; font-weight: 700; }
+    .pill-critical { background: #fee2e2; color: var(--err); }
+    .pill-low { background: #fef9c3; color: #854d0e; }
+    .pill-ok { background: var(--green-light); color: var(--green-dark); }
+    .pill-excess { background: #e0e7ff; color: #3730a3; }
+
+    /* AI BADGE */
+    .ai-tag { background: linear-gradient(135deg, #4f46e5, #7c3aed); color: white; padding: 2px 7px; border-radius: 8px; font-size: .65rem; font-weight: 700; margin-left: 4px; }
+
+    /* MIN MAX EDITOR */
+    .minmax-input { width: 58px; padding: 4px 7px; border: 1.5px solid var(--gray-border); border-radius: 6px; font-size: .82rem; text-align: center; outline: none; }
+    .minmax-input:focus { border-color: var(--indigo); }
+    .accept-ai-btn { padding: 3px 9px; border: none; border-radius: 6px; font-size: .72rem; font-weight: 700; cursor: pointer; background: linear-gradient(135deg,#4f46e5,#7c3aed); color: white; transition: opacity .2s; }
+    .accept-ai-btn:hover { opacity: .85; }
+
+    /* BARS */
+    .stock-bar-wrap { display: flex; align-items: center; gap: 8px; }
+    .stock-bar { flex: 1; height: 6px; background: var(--gray-border); border-radius: 3px; overflow: hidden; min-width: 60px; }
+    .stock-bar-fill { height: 100%; border-radius: 3px; transition: width .3s; }
+
+    /* WHOLESALER COMPARE */
+    .compare-search { display: flex; gap: 10px; margin-bottom: 20px; }
+    .compare-search .search-input { flex: 1; font-size: .92rem; padding: 11px 16px; }
+    .compare-grid { display: grid; gap: 14px; }
+    .drug-compare-card { background: white; border-radius: 12px; border: 1px solid var(--gray-border); overflow: hidden; }
+    .drug-compare-header { padding: 12px 18px; background: var(--gray-light); border-bottom: 1px solid var(--gray-border); display: flex; align-items: center; justify-content: space-between; }
+    .drug-compare-header h4 { font-size: .92rem; font-weight: 700; }
+    .drug-compare-header .generic { font-size: .78rem; color: var(--gray); }
+    .ws-rows { padding: 0; }
+    .ws-row { display: flex; align-items: center; gap: 12px; padding: 12px 18px; border-bottom: 1px solid #f3f4f6; font-size: .84rem; transition: background .15s; }
+    .ws-row:last-child { border-bottom: none; }
+    .ws-row:hover { background: #fafafa; }
+    .ws-row.best { background: #f0fdf4; border-left: 3px solid var(--green); }
+    .ws-name { font-weight: 700; min-width: 150px; }
+    .ws-price { color: var(--gray); }
+    .ws-eff { font-weight: 700; color: var(--green); min-width: 80px; }
+    .ws-disc { font-size: .76rem; color: var(--blue); }
+    .ws-offer { font-size: .76rem; color: var(--indigo); font-weight: 600; }
+    .ws-margin { font-size: .78rem; }
+    .ws-score { min-width: 50px; text-align: center; }
+    .score-badge { background: linear-gradient(135deg,#4f46e5,#7c3aed); color: white; padding: 3px 9px; border-radius: 8px; font-size: .72rem; font-weight: 700; }
+    .best-label { background: var(--green-light); color: var(--green-dark); padding: 2px 8px; border-radius: 6px; font-size: .72rem; font-weight: 700; }
+    .no-stock { color: #9ca3af; font-style: italic; }
+
+    /* ORDER SHEET */
+    .order-list { list-style: none; }
+    .order-item { display: flex; align-items: center; gap: 14px; padding: 12px 18px; border-bottom: 1px solid #f3f4f6; }
+    .order-item:last-child { border-bottom: none; }
+    .order-name { flex: 1; font-weight: 600; font-size: .88rem; }
+    .order-qty { font-weight: 700; color: var(--blue); font-size: .88rem; min-width: 60px; }
+    .order-ws { font-size: .78rem; color: var(--green-dark); }
+    .order-price { font-weight: 700; color: var(--text); }
+
+    /* LEGEND */
+    .legend { display: flex; gap: 16px; font-size: .76rem; flex-wrap: wrap; }
+    .legend-item { display: flex; align-items: center; gap: 5px; }
+    .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+    .overflow-scroll { overflow-x: auto; }
+
+    .empty-state { text-align: center; padding: 48px; color: var(--gray); }
+    .empty-state .icon { font-size: 2.4rem; margin-bottom: 12px; }
+
+    .toast { position: fixed; bottom: 20px; right: 20px; background: #1e293b; color: white; padding: 10px 18px; border-radius: 10px; font-size: .84rem; z-index: 999; transform: translateY(60px); opacity: 0; transition: all .3s; }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast.green { background: var(--green); }
+
+    .days-badge { font-size: .7rem; font-weight: 700; padding: 2px 7px; border-radius: 8px; cursor: pointer; transition: all .15s; }
+    .days-badge.active { background: var(--text); color: white; }
+    .days-badge:not(.active) { background: var(--gray-border); color: var(--gray); }
+    .days-badge:hover:not(.active) { background: #d1d5db; }
+
+    @media(max-width:768px) { .sidebar{display:none} .main{margin-left:0} .ai-stats{display:none} }
+  </style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sb-logo">
+    <div class="row">
+      <div class="cross"><svg width="14" height="14" viewBox="0 0 20 20"><rect x="8" y="2" width="4" height="16" rx="1"/><rect x="2" y="8" width="16" height="4" rx="1"/></svg></div>
+      MediVision AI
+    </div>
+  </div>
+  <nav class="sb-nav">
+    <div class="sb-section">Main</div>
+    <a class="nav-item" href="/portal"><span class="icon">🏠</span> Dashboard</a>
+    <a class="nav-item" href="/portal/billing"><span class="icon">🧾</span> Billing</a>
+    <div class="sb-section">Stock &amp; AI</div>
+    <a class="nav-item" href="/portal/stock"><span class="icon">📊</span> Stock &amp; Import</a>
+    <a class="nav-item active" href="/portal/ai-reorder"><span class="icon">🤖</span> AI Reorder</a>
+    <div class="sb-section">Reports</div>
+    <a class="nav-item" href="/reports/daily_sales.html" target="_blank"><span class="icon">📈</span> Daily Sales</a>
+    <a class="nav-item" href="/reports/low_stock.html" target="_blank"><span class="icon">⚠️</span> Low Stock</a>
+    <a class="nav-item" href="/reports/expiry_stock.html" target="_blank"><span class="icon">📅</span> Expiry Report</a>
+  </nav>
+  <div class="sb-footer">
+    <button class="logout-btn" onclick="fetch('/api/portal/logout',{method:'POST'}).then(()=>location.href='/')">Sign Out</button>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="topbar">
+    <h1>🤖 AI Reorder &amp; Wholesaler Intelligence</h1>
+    <div style="display:flex;gap:8px;align-items:center">
+      Analysis window:
+      <span class="days-badge active" onclick="setDays(30,this)">30d</span>
+      <span class="days-badge" onclick="setDays(60,this)">60d</span>
+      <span class="days-badge" onclick="setDays(90,this)">90d</span>
+      <button class="btn btn-green" onclick="loadAll()">↻ Recalculate</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- AI BANNER -->
+    <div class="ai-banner" id="aiBanner">
+      <div class="brain">🧠</div>
+      <div>
+        <h3>AI Sales Intelligence</h3>
+        <p>Based on your last <span id="bannerDays">30</span> days of billing data, here are reorder suggestions with min/max levels calculated from actual sales velocity.</p>
+      </div>
+      <div class="ai-stats">
+        <div class="ai-stat red"><div class="val" id="statCritical">—</div><div class="lbl">Critical</div></div>
+        <div class="ai-stat yellow"><div class="val" id="statLow">—</div><div class="lbl">Low Stock</div></div>
+        <div class="ai-stat green"><div class="val" id="statOk">—</div><div class="lbl">Healthy</div></div>
+      </div>
+    </div>
+
+    <!-- TABS -->
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="showTab('reorder',this)">📦 Reorder Suggestions</button>
+      <button class="tab-btn" onclick="showTab('compare',this)">🔄 Wholesaler Compare</button>
+      <button class="tab-btn" onclick="showTab('order',this)">📋 Order Sheet</button>
+    </div>
+
+    <!-- TAB: REORDER -->
+    <div id="tab-reorder">
+      <div class="filter-row">
+        <input class="search-input" type="text" placeholder="Search medicine..." id="reorderSearch" oninput="filterReorder(this.value)" />
+        <select class="filter-sel" id="urgencyFilter" onchange="filterReorder(document.getElementById('reorderSearch').value)">
+          <option value="all">All Status</option>
+          <option value="critical">🔴 Critical Only</option>
+          <option value="low">🟡 Low Stock</option>
+          <option value="ok">🟢 OK</option>
+          <option value="excess">🔵 Excess</option>
+        </select>
+        <div class="legend">
+          <div class="legend-item"><div class="legend-dot" style="background:var(--err)"></div> Critical (&lt;3 days)</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--yellow)"></div> Low (&lt;7 days)</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div> OK</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--indigo)"></div> Excess (>30d)</div>
+        </div>
+        <button class="btn btn-sm btn-indigo" onclick="addAllCriticalToOrder()">Add All Critical to Order</button>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h3>AI Reorder Suggestions <span class="ai-tag">AI</span></h3>
+          <span style="font-size:.78rem;color:var(--gray)">Click <strong>Accept AI</strong> to use suggested min/max levels</span>
+        </div>
+        <div class="overflow-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Medicine</th>
+                <th>Current Stock</th>
+                <th>Sold (period)</th>
+                <th>Avg/Day</th>
+                <th>Days Left</th>
+                <th>Min (Reorder) <span class="ai-tag" style="font-size:.6rem">AI</span></th>
+                <th>Max <span class="ai-tag" style="font-size:.6rem">AI</span></th>
+                <th>Reorder Qty</th>
+                <th>Status</th>
+                <th>Order</th>
+              </tr>
+            </thead>
+            <tbody id="reorderTbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: COMPARE -->
+    <div id="tab-compare" style="display:none">
+      <div class="compare-search">
+        <input class="search-input" type="text" id="compareSearch" placeholder="Search medicine to compare across wholesalers..." oninput="filterCompare(this.value)" />
+        <button class="btn btn-green" onclick="filterCompare(document.getElementById('compareSearch').value)">Search</button>
+        <button class="btn btn-outline" onclick="document.getElementById('compareSearch').value='';filterCompare('')">Show All</button>
+      </div>
+
+      <div style="background:linear-gradient(135deg,#eff6ff,#f5f3ff);border:1px solid #c7d2fe;border-radius:12px;padding:14px 18px;margin-bottom:18px;font-size:.84rem;color:#3730a3">
+        <strong>🧠 How the Score works:</strong> Each wholesaler is scored on effective price (after discount), free offer value, and stock availability.
+        Higher score = better deal. <strong>Best Deal</strong> is highlighted in green.
+        Effective price = listed price × (1 − discount%) before free-offer consideration.
+      </div>
+
+      <div id="compareGrid" class="compare-grid"></div>
+    </div>
+
+    <!-- TAB: ORDER SHEET -->
+    <div id="tab-order" style="display:none">
+      <div class="card">
+        <div class="card-header">
+          <h3>📋 Today's Order Sheet</h3>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-sm btn-outline" onclick="printOrderSheet()">🖨 Print</button>
+            <button class="btn btn-sm btn-green" onclick="exportOrderCSV()">📥 Export CSV</button>
+            <button class="btn btn-sm btn-outline" onclick="clearOrder()">Clear</button>
+          </div>
+        </div>
+        <div id="orderSheetEmpty" class="empty-state">
+          <div class="icon">📋</div>
+          <p>No items in order sheet yet.</p>
+          <p style="font-size:.8rem;margin-top:6px">Go to Reorder Suggestions and click <strong>Add to Order</strong> for critical items.</p>
+        </div>
+        <div id="orderSheetContent" style="display:none">
+          <div style="padding:14px 18px;background:var(--gray-light);border-bottom:1px solid var(--gray-border);font-size:.82rem;color:var(--gray)">
+            Order Date: <strong id="orderDate"></strong> &nbsp;|&nbsp; Total Items: <strong id="orderItemCount">0</strong> &nbsp;|&nbsp; Est. Value: <strong id="orderEstValue" style="color:var(--green)">—</strong>
+          </div>
+          <ul class="order-list" id="orderList"></ul>
+          <div style="padding:14px 18px;border-top:1px solid var(--gray-border);font-size:.8rem;color:var(--gray)">
+            💡 Tip: Use Wholesaler Compare tab to find the best price before finalising your order.
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let reorderData = [];
+let catalogData = [];
+let orderSheet = [];
+let analysisDays = 30;
+
+function setDays(d, el) {
+  analysisDays = d;
+  document.querySelectorAll('.days-badge').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('bannerDays').textContent = d;
+  loadAll();
+}
+
+function showTab(name, btn) {
+  ['reorder','compare','order'].forEach(t => {
+    document.getElementById('tab-' + t).style.display = t === name ? 'block' : 'none';
+  });
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (name === 'compare' && !catalogData.length) loadCatalog();
+  if (name === 'order') renderOrderSheet();
+}
+
+async function loadAll() {
+  loadReorder();
+}
+
+async function loadReorder() {
+  document.getElementById('reorderTbody').innerHTML = '<tr><td colspan="10" style="text-align:center;padding:24px;color:var(--gray)">🧠 Calculating AI suggestions...</td></tr>';
+  const res = await fetch('/api/ai/reorder?days=' + analysisDays);
+  reorderData = await res.json();
+
+  const critical = reorderData.filter(i => i.urgency === 'critical').length;
+  const low = reorderData.filter(i => i.urgency === 'low').length;
+  const ok = reorderData.filter(i => i.urgency === 'ok' || i.urgency === 'excess').length;
+  document.getElementById('statCritical').textContent = critical;
+  document.getElementById('statLow').textContent = low;
+  document.getElementById('statOk').textContent = ok;
+
+  renderReorderTable(reorderData);
+}
+
+function renderReorderTable(items) {
+  const tbody = document.getElementById('reorderTbody');
+  if (!items.length) {
+    tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:32px;color:var(--green)">✓ All stock levels are healthy — no urgent reorders needed!</td></tr>';
+    return;
+  }
+  const urgPill = { critical:'pill-critical', low:'pill-low', ok:'pill-ok', excess:'pill-excess' };
+  const urgLabel = { critical:'🔴 CRITICAL', low:'🟡 LOW', ok:'🟢 OK', excess:'🔵 EXCESS' };
+  tbody.innerHTML = items.map(item => {
+    const pct = item.ai_max > 0 ? Math.min(100, Math.round(item.current_stock / item.ai_max * 100)) : 0;
+    const barColor = item.urgency === 'critical' ? 'var(--err)' : item.urgency === 'low' ? 'var(--yellow)' : item.urgency === 'excess' ? 'var(--indigo)' : 'var(--green)';
+    const daysDisplay = item.days_of_stock >= 999 ? '∞' : item.days_of_stock + 'd';
+    const inOrder = orderSheet.find(o => o.id === item.id);
+    return `<tr data-urgency="${item.urgency}" data-name="${item.name.toLowerCase()}">
+      <td>
+        <div style="font-weight:600">${item.name}</div>
+        <div style="font-size:.72rem;color:var(--gray)">Sold ${item.sold_last_30d} in ${analysisDays}d</div>
+      </td>
+      <td>
+        <div class="stock-bar-wrap">
+          <div class="stock-bar"><div class="stock-bar-fill" style="width:${pct}%;background:${barColor}"></div></div>
+          <span style="font-weight:700;min-width:28px">${item.current_stock}</span>
+        </div>
+      </td>
+      <td style="color:var(--gray)">${item.sold_last_30d}</td>
+      <td style="color:var(--gray)">${item.avg_daily_sales}/day</td>
+      <td style="font-weight:700;color:${item.urgency==='critical'?'var(--err)':item.urgency==='low'?'var(--orange)':'var(--text)'}">${daysDisplay}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:6px">
+          <input class="minmax-input" type="number" min="0" value="${item.manual_reorder||item.ai_min}" id="min_${item.id}"
+            title="Set manual minimum" />
+          <span style="font-size:.7rem;color:var(--indigo);white-space:nowrap">AI: ${item.ai_min}</span>
+        </div>
+      </td>
+      <td>
+        <div style="display:flex;align-items:center;gap:6px">
+          <input class="minmax-input" type="number" min="0" value="${item.manual_max||item.ai_max}" id="max_${item.id}"
+            title="Set manual maximum" />
+          <span style="font-size:.7rem;color:var(--indigo);white-space:nowrap">AI: ${item.ai_max}</span>
+        </div>
+      </td>
+      <td style="font-weight:700;color:var(--blue)">
+        ${item.reorder_qty > 0 ? item.reorder_qty : '<span style="color:var(--gray);font-size:.78rem">Sufficient</span>'}
+      </td>
+      <td><span class="pill ${urgPill[item.urgency]||'pill-ok'}">${urgLabel[item.urgency]||'OK'}</span></td>
+      <td>
+        <div style="display:flex;gap:4px;flex-wrap:wrap">
+          <button class="accept-ai-btn" onclick="acceptAI('${item.id}',${item.ai_min},${item.ai_max})">Accept AI</button>
+          ${item.reorder_qty > 0 ? `<button class="btn btn-sm ${inOrder?'btn-outline':'btn-green'}" onclick="toggleOrder('${item.id}','${item.name}',${item.reorder_qty})">${inOrder?'✓ Added':'+ Order'}</button>` : ''}
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function filterReorder(q) {
+  const urgency = document.getElementById('urgencyFilter').value;
+  const lower = q.toLowerCase();
+  document.querySelectorAll('#reorderTbody tr').forEach(row => {
+    const name = row.dataset.name || '';
+    const urg = row.dataset.urgency || '';
+    const matchQ = !q || name.includes(lower);
+    const matchU = urgency === 'all' || urg === urgency;
+    row.style.display = matchQ && matchU ? '' : 'none';
+  });
+}
+
+function acceptAI(id, aiMin, aiMax) {
+  const minEl = document.getElementById('min_' + id);
+  const maxEl = document.getElementById('max_' + id);
+  if (minEl) minEl.value = aiMin;
+  if (maxEl) maxEl.value = aiMax;
+  // Save via API
+  const item = reorderData.find(i => i.id === id);
+  if (item) {
+    fetch('/api/shop/reorder-rules', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ shop_id: 0, medicine_id: id, medicine_name: item.name, min_qty: aiMin, max_qty: aiMax, reorder_qty: item.reorder_qty })
+    });
+    // Also update the medicine reorder level
+    fetch('/api/medicines', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ id, n: item.name, p: 0, s: item.current_stock, reorder: aiMin, max_qty: aiMax })
+    });
+  }
+  showToast(`AI min/max accepted for ${item?.name || id} ✓`, 'green');
+}
+
+function toggleOrder(id, name, qty) {
+  const idx = orderSheet.findIndex(o => o.id === id);
+  if (idx >= 0) {
+    orderSheet.splice(idx, 1);
+    showToast(`${name} removed from order`, '');
+  } else {
+    const item = reorderData.find(i => i.id === id);
+    orderSheet.push({ id, name, qty, est_price: 0, wholesaler: 'TBD' });
+    showToast(`${name} added to order (qty: ${qty}) ✓`, 'green');
+  }
+  renderReorderTable(currentFilteredData());
+}
+
+function currentFilteredData() {
+  const q = document.getElementById('reorderSearch').value.toLowerCase();
+  const urgency = document.getElementById('urgencyFilter').value;
+  return reorderData.filter(i => {
+    const matchQ = !q || i.name.toLowerCase().includes(q);
+    const matchU = urgency === 'all' || i.urgency === urgency;
+    return matchQ && matchU;
+  });
+}
+
+function addAllCriticalToOrder() {
+  const critical = reorderData.filter(i => i.urgency === 'critical');
+  let added = 0;
+  critical.forEach(item => {
+    if (!orderSheet.find(o => o.id === item.id)) {
+      orderSheet.push({ id: item.id, name: item.name, qty: item.reorder_qty, est_price: 0, wholesaler: 'TBD' });
+      added++;
+    }
+  });
+  showToast(`${added} critical items added to order ✓`, 'green');
+  renderReorderTable(reorderData);
+}
+
+// CATALOG / COMPARE
+async function loadCatalog() {
+  const res = await fetch('/api/ai/wholesaler-compare');
+  catalogData = await res.json();
+  renderCompareGrid(catalogData);
+}
+
+function filterCompare(q) {
+  if (!catalogData.length) { loadCatalog(); return; }
+  const lower = q.toLowerCase();
+  const filtered = q ? catalogData.filter(r => r.medicine_name?.toLowerCase().includes(lower) || r.generic_name?.toLowerCase().includes(lower)) : catalogData;
+  renderCompareGrid(filtered);
+}
+
+function renderCompareGrid(items) {
+  const grid = document.getElementById('compareGrid');
+  if (!items.length) {
+    grid.innerHTML = '<div class="empty-state"><div class="icon">🔍</div><p>No medicines found matching your search.</p></div>';
+    return;
+  }
+  // Group by medicine name
+  const grouped = {};
+  items.forEach(item => {
+    const key = item.medicine_name;
+    if (!grouped[key]) grouped[key] = { generic: item.generic_name, items: [] };
+    grouped[key].items.push(item);
+  });
+  // Sort each group by score desc
+  Object.values(grouped).forEach(g => g.items.sort((a,b) => b.score - a.score));
+  grid.innerHTML = Object.entries(grouped).map(([drug, group]) => {
+    const rows = group.items.map((ws, i) => {
+      const isBest = i === 0;
+      const hasOffer = ws.free_offer && ws.free_offer !== 'None';
+      return `<div class="ws-row ${isBest?'best':''}">
+        <div class="ws-name">
+          ${isBest ? '<span class="best-label">BEST DEAL</span> ' : ''}${ws.wholesaler_name}
+        </div>
+        <div>
+          <div class="ws-price" style="font-size:.78rem">List: ₹${ws.price}</div>
+          <div class="ws-eff">Eff: ₹${ws.effective_price}</div>
+        </div>
+        <div>
+          <div class="ws-disc">${ws.discount_pct}% off</div>
+          ${hasOffer ? `<div class="ws-offer">🎁 ${ws.free_offer}</div>` : ''}
+        </div>
+        <div>
+          <div class="ws-margin" style="color:${ws.margin_pct>25?'var(--green)':ws.margin_pct>15?'var(--orange)':'var(--err)'}">
+            Margin: ${ws.margin_pct}%
+          </div>
+          <div style="font-size:.72rem;color:var(--gray)">MRP: ₹${ws.mrp} | Min qty: ${ws.min_order_qty}</div>
+        </div>
+        <div class="ws-score">
+          <div class="score-badge">${ws.score}</div>
+          <div style="font-size:.65rem;color:var(--gray);margin-top:2px">score</div>
+        </div>
+        <div>
+          <button class="btn btn-sm" style="background:var(--indigo);color:white" onclick="addToOrderFromCompare('${drug}','${ws.wholesaler_name}',${ws.effective_price})">Add to Order</button>
+        </div>
+      </div>`;
+    }).join('');
+    return `<div class="drug-compare-card">
+      <div class="drug-compare-header">
+        <div>
+          <h4>${drug}</h4>
+          <div class="generic">${group.generic || 'Generic'}</div>
+        </div>
+        <div style="font-size:.78rem;color:var(--gray)">${group.items.length} wholesaler${group.items.length>1?'s':''}</div>
+      </div>
+      <div class="ws-rows">${rows}</div>
+    </div>`;
+  }).join('');
+}
+
+function addToOrderFromCompare(drug, wholesaler, price) {
+  const existing = orderSheet.find(o => o.name === drug);
+  if (existing) {
+    existing.wholesaler = wholesaler;
+    existing.est_price = price;
+  } else {
+    const aiItem = reorderData.find(i => i.name.toLowerCase() === drug.toLowerCase());
+    orderSheet.push({ id: drug, name: drug, qty: aiItem?.reorder_qty || 10, est_price: price, wholesaler });
+  }
+  showToast(`${drug} → ${wholesaler} added to order ✓`, 'green');
+}
+
+// ORDER SHEET
+function renderOrderSheet() {
+  const empty = document.getElementById('orderSheetEmpty');
+  const content = document.getElementById('orderSheetContent');
+  if (!orderSheet.length) { empty.style.display='block'; content.style.display='none'; return; }
+  empty.style.display = 'none'; content.style.display = 'block';
+  document.getElementById('orderDate').textContent = new Date().toLocaleDateString('en-IN', {day:'2-digit',month:'short',year:'numeric'});
+  document.getElementById('orderItemCount').textContent = orderSheet.length;
+  const estTotal = orderSheet.reduce((sum, o) => sum + (o.est_price * o.qty), 0);
+  document.getElementById('orderEstValue').textContent = estTotal > 0 ? '₹' + estTotal.toLocaleString('en-IN', {maximumFractionDigits:0}) : 'Not set';
+  // Group by wholesaler
+  const byWs = {};
+  orderSheet.forEach(o => {
+    const ws = o.wholesaler || 'TBD';
+    if (!byWs[ws]) byWs[ws] = [];
+    byWs[ws].push(o);
+  });
+  document.getElementById('orderList').innerHTML = Object.entries(byWs).map(([ws, items]) => `
+    <li style="padding:10px 18px;background:var(--gray-light);font-weight:700;font-size:.8rem;color:var(--gray);border-bottom:1px solid var(--gray-border)">
+      🏭 ${ws}
+    </li>
+    ${items.map(o => `<li class="order-item">
+      <span class="order-name">${o.name}</span>
+      <span class="order-qty">Qty: ${o.qty}</span>
+      <span class="order-ws">${o.wholesaler}</span>
+      <span class="order-price">${o.est_price > 0 ? '₹'+(o.est_price*o.qty).toFixed(0) : '—'}</span>
+      <button class="btn btn-sm btn-outline" onclick="removeFromOrder('${o.id}')">Remove</button>
+    </li>`).join('')}
+  `).join('');
+}
+
+function removeFromOrder(id) {
+  orderSheet = orderSheet.filter(o => o.id !== id);
+  renderOrderSheet();
+}
+
+function clearOrder() {
+  orderSheet = [];
+  renderOrderSheet();
+}
+
+function printOrderSheet() {
+  const content = document.getElementById('orderSheetContent').innerHTML;
+  const w = window.open('', '_blank', 'width=600,height=700');
+  w.document.write(`<html><head><title>Order Sheet</title><style>body{font-family:sans-serif;padding:20px}table{width:100%;border-collapse:collapse}td,th{padding:8px;border:1px solid #eee}</style></head><body><h2>MediVision AI — Order Sheet</h2><p>Date: ${new Date().toLocaleDateString('en-IN')}</p>${content}</body></html>`);
+  w.document.close(); w.print();
+}
+
+function exportOrderCSV() {
+  if (!orderSheet.length) return;
+  const rows = [['Medicine', 'Qty', 'Wholesaler', 'Est Price/Unit', 'Est Total']];
+  orderSheet.forEach(o => rows.push([o.name, o.qty, o.wholesaler, o.est_price||'', o.est_price ? (o.est_price*o.qty).toFixed(2) : '']));
+  const csv = rows.map(r => r.join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'order_sheet_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+}
+
+function showToast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'toast show ' + type;
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// Handle #compare anchor from welcome page
+if (location.hash === '#compare') {
+  document.querySelectorAll('.tab-btn')[1].click();
+}
+
+loadAll();
+</script>
+</body>
+</html>

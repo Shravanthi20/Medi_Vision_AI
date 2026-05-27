@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>SaaS Master Control — MediVision AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:Inter,sans-serif;background:#0b0e16;color:#e2e8f0;min-height:100vh;}
+.mono{font-family:'JetBrains Mono',monospace;}
+.topbar{background:#111827;border-bottom:1px solid rgba(255,255,255,.08);padding:14px 28px;display:flex;justify-content:space-between;align-items:center;}
+.brand{font-weight:800;color:#f97316;font-size:1.05rem;}
+.nav-links a{color:#94a3b8;font-size:.85rem;text-decoration:none;margin-left:14px;}
+.wrap{max-width:1500px;margin:0 auto;padding:24px;}
+h1{font-size:1.7rem;font-weight:800;color:#fff;}
+.sub{color:#94a3b8;font-size:.92rem;margin-bottom:22px;}
+
+.tabs{display:flex;gap:6px;margin-bottom:20px;border-bottom:1px solid rgba(255,255,255,.06);overflow-x:auto;}
+.tab{padding:11px 18px;font-size:.88rem;color:#94a3b8;cursor:pointer;border-bottom:3px solid transparent;font-weight:600;white-space:nowrap;}
+.tab.active{color:#fb923c;border-bottom-color:#f97316;}
+.tab .badge{background:#ef4444;color:#fff;padding:1px 7px;border-radius:99px;font-size:.65rem;margin-left:6px;font-weight:800;}
+
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:20px;}
+.kpi{background:linear-gradient(145deg,#141824,#0f1320);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:14px;}
+.kpi .l{color:#94a3b8;font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;}
+.kpi .v{color:#fff;font-size:1.5rem;font-weight:800;font-family:'JetBrains Mono',monospace;margin-top:4px;}
+.kpi.green .v{color:#4ade80;}
+.kpi.orange .v{color:#fb923c;}
+.kpi.red .v{color:#fca5a5;}
+.kpi.gold .v{color:#fbbf24;}
+
+.panel{background:#141824;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:20px;margin-bottom:18px;}
+.panel h3{color:#f97316;font-size:.95rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+
+.btn{padding:9px 16px;border-radius:8px;font-weight:700;font-size:.84rem;border:none;cursor:pointer;font-family:inherit;}
+.btn-primary{background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;}
+.btn-green{background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;}
+.btn-red{background:rgba(239,68,68,.15);color:#fca5a5;border:1px solid rgba(239,68,68,.3);}
+.btn-ghost{background:rgba(255,255,255,.05);color:#94a3b8;border:1px solid rgba(255,255,255,.1);}
+.btn-sm{padding:5px 10px;font-size:.74rem;border-radius:6px;}
+
+.input,select,textarea{width:100%;background:#0b0e16;border:1.5px solid rgba(255,255,255,.1);border-radius:9px;padding:9px 13px;color:#e2e8f0;font-family:inherit;font-size:.85rem;}
+.input:focus{outline:none;border-color:#f97316;}
+.field{margin-bottom:12px;}
+.field label{display:block;font-size:.72rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+
+.tbl{width:100%;border-collapse:collapse;}
+.tbl th{background:#0d111a;color:#94a3b8;font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;text-align:left;padding:10px 12px;}
+.tbl td{padding:10px 12px;font-size:.84rem;border-bottom:1px solid rgba(255,255,255,.04);}
+.tbl tr:hover td{background:rgba(255,255,255,.02);}
+
+.pill{padding:3px 10px;border-radius:99px;font-size:.7rem;font-weight:700;display:inline-block;}
+.s-active{background:rgba(34,197,94,.2);color:#4ade80;}
+.s-trial{background:rgba(251,191,36,.18);color:#fcd34d;}
+.s-expired{background:rgba(239,68,68,.2);color:#fca5a5;}
+.s-pending_approval{background:rgba(59,130,246,.18);color:#60a5fa;}
+.p-pending{background:rgba(251,191,36,.18);color:#fcd34d;}
+.p-approved{background:rgba(34,197,94,.2);color:#4ade80;}
+.p-rejected{background:rgba(239,68,68,.2);color:#fca5a5;}
+
+.plan-card{background:#0d111a;border:1.5px solid rgba(255,255,255,.06);border-radius:12px;padding:18px;position:relative;}
+.plan-card.featured{border-color:#f97316;background:linear-gradient(160deg,rgba(249,115,22,.06),#0d111a);}
+.plan-card .feat-badge{position:absolute;top:-9px;right:14px;background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;padding:2px 10px;border-radius:99px;font-size:.66rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;}
+.plan-card .name{font-weight:800;color:#fff;font-size:1rem;margin-bottom:3px;}
+.plan-card .tag{color:#94a3b8;font-size:.78rem;margin-bottom:8px;}
+.plan-card .price{font-size:1.7rem;font-weight:900;color:#fff;font-family:'JetBrains Mono',monospace;}
+.plan-card .price small{font-size:.78rem;color:#94a3b8;font-weight:500;}
+.plan-card .feats{margin-top:10px;font-size:.78rem;color:#cbd5e1;}
+.plan-card .feats li{padding:2px 0;list-style:none;display:flex;gap:6px;}
+.plan-card .feats li::before{content:'✓';color:#4ade80;}
+.plan-card .actions{margin-top:12px;display:flex;gap:6px;}
+
+.toast{position:fixed;bottom:30px;right:30px;background:#16a34a;color:#fff;padding:14px 22px;border-radius:10px;font-weight:700;z-index:300;display:none;}
+.toast.show{display:block;}
+.toast.err{background:#ef4444;}
+
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);align-items:center;justify-content:center;z-index:200;backdrop-filter:blur(4px);padding:20px;}
+.modal-bg.show{display:flex;}
+.modal{background:#141824;border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:28px;width:640px;max-width:100%;max-height:90vh;overflow-y:auto;}
+.modal h3{color:#f97316;margin-bottom:14px;}
+
+.proof-img{max-width:300px;max-height:300px;border-radius:9px;border:1px solid rgba(255,255,255,.06);}
+
+.feat-chip{display:inline-block;background:rgba(34,197,94,.15);color:#86efac;padding:3px 9px;border-radius:99px;font-size:.74rem;margin:2px;cursor:pointer;}
+.feat-chip.remove{background:rgba(239,68,68,.15);color:#fca5a5;}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="brand"><i class="fas fa-crown"></i> SaaS Master Control · Vendor View</div>
+  <div><a href="/portal" class="nav-links">Portal</a><a href="/license" class="nav-links">License</a></div>
+</div>
+
+<div class="wrap">
+  <h1>👑 SaaS Master Dashboard</h1>
+  <p class="sub">Full control: plans · clients · payment proofs · reminders · vendor settings</p>
+
+  <!-- KPI ROW -->
+  <div class="kpi-row" id="kpiRow"></div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <div class="tab active" data-t="clients" onclick="switchTab('clients')"><i class="fas fa-users"></i> Clients</div>
+    <div class="tab" data-t="proofs" onclick="switchTab('proofs')"><i class="fas fa-receipt"></i> Payment Proofs <span class="badge" id="pendingBadge" style="display:none;">0</span></div>
+    <div class="tab" data-t="plans" onclick="switchTab('plans')"><i class="fas fa-layer-group"></i> Plans</div>
+    <div class="tab" data-t="reminders" onclick="switchTab('reminders')"><i class="fas fa-bell"></i> Reminders</div>
+    <div class="tab" data-t="settings" onclick="switchTab('settings')"><i class="fas fa-cog"></i> Vendor Settings</div>
+  </div>
+
+  <!-- CLIENTS -->
+  <div id="t-clients">
+    <div style="display:flex;gap:10px;margin-bottom:14px;">
+      <button class="btn btn-primary" onclick="newClient()"><i class="fas fa-plus"></i> Add Client</button>
+      <select id="cFilter" class="input" style="width:160px;" onchange="loadClients()">
+        <option value="">All statuses</option>
+        <option value="active">Active</option>
+        <option value="trial">Trial</option>
+        <option value="pending_approval">Pending</option>
+        <option value="expired">Expired</option>
+      </select>
+    </div>
+    <div class="panel">
+      <table class="tbl" id="clientsTable">
+        <thead><tr>
+          <th>Shop</th><th>Owner / Phone</th><th>Plan</th><th>End Date</th><th>Days Left</th><th>Status</th><th>Total Paid</th><th></th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- PROOFS -->
+  <div id="t-proofs" style="display:none;">
+    <div class="panel">
+      <h3><i class="fas fa-receipt"></i> Payment Proof Review</h3>
+      <table class="tbl" id="proofsTable">
+        <thead><tr><th>When</th><th>Shop</th><th>Amount</th><th>Txn ID</th><th>Proof</th><th>Status</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- PLANS -->
+  <div id="t-plans" style="display:none;">
+    <div style="display:flex;gap:10px;margin-bottom:14px;">
+      <button class="btn btn-primary" onclick="newPlan()"><i class="fas fa-plus"></i> New Plan</button>
+    </div>
+    <div id="plansGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;"></div>
+  </div>
+
+  <!-- REMINDERS -->
+  <div id="t-reminders" style="display:none;">
+    <div class="panel">
+      <h3><i class="fas fa-bell"></i> Expiring in 3 Days</h3>
+      <button class="btn btn-primary" onclick="loadReminders()"><i class="fas fa-sync"></i> Refresh List</button>
+      <div id="remindersList" style="margin-top:14px;"></div>
+    </div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div id="t-settings" style="display:none;">
+    <div class="panel">
+      <h3><i class="fas fa-cog"></i> Vendor Settings</h3>
+      <div class="grid2">
+        <div class="field"><label>GPay UPI ID</label><input id="set-upi_id" class="input" placeholder="vendor@oksbi"/></div>
+        <div class="field"><label>UPI Name (your name on GPay)</label><input id="set-upi_name" class="input"/></div>
+      </div>
+      <div class="grid2">
+        <div class="field"><label>Vendor Phone (WhatsApp)</label><input id="set-vendor_phone" class="input"/></div>
+        <div class="field"><label>Vendor Email</label><input id="set-vendor_email" class="input"/></div>
+      </div>
+      <div class="field"><label>QR Image URL (upload manually)</label><input id="set-qr_image_url" class="input" placeholder="/static/qr.png"/></div>
+      <div class="field"><label>Brand Name</label><input id="set-brand_name" class="input"/></div>
+      <div class="field"><label>Central Server URL (for installed-app sync)</label><input id="set-central_server_url" class="input" placeholder="https://yourdomain.com"/></div>
+      <button class="btn btn-green" onclick="saveSettings()" style="width:100%;margin-top:10px;"><i class="fas fa-save"></i> Save Settings</button>
+    </div>
+  </div>
+</div>
+
+<!-- CLIENT MODAL -->
+<div class="modal-bg" id="clientModal" onclick="if(event.target===this)closeClient()">
+  <div class="modal">
+    <h3 id="cmTitle">Add Client</h3>
+    <input type="hidden" id="cm-id"/>
+    <div class="grid2">
+      <div class="field"><label>Shop Name *</label><input id="cm-shop_name" class="input"/></div>
+      <div class="field"><label>Owner Name</label><input id="cm-owner_name" class="input"/></div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label>Phone</label><input id="cm-phone" class="input"/></div>
+      <div class="field"><label>WhatsApp</label><input id="cm-whatsapp" class="input"/></div>
+    </div>
+    <div class="field"><label>Email</label><input id="cm-email" class="input"/></div>
+    <div class="field"><label>Address</label><input id="cm-address" class="input"/></div>
+    <div class="grid2">
+      <div class="field"><label>Type</label>
+        <select id="cm-client_type"><option value="retail">Retail Pharmacy</option><option value="wholesale">Wholesale Distributor</option></select>
+      </div>
+      <div class="field"><label>Machine Code</label><input id="cm-machine_code" class="input mono"/></div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label>Plan</label><select id="cm-plan_id"></select></div>
+      <div class="field"><label>Discount %</label><input type="number" id="cm-discount_pct" class="input" value="0"/></div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label>Sub Start</label><input type="date" id="cm-subscription_start" class="input"/></div>
+      <div class="field"><label>Sub End</label><input type="date" id="cm-subscription_end" class="input"/></div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label>Status</label>
+        <select id="cm-status"><option value="active">Active</option><option value="trial">Trial</option><option value="expired">Expired</option><option value="suspended">Suspended</option></select>
+      </div>
+      <div class="field"><label>Notes</label><input id="cm-notes" class="input"/></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:10px;">
+      <button class="btn btn-ghost" onclick="closeClient()" style="flex:1">Cancel</button>
+      <button class="btn btn-red" onclick="deleteClient()" id="cmDelBtn" style="flex:1;display:none;">Delete</button>
+      <button class="btn btn-green" onclick="saveClient()" style="flex:2"><i class="fas fa-save"></i> Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- PLAN MODAL -->
+<div class="modal-bg" id="planModal" onclick="if(event.target===this)closePlan()">
+  <div class="modal">
+    <h3 id="pmTitle">New Plan</h3>
+    <input type="hidden" id="pm-id"/>
+    <div class="grid2">
+      <div class="field"><label>Code</label><input id="pm-code" class="input mono" placeholder="PRO_R"/></div>
+      <div class="field"><label>Name</label><input id="pm-name" class="input"/></div>
+    </div>
+    <div class="field"><label>Tagline</label><input id="pm-tagline" class="input"/></div>
+    <div class="grid3">
+      <div class="field"><label>Price (₹)</label><input type="number" id="pm-price" class="input"/></div>
+      <div class="field"><label>Cycle</label>
+        <select id="pm-billing_cycle"><option value="monthly">Monthly</option><option value="quarterly">Quarterly</option><option value="yearly">Yearly</option></select>
+      </div>
+      <div class="field"><label>Client Type</label>
+        <select id="pm-client_type"><option value="retail">Retail</option><option value="wholesale">Wholesale</option></select>
+      </div>
+    </div>
+    <div class="field">
+      <label>Features (comma-separated, or * for all)</label>
+      <textarea id="pm-features" class="input" rows="3" placeholder="billing, gst, stock, customers, ai_billing, voice_billing, whatsapp_share"></textarea>
+    </div>
+    <div class="field">
+      <label>Limits JSON (e.g. {"max_users":5,"max_bills":5000})</label>
+      <textarea id="pm-limits" class="input mono" rows="2"></textarea>
+    </div>
+    <div class="grid3">
+      <div class="field"><label>Featured?</label><select id="pm-is_featured"><option value="0">No</option><option value="1">Yes</option></select></div>
+      <div class="field"><label>Active?</label><select id="pm-is_active"><option value="1">Yes</option><option value="0">No</option></select></div>
+      <div class="field"><label>Sort Order</label><input type="number" id="pm-sort_order" class="input" value="0"/></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:10px;">
+      <button class="btn btn-ghost" onclick="closePlan()" style="flex:1">Cancel</button>
+      <button class="btn btn-red" onclick="deletePlan()" id="pmDelBtn" style="flex:1;display:none;">Delete</button>
+      <button class="btn btn-green" onclick="savePlan()" style="flex:2"><i class="fas fa-save"></i> Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- EXTEND MODAL -->
+<div class="modal-bg" id="extendModal" onclick="if(event.target===this)closeExtend()">
+  <div class="modal" style="width:420px;">
+    <h3>Extend Subscription</h3>
+    <p style="color:#94a3b8;font-size:.85rem;margin-bottom:10px;" id="extendShop"></p>
+    <div class="field">
+      <label>Extend by (days)</label>
+      <input type="number" id="extendDays" class="input" value="30"/>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-ghost" onclick="closeExtend()" style="flex:1">Cancel</button>
+      <button class="btn btn-green" onclick="doExtend()" style="flex:2"><i class="fas fa-check"></i> Extend</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let allPlans = [];
+let extendId = 0;
+
+async function switchTab(t){
+  document.querySelectorAll('.tab').forEach(el => el.classList.toggle('active', el.dataset.t === t));
+  ['clients','proofs','plans','reminders','settings'].forEach(x => {
+    document.getElementById('t-' + x).style.display = x === t ? '' : 'none';
+  });
+  if(t === 'clients') loadClients();
+  if(t === 'proofs') loadProofs();
+  if(t === 'plans') loadPlans();
+  if(t === 'reminders') loadReminders();
+  if(t === 'settings') loadSettings();
+}
+
+async function loadClients(){
+  const f = document.getElementById('cFilter').value;
+  const r = await fetch('/api/admin/saas/clients' + (f ? '?status=' + f : ''));
+  const d = await r.json();
+  const s = d.stats;
+
+  document.getElementById('kpiRow').innerHTML = `
+    <div class="kpi green"><div class="l">Active</div><div class="v">${s.active}</div></div>
+    <div class="kpi gold"><div class="l">Trial</div><div class="v">${s.trial}</div></div>
+    <div class="kpi orange"><div class="l">Pending</div><div class="v">${s.pending}</div></div>
+    <div class="kpi red"><div class="l">Expired</div><div class="v">${s.expired}</div></div>
+    <div class="kpi"><div class="l">Total Clients</div><div class="v">${s.total}</div></div>
+    <div class="kpi red"><div class="l">Expiring in 3d</div><div class="v">${s.expiring_soon}</div></div>
+    <div class="kpi green"><div class="l">MRR</div><div class="v">₹${Math.round(s.mrr).toLocaleString('en-IN')}</div></div>
+  `;
+
+  if(s.pending > 0){
+    document.getElementById('pendingBadge').textContent = s.pending;
+    document.getElementById('pendingBadge').style.display = 'inline-block';
+  } else {
+    document.getElementById('pendingBadge').style.display = 'none';
+  }
+
+  const tb = document.querySelector('#clientsTable tbody');
+  if(!d.clients.length){
+    tb.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:30px;color:#64748b;">No clients</td></tr>';
+    return;
+  }
+  tb.innerHTML = d.clients.map(c => {
+    const daysClass = c.days_remaining < 0 ? 'red' : (c.days_remaining < 7 ? 'orange' : 'green');
+    const dayText = c.days_remaining === null ? '-' : (c.days_remaining < 0 ? `${Math.abs(c.days_remaining)}d ago` : `${c.days_remaining}d left`);
+    return `<tr>
+      <td><strong>${c.shop_name}</strong><br><span style="color:#64748b;font-size:.74rem;">${c.client_type}</span></td>
+      <td>${c.owner_name||'-'}<br><span style="font-family:monospace;color:#94a3b8;font-size:.74rem;">${c.phone||''}</span></td>
+      <td>${c.plan_name||'-'}<br><span style="font-family:monospace;color:#94a3b8;font-size:.72rem;">${c.plan_code||''}</span></td>
+      <td class="mono" style="font-size:.78rem;">${c.subscription_end||'-'}</td>
+      <td><span style="color:${daysClass==='red'?'#fca5a5':daysClass==='orange'?'#fbbf24':'#4ade80'};font-weight:700;font-family:monospace;">${dayText}</span></td>
+      <td><span class="pill s-${c.status}">${c.status}</span></td>
+      <td class="mono" style="color:#4ade80;">₹${(c.total_paid||0).toFixed(0)}</td>
+      <td>
+        <button class="btn btn-sm btn-primary" onclick="extendSub(${c.id},'${c.shop_name}')">+30d</button>
+        <button class="btn btn-sm btn-ghost" onclick="editClient(${c.id})">Edit</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+async function loadProofs(){
+  const r = await fetch('/api/admin/saas/proofs');
+  const d = await r.json();
+  const tb = document.querySelector('#proofsTable tbody');
+  if(!d.proofs.length){
+    tb.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:30px;color:#64748b;">No payment proofs yet</td></tr>';
+    return;
+  }
+  tb.innerHTML = d.proofs.map(p => `<tr>
+    <td class="mono" style="font-size:.78rem;">${(p.created_at||'').slice(0,16)}</td>
+    <td><strong>${p.shop_name}</strong><br><span style="color:#94a3b8;font-size:.74rem;">${p.payer_name||''} ${p.payer_phone||''}</span></td>
+    <td class="mono" style="color:#4ade80;">₹${p.amount}</td>
+    <td class="mono" style="font-size:.78rem;">${p.transaction_id||'-'}</td>
+    <td>${p.proof_url ? `<a href="${p.proof_url}" target="_blank" style="color:#fb923c;text-decoration:underline;font-size:.78rem;">View ↗</a>` : '-'}</td>
+    <td><span class="pill p-${p.status}">${p.status}</span>${p.status==='approved' && p.extends_until ? `<br><span style="color:#94a3b8;font-size:.72rem;">→ ${p.extends_until}</span>` : ''}</td>
+    <td>
+      ${p.status === 'pending' ? `<button class="btn btn-sm btn-green" onclick="approveProof(${p.id})">✓ Approve +30d</button>
+        <button class="btn btn-sm btn-red" onclick="rejectProof(${p.id})">✗ Reject</button>` : ''}
+    </td>
+  </tr>`).join('');
+}
+
+async function approveProof(id){
+  const days = prompt('Extend by how many days?', '30');
+  if(!days) return;
+  await fetch(`/api/admin/saas/proofs/${id}/approve`, {method:'POST',headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({extend_days: parseInt(days)})});
+  showToast('✓ Approved + subscription extended');
+  loadProofs(); loadClients();
+}
+
+async function rejectProof(id){
+  const reason = prompt('Rejection reason?', 'Could not verify transaction');
+  if(!reason) return;
+  await fetch(`/api/admin/saas/proofs/${id}/reject`, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({reason})});
+  showToast('Rejected', true);
+  loadProofs();
+}
+
+async function loadPlans(){
+  const r = await fetch('/api/admin/saas/plans');
+  const d = await r.json();
+  allPlans = d.plans;
+  document.getElementById('plansGrid').innerHTML = d.plans.map(p => `
+    <div class="plan-card ${p.is_featured?'featured':''}">
+      ${p.is_featured ? '<div class="feat-badge">FEATURED</div>' : ''}
+      <div class="name">${p.name} <span style="color:#94a3b8;font-size:.72rem;font-family:monospace;">${p.code}</span></div>
+      <div class="tag">${p.tagline||''}</div>
+      <div class="price">₹${p.price}<small>/${p.billing_cycle.slice(0,2)}</small></div>
+      <div style="color:#94a3b8;font-size:.74rem;margin-top:5px;">${p.client_type.toUpperCase()} · ${p.is_active?'ACTIVE':'INACTIVE'}</div>
+      <ul class="feats">${p.features.slice(0,5).map(f => `<li>${f}</li>`).join('')}${p.features.length>5?`<li style="color:#94a3b8;">…+${p.features.length-5} more</li>`:''}</ul>
+      <div class="actions">
+        <button class="btn btn-sm btn-ghost" onclick='editPlan(${JSON.stringify(p).replace(/'/g,"&apos;")})' style="flex:1">Edit</button>
+      </div>
+    </div>`).join('');
+  // Populate plan dropdown in client modal
+  document.getElementById('cm-plan_id').innerHTML = '<option value="0">-- None --</option>' +
+    d.plans.map(p => `<option value="${p.id}">${p.name} · ₹${p.price}/${p.billing_cycle}</option>`).join('');
+}
+
+async function loadReminders(){
+  const r = await fetch('/api/admin/saas/reminders/run', {method:'POST'});
+  const d = await r.json();
+  const el = document.getElementById('remindersList');
+  if(!d.reminders.length){
+    el.innerHTML = '<div style="text-align:center;padding:30px;color:#64748b;">No clients expiring in 3 days</div>';
+    return;
+  }
+  el.innerHTML = d.reminders.map(r => `
+    <div style="background:#0d111a;border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:14px;margin-bottom:8px;display:flex;align-items:center;gap:12px;">
+      <div style="flex:1;">
+        <div style="font-weight:700;">${r.shop_name} <span style="color:#94a3b8;font-weight:400;">${r.owner||''}</span></div>
+        <div style="color:#94a3b8;font-size:.78rem;margin-top:2px;">Phone: ${r.phone} · Plan: ${r.plan} · ₹${r.amount}</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="color:${r.days_left<=0?'#fca5a5':'#fbbf24'};font-weight:800;font-family:monospace;">${r.days_left} days</div>
+        <div style="color:#94a3b8;font-size:.72rem;">Ends ${r.subscription_end}</div>
+      </div>
+      <a href="${r.wa_url}" target="_blank" class="btn btn-green" onclick="logReminder(${r.client_id})"><i class="fab fa-whatsapp"></i> Send WhatsApp</a>
+    </div>`).join('');
+}
+
+async function logReminder(cid){
+  await fetch('/api/admin/saas/reminders/log', {method:'POST',headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({client_id: cid, reminder_type: 'expiry_3d'})});
+}
+
+async function loadSettings(){
+  const r = await fetch('/api/admin/saas/settings');
+  const d = await r.json();
+  ['upi_id','upi_name','vendor_phone','vendor_email','qr_image_url','brand_name','central_server_url'].forEach(k => {
+    const el = document.getElementById('set-' + k);
+    if(el) el.value = d[k] || '';
+  });
+}
+
+async function saveSettings(){
+  const body = {};
+  ['upi_id','upi_name','vendor_phone','vendor_email','qr_image_url','brand_name','central_server_url'].forEach(k => {
+    body[k] = document.getElementById('set-' + k).value;
+  });
+  await fetch('/api/admin/saas/settings', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  showToast('✓ Settings saved');
+}
+
+// ─── CLIENT modal ────
+function newClient(){
+  document.getElementById('cmTitle').textContent = 'Add Client';
+  ['id','shop_name','owner_name','phone','whatsapp','email','address','machine_code','notes'].forEach(k => document.getElementById('cm-' + k).value = '');
+  document.getElementById('cm-client_type').value = 'retail';
+  document.getElementById('cm-discount_pct').value = 0;
+  document.getElementById('cm-status').value = 'active';
+  document.getElementById('cm-subscription_start').value = new Date().toISOString().slice(0,10);
+  const end = new Date(); end.setDate(end.getDate() + 30);
+  document.getElementById('cm-subscription_end').value = end.toISOString().slice(0,10);
+  document.getElementById('cmDelBtn').style.display = 'none';
+  document.getElementById('clientModal').classList.add('show');
+}
+async function editClient(id){
+  const r = await fetch('/api/admin/saas/clients');
+  const d = await r.json();
+  const c = d.clients.find(x => x.id === id);
+  if(!c) return;
+  document.getElementById('cmTitle').textContent = 'Edit Client';
+  document.getElementById('cmDelBtn').style.display = 'block';
+  ['id','shop_name','owner_name','phone','whatsapp','email','address','client_type','machine_code','plan_id','discount_pct','subscription_start','subscription_end','status','notes'].forEach(k => {
+    const el = document.getElementById('cm-' + k);
+    if(el) el.value = c[k] !== null && c[k] !== undefined ? c[k] : '';
+  });
+  document.getElementById('clientModal').classList.add('show');
+}
+function closeClient(){ document.getElementById('clientModal').classList.remove('show'); }
+async function saveClient(){
+  const body = {};
+  ['id','shop_name','owner_name','phone','whatsapp','email','address','client_type','machine_code','plan_id','discount_pct','subscription_start','subscription_end','status','notes'].forEach(k => {
+    body[k] = document.getElementById('cm-' + k).value;
+  });
+  if(!body.id) delete body.id;
+  await fetch('/api/admin/saas/clients', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  showToast('✓ Client saved');
+  closeClient(); loadClients();
+}
+async function deleteClient(){
+  const id = document.getElementById('cm-id').value;
+  if(!confirm('Delete this client?')) return;
+  await fetch('/api/admin/saas/clients/' + id, {method:'DELETE'});
+  closeClient(); loadClients();
+}
+
+// ─── PLAN modal ─────
+function newPlan(){
+  document.getElementById('pmTitle').textContent = 'New Plan';
+  ['id','code','name','tagline','price','features','limits','sort_order'].forEach(k => document.getElementById('pm-' + k).value = '');
+  document.getElementById('pm-billing_cycle').value = 'monthly';
+  document.getElementById('pm-client_type').value = 'retail';
+  document.getElementById('pm-is_active').value = '1';
+  document.getElementById('pm-is_featured').value = '0';
+  document.getElementById('pmDelBtn').style.display = 'none';
+  document.getElementById('planModal').classList.add('show');
+}
+function editPlan(p){
+  if(typeof p === 'string') p = JSON.parse(p);
+  document.getElementById('pmTitle').textContent = 'Edit Plan';
+  document.getElementById('pmDelBtn').style.display = 'block';
+  document.getElementById('pm-id').value = p.id;
+  document.getElementById('pm-code').value = p.code;
+  document.getElementById('pm-name').value = p.name;
+  document.getElementById('pm-tagline').value = p.tagline || '';
+  document.getElementById('pm-price').value = p.price;
+  document.getElementById('pm-billing_cycle').value = p.billing_cycle;
+  document.getElementById('pm-client_type').value = p.client_type;
+  document.getElementById('pm-features').value = (p.features || []).join(', ');
+  document.getElementById('pm-limits').value = JSON.stringify(p.limits || {});
+  document.getElementById('pm-is_active').value = p.is_active ? '1' : '0';
+  document.getElementById('pm-is_featured').value = p.is_featured ? '1' : '0';
+  document.getElementById('pm-sort_order').value = p.sort_order || 0;
+  document.getElementById('planModal').classList.add('show');
+}
+function closePlan(){ document.getElementById('planModal').classList.remove('show'); }
+async function savePlan(){
+  const body = {
+    id: document.getElementById('pm-id').value || null,
+    code: document.getElementById('pm-code').value,
+    name: document.getElementById('pm-name').value,
+    tagline: document.getElementById('pm-tagline').value,
+    price: parseFloat(document.getElementById('pm-price').value || 0),
+    billing_cycle: document.getElementById('pm-billing_cycle').value,
+    client_type: document.getElementById('pm-client_type').value,
+    features: document.getElementById('pm-features').value.split(',').map(s => s.trim()).filter(Boolean),
+    is_active: document.getElementById('pm-is_active').value === '1',
+    is_featured: document.getElementById('pm-is_featured').value === '1',
+    sort_order: parseInt(document.getElementById('pm-sort_order').value || 0)
+  };
+  try { body.limits = JSON.parse(document.getElementById('pm-limits').value || '{}'); }
+  catch(e) { showToast('Invalid limits JSON', true); return; }
+  await fetch('/api/admin/saas/plans', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  showToast('✓ Plan saved');
+  closePlan(); loadPlans();
+}
+async function deletePlan(){
+  const id = document.getElementById('pm-id').value;
+  if(!confirm('Delete this plan?')) return;
+  await fetch('/api/admin/saas/plans/' + id, {method:'DELETE'});
+  closePlan(); loadPlans();
+}
+
+// ─── EXTEND modal ──
+function extendSub(id, name){
+  extendId = id;
+  document.getElementById('extendShop').textContent = name;
+  document.getElementById('extendDays').value = 30;
+  document.getElementById('extendModal').classList.add('show');
+}
+function closeExtend(){ document.getElementById('extendModal').classList.remove('show'); }
+async function doExtend(){
+  const days = parseInt(document.getElementById('extendDays').value || 30);
+  await fetch(`/api/admin/saas/clients/${extendId}/extend`, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({days})});
+  showToast('✓ Extended by ' + days + ' days');
+  closeExtend(); loadClients();
+}
+
+function showToast(m, e){
+  const t = document.getElementById('toast');
+  t.textContent = m; t.classList.toggle('err', !!e); t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+(async function(){
+  await loadPlans();
+  loadClients();
+})();
+</script>
+</body>
+</html>

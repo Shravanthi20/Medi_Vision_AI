@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI Prescription Reader — MediVision AI</title>
+<style>
+:root{--bg:#0b0e16;--card:#141824;--card2:#1a1f2e;--brd:#2a3045;--acc:#f97316;--acc2:#fb923c;--red:#ef4444;--grn:#22c55e;--ylw:#eab308;--txt:#e2e8f0;--muted:#64748b;--font:'Inter',system-ui,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--txt);font-family:var(--font);min-height:100vh}
+.topbar{display:flex;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid var(--brd);background:var(--card)}
+.topbar a{color:var(--muted);text-decoration:none;font-size:.85rem;display:flex;align-items:center;gap:6px}
+.topbar a:hover{color:var(--txt)}
+.topbar h1{font-size:1.15rem;font-weight:700;color:var(--txt)}
+.badge-ai{background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;font-size:.65rem;font-weight:700;padding:2px 8px;border-radius:20px;letter-spacing:.5px}
+.main{display:grid;grid-template-columns:420px 1fr;gap:0;height:calc(100vh - 53px)}
+
+/* LEFT PANEL */
+.left-panel{border-right:1px solid var(--brd);display:flex;flex-direction:column;overflow:hidden}
+.panel-hdr{padding:16px 20px 12px;border-bottom:1px solid var(--brd);font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted)}
+.panel-body{flex:1;overflow-y:auto;padding:20px}
+
+/* Upload Zone */
+.upload-zone{border:2px dashed var(--brd);border-radius:12px;padding:32px 20px;text-align:center;cursor:pointer;transition:.2s;background:var(--card2);margin-bottom:16px}
+.upload-zone:hover,.upload-zone.drag-over{border-color:var(--acc);background:rgba(249,115,22,.06)}
+.upload-zone .upload-icon{font-size:2.5rem;margin-bottom:8px}
+.upload-zone p{font-size:.85rem;color:var(--muted);line-height:1.5}
+.upload-zone strong{color:var(--acc)}
+.upload-zone input{display:none}
+.preview-img{width:100%;max-height:180px;object-fit:contain;border-radius:8px;margin-top:12px;border:1px solid var(--brd)}
+
+.divider{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:.75rem;margin:14px 0}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--brd)}
+
+.textarea-wrap{position:relative}
+.rx-textarea{width:100%;background:var(--card2);border:1px solid var(--brd);border-radius:10px;color:var(--txt);font-size:.85rem;padding:12px;resize:vertical;min-height:110px;font-family:var(--font);line-height:1.6;transition:.2s}
+.rx-textarea:focus{outline:none;border-color:var(--acc)}
+.rx-textarea::placeholder{color:var(--muted)}
+.char-count{position:absolute;bottom:8px;right:10px;font-size:.7rem;color:var(--muted)}
+
+.extract-btn{width:100%;padding:12px;background:linear-gradient(135deg,var(--acc),#ea580c);color:#fff;border:none;border-radius:10px;font-size:.9rem;font-weight:700;cursor:pointer;margin-top:14px;display:flex;align-items:center;justify-content:center;gap:8px;transition:.2s}
+.extract-btn:hover{opacity:.9;transform:translateY(-1px)}
+.extract-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+
+.ocr-status{margin-top:12px;padding:10px 14px;border-radius:8px;font-size:.8rem;display:none}
+.ocr-status.info{background:rgba(99,102,241,.12);border:1px solid rgba(99,102,241,.3);color:#a5b4fc}
+.ocr-status.warn{background:rgba(234,179,8,.1);border:1px solid rgba(234,179,8,.3);color:var(--ylw)}
+.ocr-status.success{background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);color:var(--grn)}
+
+/* Sample Rx buttons */
+.samples-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.sample-btn{background:var(--card2);border:1px solid var(--brd);color:var(--muted);font-size:.72rem;padding:4px 10px;border-radius:6px;cursor:pointer;transition:.15s}
+.sample-btn:hover{border-color:var(--acc);color:var(--acc)}
+
+/* RIGHT PANEL */
+.right-panel{display:flex;flex-direction:column;overflow:hidden}
+.right-tabs{display:flex;border-bottom:1px solid var(--brd);background:var(--card)}
+.rtab{padding:14px 20px;font-size:.82rem;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:.15s}
+.rtab.active{color:var(--acc);border-bottom-color:var(--acc)}
+.rtab-panel{display:none;flex:1;overflow-y:auto;padding:20px}
+.rtab-panel.active{display:flex;flex-direction:column;gap:16px}
+
+/* Matched medicines */
+.match-table-wrap{overflow-x:auto}
+.match-table{width:100%;border-collapse:collapse;font-size:.82rem}
+.match-table th{padding:8px 12px;text-align:left;color:var(--muted);font-weight:600;font-size:.72rem;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--brd)}
+.match-table td{padding:10px 12px;border-bottom:1px solid rgba(42,48,69,.6);vertical-align:middle}
+.match-table tr:last-child td{border-bottom:none}
+.match-score{display:inline-flex;align-items:center;gap:4px;font-size:.72rem;font-family:'JetBrains Mono',monospace}
+.score-bar{height:4px;border-radius:2px;background:var(--brd);width:60px;overflow:hidden}
+.score-fill{height:100%;border-radius:2px;background:var(--grn)}
+.score-fill.med{background:var(--ylw)}
+.score-fill.low{background:var(--red)}
+.qty-input{width:64px;background:var(--card2);border:1px solid var(--brd);color:var(--txt);padding:4px 8px;border-radius:6px;text-align:center;font-size:.82rem}
+.qty-input:focus{outline:none;border-color:var(--acc)}
+.remove-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;padding:2px 6px;border-radius:4px;transition:.15s}
+.remove-btn:hover{color:var(--red);background:rgba(239,68,68,.1)}
+.conf-badge{font-size:.7rem;padding:2px 8px;border-radius:10px;font-weight:600}
+.conf-high{background:rgba(34,197,94,.15);color:var(--grn)}
+.conf-med{background:rgba(234,179,8,.15);color:var(--ylw)}
+.conf-low{background:rgba(239,68,68,.15);color:var(--red)}
+
+/* Empty state */
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;padding:48px;text-align:center;color:var(--muted)}
+.empty-state .icon{font-size:3rem;margin-bottom:16px;opacity:.4}
+.empty-state p{font-size:.85rem;line-height:1.6}
+
+/* Drug interactions */
+.interaction-card{border-radius:10px;padding:14px 16px;border:1px solid}
+.interaction-card.severe{background:rgba(239,68,68,.08);border-color:rgba(239,68,68,.3)}
+.interaction-card.moderate{background:rgba(234,179,8,.08);border-color:rgba(234,179,8,.3)}
+.interaction-card.mild{background:rgba(99,102,241,.08);border-color:rgba(99,102,241,.3)}
+.int-header{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.int-severity{font-size:.68rem;font-weight:700;padding:2px 8px;border-radius:10px;text-transform:uppercase;letter-spacing:.5px}
+.int-severity.severe{background:rgba(239,68,68,.2);color:var(--red)}
+.int-severity.moderate{background:rgba(234,179,8,.2);color:var(--ylw)}
+.int-severity.mild{background:rgba(99,102,241,.2);color:#a5b4fc}
+.int-pair{font-weight:700;font-size:.88rem}
+.int-note{font-size:.8rem;color:var(--muted);line-height:1.5}
+
+/* Bill summary */
+.bill-summary{background:var(--card2);border:1px solid var(--brd);border-radius:12px;padding:18px}
+.bill-row{display:flex;justify-content:space-between;padding:5px 0;font-size:.85rem}
+.bill-row.total{border-top:1px solid var(--brd);margin-top:8px;padding-top:12px;font-weight:700;font-size:.95rem}
+.bill-row.total span:last-child{color:var(--acc)}
+.add-bill-btn{width:100%;padding:13px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;border:none;border-radius:10px;font-size:.92rem;font-weight:700;cursor:pointer;margin-top:14px;display:flex;align-items:center;justify-content:center;gap:8px;transition:.2s}
+.add-bill-btn:hover{opacity:.9;transform:translateY(-1px)}
+.add-bill-btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+
+.kpi-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.kpi-mini{background:var(--card2);border:1px solid var(--brd);border-radius:10px;padding:14px;text-align:center}
+.kpi-mini .val{font-size:1.4rem;font-weight:800;font-family:'JetBrains Mono',monospace}
+.kpi-mini .lbl{font-size:.72rem;color:var(--muted);margin-top:3px}
+
+.spinner{display:inline-block;width:18px;height:18px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.section-label{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:10px}
+.no-interactions{background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.25);border-radius:10px;padding:14px;text-align:center;color:var(--grn);font-size:.85rem}
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+</head>
+<body>
+
+<div class="topbar">
+  <a href="/portal">← Portal</a>
+  <span style="color:var(--brd)">|</span>
+  <span style="font-size:1.3rem">🤖</span>
+  <h1>AI Prescription Reader</h1>
+  <span class="badge-ai">STAGE 7</span>
+</div>
+
+<div class="main">
+  <!-- LEFT: Input -->
+  <div class="left-panel">
+    <div class="panel-hdr">📄 Prescription Input</div>
+    <div class="panel-body">
+
+      <!-- Upload Zone -->
+      <div class="upload-zone" id="uploadZone" onclick="document.getElementById('imgInput').click()">
+        <div class="upload-icon">📷</div>
+        <p><strong>Click to upload</strong> or drag & drop<br>
+        JPG, PNG, PDF • Max 10 MB</p>
+        <img id="previewImg" class="preview-img" style="display:none">
+        <input type="file" id="imgInput" accept="image/*,.pdf" onchange="handleFile(this)">
+      </div>
+      <div id="ocrStatus" class="ocr-status"></div>
+
+      <div class="divider">OR TYPE / PASTE TEXT</div>
+
+      <div class="textarea-wrap">
+        <textarea class="rx-textarea" id="rxText" placeholder="Type medicine names, one per line or comma-separated&#10;e.g. Paracetamol 500mg, Amoxicillin 250mg, ORS..." oninput="updateCharCount()"></textarea>
+        <span class="char-count" id="charCount">0 chars</span>
+      </div>
+
+      <div class="samples-row">
+        <span style="font-size:.72rem;color:var(--muted);align-self:center">Try sample:</span>
+        <button class="sample-btn" onclick="loadSample('fever')">Fever Rx</button>
+        <button class="sample-btn" onclick="loadSample('bp')">BP Rx</button>
+        <button class="sample-btn" onclick="loadSample('diabetes')">Diabetes Rx</button>
+        <button class="sample-btn" onclick="loadSample('antibiotic')">Antibiotic Rx</button>
+      </div>
+
+      <button class="extract-btn" id="extractBtn" onclick="extractMedicines()">
+        <span id="extractBtnText">🔍 Extract & Match Medicines</span>
+      </button>
+
+    </div>
+  </div>
+
+  <!-- RIGHT: Results -->
+  <div class="right-panel">
+    <div class="right-tabs">
+      <div class="rtab active" onclick="switchTab('medicines')">💊 Matched Medicines <span id="matchCount" style="background:var(--acc);color:#fff;font-size:.65rem;padding:1px 7px;border-radius:10px;margin-left:4px;display:none">0</span></div>
+      <div class="rtab" onclick="switchTab('interactions')">⚠️ Drug Interactions <span id="intCount" style="background:var(--red);color:#fff;font-size:.65rem;padding:1px 7px;border-radius:10px;margin-left:4px;display:none">0</span></div>
+      <div class="rtab" onclick="switchTab('bill')">🧾 Bill Preview</div>
+    </div>
+
+    <!-- Medicines Tab -->
+    <div class="rtab-panel active" id="tab-medicines">
+      <div id="medicinesEmpty" class="empty-state">
+        <div class="icon">💊</div>
+        <p>Upload a prescription image or type medicine names,<br>then click <strong style="color:var(--acc)">Extract & Match</strong></p>
+      </div>
+      <div id="medicinesContent" style="display:none">
+        <div class="kpi-row">
+          <div class="kpi-mini"><div class="val" id="kpiTotal" style="color:var(--acc)">0</div><div class="lbl">Medicines Found</div></div>
+          <div class="kpi-mini"><div class="val" id="kpiMatched" style="color:var(--grn)">0</div><div class="lbl">Matched in DB</div></div>
+          <div class="kpi-mini"><div class="val" id="kpiUnmatched" style="color:var(--ylw)">0</div><div class="lbl">Not Found</div></div>
+        </div>
+        <div class="match-table-wrap">
+          <table class="match-table">
+            <thead>
+              <tr>
+                <th>EXTRACTED TEXT</th>
+                <th>MATCHED MEDICINE</th>
+                <th>CONFIDENCE</th>
+                <th>QTY</th>
+                <th>STOCK</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="matchTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Interactions Tab -->
+    <div class="rtab-panel" id="tab-interactions">
+      <div id="intEmpty" class="empty-state">
+        <div class="icon">⚠️</div>
+        <p>Interactions will appear after medicines are extracted</p>
+      </div>
+      <div id="intContent" style="display:none;flex-direction:column;gap:12px"></div>
+    </div>
+
+    <!-- Bill Preview Tab -->
+    <div class="rtab-panel" id="tab-bill">
+      <div id="billEmpty" class="empty-state">
+        <div class="icon">🧾</div>
+        <p>Select matched medicines to see bill preview</p>
+      </div>
+      <div id="billContent" style="display:none">
+        <div class="section-label">Bill Items</div>
+        <div class="match-table-wrap">
+          <table class="match-table">
+            <thead><tr><th>MEDICINE</th><th>QTY</th><th>MRP</th><th>AMOUNT</th></tr></thead>
+            <tbody id="billTableBody"></tbody>
+          </table>
+        </div>
+        <div class="bill-summary" id="billSummary" style="margin-top:8px"></div>
+        <button class="add-bill-btn" id="addBillBtn" onclick="goToBilling()">
+          ⚡ Open in New Bill
+        </button>
+        <p style="text-align:center;font-size:.75rem;color:var(--muted);margin-top:8px">Medicines will be pre-loaded in the billing screen</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+let matchedItems = [];   // [{extracted, name, item_id, mrp, stock, qty, score}]
+let imgFile = null;
+
+// ── Tab switching ──────────────────────────────────────────────────────────
+function switchTab(tab) {
+  document.querySelectorAll('.rtab').forEach((el, i) => {
+    const tabs = ['medicines','interactions','bill'];
+    el.classList.toggle('active', tabs[i] === tab);
+  });
+  document.querySelectorAll('.rtab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  if(tab === 'bill') renderBillPreview();
+}
+
+// ── File handling ──────────────────────────────────────────────────────────
+function handleFile(input) {
+  const file = input.files[0];
+  if(!file) return;
+  imgFile = file;
+  const preview = document.getElementById('previewImg');
+  if(file.type.startsWith('image/')) {
+    const reader = new FileReader();
+    reader.onload = e => { preview.src = e.target.result; preview.style.display = 'block'; };
+    reader.readAsDataURL(file);
+  } else {
+    preview.style.display = 'none';
+  }
+  showStatus('info', `📎 File loaded: ${file.name} (${(file.size/1024).toFixed(0)} KB). Click Extract to process.`);
+}
+
+// Drag & drop
+const zone = document.getElementById('uploadZone');
+zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+zone.addEventListener('drop', e => {
+  e.preventDefault();
+  zone.classList.remove('drag-over');
+  const f = e.dataTransfer.files[0];
+  if(f) { document.getElementById('imgInput').files = e.dataTransfer.files; handleFile(document.getElementById('imgInput')); }
+});
+
+// ── Char counter ───────────────────────────────────────────────────────────
+function updateCharCount() {
+  const txt = document.getElementById('rxText').value;
+  document.getElementById('charCount').textContent = txt.length + ' chars';
+}
+
+// ── Sample prescriptions ───────────────────────────────────────────────────
+const SAMPLES = {
+  fever: `Paracetamol 500mg\nIbuprofen 400mg\nCetirizine 10mg\nORS Powder`,
+  bp: `Amlodipine 5mg\nTelmisartan 40mg\nAspirin 75mg\nAtorvastatin 10mg`,
+  diabetes: `Metformin 500mg\nGlimepiride 1mg\nVoglibose 0.2mg\nInsulin Glargine`,
+  antibiotic: `Amoxicillin 500mg\nAzithromycin 250mg\nOmeprazole 20mg\nLactobacillus`,
+};
+function loadSample(key) {
+  document.getElementById('rxText').value = SAMPLES[key] || '';
+  updateCharCount();
+  showStatus('info', '💡 Sample prescription loaded. Click Extract & Match.');
+}
+
+// ── Status helper ──────────────────────────────────────────────────────────
+function showStatus(type, msg) {
+  const el = document.getElementById('ocrStatus');
+  el.className = 'ocr-status ' + type;
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+// ── Extract & Match ────────────────────────────────────────────────────────
+async function extractMedicines() {
+  const text = document.getElementById('rxText').value.trim();
+  if(!text && !imgFile) {
+    showStatus('warn', '⚠️ Please type medicine names or upload a prescription image first.');
+    return;
+  }
+
+  const btn = document.getElementById('extractBtn');
+  const btnText = document.getElementById('extractBtnText');
+  btn.disabled = true;
+  btnText.innerHTML = '<span class="spinner"></span> Matching medicines...';
+
+  try {
+    const fd = new FormData();
+    fd.append('text', text);
+    if(imgFile) fd.append('image', imgFile);
+
+    const res = await fetch('/api/prescription/extract', { method:'POST', body: fd });
+    const data = await res.json();
+
+    if(data.status === 'error') {
+      showStatus('warn', '⚠️ ' + data.message);
+      return;
+    }
+
+    matchedItems = (data.matches || []).map(m => ({...m, qty: 1}));
+    renderMatches();
+    renderInteractions(data.interactions || []);
+    showStatus('success', `✅ Found ${matchedItems.length} medicines · ${matchedItems.filter(m=>m.item_id).length} matched in your database`);
+
+  } catch(e) {
+    showStatus('warn', '⚠️ Connection error: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btnText.textContent = '🔍 Extract & Match Medicines';
+  }
+}
+
+// ── Render matches table ───────────────────────────────────────────────────
+function renderMatches() {
+  const total = matchedItems.length;
+  const matched = matchedItems.filter(m => m.item_id).length;
+  const unmatched = total - matched;
+
+  document.getElementById('kpiTotal').textContent = total;
+  document.getElementById('kpiMatched').textContent = matched;
+  document.getElementById('kpiUnmatched').textContent = unmatched;
+
+  const badge = document.getElementById('matchCount');
+  badge.textContent = total;
+  badge.style.display = total ? 'inline' : 'none';
+
+  const tbody = document.getElementById('matchTableBody');
+  tbody.innerHTML = '';
+  matchedItems.forEach((m, idx) => {
+    const score = m.score || 0;
+    const pct = Math.round(score * 100);
+    const fillClass = pct >= 80 ? '' : pct >= 60 ? 'med' : 'low';
+    const confClass = pct >= 80 ? 'conf-high' : pct >= 60 ? 'conf-med' : 'conf-low';
+    const stockBadge = m.stock > 0
+      ? `<span style="color:var(--grn);font-size:.75rem">${m.stock} avail</span>`
+      : `<span style="color:var(--red);font-size:.75rem">Out of stock</span>`;
+
+    tbody.innerHTML += `<tr id="row-${idx}">
+      <td style="font-family:'JetBrains Mono',monospace;font-size:.78rem;color:var(--muted)">${escHtml(m.extracted)}</td>
+      <td>
+        ${m.item_id
+          ? `<div style="font-weight:600;font-size:.84rem">${escHtml(m.name)}</div>
+             <div style="font-size:.72rem;color:var(--muted)">${escHtml(m.category||'')} · ₹${(m.mrp||0).toFixed(2)}</div>`
+          : `<span style="color:var(--muted);font-size:.8rem;font-style:italic">No match found</span>`}
+      </td>
+      <td>
+        ${m.item_id ? `
+        <span class="conf-badge ${confClass}">${pct}%</span>
+        <div class="score-bar" style="margin-top:4px"><div class="score-fill ${fillClass}" style="width:${pct}%"></div></div>
+        ` : '—'}
+      </td>
+      <td>
+        ${m.item_id ? `<input class="qty-input" type="number" min="1" max="999" value="${m.qty}"
+          onchange="updateQty(${idx},this.value)">` : '—'}
+      </td>
+      <td>${m.item_id ? stockBadge : '—'}</td>
+      <td><button class="remove-btn" onclick="removeItem(${idx})" title="Remove">✕</button></td>
+    </tr>`;
+  });
+
+  document.getElementById('medicinesEmpty').style.display = 'none';
+  document.getElementById('medicinesContent').style.display = 'block';
+}
+
+function updateQty(idx, val) {
+  matchedItems[idx].qty = Math.max(1, parseInt(val)||1);
+}
+
+function removeItem(idx) {
+  matchedItems.splice(idx, 1);
+  renderMatches();
+}
+
+// ── Render interactions ───────────────────────────────────────────────────
+function renderInteractions(interactions) {
+  const container = document.getElementById('intContent');
+  const empty = document.getElementById('intEmpty');
+  const badge = document.getElementById('intCount');
+
+  if(!interactions.length) {
+    container.style.display = 'none';
+    container.innerHTML = '';
+    empty.style.display = 'flex';
+    empty.innerHTML = '<div class="icon">✅</div><p style="color:var(--grn)">No drug interactions detected for this combination.</p>';
+    badge.style.display = 'none';
+    return;
+  }
+
+  badge.textContent = interactions.length;
+  badge.style.display = 'inline';
+  empty.style.display = 'none';
+  container.style.display = 'flex';
+  container.innerHTML = interactions.map(i => `
+    <div class="interaction-card ${i.severity.toLowerCase()}">
+      <div class="int-header">
+        <span class="int-severity ${i.severity.toLowerCase()}">${i.severity}</span>
+        <span class="int-pair">⚡ ${escHtml(i.drug1)} + ${escHtml(i.drug2)}</span>
+      </div>
+      <div class="int-note">${escHtml(i.note)}</div>
+    </div>
+  `).join('');
+}
+
+// ── Render bill preview ───────────────────────────────────────────────────
+function renderBillPreview() {
+  const items = matchedItems.filter(m => m.item_id && m.qty > 0);
+  const empty = document.getElementById('billEmpty');
+  const content = document.getElementById('billContent');
+
+  if(!items.length) {
+    empty.style.display = 'flex';
+    content.style.display = 'none';
+    return;
+  }
+
+  empty.style.display = 'none';
+  content.style.display = 'block';
+
+  let subtotal = 0;
+  const tbody = document.getElementById('billTableBody');
+  tbody.innerHTML = '';
+  items.forEach(m => {
+    const amt = (m.mrp || 0) * m.qty;
+    subtotal += amt;
+    tbody.innerHTML += `<tr>
+      <td>${escHtml(m.name)}</td>
+      <td style="text-align:center">${m.qty}</td>
+      <td>₹${(m.mrp||0).toFixed(2)}</td>
+      <td style="font-weight:600;color:var(--acc)">₹${amt.toFixed(2)}</td>
+    </tr>`;
+  });
+
+  const gst = subtotal * 0.12;
+  document.getElementById('billSummary').innerHTML = `
+    <div class="bill-row"><span>Subtotal (${items.length} items)</span><span>₹${subtotal.toFixed(2)}</span></div>
+    <div class="bill-row"><span style="color:var(--muted)">Est. GST (12%)</span><span style="color:var(--muted)">₹${gst.toFixed(2)}</span></div>
+    <div class="bill-row total"><span>Grand Total</span><span>₹${(subtotal).toFixed(2)}</span></div>
+  `;
+
+  document.getElementById('addBillBtn').disabled = false;
+}
+
+// ── Go to billing ──────────────────────────────────────────────────────────
+function goToBilling() {
+  const items = matchedItems.filter(m => m.item_id && m.qty > 0);
+  sessionStorage.setItem('rxItems', JSON.stringify(items.map(m => ({
+    item_id: m.item_id, name: m.name, qty: m.qty, mrp: m.mrp
+  }))));
+  window.location.href = '/bill?source=rx';
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+function escHtml(s) {
+  if(!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+</script>
+</body>
+</html>

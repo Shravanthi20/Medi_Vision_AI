@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Selvam Medicals — Product Catalog</title>
+<meta name="description" content="Browse medicines and healthcare products at Selvam Medicals, Tirunelveli. Order via WhatsApp for fast home delivery.">
+<style>
+  :root{
+    --bg:#f8fafc;--white:#fff;--border:#e2e8f0;--acc:#f97316;--acc2:#ea6a00;
+    --text:#1e293b;--muted:#64748b;--green:#16a34a;--red:#dc2626;
+    --wa:#25D366;--wa2:#1da851;
+    --font:'Inter',sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:var(--font);}
+
+  /* Header */
+  .header{background:linear-gradient(135deg,#1e293b 0%,#0f172a 100%);color:#fff;padding:20px 0;}
+  .header-inner{max-width:1100px;margin:0 auto;padding:0 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;}
+  .brand{display:flex;align-items:center;gap:14px;}
+  .brand-logo{width:50px;height:50px;background:var(--acc);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.5rem;}
+  .brand-name{font-size:1.3rem;font-weight:800;}
+  .brand-sub{font-size:.8rem;color:rgba(255,255,255,.6);margin-top:2px;}
+  .header-contact{text-align:right;}
+  .header-contact p{font-size:.83rem;color:rgba(255,255,255,.7);margin-bottom:4px;}
+  .wa-main-btn{background:var(--wa);color:#fff;padding:9px 18px;border-radius:8px;font-weight:700;font-size:.85rem;display:inline-flex;align-items:center;gap:7px;text-decoration:none;transition:background .2s;}
+  .wa-main-btn:hover{background:var(--wa2);}
+  .wa-main-btn svg{width:18px;height:18px;fill:currentColor;}
+
+  /* Hero strip */
+  .hero-strip{background:linear-gradient(90deg,var(--acc) 0%,#fb923c 100%);color:#fff;padding:14px 20px;text-align:center;}
+  .hero-strip p{font-size:.9rem;font-weight:600;}
+  .hero-strip span{font-size:.82rem;opacity:.9;}
+
+  /* Main */
+  .main{max-width:1100px;margin:0 auto;padding:28px 20px;}
+
+  /* Search + Filter */
+  .search-bar{background:var(--white);border:2px solid var(--border);border-radius:14px;padding:16px 20px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:22px;box-shadow:0 2px 12px rgba(0,0,0,.06);}
+  .search-bar input{border:1.5px solid var(--border);border-radius:9px;padding:10px 14px;font-family:var(--font);font-size:.9rem;color:var(--text);flex:1;min-width:220px;}
+  .search-bar input:focus{outline:none;border-color:var(--acc);}
+  .search-bar select{border:1.5px solid var(--border);border-radius:9px;padding:10px 12px;font-family:var(--font);font-size:.85rem;color:var(--text);background:var(--white);}
+  .search-bar select:focus{outline:none;border-color:var(--acc);}
+
+  /* Category pills */
+  .cat-pills{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:22px;}
+  .cat-pill{padding:6px 14px;border-radius:20px;font-size:.78rem;font-weight:600;cursor:pointer;border:1.5px solid var(--border);background:var(--white);color:var(--muted);transition:all .2s;}
+  .cat-pill:hover{border-color:var(--acc);color:var(--acc);}
+  .cat-pill.active{background:var(--acc);border-color:var(--acc);color:#fff;}
+
+  /* Stats bar */
+  .stats-bar{display:flex;gap:20px;flex-wrap:wrap;margin-bottom:22px;font-size:.82rem;color:var(--muted);}
+  .stats-bar b{color:var(--text);}
+
+  /* Product grid */
+  .prod-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:18px;margin-bottom:32px;}
+
+  /* Card */
+  .card{background:var(--white);border:1.5px solid var(--border);border-radius:14px;overflow:hidden;transition:box-shadow .2s,transform .2s;position:relative;}
+  .card:hover{box-shadow:0 8px 24px rgba(0,0,0,.1);transform:translateY(-2px);}
+  .card-img{width:100%;height:130px;object-fit:cover;background:linear-gradient(135deg,#f1f5f9,#e2e8f0);display:flex;align-items:center;justify-content:center;font-size:2.8rem;}
+  .card-img img{width:100%;height:100%;object-fit:cover;}
+  .out-badge{position:absolute;top:10px;right:10px;background:var(--red);color:#fff;font-size:.68rem;font-weight:700;padding:3px 8px;border-radius:12px;}
+  .card-body{padding:14px 16px;}
+  .card-name{font-weight:700;font-size:.92rem;color:var(--text);margin-bottom:3px;line-height:1.3;}
+  .card-generic{font-size:.75rem;color:var(--muted);margin-bottom:8px;}
+  .card-cat{display:inline-block;background:#fff7ed;color:var(--acc);border:1px solid #fed7aa;border-radius:12px;font-size:.68rem;font-weight:700;padding:2px 8px;margin-bottom:8px;}
+  .card-desc{font-size:.78rem;color:var(--muted);margin-bottom:12px;line-height:1.5;}
+  .card-price-row{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+  .card-mrp{font-size:.8rem;color:var(--muted);text-decoration:line-through;}
+  .card-offer{font-size:1.15rem;font-weight:800;color:var(--acc);}
+  .card-mrp-only{font-size:1.1rem;font-weight:800;color:var(--text);}
+  .save-badge{background:#dcfce7;color:var(--green);font-size:.7rem;font-weight:700;padding:2px 7px;border-radius:10px;}
+  .wa-btn{width:100%;background:var(--wa);color:#fff;border:none;border-radius:9px;padding:11px;font-family:var(--font);font-weight:700;font-size:.85rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:background .2s;}
+  .wa-btn:hover{background:var(--wa2);}
+  .wa-btn svg{width:18px;height:18px;fill:currentColor;}
+  .wa-btn.disabled{background:#d1fae5;color:#6b7280;cursor:not-allowed;}
+
+  /* Empty state */
+  .empty-state{text-align:center;padding:60px 20px;}
+  .empty-state h3{font-size:1.2rem;color:var(--muted);margin-bottom:8px;}
+
+  /* Load more */
+  .load-more-wrap{text-align:center;margin:10px 0 30px;}
+  .load-more-btn{background:var(--white);border:2px solid var(--border);border-radius:10px;padding:12px 30px;font-family:var(--font);font-size:.9rem;font-weight:600;cursor:pointer;color:var(--text);transition:all .2s;}
+  .load-more-btn:hover{border-color:var(--acc);color:var(--acc);}
+
+  /* Footer */
+  .footer{background:#1e293b;color:rgba(255,255,255,.5);text-align:center;padding:28px 20px;}
+  .footer strong{color:rgba(255,255,255,.85);}
+  .footer a{color:var(--acc);text-decoration:none;}
+
+  /* Loading spinner */
+  .spinner{display:flex;justify-content:center;padding:60px;}
+  .spin{width:42px;height:42px;border:4px solid var(--border);border-top-color:var(--acc);border-radius:50%;animation:spin .7s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  @media(max-width:600px){
+    .header-inner{flex-direction:column;align-items:flex-start;}
+    .header-contact{text-align:left;}
+    .prod-grid{grid-template-columns:1fr 1fr;}
+  }
+  @media(max-width:420px){
+    .prod-grid{grid-template-columns:1fr;}
+  }
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-inner">
+    <div class="brand">
+      <div class="brand-logo">💊</div>
+      <div>
+        <div class="brand-name">Selvam Medicals</div>
+        <div class="brand-sub">SS &amp; Co · Tirunelveli · Est. 1995</div>
+      </div>
+    </div>
+    <div class="header-contact">
+      <p>📞 Order via WhatsApp • Fast Delivery</p>
+      <a class="wa-main-btn" id="waMainBtn" href="#" target="_blank">
+        <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+        Chat &amp; Order on WhatsApp
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- Hero -->
+<div class="hero-strip">
+  <p>🎉 Special Offers Available · Free advice with every purchase · Call us for bulk order discounts</p>
+</div>
+
+<!-- Main -->
+<div class="main">
+
+  <!-- Search & Filter -->
+  <div class="search-bar">
+    <input type="text" id="searchInput" placeholder="🔍  Search medicines, generics, categories…" oninput="applyFilters()">
+    <select id="sortSel" onchange="applyFilters()">
+      <option value="name">Sort: A–Z</option>
+      <option value="price_asc">Price: Low → High</option>
+      <option value="price_desc">Price: High → Low</option>
+      <option value="offer">Offers First</option>
+    </select>
+  </div>
+
+  <!-- Category pills -->
+  <div class="cat-pills" id="catPills">
+    <button class="cat-pill active" data-cat="" onclick="selectCat('',this)">🏷️ All</button>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-bar" id="statsBar"></div>
+
+  <!-- Grid -->
+  <div id="mainContent">
+    <div class="spinner"><div class="spin"></div></div>
+  </div>
+
+  <!-- Load More -->
+  <div class="load-more-wrap" id="loadMoreWrap" style="display:none;">
+    <button class="load-more-btn" onclick="showMore()">Load More Products ↓</button>
+  </div>
+</div>
+
+<!-- Footer -->
+<div class="footer">
+  <p><strong>Selvam Medicals (SS &amp; Co)</strong> · Tirunelveli, Tamil Nadu</p>
+  <p style="margin-top:6px;font-size:.8rem;">
+    Powered by <a href="/portal">MediVision AI</a> ·
+    Pharmacy Reg. No. Available on Request ·
+    <a href="/catalog-manage">Admin</a>
+  </p>
+</div>
+
+<script>
+const SHOP_PHONE = '919876543210'; // ← update with real WhatsApp number
+const PAGE_SIZE  = 24;
+let allItems = [], filtered = [], shownCount = PAGE_SIZE, activeCat = '';
+
+// Set main WA button
+document.getElementById('waMainBtn').href =
+  `https://wa.me/${SHOP_PHONE}?text=${encodeURIComponent('Hi, I would like to place an order from your product catalog.')}`;
+
+async function loadCatalog(){
+  try {
+    const r  = await fetch('/api/catalog?public=1');
+    const d  = await r.json();
+    allItems = (d.items||[]).filter(i=>i.is_active);
+    buildCatPills();
+    applyFilters();
+  } catch(e){
+    document.getElementById('mainContent').innerHTML =
+      `<div class="empty-state"><h3>Catalog is loading…</h3><p>Please refresh the page.</p></div>`;
+  }
+}
+
+function buildCatPills(){
+  const cats = [...new Set(allItems.map(i=>i.category).filter(Boolean))].sort();
+  const wrap = document.getElementById('catPills');
+  wrap.innerHTML = `<button class="cat-pill active" data-cat="" onclick="selectCat('',this)">🏷️ All</button>` +
+    cats.map(c=>`<button class="cat-pill" data-cat="${c}" onclick="selectCat('${c}',this)">${c}</button>`).join('');
+}
+
+function selectCat(cat, el){
+  activeCat = cat;
+  document.querySelectorAll('.cat-pill').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  shownCount = PAGE_SIZE;
+  applyFilters();
+}
+
+function applyFilters(){
+  const q   = document.getElementById('searchInput').value.trim().toLowerCase();
+  const srt = document.getElementById('sortSel').value;
+
+  filtered = allItems.filter(i=>{
+    if(activeCat && i.category !== activeCat) return false;
+    if(q){
+      const hay = `${i.medicine_name} ${i.generic_name||''} ${i.category||''} ${i.description||''}`.toLowerCase();
+      if(!hay.includes(q)) return false;
+    }
+    return true;
+  });
+
+  // Sort
+  if(srt === 'name'){
+    filtered.sort((a,b)=>a.medicine_name.localeCompare(b.medicine_name));
+  } else if(srt === 'price_asc'){
+    filtered.sort((a,b)=>(a.offer_price||a.mrp||0)-(b.offer_price||b.mrp||0));
+  } else if(srt === 'price_desc'){
+    filtered.sort((a,b)=>(b.offer_price||b.mrp||0)-(a.offer_price||a.mrp||0));
+  } else if(srt === 'offer'){
+    filtered.sort((a,b)=>{
+      const aOff = a.offer_price && a.offer_price < a.mrp ? 1 : 0;
+      const bOff = b.offer_price && b.offer_price < b.mrp ? 1 : 0;
+      return bOff - aOff;
+    });
+  }
+
+  renderGrid();
+}
+
+function showMore(){
+  shownCount += PAGE_SIZE;
+  renderGrid();
+}
+
+function renderGrid(){
+  const page  = filtered.slice(0, shownCount);
+  const total = filtered.length;
+  const inStock = filtered.filter(i=>i.in_stock).length;
+
+  document.getElementById('statsBar').innerHTML =
+    `<span>Showing <b>${Math.min(shownCount,total)}</b> of <b>${total}</b> products</span>` +
+    `<span>• <b>${inStock}</b> in stock</span>`;
+
+  if(!total){
+    document.getElementById('mainContent').innerHTML =
+      `<div class="empty-state">
+        <div style="font-size:3rem;margin-bottom:12px;">🔍</div>
+        <h3>No products found</h3>
+        <p style="color:var(--muted);margin-top:6px;">Try a different search or category.</p>
+      </div>`;
+    document.getElementById('loadMoreWrap').style.display = 'none';
+    return;
+  }
+
+  document.getElementById('mainContent').innerHTML =
+    `<div class="prod-grid">${page.map(renderCard).join('')}</div>`;
+  document.getElementById('loadMoreWrap').style.display =
+    shownCount < total ? 'block' : 'none';
+}
+
+function renderCard(item){
+  const hasOffer = item.offer_price && item.offer_price < item.mrp;
+  const displayPrice = item.offer_price || item.mrp;
+  const savePercent = hasOffer
+    ? Math.round((1 - item.offer_price / item.mrp) * 100)
+    : 0;
+
+  const priceHtml = hasOffer
+    ? `<span class="card-mrp">₹${item.mrp.toFixed(2)}</span>
+       <span class="card-offer">₹${item.offer_price.toFixed(2)}</span>
+       <span class="save-badge">-${savePercent}%</span>`
+    : `<span class="card-mrp-only">₹${(item.mrp||0).toFixed(2)}</span>`;
+
+  const imgHtml = item.image_url
+    ? `<img src="${item.image_url}" alt="${item.medicine_name}" loading="lazy">`
+    : `<div style="font-size:3rem;">${catEmoji(item.category)}</div>`;
+
+  const outBadge = item.in_stock ? '' : `<div class="out-badge">Out of Stock</div>`;
+
+  const waMsg = encodeURIComponent(
+    `Hi, I'd like to order:\n\n💊 *${item.medicine_name}*\n` +
+    (item.generic_name ? `Generic: ${item.generic_name}\n` : '') +
+    `Price: ₹${(displayPrice||0).toFixed(2)}\n\nPlease confirm availability and delivery.`
+  );
+
+  const btnClass = item.in_stock ? 'wa-btn' : 'wa-btn disabled';
+  const btnAttr  = item.in_stock ? `onclick="orderItem('${item.medicine_name}',${displayPrice||0})"` : 'disabled';
+
+  return `<div class="card">
+    <div class="card-img">${imgHtml}</div>
+    ${outBadge}
+    <div class="card-body">
+      <div class="card-name">${item.medicine_name}</div>
+      ${item.generic_name ? `<div class="card-generic">${item.generic_name}</div>` : ''}
+      ${item.category ? `<span class="card-cat">${item.category}</span>` : ''}
+      ${item.description ? `<div class="card-desc">${item.description}</div>` : ''}
+      <div class="card-price-row">${priceHtml}</div>
+      <button class="${btnClass}" ${btnAttr}>
+        <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+        ${item.in_stock ? 'Order on WhatsApp' : 'Out of Stock'}
+      </button>
+    </div>
+  </div>`;
+}
+
+function orderItem(name, price){
+  const msg = encodeURIComponent(
+    `Hi Selvam Medicals,\n\nI'd like to order:\n💊 *${name}* — ₹${price.toFixed(2)}\n\nPlease confirm availability and delivery.`
+  );
+  window.open(`https://wa.me/${SHOP_PHONE}?text=${msg}`, '_blank');
+}
+
+function catEmoji(cat){
+  const map = {
+    'Antibiotic':'🦠','Analgesic':'💊','Antipyretic':'🌡️','Antacid':'🧪',
+    'Vitamin':'🍊','Diabetes':'🩸','Cardiac':'❤️','Respiratory':'🫁',
+    'Dermatology':'🧴','Eye':'👁️','Neurology':'🧠','Oncology':'🔬',
+    'Paediatric':'👶','Gynaecology':'🌸','Surgical':'🏥'
+  };
+  if(!cat) return '💊';
+  for(const [key,val] of Object.entries(map)){
+    if(cat.toLowerCase().includes(key.toLowerCase())) return val;
+  }
+  return '💊';
+}
+
+loadCatalog();
+</script>
+</body>
+</html>

@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Delivery Tracking — MediVision AI</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',sans-serif;background:#f0f4f8;min-height:100vh}
+.topbar{background:#1a237e;color:#fff;padding:14px 24px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.topbar a{color:#90caf9;text-decoration:none;font-size:.85rem}
+.topbar h2{font-size:1.1rem;flex:1}
+.container{max-width:1100px;margin:0 auto;padding:16px}
+.tab-bar{display:flex;gap:4px;background:#e8eaf6;padding:4px;border-radius:8px;margin-bottom:16px;width:fit-content;flex-wrap:wrap}
+.tab-btn{padding:9px 20px;border:none;border-radius:6px;cursor:pointer;font-weight:600;font-size:.9rem;color:#666;background:none;transition:.2s}
+.tab-btn.active{background:#1a237e;color:#fff}
+.panel{display:none}.panel.active{display:block}
+.card{background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.08);margin-bottom:16px;overflow:hidden}
+.card-header{padding:14px 16px;background:#1a237e;color:#fff;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.card-header h3{font-size:.95rem}
+.card-body{padding:16px}
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px}
+.kpi{background:#fff;border-radius:10px;padding:16px;box-shadow:0 2px 6px rgba(0,0,0,.07);text-align:center}
+.kpi-val{font-size:1.8rem;font-weight:800;color:#1a237e}
+.kpi-lbl{font-size:.8rem;color:#888;margin-top:4px}
+.btn{padding:8px 16px;border:none;border-radius:6px;font-size:.85rem;font-weight:600;cursor:pointer;transition:.2s}
+.btn-primary{background:#1a237e;color:#fff}
+.btn-success{background:#43a047;color:#fff}
+.btn-danger{background:#e53935;color:#fff}
+.btn-warning{background:#fb8c00;color:#fff}
+.btn-outline{background:#fff;color:#1a237e;border:2px solid #1a237e}
+.btn-sm{padding:6px 12px;font-size:.8rem}
+table{width:100%;border-collapse:collapse}
+th{background:#f5f5f5;padding:10px 12px;text-align:left;font-size:.82rem;color:#555;font-weight:600;border-bottom:2px solid #e0e0e0}
+td{padding:10px 12px;font-size:.88rem;border-bottom:1px solid #f0f0f0;vertical-align:middle}
+tr:hover{background:#fafafa}
+.badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:.75rem;font-weight:600}
+.badge-pending{background:#fff8e1;color:#f57f17}
+.badge-started{background:#e3f2fd;color:#1565c0}
+.badge-completed{background:#e8f5e9;color:#2e7d32}
+/* Route card */
+.route-card{background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.08);margin-bottom:12px;overflow:hidden}
+.route-card-header{padding:12px 16px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #f0f0f0}
+.route-card-header.started{border-left:4px solid #1565c0}
+.route-card-header.completed{border-left:4px solid #43a047}
+.route-card-header.pending{border-left:4px solid #f57f17}
+.route-boy{width:40px;height:40px;border-radius:50%;background:#e8eaf6;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0}
+.route-info{flex:1}
+.route-info h4{font-size:.95rem;font-weight:700;color:#1a237e}
+.route-info p{font-size:.8rem;color:#888;margin-top:2px}
+.shop-stop{display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid #f5f5f5}
+.stop-num{width:28px;height:28px;border-radius:50%;background:#e8eaf6;display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:700;color:#1a237e;flex-shrink:0}
+.stop-num.delivered{background:#43a047;color:#fff}
+.stop-info{flex:1}
+.stop-info strong{font-size:.9rem;display:block}
+.stop-info span{font-size:.78rem;color:#888}
+/* Map placeholder */
+.map-placeholder{background:#e8eaf6;border-radius:12px;height:300px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:#666;margin-bottom:16px}
+.map-placeholder .map-icon{font-size:3rem}
+/* Form */
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.form-group{display:flex;flex-direction:column;gap:4px}
+.form-group label{font-size:.8rem;font-weight:600;color:#555}
+.form-group input,.form-group select,.form-group textarea{padding:8px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:.9rem;outline:none}
+.form-group input:focus{border-color:#1a237e}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:flex-start;justify-content:center;padding:16px;overflow-y:auto}
+.modal-overlay.open{display:flex}
+.modal{background:#fff;border-radius:12px;padding:24px;width:100%;max-width:600px;margin:auto}
+.modal h3{color:#1a237e;margin-bottom:16px}
+.modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+.toast{position:fixed;bottom:24px;right:24px;background:#323232;color:#fff;padding:12px 20px;border-radius:8px;display:none;z-index:9999}
+.progress-bar{height:6px;background:#e0e0e0;border-radius:3px;overflow:hidden;margin-top:4px}
+.progress-fill{height:100%;background:#43a047;transition:.4s}
+@media(max-width:600px){.kpi-val{font-size:1.4rem}}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <a href="/portal">← Dashboard</a>
+  <h2>Delivery Tracking</h2>
+  <button class="btn btn-outline btn-sm" onclick="openModal('createModal')" style="border-color:#fff;color:#fff">+ New Route</button>
+</div>
+
+<div class="container">
+  <!-- KPI row -->
+  <div class="kpi-row" id="kpiRow">
+    <div class="kpi"><div class="kpi-val" id="kpiToday">-</div><div class="kpi-lbl">Today's Routes</div></div>
+    <div class="kpi"><div class="kpi-val" id="kpiActive">-</div><div class="kpi-lbl">Active</div></div>
+    <div class="kpi"><div class="kpi-val" id="kpiDone">-</div><div class="kpi-lbl">Completed</div></div>
+    <div class="kpi"><div class="kpi-val" id="kpiShops">-</div><div class="kpi-lbl">Shops Today</div></div>
+  </div>
+
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="switchTab('today')">📅 Today</button>
+    <button class="tab-btn" onclick="switchTab('manage')">🗺 All Routes</button>
+    <button class="tab-btn" onclick="switchTab('map')">📍 Map View</button>
+  </div>
+
+  <!-- TODAY TAB -->
+  <div class="panel active" id="panel-today">
+    <div id="routeCards">
+      <div style="text-align:center;padding:40px;color:#888">Loading today's routes...</div>
+    </div>
+  </div>
+
+  <!-- MANAGE TAB -->
+  <div class="panel" id="panel-manage">
+    <div class="card">
+      <div class="card-header">
+        <h3>All Delivery Routes</h3>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="date" id="dateFilter" onchange="loadRoutes()" style="padding:6px 10px;border:1.5px solid rgba(255,255,255,.3);border-radius:6px;background:rgba(255,255,255,.2);color:#fff;font-size:.85rem">
+          <button class="btn btn-primary btn-sm" style="background:rgba(255,255,255,.2)" onclick="openModal('createModal')">+ New</button>
+        </div>
+      </div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>Route</th><th>Boy</th><th>Phone</th><th>Date</th><th>Shops</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody id="routesBody"><tr><td colspan="7" style="text-align:center;padding:20px;color:#888">Loading...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAP TAB -->
+  <div class="panel" id="panel-map">
+    <div class="map-placeholder">
+      <div class="map-icon">🗺</div>
+      <div style="font-size:1rem;font-weight:600;color:#1a237e">Google Maps Integration</div>
+      <div style="font-size:.85rem;text-align:center;max-width:300px">Route map will display here. <br>Add your Google Maps API key in settings to enable live tracking.</div>
+      <button class="btn btn-primary" onclick="openMapsGuide()">How to Enable Maps</button>
+    </div>
+    <div id="todayMapRoutes"></div>
+  </div>
+</div>
+
+<!-- CREATE ROUTE MODAL -->
+<div class="modal-overlay" id="createModal">
+  <div class="modal">
+    <h3>Create Delivery Route</h3>
+    <div class="form-grid" style="margin-bottom:12px">
+      <div class="form-group"><label>Route Name *</label><input type="text" id="rName" placeholder="Route-A, Morning Round..."></div>
+      <div class="form-group"><label>Delivery Boy *</label><input type="text" id="rBoy" placeholder="Staff name"></div>
+      <div class="form-group"><label>Phone</label><input type="tel" id="rPhone" placeholder="Mobile number"></div>
+      <div class="form-group"><label>Date *</label><input type="date" id="rDate"></div>
+    </div>
+
+    <label style="font-size:.8rem;font-weight:600;color:#555;display:block;margin-bottom:6px">Shops / Stops (in delivery order)</label>
+    <div id="shopsList"></div>
+    <button class="btn btn-outline btn-sm" onclick="addShopStop()" style="margin-top:8px">+ Add Stop</button>
+
+    <div class="form-group" style="margin-top:12px">
+      <label>Notes</label>
+      <textarea id="rNotes" rows="2" placeholder="Special instructions..." style="padding:8px;border:1.5px solid #ddd;border-radius:6px;font-size:.9rem"></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('createModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="createRoute()">Create Route</button>
+    </div>
+  </div>
+</div>
+
+<!-- UPDATE STOP MODAL -->
+<div class="modal-overlay" id="stopModal">
+  <div class="modal" style="max-width:400px">
+    <h3>Update Stop Status</h3>
+    <input type="hidden" id="stopRouteId">
+    <input type="hidden" id="stopIdx">
+    <p id="stopShopName" style="color:#1a237e;font-weight:600;margin-bottom:12px"></p>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Status</label>
+        <select id="stopStatus">
+          <option value="pending">Pending</option>
+          <option value="delivered">Delivered</option>
+          <option value="partial">Partial Delivery</option>
+          <option value="absent">Shop Absent</option>
+          <option value="rejected">Rejected</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group" style="margin-top:8px">
+      <label>Notes</label>
+      <textarea id="stopNotes" rows="2" style="padding:8px;border:1.5px solid #ddd;border-radius:6px;font-size:.9rem"></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('stopModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveStopStatus()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- MAPS GUIDE MODAL -->
+<div class="modal-overlay" id="mapsModal">
+  <div class="modal">
+    <h3>Enable Google Maps</h3>
+    <ol style="padding-left:20px;line-height:2;font-size:.9rem;color:#555">
+      <li>Go to <strong>console.cloud.google.com</strong></li>
+      <li>Enable <strong>Maps JavaScript API</strong> &amp; <strong>Directions API</strong></li>
+      <li>Create an API key</li>
+      <li>Add to START_APP.bat: <code style="background:#f5f5f5;padding:2px 6px;border-radius:4px">SET GOOGLE_MAPS_KEY=your_key_here</code></li>
+      <li>Restart the server — map will appear here automatically</li>
+    </ol>
+    <div class="modal-footer"><button class="btn btn-primary" onclick="closeModal('mapsModal')">Got it</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let allRoutes = [];
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>{
+    b.classList.toggle('active',['today','manage','map'][i]===tab);
+  });
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+tab).classList.add('active');
+  if(tab==='today') loadTodayRoutes();
+  else if(tab==='manage') loadRoutes();
+  else if(tab==='map') loadMapRoutes();
+}
+
+async function loadTodayRoutes() {
+  const today = new Date().toISOString().split('T')[0];
+  const routes = await fetch(`/api/delivery/routes?date=${today}`).then(r=>r.json()).catch(()=>[]);
+  allRoutes = routes;
+  updateKPIs(routes);
+
+  const cont = document.getElementById('routeCards');
+  if(!routes.length){
+    cont.innerHTML=`<div style="text-align:center;padding:40px;color:#888">
+      <div style="font-size:2.5rem;margin-bottom:12px">🚗</div>
+      <div style="font-size:1rem;font-weight:600">No delivery routes for today</div>
+      <p style="margin:8px 0 16px">Create a route to get started</p>
+      <button class="btn btn-primary" onclick="openModal('createModal')">+ Create Route</button>
+    </div>`;
+    return;
+  }
+  cont.innerHTML = routes.map(r => renderRouteCard(r)).join('');
+}
+
+function renderRouteCard(r) {
+  const shops = r.shops || [];
+  const delivered = shops.filter(s=>s.status==='delivered').length;
+  const pct = shops.length ? Math.round(delivered/shops.length*100) : 0;
+  const statusCls = r.status==='completed'?'completed':r.status==='started'?'started':'pending';
+  return `<div class="route-card">
+    <div class="route-card-header ${statusCls}">
+      <div class="route-boy">🚗</div>
+      <div class="route-info">
+        <h4>${r.route_name||'Route'} — ${r.delivery_boy||'Unassigned'}</h4>
+        <p>${r.delivery_phone?'📞 '+r.delivery_phone+' &nbsp;|&nbsp;':''} ${shops.length} stops &nbsp;|&nbsp; ${delivered}/${shops.length} delivered</p>
+        <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+      </div>
+      <span class="badge badge-${r.status}">${r.status}</span>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        ${r.status==='pending'?`<button class="btn btn-sm btn-success" onclick="updateRoute(${r.id},'started')">▶ Start</button>`:''}
+        ${r.status==='started'?`<button class="btn btn-sm btn-primary" onclick="updateRoute(${r.id},'completed')">✓ Done</button>`:''}
+        ${r.delivery_phone?`<a href="tel:${r.delivery_phone}" class="btn btn-sm btn-outline" style="text-align:center">📞 Call</a>`:''}
+      </div>
+    </div>
+    ${shops.map((s,i)=>`
+      <div class="shop-stop">
+        <div class="stop-num ${s.status==='delivered'?'delivered':''}">${i+1}</div>
+        <div class="stop-info">
+          <strong>${s.name||'Shop '+(i+1)}</strong>
+          <span>${s.address||''}${s.amount?` &nbsp;·&nbsp; ₹${s.amount}`:''}${s.notes?` &nbsp;·&nbsp; ${s.notes}`:''}</span>
+        </div>
+        <span class="badge badge-${s.status||'pending'}" style="margin-right:8px">${s.status||'pending'}</span>
+        <button class="btn btn-sm btn-outline" onclick="openStopModal(${r.id},${i})">Update</button>
+        ${s.address?`<a href="https://maps.google.com/?q=${encodeURIComponent(s.address)}" target="_blank" class="btn btn-sm btn-outline" style="margin-left:4px">📍</a>`:''}
+      </div>`).join('')}
+  </div>`;
+}
+
+function updateKPIs(routes) {
+  const today = new Date().toISOString().split('T')[0];
+  const todayR = routes.filter(r=>r.delivery_date===today);
+  document.getElementById('kpiToday').textContent = todayR.length;
+  document.getElementById('kpiActive').textContent = todayR.filter(r=>r.status==='started').length;
+  document.getElementById('kpiDone').textContent = todayR.filter(r=>r.status==='completed').length;
+  const totalShops = todayR.reduce((s,r)=>(s+(r.shops?.length||0)),0);
+  document.getElementById('kpiShops').textContent = totalShops;
+}
+
+async function loadRoutes() {
+  const date = document.getElementById('dateFilter')?.value || '';
+  let url = '/api/delivery/routes';
+  if(date) url+=`?date=${date}`;
+  const routes = await fetch(url).then(r=>r.json()).catch(()=>[]);
+  const tbody = document.getElementById('routesBody');
+  if(!routes.length){tbody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:20px;color:#888">No routes found</td></tr>';return;}
+  tbody.innerHTML=routes.map(r=>(`<tr>
+    <td><strong>${r.route_name||'-'}</strong></td>
+    <td>${r.delivery_boy||'-'}</td>
+    <td>${r.delivery_phone?`<a href="tel:${r.delivery_phone}">${r.delivery_phone}</a>`:'-'}</td>
+    <td>${r.delivery_date||'-'}</td>
+    <td>${r.shops?.length||0} stops</td>
+    <td><span class="badge badge-${r.status}">${r.status}</span></td>
+    <td style="white-space:nowrap">
+      ${r.status==='pending'?`<button class="btn btn-sm btn-success" onclick="updateRoute(${r.id},'started')">Start</button> `:''}
+      ${r.status==='started'?`<button class="btn btn-sm btn-primary" onclick="updateRoute(${r.id},'completed')">Complete</button> `:''}
+      <button class="btn btn-sm btn-outline" onclick="viewRouteDetail(${r.id})">View</button>
+    </td>
+  </tr>`)).join('');
+}
+
+async function loadMapRoutes() {
+  const today = new Date().toISOString().split('T')[0];
+  const routes = await fetch(`/api/delivery/routes?date=${today}`).then(r=>r.json()).catch(()=>[]);
+  const cont = document.getElementById('todayMapRoutes');
+  if(!routes.length){cont.innerHTML='';return;}
+  cont.innerHTML=routes.map(r=>{
+    const shops=r.shops||[];
+    return`<div class="card" style="margin-bottom:12px">
+      <div class="card-header"><h3>${r.route_name} — ${r.delivery_boy||'?'}</h3></div>
+      <div style="padding:8px 0">
+        ${shops.map((s,i)=>`<div class="shop-stop">
+          <div class="stop-num ${s.status==='delivered'?'delivered':''}">${i+1}</div>
+          <div class="stop-info"><strong>${s.name||'Stop '+(i+1)}</strong><span>${s.address||'No address set'}</span></div>
+          ${s.address?`<a href="https://maps.google.com/?q=${encodeURIComponent(s.address)}" target="_blank" class="btn btn-sm btn-primary">Open Maps</a>`:''}
+        </div>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function addShopStop() {
+  const list = document.getElementById('shopsList');
+  const div = document.createElement('div');
+  div.style = 'display:grid;grid-template-columns:1fr 1fr 80px auto;gap:8px;margin-bottom:8px;align-items:end';
+  div.innerHTML = `
+    <input type="text" placeholder="Shop name *" style="padding:7px;border:1.5px solid #ddd;border-radius:6px">
+    <input type="text" placeholder="Address / area" style="padding:7px;border:1.5px solid #ddd;border-radius:6px">
+    <input type="number" placeholder="₹ Amt" min="0" style="padding:7px;border:1.5px solid #ddd;border-radius:6px">
+    <button onclick="this.parentElement.remove()" style="padding:7px 10px;background:#ffebee;border:none;border-radius:6px;cursor:pointer;color:#e53935;font-size:1rem">✕</button>`;
+  list.appendChild(div);
+}
+
+async function createRoute() {
+  const name  = document.getElementById('rName').value.trim();
+  const boy   = document.getElementById('rBoy').value.trim();
+  const phone = document.getElementById('rPhone').value.trim();
+  const date  = document.getElementById('rDate').value;
+  if(!name||!boy||!date){showToast('Route name, delivery boy and date required');return;}
+
+  const shops=[];
+  document.querySelectorAll('#shopsList > div').forEach(div=>{
+    const inputs=div.querySelectorAll('input');
+    const sname=inputs[0]?.value.trim();
+    if(sname) shops.push({name:sname,address:inputs[1]?.value.trim()||'',
+      amount:parseFloat(inputs[2]?.value)||0,status:'pending',notes:''});
+  });
+
+  const res=await fetch('/api/delivery/routes',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({route_name:name,delivery_boy:boy,delivery_phone:phone,
+      delivery_date:date,shops,notes:document.getElementById('rNotes').value})}).then(r=>r.json());
+
+  if(res.status==='success'){
+    closeModal('createModal');
+    document.getElementById('shopsList').innerHTML='';
+    loadTodayRoutes(); showToast('Route created!');
+  }
+}
+
+async function updateRoute(id, status) {
+  await fetch(`/api/delivery/routes/${id}`,{method:'PUT',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({status})});
+  loadTodayRoutes(); showToast('Route status updated to: '+status);
+}
+
+function openStopModal(routeId, stopIdx) {
+  const route = allRoutes.find(r=>r.id===routeId);
+  if(!route) return;
+  const shop = route.shops[stopIdx];
+  document.getElementById('stopRouteId').value=routeId;
+  document.getElementById('stopIdx').value=stopIdx;
+  document.getElementById('stopShopName').textContent=shop.name||'Stop '+(stopIdx+1);
+  document.getElementById('stopStatus').value=shop.status||'pending';
+  document.getElementById('stopNotes').value=shop.notes||'';
+  openModal('stopModal');
+}
+
+async function saveStopStatus() {
+  const routeId=parseInt(document.getElementById('stopRouteId').value);
+  const stopIdx=parseInt(document.getElementById('stopIdx').value);
+  const status=document.getElementById('stopStatus').value;
+  const notes=document.getElementById('stopNotes').value;
+
+  const route=allRoutes.find(r=>r.id===routeId);
+  if(!route) return;
+  route.shops[stopIdx].status=status;
+  route.shops[stopIdx].notes=notes;
+
+  await fetch(`/api/delivery/routes/${routeId}`,{method:'PUT',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({shops:route.shops})});
+  closeModal('stopModal');
+  loadTodayRoutes(); showToast('Stop updated');
+}
+
+async function viewRouteDetail(id) {
+  const routes=await fetch('/api/delivery/routes').then(r=>r.json()).catch(()=>[]);
+  const route=routes.find(r=>r.id===id);
+  if(!route) return;
+  allRoutes=[route];
+  switchTab('today');
+  setTimeout(()=>{
+    document.getElementById('routeCards').innerHTML=renderRouteCard(route);
+  },100);
+}
+
+function openMapsGuide(){openModal('mapsModal');}
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.style.display='block';
+  setTimeout(()=>t.style.display='none',2500);
+}
+
+// Init
+const today=new Date().toISOString().split('T')[0];
+document.getElementById('rDate').value=today;
+if(document.getElementById('dateFilter')) document.getElementById('dateFilter').value=today;
+loadTodayRoutes();
+</script>
+</body>
+</html>

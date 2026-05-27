@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Shop Partner Login — Selvam Medicals</title>
+<style>
+  :root{--bg:#f0f9ff;--card:#fff;--border:#bfdbfe;--blue:#2563eb;--text:#1e293b;--muted:#64748b;--red:#dc2626;--green:#16a34a;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:linear-gradient(135deg,#eff6ff 0%,#f0fdf4 100%);}
+  .wrap{width:100%;max-width:440px;}
+  .logo{text-align:center;margin-bottom:28px;}
+  .logo-box{width:70px;height:70px;background:linear-gradient(135deg,#2563eb,#1d4ed8);border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:2.2rem;margin:0 auto 14px;box-shadow:0 8px 24px rgba(37,99,235,.3);}
+  .logo h1{font-size:1.5rem;font-weight:800;color:var(--text);}
+  .logo p{font-size:.85rem;color:var(--muted);margin-top:4px;}
+  .card{background:var(--card);border:1.5px solid var(--border);border-radius:18px;padding:34px;box-shadow:0 12px 40px rgba(0,0,0,.08);}
+  .card h2{font-size:1.05rem;font-weight:700;margin-bottom:22px;color:var(--text);}
+  .field{margin-bottom:16px;}
+  .field label{display:block;font-size:.78rem;font-weight:700;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px;}
+  .field input{width:100%;border:1.5px solid #e2e8f0;border-radius:10px;padding:11px 14px;color:var(--text);font-family:'Inter',sans-serif;font-size:.9rem;transition:border .2s;}
+  .field input:focus{outline:none;border-color:var(--blue);}
+  .login-btn{width:100%;background:var(--blue);color:#fff;border:none;border-radius:10px;padding:13px;font-family:'Inter',sans-serif;font-size:.92rem;font-weight:700;cursor:pointer;transition:opacity .2s;margin-top:4px;}
+  .login-btn:hover{opacity:.88;}
+  .err{color:var(--red);font-size:.82rem;margin-bottom:12px;background:#fee2e2;border:1px solid #fca5a5;border-radius:8px;padding:8px 12px;display:none;}
+  .demo-box{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:16px;margin-top:20px;}
+  .demo-box h4{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:10px;}
+  .demo-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #f1f5f9;font-size:.78rem;}
+  .demo-row:last-child{border-bottom:none;}
+  .demo-shop{font-weight:600;color:var(--text);}
+  .demo-cred{color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:.72rem;}
+  .back-link{text-align:center;margin-top:18px;font-size:.82rem;color:var(--muted);}
+  .back-link a{color:var(--blue);text-decoration:none;}
+  .ws-link{display:block;text-align:center;margin-top:12px;font-size:.8rem;color:var(--muted);}
+  .ws-link a{color:var(--blue);}
+</style>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="wrap">
+  <div class="logo">
+    <div class="logo-box">💊</div>
+    <h1>Selvam Medicals</h1>
+    <p>Retail Partner Order Portal — SS &amp; Co, Tirunelveli</p>
+  </div>
+  <div class="card">
+    <h2>🔐 Shop Partner Login</h2>
+    <p class="err" id="errMsg"></p>
+    <div class="field">
+      <label>Shop Code / Username</label>
+      <input type="text" id="shopCode" placeholder="e.g. SHOP001" autocomplete="username">
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <input type="password" id="shopPass" placeholder="Your shop password" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="login-btn" onclick="doLogin()">Sign In & Place Orders</button>
+
+    <div class="demo-box">
+      <h4>📋 Demo Shop Credentials</h4>
+      <div class="demo-row"><span class="demo-shop">Sri Ram Medical Hall</span><span class="demo-cred">SHOP001 / shop@001</span></div>
+      <div class="demo-row"><span class="demo-shop">Apollo Pharmacy</span><span class="demo-cred">SHOP002 / shop@002</span></div>
+      <div class="demo-row"><span class="demo-shop">City Medicals</span><span class="demo-cred">SHOP003 / shop@003</span></div>
+      <div class="demo-row"><span class="demo-shop">Murugan Medical</span><span class="demo-cred">SHOP004 / shop@004</span></div>
+      <div class="demo-row"><span class="demo-shop">Vinayaga Medicals</span><span class="demo-cred">SHOP005 / shop@005</span></div>
+    </div>
+  </div>
+  <div class="back-link"><a href="/catalog">← Browse Public Catalog</a></div>
+  <div class="ws-link"><a href="/wholesale-login">Wholesale Team Login →</a></div>
+</div>
+<script>
+async function doLogin(){
+  const code = document.getElementById('shopCode').value.trim();
+  const pass = document.getElementById('shopPass').value;
+  const err  = document.getElementById('errMsg');
+  if(!code||!pass){ err.textContent='Enter shop code and password.'; err.style.display='block'; return; }
+  const r = await fetch('/api/ws/shop-auth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code,password:pass})});
+  const d = await r.json();
+  if(d.shop){
+    sessionStorage.setItem('shopUser', JSON.stringify(d.shop));
+    window.location.href='/shop-portal';
+  } else {
+    err.textContent = d.error || 'Invalid credentials.';
+    err.style.display='block';
+  }
+}
+</script>
+</body>
+</html>

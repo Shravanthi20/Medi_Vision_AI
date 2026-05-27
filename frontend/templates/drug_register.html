@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Drug Register — Selvam Medicals</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@600&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<style>
+:root{--bg:#0b0e16;--sb:#111827;--card:#151d2b;--card2:#1a2236;--brd:#1f2d40;--tx:#e2e8f0;--mt:#64748b;--acc:#f97316;--grn:#22c55e;--red:#ef4444;--blu:#3b82f6;--yel:#eab308;--pur:#a855f7;}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;background:var(--bg);color:var(--tx);font-family:Inter,sans-serif;font-size:13px;}
+.shell{display:flex;height:100vh;overflow:hidden;}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.topbar{height:56px;background:var(--sb);border-bottom:1px solid var(--brd);display:flex;align-items:center;gap:12px;padding:0 20px;flex-shrink:0;}
+.topbar a{display:flex;align-items:center;gap:7px;color:var(--mt);font-size:12px;text-decoration:none;padding:5px 10px;border-radius:6px;border:1px solid var(--brd);transition:all .2s;}
+.topbar a:hover{border-color:var(--acc);color:var(--acc);}
+.tabs-bar{display:flex;background:var(--sb);border-bottom:1px solid var(--brd);padding:0 20px;flex-shrink:0;}
+.tab{padding:11px 18px;font-size:12.5px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;color:var(--mt);transition:all .2s;}
+.tab.on{border-bottom-color:var(--acc);color:var(--tx);}
+.filters{padding:12px 20px;background:var(--sb);border-bottom:1px solid var(--brd);display:flex;gap:8px;flex-wrap:wrap;flex-shrink:0;}
+.fi{position:relative;display:flex;align-items:center;}
+.fi i{position:absolute;left:9px;color:var(--mt);font-size:11px;pointer-events:none;}
+.fi input,.fi select{background:var(--bg);border:1px solid var(--brd);border-radius:7px;padding:6px 10px 6px 28px;color:var(--tx);font-size:12px;font-family:Inter,sans-serif;outline:none;transition:border-color .2s;height:32px;}
+.fi input{min-width:160px;}
+.fi select{min-width:130px;}
+.fi input:focus,.fi select:focus{border-color:var(--acc);}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:7px;border:1px solid var(--brd);background:var(--card2);color:var(--tx);font-size:12px;font-family:Inter,sans-serif;cursor:pointer;transition:all .2s;height:32px;}
+.btn:hover{border-color:var(--acc);color:var(--acc);}
+.btn.acc{background:var(--acc);border-color:var(--acc);color:#fff;}
+.btn.red{background:var(--red);border-color:var(--red);color:#fff;}
+.tbl-area{flex:1;overflow:auto;padding:12px 20px;}
+table{width:100%;border-collapse:collapse;min-width:900px;}
+thead tr{position:sticky;top:0;z-index:2;background:var(--sb);}
+th{padding:8px 12px;text-align:left;font-size:10.5px;font-weight:600;color:var(--mt);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--brd);white-space:nowrap;}
+td{padding:9px 12px;border-bottom:1px solid var(--brd);font-size:12px;vertical-align:middle;}
+tbody tr:hover{background:rgba(249,115,22,.03);}
+.badge{display:inline-block;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:600;text-transform:uppercase;}
+.badge.X{background:rgba(239,68,68,.15);color:var(--red);}
+.badge.H1{background:rgba(234,179,8,.12);color:var(--yel);}
+.badge.H{background:rgba(59,130,246,.12);color:var(--blu);}
+.badge.OTC{background:rgba(34,197,94,.12);color:var(--grn);}
+.badge.NDPS{background:rgba(168,85,247,.15);color:var(--pur);}
+.alert-card{background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.25);border-radius:10px;padding:12px 16px;margin-bottom:8px;display:flex;align-items:flex-start;gap:12px;}
+.alert-icon{color:var(--red);font-size:18px;flex-shrink:0;margin-top:1px;}
+.alert-body .ah{font-weight:600;font-size:13px;margin-bottom:3px;}
+.alert-body .am{font-size:11.5px;color:var(--mt);}
+.alternative-card{background:var(--card2);border:1px solid var(--brd);border-radius:10px;padding:12px 14px;margin-bottom:8px;}
+.alt-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;}
+.alt-brand{font-weight:600;font-size:13.5px;}
+.alt-generic{font-size:11.5px;color:var(--mt);margin-bottom:6px;}
+.alt-alts{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px;}
+.alt-chip{background:var(--bg);border:1px solid var(--brd);border-radius:99px;padding:2px 10px;font-size:11px;color:var(--mt);}
+.alt-chip:hover{border-color:var(--acc);color:var(--acc);cursor:pointer;}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:100;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s;}
+.overlay.on{opacity:1;pointer-events:all;}
+.modal{background:var(--card2);border:1px solid var(--brd);border-radius:14px;width:min(560px,94vw);max-height:90vh;overflow-y:auto;}
+.mh{padding:14px 18px;border-bottom:1px solid var(--brd);display:flex;align-items:center;gap:10px;}
+.mh .title{font-size:14px;font-weight:600;flex:1;}
+.mclose{width:28px;height:28px;border-radius:6px;border:1px solid var(--brd);background:transparent;color:var(--mt);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;}
+.mclose:hover{border-color:var(--red);color:var(--red);}
+.mform{padding:18px;display:flex;flex-direction:column;gap:10px;}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.fg{display:flex;flex-direction:column;gap:3px;}
+.fg label{font-size:10px;color:var(--mt);text-transform:uppercase;letter-spacing:.04em;}
+.fg input,.fg select,.fg textarea{background:var(--bg);border:1px solid var(--brd);border-radius:7px;padding:7px 10px;color:var(--tx);font-size:12px;font-family:Inter,sans-serif;outline:none;transition:border-color .2s;}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--acc);}
+.mfooter{padding:12px 18px;border-top:1px solid var(--brd);display:flex;gap:8px;justify-content:flex-end;}
+#toast{position:fixed;bottom:20px;right:20px;z-index:200;background:var(--card2);border:1px solid var(--brd);border-radius:10px;padding:10px 16px;font-size:12.5px;box-shadow:0 4px 20px rgba(0,0,0,.5);transform:translateY(20px);opacity:0;transition:all .3s;pointer-events:none;}
+#toast.show{transform:translateY(0);opacity:1;}
+#toast.ok{border-color:var(--grn);}
+#toast.err{border-color:var(--red);}
+.empty{text-align:center;padding:50px 20px;color:var(--mt);}
+.spin{animation:spin .8s linear infinite;}@keyframes spin{to{transform:rotate(360deg);}}
+.narcotic-warn{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--red);display:flex;gap:8px;align-items:center;margin-bottom:10px;}
+</style>
+</head>
+<body>
+<div class="shell"><div class="main">
+<div class="topbar">
+  <a href="/internal"><i class="fas fa-arrow-left"></i> POS</a>
+  <i class="fas fa-shield-halved" style="color:var(--red)"></i>
+  <span style="font-size:15px;font-weight:600">Drug Register &amp; Inspector Tools</span>
+  <span style="margin-left:auto" id="alert-chip"></span>
+</div>
+<div class="tabs-bar">
+  <div class="tab on" id="tab-register"  onclick="sw('register')">Narcotic Register</div>
+  <div class="tab" id="tab-schedule"   onclick="sw('schedule')">Schedule List</div>
+  <div class="tab" id="tab-alternatives" onclick="sw('alternatives')">1mg Alternatives</div>
+  <div class="tab" id="tab-inspector"  onclick="sw('inspector')">Inspector Log</div>
+  <div class="tab" id="tab-alerts"     onclick="sw('alerts')"><i class="fas fa-triangle-exclamation" style="color:var(--red)"></i> Alerts</div>
+</div>
+
+<!-- REGISTER VIEW -->
+<div id="view-register" style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+  <div class="filters">
+    <div class="fi"><i class="fas fa-calendar"></i><input type="date" id="reg-from" onchange="loadRegister()"/></div>
+    <div class="fi"><i class="fas fa-calendar-check"></i><input type="date" id="reg-to" onchange="loadRegister()"/></div>
+    <div class="fi"><i class="fas fa-tag"></i>
+      <select id="reg-schedule" onchange="loadRegister()">
+        <option value="">All Schedules</option>
+        <option value="X">Schedule X</option>
+        <option value="H1">Schedule H1</option>
+        <option value="NDPS">NDPS</option>
+      </select>
+    </div>
+    <button class="btn acc" onclick="openAddEntry()"><i class="fas fa-plus"></i> Add Entry</button>
+    <button class="btn" onclick="printRegister()"><i class="fas fa-print"></i> Print Register</button>
+  </div>
+  <div class="tbl-area">
+    <table id="reg-table">
+      <thead><tr><th>Date</th><th>Medicine</th><th>Schedule</th><th>Bill ID</th><th>Customer</th><th>Doctor</th><th>Qty</th><th>Opening</th><th>Closing</th><th>Purpose</th></tr></thead>
+      <tbody id="reg-body"><tr><td colspan="10" class="empty"><i class="fas fa-circle-notch spin"></i></td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- SCHEDULE LIST -->
+<div id="view-schedule" style="display:none;flex:1;flex-direction:column;overflow:hidden">
+  <div class="filters">
+    <div class="fi"><i class="fas fa-magnifying-glass"></i><input type="text" id="sched-q" placeholder="Search drug..." oninput="loadSchedules()"/></div>
+    <div class="fi"><i class="fas fa-filter"></i>
+      <select id="sched-filter" onchange="loadSchedules()">
+        <option value="">All Schedules</option>
+        <option value="X">Schedule X (Narcotic)</option>
+        <option value="H1">Schedule H1 (Antibiotic)</option>
+        <option value="H">Schedule H</option>
+        <option value="OTC">OTC</option>
+      </select>
+    </div>
+  </div>
+  <div class="tbl-area">
+    <table>
+      <thead><tr><th>Medicine Name</th><th>Generic</th><th>Schedule</th><th>Narcotic</th><th>Psychotropic</th><th>Requires Rx</th><th>Inspector Log</th><th>Notes</th></tr></thead>
+      <tbody id="sched-body"><tr><td colspan="8" class="empty"><i class="fas fa-circle-notch spin"></i></td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ALTERNATIVES -->
+<div id="view-alternatives" style="display:none;flex:1;flex-direction:column;overflow:hidden">
+  <div class="filters">
+    <div class="fi"><i class="fas fa-magnifying-glass"></i>
+      <input type="text" id="alt-q" placeholder="Search brand, generic, or use (e.g. fever, GERD)..." style="min-width:320px" oninput="debAlt()"/>
+    </div>
+  </div>
+  <div class="tbl-area" id="alt-area" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:10px;align-content:start;overflow-y:auto;padding:16px 20px"></div>
+</div>
+
+<!-- INSPECTOR LOG -->
+<div id="view-inspector" style="display:none;flex:1;flex-direction:column;overflow:hidden">
+  <div class="filters">
+    <button class="btn acc" onclick="openAddVisit()"><i class="fas fa-plus"></i> Log Inspector Visit</button>
+  </div>
+  <div class="tbl-area">
+    <table>
+      <thead><tr><th>Date</th><th>Time</th><th>Inspector</th><th>Badge</th><th>Purpose</th><th>Items Checked</th><th>Observations</th><th>Compliance</th><th>Next Visit</th></tr></thead>
+      <tbody id="visit-body"><tr><td colspan="9" class="empty"><i class="fas fa-circle-notch spin"></i></td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ALERTS -->
+<div id="view-alerts" style="display:none;flex:1;flex-direction:column;overflow:hidden;padding:16px 20px;overflow-y:auto">
+  <div class="narcotic-warn">
+    <i class="fas fa-triangle-exclamation"></i>
+    <div>Scheduled drugs (X, H1) dispensed today without a narcotic register entry are flagged below. Log each one immediately.</div>
+  </div>
+  <div id="alerts-area"><div class="empty"><i class="fas fa-circle-notch spin"></i></div></div>
+</div>
+
+</div></div>
+
+<!-- ADD REGISTER ENTRY MODAL -->
+<div class="overlay" id="reg-modal" onclick="closeModal(event,'reg-modal')">
+  <div class="modal">
+    <div class="mh"><i class="fas fa-pen-to-square" style="color:var(--acc)"></i>
+      <span class="title">Add Narcotic Register Entry</span>
+      <button class="mclose" onclick="closeModalDirect('reg-modal')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="mform">
+      <div class="frow">
+        <div class="fg"><label>Medicine Name *</label><input id="m-name" placeholder="e.g. Tramadol"/></div>
+        <div class="fg"><label>Generic Name</label><input id="m-generic" placeholder="e.g. Tramadol HCl"/></div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label>Schedule Type *</label>
+          <select id="m-schedule"><option value="X">Schedule X</option><option value="H1">H1</option><option value="NDPS">NDPS</option></select>
+        </div>
+        <div class="fg"><label>Date *</label><input type="date" id="m-date"/></div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label>Bill ID</label><input id="m-bill" placeholder="B-XXXX"/></div>
+        <div class="fg"><label>Batch No.</label><input id="m-batch"/></div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label>Customer Name</label><input id="m-cust"/></div>
+        <div class="fg"><label>Customer Phone</label><input id="m-phone" type="tel"/></div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label>Doctor Name *</label><input id="m-doctor" placeholder="Dr. Name"/></div>
+        <div class="fg"><label>Doctor Reg. No.</label><input id="m-dreg" placeholder="MCI/State No."/></div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label>Qty Dispensed *</label><input type="number" id="m-qty" min="1" placeholder="0"/></div>
+        <div class="fg"><label>Opening Balance</label><input type="number" id="m-opening" placeholder="auto"/></div>
+      </div>
+      <div class="fg"><label>Purpose</label><input id="m-purpose" placeholder="dispensed / return / destruction"/></div>
+    </div>
+    <div class="mfooter">
+      <button class="btn" onclick="closeModalDirect('reg-modal')">Cancel</button>
+      <button class="btn acc" onclick="saveEntry()"><i class="fas fa-floppy-disk"></i> Save Entry</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD INSPECTOR VISIT MODAL -->
+<div class="overlay" id="visit-modal" onclick="closeModal(event,'visit-modal')">
+  <div class="modal">
+    <div class="mh"><i class="fas fa-user-tie" style="color:var(--blu)"></i>
+      <span class="title">Log Drug Inspector Visit</span>
+      <button class="mclose" onclick="closeModalDirect('visit-modal')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="mform">
+      <div class="frow">
+        <div class="fg"><label>Inspector Name</label><input id="v-name" placeholder="Full name"/></div>
+        <div class="fg"><label>Badge / ID No.</label><input id="v-badge" placeholder="DI-XXXXX"/></div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label>Visit Date</label><input type="date" id="v-date"/></div>
+        <div class="fg"><label>Visit Time</label><input type="time" id="v-time"/></div>
+      </div>
+      <div class="fg"><label>Purpose</label>
+        <select id="v-purpose">
+          <option>routine</option><option>complaint</option><option>follow-up</option><option>surprise</option>
+        </select>
+      </div>
+      <div class="fg"><label>Observations</label>
+        <textarea id="v-obs" rows="3" placeholder="Drug inspector observations..."></textarea>
+      </div>
+      <div class="frow">
+        <div class="fg"><label>Compliance Status</label>
+          <select id="v-compliance"><option value="pass">Pass</option><option value="fail">Fail</option><option value="warning">Warning</option></select>
+        </div>
+        <div class="fg"><label>Next Visit Date</label><input type="date" id="v-next"/></div>
+      </div>
+    </div>
+    <div class="mfooter">
+      <button class="btn" onclick="closeModalDirect('visit-modal')">Cancel</button>
+      <button class="btn acc" onclick="saveVisit()"><i class="fas fa-floppy-disk"></i> Save Visit</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+<script>
+const today = new Date().toISOString().slice(0,10);
+document.getElementById('reg-from').value = today;
+document.getElementById('reg-to').value   = today;
+document.getElementById('m-date').value   = today;
+document.getElementById('v-date').value   = today;
+document.getElementById('v-time').value   = new Date().toTimeString().slice(0,5);
+
+let currentTab = 'register';
+loadRegister(); loadAlerts();
+
+function sw(tab){
+  currentTab = tab;
+  ['register','schedule','alternatives','inspector','alerts'].forEach(t=>{
+    const v = document.getElementById('view-'+t);
+    const b = document.getElementById('tab-'+t);
+    if(v) v.style.display = t===tab?'flex':'none';
+    if(b) b.classList.toggle('on', t===tab);
+  });
+  if(tab==='schedule')     loadSchedules();
+  if(tab==='alternatives') loadAlternatives();
+  if(tab==='inspector')    loadVisits();
+  if(tab==='alerts')       loadAlerts();
+}
+
+async function loadRegister(){
+  const from_ = document.getElementById('reg-from').value;
+  const to_   = document.getElementById('reg-to').value;
+  const sched = document.getElementById('reg-schedule').value;
+  const params = new URLSearchParams({from:from_,to:to_});
+  if(sched) params.set('schedule',sched);
+  const rows = await fetch('/api/drug-register?'+params).then(r=>r.json());
+  const tbody = document.getElementById('reg-body');
+  if(!rows.length){ tbody.innerHTML=`<tr><td colspan="10" class="empty">No entries for this period.</td></tr>`; return; }
+  tbody.innerHTML = rows.map(r=>`<tr>
+    <td style="font-family:'JetBrains Mono',monospace;font-size:11px">${r.date}</td>
+    <td style="font-weight:600">${esc(r.medicine_name)}</td>
+    <td><span class="badge ${r.schedule_type}">${r.schedule_type}</span></td>
+    <td style="color:var(--acc);font-size:11px">${esc(r.bill_id||'—')}</td>
+    <td>${esc(r.customer_name||'—')}</td>
+    <td>${esc(r.doctor_name||'—')}</td>
+    <td style="font-weight:600;color:var(--red)">${r.qty_dispensed}</td>
+    <td style="color:var(--mt)">${r.opening_balance}</td>
+    <td style="color:var(--yel)">${r.closing_balance}</td>
+    <td style="color:var(--mt)">${esc(r.purpose||'dispensed')}</td>
+  </tr>`).join('');
+}
+
+async function loadSchedules(){
+  const q  = document.getElementById('sched-q').value.trim();
+  const sc = document.getElementById('sched-filter').value;
+  const p  = new URLSearchParams();
+  if(q) p.set('q',q); if(sc) p.set('schedule',sc);
+  const rows = await fetch('/api/drug-schedules?'+p).then(r=>r.json());
+  const tbody = document.getElementById('sched-body');
+  if(!rows.length){ tbody.innerHTML=`<tr><td colspan="8" class="empty">No results.</td></tr>`; return; }
+  tbody.innerHTML = rows.map(r=>`<tr>
+    <td style="font-weight:600">${esc(r.medicine_name)}</td>
+    <td style="color:var(--mt)">${esc(r.generic_name||'—')}</td>
+    <td><span class="badge ${r.schedule_type}">${r.schedule_type}</span></td>
+    <td>${r.narcotic?'<span style="color:var(--red)"><i class="fas fa-circle-exclamation"></i> Yes</span>':'<span style="color:var(--mt)">No</span>'}</td>
+    <td>${r.psychotropic?'<span style="color:var(--yel)"><i class="fas fa-brain"></i> Yes</span>':'<span style="color:var(--mt)">No</span>'}</td>
+    <td>${r.requires_rx?'<span style="color:var(--acc)">Required</span>':'<span style="color:var(--grn)">OTC</span>'}</td>
+    <td>${r.inspector_log?'<span style="color:var(--red)">Mandatory</span>':'<span style="color:var(--mt)">No</span>'}</td>
+    <td style="color:var(--mt);font-size:11px">${esc(r.notes||'—')}</td>
+  </tr>`).join('');
+}
+
+let altTimer;
+function debAlt(){ clearTimeout(altTimer); altTimer=setTimeout(loadAlternatives,300); }
+
+async function loadAlternatives(){
+  const q   = document.getElementById('alt-q').value.trim();
+  const url = q ? `/api/alternatives?q=${encodeURIComponent(q)}` : '/api/alternatives';
+  const rows = await fetch(url).then(r=>r.json());
+  const div  = document.getElementById('alt-area');
+  if(!rows.length){ div.innerHTML=`<div class="empty" style="grid-column:1/-1">No results found.</div>`; return; }
+  div.innerHTML = rows.map(r=>`
+    <div class="alternative-card">
+      <div class="alt-head">
+        <span class="alt-brand">${esc(r.brand_name)}</span>
+        <span class="badge ${r.schedule_type}">${r.schedule_type}</span>
+      </div>
+      <div class="alt-generic">${(r.generic_names||[]).join(' + ')||'—'}</div>
+      <div style="font-size:11px;color:var(--mt);margin-bottom:4px">
+        ${r.manufacturer?`🏭 ${esc(r.manufacturer)} &nbsp;·&nbsp; `:''}
+        ${r.pack_size?`📦 ${esc(r.pack_size)} &nbsp;·&nbsp; `:''}
+        ${r.mrp?`💰 ₹${r.mrp}`:''}
+      </div>
+      ${r.uses?`<div style="font-size:11px;color:var(--grn);margin-bottom:6px">✓ ${esc(r.uses)}</div>`:''}
+      ${r.contraindications?`<div style="font-size:11px;color:var(--red);margin-bottom:6px">✗ ${esc(r.contraindications)}</div>`:''}
+      ${r.alternatives?.length?`
+        <div style="font-size:10px;color:var(--mt);margin-bottom:4px">ALTERNATIVES:</div>
+        <div class="alt-alts">${r.alternatives.map(a=>`<span class="alt-chip">${esc(a)}</span>`).join('')}</div>`:''}
+    </div>`).join('');
+}
+
+async function loadVisits(){
+  const rows = await fetch('/api/inspector/visits').then(r=>r.json());
+  const tbody = document.getElementById('visit-body');
+  if(!rows.length){ tbody.innerHTML=`<tr><td colspan="9" class="empty">No inspector visits logged.</td></tr>`; return; }
+  tbody.innerHTML = rows.map(r=>`<tr>
+    <td style="font-family:'JetBrains Mono',monospace;font-size:11px">${r.visit_date}</td>
+    <td style="color:var(--mt)">${r.visit_time||'—'}</td>
+    <td style="font-weight:600">${esc(r.inspector_name||'—')}</td>
+    <td style="color:var(--acc);font-size:11px">${esc(r.badge_no||'—')}</td>
+    <td>${esc(r.purpose||'routine')}</td>
+    <td>${(() => { try { return JSON.parse(r.items_checked||'[]').length+' items'; } catch { return '—'; } })()}</td>
+    <td style="color:var(--mt);font-size:11px">${esc(r.observations||'—')}</td>
+    <td><span class="badge ${r.compliance_status==='pass'?'OTC':r.compliance_status==='fail'?'X':'H1'}">${r.compliance_status}</span></td>
+    <td style="color:var(--mt)">${r.next_visit_date||'—'}</td>
+  </tr>`).join('');
+}
+
+async function loadAlerts(){
+  const data = await fetch('/api/drug-register/alerts').then(r=>r.json());
+  const chip = document.getElementById('alert-chip');
+  if(data.count>0){
+    chip.innerHTML=`<span style="background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);border-radius:99px;padding:2px 10px;font-size:11px;color:var(--red)"><i class="fas fa-triangle-exclamation"></i> ${data.count} unregistered</span>`;
+  }
+  const div = document.getElementById('alerts-area');
+  if(!data.alerts?.length){ div.innerHTML=`<div class="empty" style="color:var(--grn)"><i class="fas fa-circle-check" style="font-size:32px;display:block;margin-bottom:8px"></i>No unregistered narcotics today!</div>`; return; }
+  div.innerHTML = data.alerts.map(a=>`
+    <div class="alert-card">
+      <i class="fas fa-triangle-exclamation alert-icon"></i>
+      <div class="alert-body">
+        <div class="ah">${esc(a.medicine)} — NOT in register</div>
+        <div class="am">Bill ${a.bill_id} · ${a.date} · Customer: ${esc(a.customer)} · Qty: ${a.qty}</div>
+        <button class="btn acc" style="margin-top:8px;height:28px;font-size:11px" onclick="quickLog('${esc(a.medicine)}','${a.bill_id}','${esc(a.customer)}')">
+          <i class="fas fa-pen"></i> Log Now</button>
+      </div>
+    </div>`).join('');
+}
+
+function quickLog(name,billId,cust){
+  document.getElementById('m-name').value = name;
+  document.getElementById('m-bill').value = billId;
+  document.getElementById('m-cust').value = cust;
+  openAddEntry();
+}
+
+async function saveEntry(){
+  const data = {
+    medicine_name: document.getElementById('m-name').value.trim(),
+    generic_name:  document.getElementById('m-generic').value.trim(),
+    schedule_type: document.getElementById('m-schedule').value,
+    date:          document.getElementById('m-date').value,
+    bill_id:       document.getElementById('m-bill').value,
+    customer_name: document.getElementById('m-cust').value,
+    customer_phone:document.getElementById('m-phone').value,
+    doctor_name:   document.getElementById('m-doctor').value,
+    doctor_reg_no: document.getElementById('m-dreg').value,
+    qty_dispensed: parseInt(document.getElementById('m-qty').value)||0,
+    opening_balance:parseInt(document.getElementById('m-opening').value)||0,
+    batch_no:      document.getElementById('m-batch').value,
+    purpose:       document.getElementById('m-purpose').value||'dispensed',
+  };
+  if(!data.medicine_name||!data.qty_dispensed){ toast('Medicine name and quantity required','err'); return; }
+  const res = await fetch('/api/drug-register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+  const d   = await res.json();
+  if(d.status==='success'){ toast('Entry saved. Closing balance: '+d.closing_balance,'ok'); closeModalDirect('reg-modal'); loadRegister(); loadAlerts(); }
+  else toast('Save failed','err');
+}
+
+async function saveVisit(){
+  const data = {
+    inspector_name: document.getElementById('v-name').value,
+    badge_no:       document.getElementById('v-badge').value,
+    visit_date:     document.getElementById('v-date').value,
+    visit_time:     document.getElementById('v-time').value,
+    purpose:        document.getElementById('v-purpose').value,
+    observations:   document.getElementById('v-obs').value,
+    compliance_status: document.getElementById('v-compliance').value,
+    next_visit_date: document.getElementById('v-next').value,
+  };
+  const res = await fetch('/api/inspector/visits',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+  const d   = await res.json();
+  if(d.status==='success'){ toast('Visit logged','ok'); closeModalDirect('visit-modal'); loadVisits(); }
+}
+
+function openAddEntry(){ document.getElementById('reg-modal').classList.add('on'); }
+function openAddVisit(){ document.getElementById('visit-modal').classList.add('on'); }
+function closeModal(e,id){ if(e.target.id===id) closeModalDirect(id); }
+function closeModalDirect(id){ document.getElementById(id).classList.remove('on'); }
+function printRegister(){ window.print(); }
+function esc(s){const d=document.createElement('span');d.textContent=String(s||'');return d.innerHTML;}
+function toast(msg,type=''){
+  const t=document.getElementById('toast');t.textContent=msg;t.className='show '+type;
+  if(type) setTimeout(()=>t.className='',3500);
+}
+loadAlternatives();
+</script>
+</body></html>

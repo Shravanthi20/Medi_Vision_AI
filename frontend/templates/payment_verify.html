@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Payment Verify — MediVision AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:Inter,sans-serif;background:#0b0e16;color:#e2e8f0;min-height:100vh;}
+.mono{font-family:'JetBrains Mono',monospace;}
+.topbar{background:#111827;border-bottom:1px solid rgba(255,255,255,.08);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;}
+.brand{font-weight:800;color:#f97316;font-size:1.05rem;}
+.nav-links a{color:#94a3b8;font-size:.85rem;text-decoration:none;margin-left:14px;}
+.wrap{max-width:1300px;margin:0 auto;padding:24px;}
+h1{font-size:1.6rem;font-weight:800;color:#fff;}
+.sub{color:#94a3b8;font-size:.9rem;margin-bottom:20px;}
+
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:24px;}
+.kpi{background:linear-gradient(145deg,#141824,#0f1320);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:14px 18px;}
+.kpi .lbl{color:#94a3b8;font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;}
+.kpi .val{color:#fff;font-size:1.5rem;font-weight:800;font-family:'JetBrains Mono',monospace;}
+.kpi.warn .val{color:#fbbf24;}
+.kpi.bad .val{color:#fca5a5;}
+.kpi.good .val{color:#4ade80;}
+
+.row2{display:grid;grid-template-columns:1.4fr 1fr;gap:16px;}
+@media(max-width:1000px){.row2{grid-template-columns:1fr;}}
+.panel{background:#141824;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:18px;}
+.panel h3{color:#f97316;font-size:.95rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:14px;}
+
+.bill-card{background:#0d111a;border:1px solid rgba(255,255,255,.06);border-radius:11px;padding:14px;margin-bottom:8px;cursor:pointer;transition:all .15s;}
+.bill-card:hover,.bill-card.active{border-color:#f97316;background:rgba(249,115,22,.06);}
+.bill-card .row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+.bill-card .id{font-family:monospace;font-size:.78rem;color:#94a3b8;}
+.bill-card .total{font-family:monospace;font-weight:800;color:#4ade80;font-size:1.05rem;}
+.bill-card .name{font-weight:700;color:#fff;}
+.bill-card .meta{color:#64748b;font-size:.76rem;}
+.bill-card .pmt-pill{display:inline-block;padding:2px 10px;border-radius:99px;font-size:.7rem;font-weight:700;margin-right:6px;}
+.pmt-cash{background:rgba(34,197,94,.18);color:#4ade80;}
+.pmt-upi{background:rgba(59,130,246,.18);color:#60a5fa;}
+.pmt-card{background:rgba(168,85,247,.18);color:#c084fc;}
+.audio-tag{background:rgba(249,115,22,.15);color:#fb923c;padding:2px 8px;border-radius:99px;font-size:.7rem;font-weight:700;}
+
+.verify-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;}
+.btn-done{background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;border:none;padding:14px;border-radius:11px;font-weight:800;font-size:1rem;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;}
+.btn-done:hover{opacity:.9;}
+.btn-fail{background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;border:none;padding:14px;border-radius:11px;font-weight:800;font-size:1rem;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;}
+.btn-fail:hover{opacity:.9;}
+.btn-mid{background:rgba(251,191,36,.18);color:#fbbf24;border:1px solid rgba(251,191,36,.3);padding:10px;border-radius:9px;font-weight:600;font-size:.85rem;cursor:pointer;font-family:inherit;}
+.btn-mid:hover{background:rgba(251,191,36,.28);}
+
+.mic-area{background:#0d111a;border:1.5px dashed rgba(249,115,22,.3);border-radius:12px;padding:20px;text-align:center;}
+.mic-btn{width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;border:none;font-size:2rem;cursor:pointer;box-shadow:0 8px 24px rgba(249,115,22,.3);}
+.mic-btn.recording{background:linear-gradient(135deg,#ef4444,#dc2626);animation:pulse 1.2s infinite;}
+.mic-btn:disabled{opacity:.4;cursor:not-allowed;}
+@keyframes pulse{0%,100%{transform:scale(1);}50%{transform:scale(1.1);}}
+.mic-status{margin-top:10px;color:#94a3b8;font-size:.85rem;font-family:monospace;}
+.mic-time{font-size:1.1rem;color:#fbbf24;font-weight:700;margin-top:6px;}
+audio{width:100%;margin-top:10px;}
+
+.input,select,textarea{width:100%;background:#0b0e16;border:1.5px solid rgba(255,255,255,.1);border-radius:9px;padding:10px 14px;color:#e2e8f0;font-family:inherit;font-size:.88rem;}
+.input:focus{outline:none;border-color:#f97316;}
+.field{margin-bottom:12px;}
+.field label{display:block;font-size:.74rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px;}
+
+.amount-display{font-family:monospace;font-size:2rem;font-weight:900;color:#4ade80;text-align:center;background:#0b0e16;padding:18px;border-radius:12px;border:1px solid rgba(34,197,94,.2);margin-bottom:14px;}
+
+.check-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;}
+.check-row{background:#0b0e16;border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:9px 12px;font-size:.84rem;cursor:pointer;display:flex;align-items:center;gap:8px;}
+.check-row input{margin-right:2px;}
+.check-row.checked{background:rgba(34,197,94,.08);border-color:rgba(34,197,94,.35);}
+
+.empty{text-align:center;padding:40px 16px;color:#64748b;}
+.empty .ic{font-size:2.4rem;margin-bottom:8px;opacity:.4;}
+.toast{position:fixed;bottom:30px;right:30px;background:#16a34a;color:#fff;padding:14px 22px;border-radius:10px;font-weight:700;z-index:300;display:none;box-shadow:0 12px 32px rgba(0,0,0,.4);}
+.toast.show{display:block;}
+.toast.err{background:#ef4444;}
+
+.gpay-indicator{display:flex;align-items:center;gap:8px;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);border-radius:9px;padding:9px 12px;font-size:.85rem;color:#4ade80;margin-top:10px;}
+.gpay-pulse{width:8px;height:8px;background:#4ade80;border-radius:50%;animation:pulse 1.5s infinite;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand"><i class="fas fa-shield-halved"></i> Payment Verify · No-Cheat Universe</div>
+  <div>
+    <a href="/portal" class="nav-links">Portal</a>
+    <a href="/security-dashboard" class="nav-links">Security</a>
+    <a href="/audit-log" class="nav-links">Audit Log</a>
+  </div>
+</div>
+
+<div class="wrap">
+  <h1>🔐 Payment Verification — Cashier Lock</h1>
+  <p class="sub">Every cash/UPI bill must be confirmed by a staff member · audio recording · GPay sound match · timestamp + IP audit</p>
+
+  <div class="kpi-row">
+    <div class="kpi"><div class="lbl">Bills Today</div><div class="val" id="kpiTotal">0</div></div>
+    <div class="kpi warn"><div class="lbl">Pending Verify</div><div class="val" id="kpiPending">0</div></div>
+    <div class="kpi good"><div class="lbl">Verified Today</div><div class="val" id="kpiVerified">0</div></div>
+    <div class="kpi"><div class="lbl">Verification Rate</div><div class="val" id="kpiRate">0%</div></div>
+    <div class="kpi"><div class="lbl">Sound-Box Auto-Match</div><div class="val" id="kpiSound">0</div></div>
+  </div>
+
+  <div class="row2">
+
+    <!-- LEFT: PENDING BILLS -->
+    <div class="panel">
+      <h3><i class="fas fa-list-check"></i> Pending Verification (last 24h)</h3>
+      <div id="pendingList" style="max-height:65vh;overflow-y:auto;">Loading…</div>
+    </div>
+
+    <!-- RIGHT: VERIFY PANEL -->
+    <div class="panel">
+      <h3><i class="fas fa-microphone"></i> Verify Selected Bill</h3>
+      <div id="verifyPanel">
+        <div class="empty"><div class="ic">📋</div>Click a bill on the left to verify</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let selectedBill = null;
+let mediaRecorder = null, audioBlob = null, recordStart = 0, audioTimer = null;
+let liveListener = null;  // background "GPay sound" detector
+
+async function loadPending(){
+  const r = await fetch('/api/payment-verify/pending');
+  const d = await r.json();
+  const list = document.getElementById('pendingList');
+  if(!d.bills.length){
+    list.innerHTML = '<div class="empty"><div class="ic">✅</div>All bills verified — great work!</div>';
+  } else {
+    list.innerHTML = d.bills.map(b => {
+      const pcls = (b.pay||'').toLowerCase().includes('cash') ? 'pmt-cash' :
+                   (b.pay||'').toLowerCase().includes('upi') || (b.pay||'').toLowerCase().includes('gpay') ? 'pmt-upi' : 'pmt-card';
+      return `<div class="bill-card" onclick="selectBill('${b.id}')">
+        <div class="row">
+          <div class="id">${b.id}</div>
+          <div class="total">₹${(b.total||0).toFixed(2)}</div>
+        </div>
+        <div class="row">
+          <div>
+            <div class="name">${b.cust || 'Walk-in'}</div>
+            <div class="meta">${b.staff_name || '-'} · ${b.date}</div>
+          </div>
+          <div>
+            <span class="pmt-pill ${pcls}">${b.pay || 'Cash'}</span>
+            ${b.audio_filename ? '<span class="audio-tag">🎙 audio</span>' : ''}
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+  // Stats
+  document.getElementById('kpiTotal').textContent = d.bills.length;
+  document.getElementById('kpiPending').textContent = d.bills.length;
+  loadSummary();
+}
+
+async function loadSummary(){
+  const r = await fetch('/api/security/summary');
+  const d = await r.json();
+  document.getElementById('kpiTotal').textContent = d.bills_today;
+  document.getElementById('kpiPending').textContent = d.unverified;
+  document.getElementById('kpiVerified').textContent = d.bills_today - d.unverified;
+  document.getElementById('kpiRate').textContent = d.verification_rate + '%';
+  document.getElementById('kpiSound').textContent = d.soundbox_events;
+}
+
+async function selectBill(bid){
+  document.querySelectorAll('.bill-card').forEach(c => c.classList.remove('active'));
+  event && event.currentTarget && event.currentTarget.classList.add('active');
+  selectedBill = bid;
+  const r = await fetch('/api/payment-verify/pending');
+  const d = await r.json();
+  const b = d.bills.find(x => x.id === bid);
+  if(!b) return;
+
+  const panel = document.getElementById('verifyPanel');
+  panel.innerHTML = `
+    <div style="background:#0d111a;padding:12px 14px;border-radius:10px;margin-bottom:14px;">
+      <div style="color:#94a3b8;font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;">Bill</div>
+      <div style="font-family:monospace;font-weight:700;font-size:1.05rem;color:#fff;">${b.id}</div>
+      <div style="color:#94a3b8;margin-top:4px;font-size:.85rem;">${b.cust || 'Walk-in'} · ${b.phone || ''} · By ${b.staff_name||'-'}</div>
+    </div>
+
+    <div class="amount-display">₹${(b.total||0).toFixed(2)}</div>
+
+    <div class="field">
+      <label>Payment Method</label>
+      <select id="vMethod" class="input">
+        <option value="Cash" ${b.pay==='Cash'?'selected':''}>💵 Cash</option>
+        <option value="GPay" ${b.pay==='GPay'?'selected':''}>📱 GPay</option>
+        <option value="PhonePe">📱 PhonePe</option>
+        <option value="PayTM">📱 PayTM</option>
+        <option value="UPI" ${b.pay==='UPI'?'selected':''}>📱 UPI (other)</option>
+        <option value="Card" ${b.pay==='Card'?'selected':''}>💳 Card</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>Amount Received (₹)</label>
+      <input type="number" id="vAmount" class="input" value="${b.total||0}" step="0.01"/>
+    </div>
+
+    <div class="check-grid">
+      <label class="check-row" onclick="toggleCheck(this)" id="chkSound">
+        <input type="checkbox" id="chkGpay"/> 🔔 GPay sound heard
+      </label>
+      <label class="check-row" onclick="toggleCheck(this)">
+        <input type="checkbox" id="chkPhone"/> 📱 Saw phone screen
+      </label>
+    </div>
+
+    <div class="gpay-indicator" id="liveDetect" style="display:none;">
+      <div class="gpay-pulse"></div>
+      <span>🎤 Listening for "₹${(b.total||0).toFixed(0)} received" sound...</span>
+    </div>
+
+    <!-- AUDIO RECORDER -->
+    <div class="mic-area">
+      <button class="mic-btn" id="micBtn" onclick="toggleRecord()"><i class="fas fa-microphone"></i></button>
+      <div class="mic-status" id="micStatus">Tap to record (capture GPay sound or customer voice)</div>
+      <div class="mic-time" id="micTime"></div>
+      <audio id="audioPlayer" controls style="display:none;"></audio>
+    </div>
+
+    <div class="field" style="margin-top:14px;">
+      <label>Transcript / Notes (optional)</label>
+      <textarea id="vNotes" class="input" rows="2" placeholder='e.g. "Heard ₹478 from GPay sound box"'></textarea>
+    </div>
+
+    <div class="verify-actions">
+      <button class="btn-fail" onclick="markStatus('not_received')"><i class="fas fa-xmark"></i> NOT Received</button>
+      <button class="btn-done" onclick="markStatus('verified')"><i class="fas fa-check"></i> ✓ Done · Verified</button>
+    </div>
+    <button class="btn-mid" onclick="markStatus('partial')" style="width:100%;margin-top:8px;">Partial Payment</button>
+    <button class="btn-mid" onclick="markStatus('disputed')" style="width:100%;margin-top:6px;border-color:rgba(239,68,68,.3);color:#fca5a5;background:rgba(239,68,68,.1);">⚠ Disputed — escalate to manager</button>
+  `;
+  startLiveListen();
+}
+
+function toggleCheck(el){
+  setTimeout(() => {
+    const cb = el.querySelector('input');
+    el.classList.toggle('checked', cb.checked);
+  }, 0);
+}
+
+// AUDIO RECORDING
+async function toggleRecord(){
+  if(!mediaRecorder || mediaRecorder.state === 'inactive'){
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({audio:true});
+      mediaRecorder = new MediaRecorder(stream);
+      const chunks = [];
+      mediaRecorder.ondataavailable = e => chunks.push(e.data);
+      mediaRecorder.onstop = () => {
+        audioBlob = new Blob(chunks, {type:'audio/webm'});
+        const url = URL.createObjectURL(audioBlob);
+        const audio = document.getElementById('audioPlayer');
+        audio.src = url;
+        audio.style.display = 'block';
+        stream.getTracks().forEach(t => t.stop());
+      };
+      mediaRecorder.start();
+      recordStart = Date.now();
+      document.getElementById('micBtn').classList.add('recording');
+      document.getElementById('micStatus').textContent = '🔴 Recording... tap to stop';
+      audioTimer = setInterval(() => {
+        const s = Math.floor((Date.now() - recordStart) / 1000);
+        document.getElementById('micTime').textContent = `${s}s`;
+      }, 200);
+    } catch(e){
+      showToast('Microphone permission denied', true);
+    }
+  } else {
+    mediaRecorder.stop();
+    clearInterval(audioTimer);
+    document.getElementById('micBtn').classList.remove('recording');
+    document.getElementById('micStatus').textContent = '✓ Recording saved (will upload on Verify)';
+  }
+}
+
+// LIVE PASSIVE LISTEN — for "₹X received" GPay sound detection
+async function startLiveListen(){
+  // Use Web Speech API to passively detect mention of bill amount
+  if(!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)){
+    return;
+  }
+  if(liveListener) try { liveListener.stop(); } catch(e){}
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  liveListener = new SR();
+  liveListener.continuous = true;
+  liveListener.interimResults = true;
+  liveListener.lang = 'en-IN';
+
+  liveListener.onresult = (ev) => {
+    let txt = '';
+    for(let i = ev.resultIndex; i < ev.results.length; i++){
+      txt += ev.results[i][0].transcript + ' ';
+    }
+    txt = txt.toLowerCase();
+    // Detect "X rupees received" / "received X" patterns
+    const m = txt.match(/(\d+)\s*(rupees?|rs|received)/);
+    if(m){
+      const amt = parseInt(m[1]);
+      const expected = parseFloat(document.getElementById('vAmount').value || 0);
+      // Tolerance ±2
+      if(Math.abs(amt - expected) <= 2){
+        document.getElementById('liveDetect').innerHTML =
+          '<div class="gpay-pulse"></div><span style="color:#4ade80;font-weight:700;">✓ Heard "₹' + amt + ' received" — matches!</span>';
+        document.getElementById('liveDetect').style.background = 'rgba(34,197,94,.15)';
+        document.getElementById('chkGpay').checked = true;
+        document.getElementById('chkSound').classList.add('checked');
+        // Log to soundbox events
+        fetch('/api/soundbox/event', {method:'POST',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({amount: amt, transcript: txt, bill_id: selectedBill})});
+      }
+    }
+  };
+  liveListener.onerror = () => {};
+  try {
+    liveListener.start();
+    document.getElementById('liveDetect').style.display = 'flex';
+  } catch(e){}
+}
+
+async function markStatus(status){
+  if(!selectedBill) return;
+  const body = {
+    bill_id: selectedBill,
+    status,
+    expected_amount: parseFloat(document.getElementById('vAmount').value || 0),
+    received_amount: parseFloat(document.getElementById('vAmount').value || 0),
+    payment_method: document.getElementById('vMethod').value,
+    gpay_sound_heard: document.getElementById('chkGpay').checked,
+    notes: document.getElementById('vNotes').value,
+  };
+  // Upload audio if present
+  if(audioBlob){
+    const fd = new FormData();
+    fd.append('audio', audioBlob, 'pay.webm');
+    fd.append('bill_id', selectedBill);
+    fd.append('transcript', body.notes);
+    const ur = await fetch('/api/payment-verify/audio', {method:'POST', body: fd});
+    const ud = await ur.json();
+    body.audio_filename = ud.filename;
+  }
+  const r = await fetch('/api/payment-verify', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const d = await r.json();
+  if(d.status === 'ok'){
+    showToast(status === 'verified' ? '✓ Verified ' + selectedBill : 'Recorded: ' + status, status !== 'verified');
+    audioBlob = null;
+    if(liveListener) try { liveListener.stop(); } catch(e){}
+    selectedBill = null;
+    document.getElementById('verifyPanel').innerHTML = '<div class="empty"><div class="ic">📋</div>Click next bill</div>';
+    loadPending();
+  } else {
+    showToast('Error: ' + (d.error || 'unknown'), true);
+  }
+}
+
+function showToast(msg, err){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.toggle('err', !!err);
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+loadPending();
+setInterval(loadPending, 30000);
+</script>
+</body>
+</html>

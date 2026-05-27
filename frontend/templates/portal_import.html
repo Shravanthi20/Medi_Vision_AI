@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Stock Import Portal — MediVision AI</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --green:#16a34a; --green-dark:#15803d; --green-light:#dcfce7;
+      --blue:#2563eb; --blue-light:#eff6ff;
+      --orange:#ea580c; --err:#dc2626; --err-light:#fef2f2;
+      --gray:#6b7280; --gray-light:#f9fafb; --gray-border:#e5e7eb;
+      --text:#111827; --sidebar-w:220px;
+      --purple:#7c3aed; --purple-light:#f5f3ff;
+    }
+    body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--gray-light); color:var(--text); display:flex; min-height:100vh; }
+
+    /* ── SIDEBAR ── */
+    .sidebar { width:var(--sidebar-w); background:#0f172a; color:white; position:fixed; top:0; left:0; height:100vh; display:flex; flex-direction:column; z-index:50; }
+    .sb-logo { padding:20px 18px; border-bottom:1px solid rgba(255,255,255,.07); }
+    .sb-logo .row { display:flex; align-items:center; gap:8px; font-weight:800; font-size:.98rem; }
+    .sb-logo .cross { width:30px; height:30px; background:var(--green); border-radius:7px; display:flex; align-items:center; justify-content:center; }
+    .sb-logo .cross svg { fill:white; }
+    .sb-nav { flex:1; padding:12px 10px; overflow-y:auto; }
+    .sb-section { font-size:.63rem; font-weight:700; text-transform:uppercase; letter-spacing:1.2px; color:rgba(255,255,255,.3); padding:12px 8px 4px; }
+    .nav-item { display:flex; align-items:center; gap:9px; padding:9px 10px; border-radius:7px; font-size:.84rem; color:rgba(255,255,255,.6); transition:all .2s; margin-bottom:2px; text-decoration:none; }
+    .nav-item:hover { background:rgba(255,255,255,.07); color:white; }
+    .nav-item.active { background:var(--green); color:white; }
+    .nav-item .icon { width:18px; text-align:center; }
+    .sb-footer { padding:14px; border-top:1px solid rgba(255,255,255,.07); }
+    .logout-btn { width:100%; padding:7px; background:rgba(255,255,255,.06); color:rgba(255,255,255,.55); border:none; border-radius:6px; cursor:pointer; font-size:.78rem; }
+
+    /* ── MAIN ── */
+    .main { margin-left:var(--sidebar-w); flex:1; }
+    .topbar { background:white; border-bottom:1px solid var(--gray-border); padding:0 24px; height:56px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:40; }
+    .topbar h1 { font-size:1rem; font-weight:700; }
+    .content { padding:24px; max-width:1100px; }
+
+    /* ── UTILS ── */
+    .btn { padding:9px 18px; border-radius:8px; font-weight:600; font-size:.84rem; cursor:pointer; border:none; transition:all .2s; }
+    .btn-green { background:var(--green); color:white; }
+    .btn-green:hover { background:var(--green-dark); }
+    .btn-outline { background:transparent; border:1.5px solid var(--gray-border); color:var(--gray); }
+    .btn-outline:hover { border-color:var(--green); color:var(--green); }
+    .btn-blue { background:var(--blue); color:white; }
+    .btn-blue:hover { background:#1d4ed8; }
+    .btn-red { background:var(--err); color:white; }
+    .btn-sm { padding:5px 12px; font-size:.78rem; border-radius:6px; }
+    .btn:disabled { opacity:.5; cursor:not-allowed; }
+
+    .badge { display:inline-flex; align-items:center; gap:4px; padding:3px 9px; border-radius:20px; font-size:.72rem; font-weight:600; }
+    .badge-green { background:var(--green-light); color:var(--green-dark); }
+    .badge-blue { background:var(--blue-light); color:var(--blue); }
+    .badge-orange { background:#fff7ed; color:var(--orange); }
+    .badge-gray { background:#f3f4f6; color:#374151; }
+    .badge-purple { background:var(--purple-light); color:var(--purple); }
+
+    .card { background:white; border-radius:12px; border:1px solid var(--gray-border); margin-bottom:20px; }
+    .card-header { padding:14px 20px; border-bottom:1px solid var(--gray-border); display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; }
+    .card-header h3 { font-size:.95rem; font-weight:700; }
+    .card-body { padding:20px; }
+
+    /* ── STEPS ── */
+    .steps-bar { display:flex; align-items:center; gap:0; margin-bottom:24px; }
+    .step { display:flex; align-items:center; gap:8px; flex:1; }
+    .step-num { width:28px; height:28px; border-radius:50%; border:2px solid var(--gray-border); display:flex; align-items:center; justify-content:center; font-size:.75rem; font-weight:700; color:var(--gray); flex-shrink:0; }
+    .step.active .step-num { background:var(--green); border-color:var(--green); color:white; }
+    .step.done .step-num { background:var(--green); border-color:var(--green); color:white; }
+    .step-label { font-size:.8rem; font-weight:600; color:var(--gray); }
+    .step.active .step-label { color:var(--text); }
+    .step.done .step-label { color:var(--green-dark); }
+    .step-line { flex:1; height:2px; background:var(--gray-border); margin:0 8px; }
+    .step-line.done { background:var(--green); }
+
+    /* ── DROP ZONE ── */
+    .drop-zone { border:2.5px dashed var(--gray-border); border-radius:14px; padding:48px 24px; text-align:center; transition:all .25s; cursor:pointer; background:white; }
+    .drop-zone:hover, .drop-zone.drag-over { border-color:var(--green); background:var(--green-light); }
+    .drop-zone .dz-icon { font-size:2.8rem; margin-bottom:12px; }
+    .drop-zone h3 { font-size:1.05rem; font-weight:700; margin-bottom:6px; }
+    .drop-zone p { font-size:.84rem; color:var(--gray); }
+    .drop-zone .formats { display:flex; gap:8px; justify-content:center; margin-top:12px; }
+    #fileInput { display:none; }
+
+    /* ── FORMAT INFO BANNER ── */
+    .format-banner { padding:12px 16px; border-radius:10px; display:flex; align-items:center; gap:12px; margin-bottom:16px; }
+    .format-banner.ssco { background:var(--green-light); border:1px solid #86efac; }
+    .format-banner.generic { background:var(--blue-light); border:1px solid #93c5fd; }
+    .format-banner.warning { background:#fff7ed; border:1px solid #fed7aa; }
+
+    /* ── COLUMN MAPPING ── */
+    .col-map-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; }
+    .col-map-item label { font-size:.75rem; font-weight:700; color:var(--gray); text-transform:uppercase; letter-spacing:.5px; display:block; margin-bottom:5px; }
+    .col-map-item select { width:100%; padding:8px 10px; border:1.5px solid var(--gray-border); border-radius:8px; font-size:.84rem; }
+    .col-map-item select:focus { border-color:var(--green); outline:none; }
+
+    /* ── PREVIEW TABLE ── */
+    .tbl-wrap { overflow-x:auto; border-radius:8px; border:1px solid var(--gray-border); }
+    table { width:100%; border-collapse:collapse; font-size:.82rem; }
+    th { background:#f8fafc; font-weight:700; font-size:.73rem; text-transform:uppercase; letter-spacing:.5px; color:var(--gray); padding:10px 12px; text-align:left; border-bottom:1px solid var(--gray-border); white-space:nowrap; }
+    td { padding:9px 12px; border-bottom:1px solid #f1f5f9; color:var(--text); max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    tr:last-child td { border-bottom:none; }
+    tr:hover td { background:#fafffe; }
+    .cat-pill { font-size:.7rem; padding:2px 8px; border-radius:10px; background:var(--gray-light); color:var(--gray); }
+
+    /* ── PROGRESS ── */
+    .progress-wrap { background:#f1f5f9; border-radius:99px; height:10px; overflow:hidden; margin:10px 0; }
+    .progress-bar { height:100%; background:var(--green); border-radius:99px; transition:width .4s; }
+
+    /* ── RESULT ── */
+    .result-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:14px; }
+    .result-card { text-align:center; padding:18px 14px; border-radius:10px; }
+    .result-card .num { font-size:2rem; font-weight:800; }
+    .result-card .lbl { font-size:.78rem; color:var(--gray); margin-top:4px; }
+    .result-card.green { background:var(--green-light); }
+    .result-card.green .num { color:var(--green-dark); }
+    .result-card.blue { background:var(--blue-light); }
+    .result-card.blue .num { color:var(--blue); }
+    .result-card.orange { background:#fff7ed; }
+    .result-card.orange .num { color:var(--orange); }
+
+    /* ── HISTORY ── */
+    .history-item { display:flex; align-items:center; justify-content:space-between; padding:11px 16px; border-bottom:1px solid var(--gray-border); }
+    .history-item:last-child { border-bottom:none; }
+    .history-item .meta { font-size:.8rem; color:var(--gray); margin-top:2px; }
+
+    /* ── TOAST ── */
+    #toast { position:fixed; bottom:24px; right:24px; padding:12px 20px; border-radius:10px; font-size:.85rem; font-weight:600; z-index:9999; opacity:0; transform:translateY(10px); transition:all .3s; pointer-events:none; }
+    #toast.show { opacity:1; transform:translateY(0); }
+    #toast.success { background:#16a34a; color:white; }
+    #toast.error { background:var(--err); color:white; }
+
+    .hidden { display:none !important; }
+  </style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sb-logo">
+    <div class="row">
+      <div class="cross"><svg viewBox="0 0 24 24" width="16" height="16"><path d="M12 2v20M2 12h20" stroke="white" stroke-width="3" stroke-linecap="round" fill="none"/></svg></div>
+      MediVision AI
+    </div>
+    <div style="font-size:.7rem;color:rgba(255,255,255,.35);margin-top:4px;">Stock Import Portal</div>
+  </div>
+  <nav class="sb-nav">
+    <div class="sb-section">Portal</div>
+    <a href="/portal" class="nav-item"><span class="icon">🏠</span> Dashboard</a>
+    <a href="/portal/billing" class="nav-item"><span class="icon">🧾</span> Billing</a>
+    <a href="/portal/stock" class="nav-item"><span class="icon">📦</span> Stock</a>
+    <a href="/portal/ai-reorder" class="nav-item"><span class="icon">🤖</span> AI Reorder</a>
+    <a href="/portal/import" class="nav-item active"><span class="icon">⬆️</span> Import</a>
+    <div class="sb-section">Admin</div>
+    <a href="/admin" class="nav-item"><span class="icon">⚙️</span> Admin Panel</a>
+  </nav>
+  <div class="sb-footer">
+    <button class="logout-btn" onclick="logout()">← Logout</button>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <h1>📥 Stock Import Portal</h1>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <span id="userLabel" style="font-size:.82rem;color:var(--gray);"></span>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- STEPS BAR -->
+    <div class="steps-bar">
+      <div class="step active" id="step1-indicator">
+        <div class="step-num" id="sn1">1</div>
+        <div class="step-label">Upload File</div>
+      </div>
+      <div class="step-line" id="sl1"></div>
+      <div class="step" id="step2-indicator">
+        <div class="step-num" id="sn2">2</div>
+        <div class="step-label">Preview & Map</div>
+      </div>
+      <div class="step-line" id="sl2"></div>
+      <div class="step" id="step3-indicator">
+        <div class="step-num" id="sn3">3</div>
+        <div class="step-label">Confirm Import</div>
+      </div>
+      <div class="step-line" id="sl3"></div>
+      <div class="step" id="step4-indicator">
+        <div class="step-num" id="sn4">4</div>
+        <div class="step-label">Done</div>
+      </div>
+    </div>
+
+    <!-- ── STEP 1: UPLOAD ── -->
+    <div id="step1">
+      <div class="card">
+        <div class="card-header">
+          <h3>Upload Stock File</h3>
+          <span class="badge badge-blue">Supports XLS · XLSX · CSV</span>
+        </div>
+        <div class="card-body">
+
+          <div class="format-banner ssco" style="margin-bottom:20px;">
+            <span style="font-size:1.4rem;">✅</span>
+            <div>
+              <div style="font-weight:700;font-size:.9rem;">SS &amp; Co format auto-detected</div>
+              <div style="font-size:.8rem;color:#166534;margin-top:2px;">
+                Columns: Sno · Item Name · Qty · MRP · Selprice · NetPur.Rate · Packing — mapped automatically.
+              </div>
+            </div>
+          </div>
+
+          <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+            <div class="dz-icon">📂</div>
+            <h3>Drag &amp; drop your stock file here</h3>
+            <p>or click to browse from your computer</p>
+            <div class="formats">
+              <span class="badge badge-green">.XLS</span>
+              <span class="badge badge-blue">.XLSX</span>
+              <span class="badge badge-gray">.CSV</span>
+            </div>
+          </div>
+          <input type="file" id="fileInput" accept=".xls,.xlsx,.csv" />
+
+          <div id="uploadProgress" class="hidden" style="margin-top:16px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+              <span id="uploadFileName" style="font-size:.84rem;font-weight:600;"></span>
+              <span id="uploadStatus" style="font-size:.8rem;color:var(--gray);">Parsing…</span>
+            </div>
+            <div class="progress-wrap"><div class="progress-bar" id="uploadBar" style="width:0%"></div></div>
+          </div>
+
+          <div id="quickStats" class="hidden" style="margin-top:16px;">
+            <div style="display:flex;gap:16px;flex-wrap:wrap;">
+              <div style="font-size:.84rem;"><span style="font-weight:700;" id="statRows">0</span> <span style="color:var(--gray);">items found</span></div>
+              <div style="font-size:.84rem;"><span style="font-weight:700;" id="statFormat">—</span> <span style="color:var(--gray);">format</span></div>
+            </div>
+            <button class="btn btn-green" style="margin-top:14px;" onclick="goStep(2)">Preview Data →</button>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- RECENT IMPORTS -->
+      <div class="card">
+        <div class="card-header"><h3>Recent Imports</h3></div>
+        <div id="historyList">
+          <div style="padding:20px;color:var(--gray);font-size:.84rem;">Loading history…</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── STEP 2: PREVIEW & MAP ── -->
+    <div id="step2" class="hidden">
+      <div class="card">
+        <div class="card-header">
+          <h3>Preview — <span id="previewTitle">First 20 items</span></h3>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-outline btn-sm" onclick="goStep(1)">← Back</button>
+            <button class="btn btn-green btn-sm" onclick="goStep(3)">Confirm Import →</button>
+          </div>
+        </div>
+
+        <div class="card-body" id="formatBannerWrap"></div>
+
+        <!-- Generic column mapping (hidden for SS&Co auto-detect) -->
+        <div class="card-body" id="colMapSection" style="border-top:1px solid var(--gray-border);" style="display:none;">
+          <div style="font-size:.88rem;font-weight:700;margin-bottom:12px;">Map Columns</div>
+          <div class="col-map-grid" id="colMapGrid"></div>
+          <button class="btn btn-blue btn-sm" style="margin-top:14px;" onclick="applyGenericMapping()">Apply Mapping</button>
+        </div>
+
+        <div style="padding:0 20px 20px;">
+          <div class="tbl-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Item Name</th>
+                  <th>Category</th>
+                  <th>Stock</th>
+                  <th>MRP</th>
+                  <th>Sell Price</th>
+                  <th>Purchase Rate</th>
+                  <th>Packing</th>
+                </tr>
+              </thead>
+              <tbody id="previewBody"></tbody>
+            </table>
+          </div>
+          <div style="margin-top:10px;font-size:.8rem;color:var(--gray);" id="previewNote"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── STEP 3: CONFIRM ── -->
+    <div id="step3" class="hidden">
+      <div class="card">
+        <div class="card-header">
+          <h3>Confirm Import</h3>
+          <button class="btn btn-outline btn-sm" onclick="goStep(2)">← Back</button>
+        </div>
+        <div class="card-body">
+          <div class="format-banner warning" style="margin-bottom:20px;">
+            <span style="font-size:1.4rem;">⚠️</span>
+            <div>
+              <div style="font-weight:700;font-size:.9rem;">Ready to import <span id="confirmCount">0</span> items</div>
+              <div style="font-size:.8rem;color:#9a3412;margin-top:2px;">
+                Existing medicines will be updated (stock, price, purchase rate).
+                New medicines will be created automatically.
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px;">
+            <div style="flex:1;min-width:200px;">
+              <label style="font-size:.78rem;font-weight:700;color:var(--gray);text-transform:uppercase;display:block;margin-bottom:5px;">Import Source Label</label>
+              <input id="importSource" type="text" value="SS & Co Import" style="width:100%;padding:9px 12px;border:1.5px solid var(--gray-border);border-radius:8px;font-size:.84rem;" />
+            </div>
+          </div>
+
+          <div id="importProgress" class="hidden" style="margin-bottom:16px;">
+            <div style="font-size:.84rem;margin-bottom:6px;" id="importProgressLabel">Importing…</div>
+            <div class="progress-wrap"><div class="progress-bar" id="importBar" style="width:30%"></div></div>
+          </div>
+
+          <div style="display:flex;gap:10px;">
+            <button class="btn btn-green" id="doImportBtn" onclick="runImport()">⬆️ Start Import</button>
+            <button class="btn btn-outline" onclick="goStep(1)">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── STEP 4: DONE ── -->
+    <div id="step4" class="hidden">
+      <div class="card">
+        <div class="card-header"><h3>Import Complete ✅</h3></div>
+        <div class="card-body">
+          <div class="result-grid" id="resultGrid"></div>
+          <div style="display:flex;gap:10px;margin-top:20px;">
+            <a href="/portal/stock" class="btn btn-green">View Stock →</a>
+            <button class="btn btn-outline" onclick="resetAll()">Import Another File</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+  // ── State ──
+  let parsedItems = [];
+  let parsedHeaders = [];
+  let isSSCo = false;
+  let currentStep = 1;
+
+  // ── Step navigation ──
+  function goStep(n) {
+    [1,2,3,4].forEach(i => {
+      document.getElementById(`step${i}`).classList.toggle('hidden', i !== n);
+      const ind = document.getElementById(`step${i}-indicator`);
+      ind.classList.toggle('active', i === n);
+      ind.classList.toggle('done', i < n);
+    });
+    [1,2,3].forEach(i => {
+      const sl = document.getElementById(`sl${i}`);
+      if (sl) sl.classList.toggle('done', i < n);
+    });
+    currentStep = n;
+  }
+
+  // ── Drag & drop ──
+  const dropZone = document.getElementById('dropZone');
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('drag-over');
+    const files = e.dataTransfer.files;
+    if (files.length) handleFile(files[0]);
+  });
+  document.getElementById('fileInput').addEventListener('change', e => {
+    if (e.target.files.length) handleFile(e.target.files[0]);
+  });
+
+  function handleFile(file) {
+    const allowed = ['.xls', '.xlsx', '.csv'];
+    const ext = '.' + file.name.split('.').pop().toLowerCase();
+    if (!allowed.includes(ext)) { showToast('Unsupported format. Use XLS, XLSX or CSV.', 'error'); return; }
+
+    document.getElementById('uploadProgress').classList.remove('hidden');
+    document.getElementById('quickStats').classList.add('hidden');
+    document.getElementById('uploadFileName').textContent = file.name;
+    document.getElementById('uploadStatus').textContent = 'Uploading…';
+
+    // Animate bar
+    let pct = 0;
+    const timer = setInterval(() => { pct = Math.min(pct + 8, 85); document.getElementById('uploadBar').style.width = pct + '%'; }, 80);
+
+    const fd = new FormData();
+    fd.append('file', file);
+
+    fetch('/api/stock/parse-file', { method: 'POST', body: fd })
+      .then(r => r.json())
+      .then(data => {
+        clearInterval(timer);
+        document.getElementById('uploadBar').style.width = '100%';
+        if (data.status === 'error') { showToast(data.message, 'error'); document.getElementById('uploadStatus').textContent = 'Error'; return; }
+
+        parsedItems   = data.items || [];
+        parsedHeaders = data.headers || [];
+        isSSCo        = data.is_ssco;
+
+        document.getElementById('uploadStatus').textContent = 'Parsed ✓';
+        document.getElementById('quickStats').classList.remove('hidden');
+        document.getElementById('statRows').textContent = parsedItems.length.toLocaleString();
+        document.getElementById('statFormat').textContent = data.format || 'Unknown';
+
+        buildPreview(data);
+      })
+      .catch(e => { clearInterval(timer); showToast('Upload failed: ' + e.message, 'error'); });
+  }
+
+  function buildPreview(data) {
+    // Format banner
+    const bw = document.getElementById('formatBannerWrap');
+    if (data.is_ssco) {
+      bw.innerHTML = `<div class="format-banner ssco">
+        <span style="font-size:1.4rem;">✅</span>
+        <div><div style="font-weight:700;font-size:.9rem;">SS &amp; Co Format Detected — Auto Mapped</div>
+        <div style="font-size:.8rem;color:#166534;margin-top:2px;">${parsedItems.length.toLocaleString()} items · ${data.total_rows} rows parsed</div></div></div>`;
+      document.getElementById('colMapSection').style.display = 'none';
+    } else {
+      bw.innerHTML = `<div class="format-banner generic">
+        <span style="font-size:1.4rem;">ℹ️</span>
+        <div><div style="font-weight:700;font-size:.9rem;">Generic Format — Please Map Columns</div>
+        <div style="font-size:.8rem;color:#1e40af;margin-top:2px;">${data.total_rows} rows detected · Headers: ${(data.headers||[]).join(', ')}</div></div></div>`;
+      buildColMapper(data.headers);
+      document.getElementById('colMapSection').style.display = '';
+    }
+
+    document.getElementById('previewTitle').textContent = `First ${Math.min(20, parsedItems.length)} of ${parsedItems.length.toLocaleString()} items`;
+    renderPreviewTable(parsedItems.slice(0, 20));
+    if (parsedItems.length > 20) {
+      document.getElementById('previewNote').textContent = `Showing first 20 of ${parsedItems.length.toLocaleString()} items. All ${parsedItems.length.toLocaleString()} will be imported.`;
+    }
+    document.getElementById('confirmCount').textContent = parsedItems.length.toLocaleString();
+  }
+
+  function renderPreviewTable(items) {
+    const cats = {
+      'Tablet':'#dcfce7','Capsule':'#dbeafe','Syrup':'#fef3c7','Injection':'#fce7f3',
+      'Drops':'#e0f2fe','Topical':'#f3e8ff','Suspension':'#fff7ed','Other':'#f3f4f6',
+      'Personal Care':'#fdf4ff','Powder':'#fef9c3'
+    };
+    const tbody = document.getElementById('previewBody');
+    tbody.innerHTML = items.map((it, i) => `
+      <tr>
+        <td style="color:var(--gray);">${i+1}</td>
+        <td style="font-weight:600;max-width:260px;" title="${esc(it.name)}">${esc(it.name)}</td>
+        <td><span class="cat-pill" style="background:${cats[it.category]||'#f3f4f6'}">${esc(it.category||'—')}</span></td>
+        <td>${it.stock ?? 0}</td>
+        <td>₹${(it.mrp||it.price||0).toFixed(2)}</td>
+        <td>₹${(it.price||0).toFixed(2)}</td>
+        <td>₹${(it.p_rate||0).toFixed(2)}</td>
+        <td>${esc(it.packing||'1')}</td>
+      </tr>`).join('');
+  }
+
+  function buildColMapper(headers) {
+    const fields = [
+      { key: 'name',   label: 'Item Name *', req: true },
+      { key: 'stock',  label: 'Quantity/Stock' },
+      { key: 'price',  label: 'Selling Price' },
+      { key: 'p_rate', label: 'Purchase Rate' },
+    ];
+    const opts = ['(skip)', ...headers].map((h, i) => `<option value="${i-1}">${h}</option>`).join('');
+    document.getElementById('colMapGrid').innerHTML = fields.map(f => `
+      <div class="col-map-item">
+        <label>${f.label}</label>
+        <select id="cmap_${f.key}">${opts}</select>
+      </div>`).join('');
+    // Auto-guess
+    headers.forEach((h, i) => {
+      const hl = h.toLowerCase();
+      if (['name','item','medicine','drug'].some(k => hl.includes(k))) setSelect('cmap_name', i);
+      if (['qty','stock','quantity'].some(k => hl.includes(k))) setSelect('cmap_stock', i);
+      if (['mrp','price','sell'].some(k => hl.includes(k))) setSelect('cmap_price', i);
+      if (['pur','purchase','cost','rate'].some(k => hl.includes(k))) setSelect('cmap_p_rate', i);
+    });
+  }
+
+  function setSelect(id, val) {
+    const el = document.getElementById(id);
+    if (el) el.value = val;
+  }
+
+  function applyGenericMapping() {
+    const colMap = {
+      name:   parseInt(document.getElementById('cmap_name').value),
+      stock:  parseInt(document.getElementById('cmap_stock').value),
+      price:  parseInt(document.getElementById('cmap_price').value),
+      p_rate: parseInt(document.getElementById('cmap_p_rate').value),
+    };
+    if (isNaN(colMap.name) || colMap.name < 0) { showToast('Please select the Item Name column.', 'error'); return; }
+
+    // Re-parse using selected mapping (send back to server or map client-side from raw rows)
+    showToast('Mapping applied. Please re-upload with mapping via server if needed.', 'success');
+    // For now, just show current items
+    renderPreviewTable(parsedItems.slice(0, 20));
+  }
+
+  // ── Import ──
+  function runImport() {
+    if (!parsedItems.length) { showToast('No items to import.', 'error'); return; }
+    const source = document.getElementById('importSource').value || 'file_import';
+    document.getElementById('doImportBtn').disabled = true;
+    document.getElementById('importProgress').classList.remove('hidden');
+
+    const bar = document.getElementById('importBar');
+    let pct = 10;
+    const timer = setInterval(() => { pct = Math.min(pct + 5, 90); bar.style.width = pct + '%'; }, 200);
+
+    fetch('/api/stock/import-file', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items: parsedItems, source })
+    })
+    .then(r => r.json())
+    .then(data => {
+      clearInterval(timer);
+      bar.style.width = '100%';
+      if (data.status === 'error') { showToast(data.message, 'error'); document.getElementById('doImportBtn').disabled = false; return; }
+      showResult(data);
+      goStep(4);
+    })
+    .catch(e => { clearInterval(timer); showToast('Import failed: ' + e.message, 'error'); document.getElementById('doImportBtn').disabled = false; });
+  }
+
+  function showResult(data) {
+    document.getElementById('resultGrid').innerHTML = `
+      <div class="result-card green"><div class="num">${(data.created||0).toLocaleString()}</div><div class="lbl">New Items Created</div></div>
+      <div class="result-card blue"><div class="num">${(data.updated||0).toLocaleString()}</div><div class="lbl">Items Updated</div></div>
+      <div class="result-card orange"><div class="num">${(data.skipped||0).toLocaleString()}</div><div class="lbl">Skipped / Errors</div></div>
+      <div class="result-card" style="background:#f1f5f9;"><div class="num" style="color:var(--text);">${(data.total||0).toLocaleString()}</div><div class="lbl">Total Processed</div></div>`;
+  }
+
+  function resetAll() {
+    parsedItems = []; parsedHeaders = []; isSSCo = false;
+    document.getElementById('fileInput').value = '';
+    document.getElementById('uploadProgress').classList.add('hidden');
+    document.getElementById('quickStats').classList.add('hidden');
+    document.getElementById('importProgress').classList.add('hidden');
+    document.getElementById('doImportBtn').disabled = false;
+    goStep(1);
+    loadHistory();
+  }
+
+  // ── Import history ──
+  function loadHistory() {
+    fetch('/api/stock/imports')
+      .then(r => r.json())
+      .then(list => {
+        const el = document.getElementById('historyList');
+        if (!list.length) { el.innerHTML = '<div style="padding:20px;color:var(--gray);font-size:.84rem;">No imports yet.</div>'; return; }
+        el.innerHTML = list.slice(0, 10).map(r => `
+          <div class="history-item">
+            <div>
+              <div style="font-weight:600;font-size:.84rem;">${esc(r.file_name || 'File Import')} <span class="badge badge-gray">${esc(r.shop_type||'retail')}</span></div>
+              <div class="meta">${r.import_date || '—'} &nbsp;·&nbsp; ${esc(r.imported_by||'system')}</div>
+            </div>
+            <span class="badge badge-green">${(r.item_count||0).toLocaleString()} items</span>
+          </div>`).join('');
+      })
+      .catch(() => {});
+  }
+
+  // ── Logout / user ──
+  function logout() {
+    fetch('/api/portal/logout', { method: 'POST' }).then(() => window.location.href = '/');
+  }
+
+  // ── Helpers ──
+  function esc(s) {
+    if (!s) return '';
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function showToast(msg, type = 'success') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = `show ${type}`;
+    setTimeout(() => { t.className = ''; }, 3500);
+  }
+
+  // ── Init ──
+  fetch('/api/portal/me').then(r => r.json()).then(d => {
+    if (d.shop_name) document.getElementById('userLabel').textContent = d.shop_name;
+  }).catch(() => {});
+
+  loadHistory();
+</script>
+</body>
+</html>

@@ -13,14 +13,16 @@ This guide explains how to set up, run, and test the project in its current Post
 ## Prerequisites
 
 - Python 3.11+ recommended
-- PostgreSQL 14+ recommended
+- PostgreSQL 14+ recommended (or Docker to run it)
 - `pip` and `venv`
 - Bruno installed for API testing
+- (Optional) Docker and Docker Compose for easy database setup
 
 ## Project Layout
 
 - `run.py` - local development entrypoint
 - `wsgi.py` - production entrypoint
+- `docker-compose.yml` - Docker compose file for local PostgreSQL setup
 - `backend/app_factory.py` - Flask app factory
 - `backend/extensions.py` - SQLAlchemy, Migrate, Marshmallow instances
 - `backend/models/` - ORM models
@@ -30,6 +32,7 @@ This guide explains how to set up, run, and test the project in its current Post
 - `frontend/static/` - CSS, JS, models, assets
 - `migrations/` - Alembic migration environment
 - `bruno/` - Bruno API collection
+- `tests/` - Pytest automated tests
 
 ## 1. Create a Virtual Environment
 
@@ -93,7 +96,21 @@ Notes:
 
 ## 4. Create the PostgreSQL Database
 
-Create a database and user if needed:
+You can run PostgreSQL using Docker or install it manually.
+
+### Option A: Using Docker (Recommended)
+
+Start the database using the provided `docker-compose.yml`:
+
+```bash
+docker compose up -d
+```
+
+This starts a Postgres 14 container on port `5432` with the default user and password used in the `.env` example. To stop it later, run `docker compose down`.
+
+### Option B: Manual Setup
+
+Create a database and user manually in your local PostgreSQL installation:
 
 ```sql
 CREATE DATABASE db;
@@ -101,7 +118,7 @@ CREATE USER user_name WITH PASSWORD 'password';
 GRANT ALL PRIVILEGES ON DATABASE db TO user_name;
 ```
 
-Make sure the `DATABASE_URL` points to that database.
+Make sure the `DATABASE_URL` in your `.env` points to that database.
 
 ## 5. Run Database Migrations
 
@@ -119,6 +136,18 @@ flask db upgrade
 ```
 
 For a brand-new database, this creates all ORM tables from the migration history.
+
+### Optional: Seed the Database
+
+To populate your newly created database with initial items, products, and other records, you can run the seed scripts:
+
+```bash
+# For real production-like data (Recommended):
+python seed_real_data.py
+
+# Or for demo/sample data:
+python seed_demo_data.py
+```
 
 ## 6. Start the App
 
@@ -155,13 +184,14 @@ Open that folder in Bruno and use the local environment:
 
 Recommended test order:
 
-1. Core health checks
-2. Inventory list and upsert endpoints
-3. Bills create/list/fetch/update/delete
-4. Purchases list/create
-5. Masters CRUD and customer payment
-6. Communications templates and logs
-7. SMS message and template endpoints
+1. Core health checks (`/api/health`)
+2. Auth endpoints (if enabled)
+3. Inventory list and upsert endpoints
+4. Bills create/list/fetch/update/delete
+5. Purchases list/create
+6. Masters CRUD and customer payment
+7. Communications templates, logs, and SMS message endpoints
+8. Face Log and Wanted List operations
 
 ### Useful Bruno variables
 
@@ -229,11 +259,14 @@ Run these requests after migrations:
 - Provider credentials may be missing.
 - These integrations can still be used in local/queued mode depending on settings.
 
-## 11. Recommended Next Steps After Setup
+## 11. Testing and Next Steps
 
-- Add automated API smoke tests with `pytest`
-- Export or document the API contract with OpenAPI later
-- Keep Bruno collection and backend routes in sync as new endpoints are added
+- **Run Automated Tests**: You can run the included `pytest` suite for smoke tests and face matching functionality:
+  ```bash
+  pytest
+  ```
+- Keep Bruno collection and backend routes in sync as new endpoints are added.
+- Export or document the API contract with OpenAPI later.
 
 ## 12. Current Backend Status
 

@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Staff Tasks — MediVision AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:Inter,sans-serif;background:#0b0e16;color:#e2e8f0;min-height:100vh;}
+.mono{font-family:'JetBrains Mono',monospace;}
+.topbar{background:#111827;border-bottom:1px solid rgba(255,255,255,.08);padding:14px 28px;display:flex;justify-content:space-between;align-items:center;}
+.brand{font-weight:800;color:#f97316;}
+.nav-links a{color:#94a3b8;font-size:.85rem;text-decoration:none;margin-left:14px;}
+.wrap{max-width:1400px;margin:0 auto;padding:24px;}
+h1{font-size:1.6rem;font-weight:800;color:#fff;}
+.sub{color:#94a3b8;font-size:.92rem;margin-bottom:22px;}
+.row2{display:grid;grid-template-columns:1.3fr 1fr;gap:18px;margin-bottom:18px;}
+@media(max-width:1000px){.row2{grid-template-columns:1fr;}}
+.panel{background:#141824;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:20px;}
+.panel h3{color:#f97316;font-size:.95rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:14px;}
+.tabs{display:flex;gap:6px;margin-bottom:14px;border-bottom:1px solid rgba(255,255,255,.06);}
+.tab{padding:9px 14px;font-size:.84rem;color:#94a3b8;cursor:pointer;border-bottom:2px solid transparent;}
+.tab.active{color:#fb923c;border-bottom-color:#f97316;}
+.task-card{background:#0d111a;border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:12px;margin-bottom:8px;display:flex;align-items:center;gap:12px;}
+.task-card .meta{flex:1;}
+.task-card .title{font-weight:700;color:#fff;font-size:.92rem;}
+.task-card .desc{color:#94a3b8;font-size:.78rem;margin-top:2px;}
+.cat-cleaning{background:rgba(34,197,94,.15);color:#4ade80;}
+.cat-stock{background:rgba(59,130,246,.15);color:#60a5fa;}
+.cat-finance{background:rgba(168,85,247,.15);color:#c084fc;}
+.cat-expiry{background:rgba(239,68,68,.15);color:#fca5a5;}
+.cat-compliance{background:rgba(251,191,36,.15);color:#fde68a;}
+.cat-crm{background:rgba(244,114,182,.15);color:#f9a8d4;}
+.cat-hr,.cat-backup,.cat-maintenance{background:rgba(148,163,184,.15);color:#cbd5e1;}
+.chip{padding:2px 9px;border-radius:99px;font-size:.7rem;font-weight:700;display:inline-block;}
+.input,select{width:100%;background:#0b0e16;border:1.5px solid rgba(255,255,255,.1);border-radius:9px;padding:9px 12px;color:#e2e8f0;font-family:inherit;font-size:.85rem;}
+.btn{padding:8px 14px;border-radius:7px;font-weight:700;font-size:.78rem;border:none;cursor:pointer;font-family:inherit;}
+.btn-primary{background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;}
+.btn-green{background:rgba(34,197,94,.2);color:#4ade80;border:1px solid rgba(34,197,94,.4);}
+.leader-row{display:flex;align-items:center;gap:10px;background:#0d111a;border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:10px 12px;margin-bottom:6px;}
+.leader-row .rank{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.85rem;}
+.leader-row.rank-1 .rank{background:linear-gradient(135deg,#fbbf24,#f59e0b);}
+.leader-row.rank-2 .rank{background:linear-gradient(135deg,#cbd5e1,#94a3b8);}
+.leader-row .name{flex:1;font-weight:600;}
+.leader-row .score{font-family:monospace;color:#fb923c;font-weight:700;}
+.cat-bubble{display:inline-block;background:#0d111a;border:1px solid rgba(255,255,255,.08);padding:6px 12px;border-radius:99px;margin:3px;font-size:.78rem;}
+.cat-bubble strong{color:#fb923c;}
+.toast{position:fixed;bottom:30px;right:30px;background:#16a34a;color:#fff;padding:14px 22px;border-radius:10px;font-weight:700;z-index:300;display:none;}
+.toast.show{display:block;}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="brand"><i class="fas fa-clipboard-check"></i> Staff Tasks &amp; ML</div>
+  <div><a href="/portal" class="nav-links">Portal</a><a href="/staff-attendance" class="nav-links">Attendance</a></div>
+</div>
+
+<div class="wrap">
+  <h1>👥 Staff Task Manager + ML Insights</h1>
+  <p class="sub">Daily / Weekly / Monthly / Bi-Monthly tasks · auto-suggest who's best for what (based on history)</p>
+
+  <div class="row2">
+    <div class="panel">
+      <h3><i class="fas fa-tasks"></i> Task Definitions</h3>
+      <div class="tabs">
+        <div class="tab active" data-f="daily" onclick="filterFreq('daily')">Daily</div>
+        <div class="tab" data-f="weekly" onclick="filterFreq('weekly')">Weekly</div>
+        <div class="tab" data-f="monthly" onclick="filterFreq('monthly')">Monthly</div>
+        <div class="tab" data-f="bimonthly" onclick="filterFreq('bimonthly')">2-Monthly</div>
+      </div>
+      <div id="taskList">Loading…</div>
+    </div>
+
+    <div class="panel">
+      <h3><i class="fas fa-trophy"></i> ML Leaderboard (last 30 days)</h3>
+      <div id="leaderList">Loading…</div>
+
+      <h3 style="margin-top:18px;"><i class="fas fa-brain"></i> Best Staff For Each Category</h3>
+      <div id="bestAt"></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3><i class="fas fa-list-check"></i> Today's Task Log</h3>
+    <div id="todayLog">Loading…</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let curFreq = 'daily';
+let allTasks = [];
+let staffList = [];
+
+async function loadStaff(){
+  const r = await fetch('/api/staff');
+  const list = await r.json();
+  staffList = Array.isArray(list) ? list : (list.staff || []);
+}
+
+async function loadTasks(){
+  const r = await fetch('/api/staff-tasks/definitions');
+  const d = await r.json();
+  allTasks = d.tasks;
+  renderTasks();
+}
+
+function renderTasks(){
+  const list = allTasks.filter(t => t.frequency === curFreq);
+  document.getElementById('taskList').innerHTML = list.map(t => `
+    <div class="task-card">
+      <div class="meta">
+        <div class="title">${t.title} <span class="chip cat-${t.category}">${t.category}</span></div>
+        <div class="desc">${t.description} · ⏱ ${t.est_minutes} min</div>
+      </div>
+      <select id="assign-${t.id}" style="width:120px;">
+        ${staffList.map(s => `<option value="${s.id}">${s.name}</option>`).join('')}
+      </select>
+      <button class="btn btn-primary" onclick="assign(${t.id})">Assign</button>
+    </div>`).join('') || '<div style="text-align:center;padding:24px;color:#64748b;">No tasks for this frequency</div>';
+}
+
+function filterFreq(f){
+  curFreq = f;
+  document.querySelectorAll('.tab').forEach(el => el.classList.toggle('active', el.dataset.f === f));
+  renderTasks();
+}
+
+async function assign(taskId){
+  const staffId = parseInt(document.getElementById('assign-' + taskId).value);
+  const r = await fetch('/api/staff-tasks/assign', {method:'POST',headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({task_def_id: taskId, staff_id: staffId, due_date: new Date().toISOString().slice(0,10)})});
+  if((await r.json()).status === 'ok'){
+    showToast('✓ Task assigned');
+    loadLog();
+  }
+}
+
+async function loadLeader(){
+  const r = await fetch('/api/staff-tasks/leaderboard?days=30');
+  const d = await r.json();
+
+  document.getElementById('leaderList').innerHTML = d.staff.length === 0
+    ? '<div style="text-align:center;padding:24px;color:#64748b;">No tasks completed yet — assign some</div>'
+    : d.staff.slice(0, 8).map((s, i) => `
+        <div class="leader-row rank-${i+1}">
+          <div class="rank">${i + 1}</div>
+          <div class="name">${s.name}<br><span style="color:#94a3b8;font-size:.72rem;font-weight:400;">${s.done}/${s.total} tasks · ${s.avg_quality}% quality</span></div>
+          <div class="score">${s.score}</div>
+        </div>`).join('');
+
+  const cats = Object.entries(d.best_at_category);
+  document.getElementById('bestAt').innerHTML = cats.length === 0
+    ? '<div style="color:#64748b;font-size:.85rem;">No data yet</div>'
+    : cats.map(([cat, info]) => `
+        <span class="cat-bubble">${cat}: <strong>${info.staff}</strong> (${info.q}%)</span>`).join('');
+}
+
+async function loadLog(){
+  const r = await fetch('/api/staff-tasks/log?from=' + new Date().toISOString().slice(0,10));
+  const d = await r.json();
+  if(!d.log.length){
+    document.getElementById('todayLog').innerHTML = '<div style="text-align:center;padding:24px;color:#64748b;">No tasks assigned today</div>';
+    return;
+  }
+  document.getElementById('todayLog').innerHTML = `
+    <table style="width:100%;border-collapse:collapse;">
+      <thead><tr><th style="text-align:left;padding:8px 12px;background:#0d111a;color:#94a3b8;font-size:.7rem;text-transform:uppercase;">Task</th><th style="text-align:left;padding:8px 12px;background:#0d111a;color:#94a3b8;font-size:.7rem;">Assigned</th><th style="text-align:left;padding:8px 12px;background:#0d111a;color:#94a3b8;font-size:.7rem;">Status</th><th style="padding:8px 12px;background:#0d111a;"></th></tr></thead>
+      <tbody>${d.log.map(l => `
+        <tr style="border-bottom:1px solid rgba(255,255,255,.04);">
+          <td style="padding:9px 12px;font-size:.85rem;">${l.title}</td>
+          <td style="padding:9px 12px;font-size:.85rem;color:#94a3b8;">${l.assigned_name||'-'}</td>
+          <td style="padding:9px 12px;"><span class="chip ${l.status==='completed'?'cat-cleaning':l.status==='pending'?'cat-expiry':'cat-stock'}">${l.status}</span></td>
+          <td style="padding:9px 12px;text-align:right;">${l.status==='pending' ? `<button class="btn btn-green" onclick="complete(${l.id})">✓ Mark Done</button>` : ''}</td>
+        </tr>`).join('')}</tbody>
+    </table>`;
+}
+
+async function complete(id){
+  const q = prompt('Quality score (0-100)?', '90');
+  if(!q) return;
+  const m = prompt('Actual minutes taken?', '30');
+  await fetch(`/api/staff-tasks/${id}/complete`, {method:'POST',headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({quality_score: parseFloat(q), actual_minutes: parseInt(m || 0)})});
+  showToast('✓ Task completed');
+  loadLog();
+  loadLeader();
+}
+
+function showToast(m){
+  const t = document.getElementById('toast');
+  t.textContent = m; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+(async function(){
+  await loadStaff();
+  loadTasks();
+  loadLeader();
+  loadLog();
+})();
+</script>
+</body>
+</html>

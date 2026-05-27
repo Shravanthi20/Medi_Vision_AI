@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Bills History — MediVision AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#f8fafc; --card:#ffffff; --border:#e2e8f0;
+  --tx:#0f172a; --mt:#64748b; --grn:#16a34a; --grn2:#15803d;
+  --acc:#f97316; --blu:#2563eb; --wa:#25d366;
+}
+html{scroll-behavior:smooth;}
+body{font-family:Inter,sans-serif;background:var(--bg);color:var(--tx);min-height:100vh;}
+.mono{font-family:'JetBrains Mono',monospace;}
+
+.topbar{background:#fff;border-bottom:1px solid var(--border);padding:14px 24px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 1px 3px rgba(0,0,0,.04);position:sticky;top:0;z-index:50;}
+.brand{font-weight:800;font-size:1.05rem;display:flex;align-items:center;gap:10px;color:var(--tx);}
+.brand .ic{width:36px;height:36px;border-radius:9px;background:linear-gradient(135deg,var(--grn),var(--grn2));display:flex;align-items:center;justify-content:center;color:#fff;font-size:1rem;}
+.nav-links a{color:var(--mt);font-size:.88rem;text-decoration:none;margin-left:16px;font-weight:500;transition:color .15s;}
+.nav-links a:hover{color:var(--grn);}
+
+.wrap{max-width:1400px;margin:0 auto;padding:24px;}
+h1{font-size:1.7rem;font-weight:800;color:var(--tx);}
+.sub{color:var(--mt);font-size:.92rem;margin-bottom:22px;}
+
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:24px;}
+.kpi{background:#fff;border:1px solid var(--border);border-radius:14px;padding:16px 20px;box-shadow:0 1px 2px rgba(0,0,0,.03);}
+.kpi .lbl{color:var(--mt);font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;font-weight:700;}
+.kpi .val{color:var(--tx);font-size:1.55rem;font-weight:800;font-family:'JetBrains Mono',monospace;margin-top:5px;}
+.kpi.green .val{color:var(--grn);}
+.kpi.orange .val{color:var(--acc);}
+.kpi.blue .val{color:var(--blu);}
+
+.filter-bar{background:#fff;border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:18px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+.filter-bar input,.filter-bar select{background:#fff;border:1.5px solid var(--border);border-radius:9px;padding:9px 13px;font-family:inherit;font-size:.88rem;color:var(--tx);}
+.filter-bar input:focus,.filter-bar select:focus{outline:none;border-color:var(--grn);}
+.filter-bar .search{flex:1;min-width:240px;}
+.btn{padding:9px 18px;border-radius:9px;font-weight:700;font-size:.85rem;border:none;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:6px;text-decoration:none;}
+.btn-ghost{background:#f1f5f9;color:var(--tx);border:1px solid var(--border);}
+.btn-wa{background:var(--wa);color:#fff;}
+.btn-print{background:var(--acc);color:#fff;}
+.btn-blue{background:var(--blu);color:#fff;}
+
+.tbl-wrap{background:#fff;border:1px solid var(--border);border-radius:14px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.03);}
+.tbl{width:100%;border-collapse:collapse;}
+.tbl th{background:#f8fafc;color:var(--mt);font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;text-align:left;padding:11px 14px;border-bottom:1px solid var(--border);font-weight:700;}
+.tbl td{padding:11px 14px;font-size:.88rem;border-bottom:1px solid #f1f5f9;}
+.tbl tr:hover td{background:#fafbfc;}
+.tbl tr.expanded td{background:rgba(34,197,94,.04);}
+.tbl tr.detail-row td{background:#fafbfc;padding:0;border-bottom:2px solid var(--border);}
+
+.bill-id{font-family:monospace;font-size:.78rem;color:var(--blu);font-weight:700;}
+.cust{font-weight:600;color:var(--tx);}
+.cust .phone{color:var(--mt);font-size:.74rem;font-family:monospace;display:block;margin-top:1px;}
+.amt-cell{font-family:monospace;color:var(--grn);font-weight:800;font-size:.95rem;text-align:right;}
+.date-cell{font-family:monospace;font-size:.78rem;color:var(--mt);}
+
+.pill{padding:2px 9px;border-radius:99px;font-size:.7rem;font-weight:700;display:inline-block;}
+.pay-cash{background:#dcfce7;color:#15803d;}
+.pay-upi{background:#dbeafe;color:#1d4ed8;}
+.pay-card{background:#f3e8ff;color:#6d28d9;}
+.pay-credit{background:#fee2e2;color:#dc2626;}
+.pay-gpay{background:#dbeafe;color:#1d4ed8;}
+
+.row-actions{display:flex;gap:5px;justify-content:flex-end;}
+.btn-view{padding:5px 10px;font-size:.75rem;border-radius:6px;border:none;cursor:pointer;font-family:inherit;font-weight:600;background:#e0f2fe;color:#0369a1;}
+
+.detail-content{padding:18px 24px;}
+.detail-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:14px;font-size:.84rem;}
+.detail-grid .lbl{color:var(--mt);font-weight:600;}
+.detail-grid .val{color:var(--tx);font-weight:700;}
+.items-tbl{width:100%;border-collapse:collapse;background:#fff;border-radius:9px;overflow:hidden;border:1px solid var(--border);}
+.items-tbl th{background:#f1f5f9;font-size:.7rem;color:var(--mt);text-transform:uppercase;letter-spacing:.04em;padding:9px 12px;text-align:left;font-weight:700;border-bottom:1px solid var(--border);}
+.items-tbl td{padding:9px 12px;font-size:.84rem;border-bottom:1px solid #f1f5f9;}
+.items-tbl tr:last-child td{border-bottom:none;}
+.totals-strip{display:flex;justify-content:flex-end;gap:14px;margin-top:12px;font-size:.85rem;flex-wrap:wrap;}
+.totals-strip .t{background:#f8fafc;padding:8px 14px;border-radius:8px;border:1px solid var(--border);}
+.totals-strip .t.grand{background:linear-gradient(135deg,var(--grn),var(--grn2));color:#fff;font-weight:800;border:none;}
+.totals-strip .t span:first-child{color:var(--mt);margin-right:6px;}
+.totals-strip .t.grand span{color:#fff;}
+
+.empty{text-align:center;padding:60px 20px;color:var(--mt);}
+.empty .icon{font-size:3rem;margin-bottom:12px;opacity:.4;}
+
+.pagination{display:flex;justify-content:center;align-items:center;gap:10px;margin-top:20px;flex-wrap:wrap;}
+.pagination button{padding:6px 14px;border-radius:7px;border:1px solid var(--border);background:#fff;cursor:pointer;font-family:inherit;color:var(--tx);font-weight:600;font-size:.82rem;}
+.pagination button:disabled{opacity:.4;cursor:not-allowed;}
+.pagination button.active{background:var(--grn);color:#fff;border-color:var(--grn);}
+.pagination .info{color:var(--mt);font-size:.82rem;}
+
+.toast{position:fixed;bottom:30px;right:30px;background:var(--grn);color:#fff;padding:14px 22px;border-radius:10px;font-weight:700;z-index:300;display:none;box-shadow:0 12px 32px rgba(0,0,0,.15);}
+.toast.show{display:block;}
+.toast.err{background:#ef4444;}
+
+@media(max-width:768px){
+  .wrap{padding:14px;}
+  .kpi .val{font-size:1.3rem;}
+  .filter-bar{flex-direction:column;align-items:stretch;}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <div class="ic"><i class="fas fa-receipt"></i></div>
+    Bills History
+  </div>
+  <div class="nav-links">
+    <a href="/portal/billing">← New Bill</a>
+    <a href="/portal">Dashboard</a>
+    <a href="/reports">Reports</a>
+  </div>
+</div>
+
+<div class="wrap">
+  <h1>📋 Bills History</h1>
+  <p class="sub">All bills · expand any row to see items · WhatsApp directly to customer · printable view · full year searchable</p>
+
+  <div class="kpi-row" id="kpiRow"></div>
+
+  <div class="filter-bar">
+    <input id="searchInput" class="search" placeholder="🔍 Search bill ID, customer name, phone, medicine name..." oninput="onSearch()"/>
+    <select id="yearFilter" onchange="applyFilters()"><option value="">All Years</option></select>
+    <select id="monthFilter" onchange="applyFilters()">
+      <option value="">All Months</option>
+      <option value="01">Jan</option><option value="02">Feb</option><option value="03">Mar</option>
+      <option value="04">Apr</option><option value="05">May</option><option value="06">Jun</option>
+      <option value="07">Jul</option><option value="08">Aug</option><option value="09">Sep</option>
+      <option value="10">Oct</option><option value="11">Nov</option><option value="12">Dec</option>
+    </select>
+    <select id="payFilter" onchange="applyFilters()">
+      <option value="">All Payments</option>
+      <option value="Cash">💵 Cash</option>
+      <option value="UPI">📱 UPI</option>
+      <option value="GPay">📱 GPay</option>
+      <option value="Card">💳 Card</option>
+      <option value="Credit">📋 Credit</option>
+    </select>
+    <button class="btn btn-ghost" onclick="exportCSV()"><i class="fas fa-download"></i> Export CSV</button>
+  </div>
+
+  <div class="tbl-wrap">
+    <table class="tbl" id="billsTable">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Bill #</th>
+          <th>Customer</th>
+          <th>Items</th>
+          <th>Pay</th>
+          <th style="text-align:right;">Subtotal</th>
+          <th style="text-align:right;">GST</th>
+          <th style="text-align:right;">Total</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody><tr><td colspan="9" class="empty"><div class="icon">⏳</div>Loading…</td></tr></tbody>
+    </table>
+  </div>
+
+  <div class="pagination" id="pagination"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let allBills = [];
+let filtered = [];
+let currentPage = 1;
+const PER_PAGE = 25;
+let searchDebounce = null;
+
+async function loadBills(){
+  try {
+    const r = await fetch('/api/bills?limit=5000');
+    let bills = await r.json();
+    if(!Array.isArray(bills)){ bills = bills.bills || bills.data || []; }
+    allBills = bills.map(b => {
+      let items = b.items || [];
+      if(typeof items === 'string'){
+        try { items = JSON.parse(items); } catch(e){ items = []; }
+      }
+      return {...b, items: Array.isArray(items) ? items : []};
+    });
+    allBills.sort((a,b) => (b.ts||0) - (a.ts||0));
+
+    // Year filter
+    const years = [...new Set(allBills.map(b => (b.date||'').slice(0,4)).filter(y => /^\d{4}$/.test(y)))];
+    years.sort().reverse();
+    const yf = document.getElementById('yearFilter');
+    yf.innerHTML = '<option value="">All Years</option>' + years.map(y => `<option value="${y}">${y}</option>`).join('');
+
+    applyFilters();
+  } catch(e){
+    document.querySelector('#billsTable tbody').innerHTML = '<tr><td colspan="9" class="empty"><div class="icon">⚠️</div>Failed to load bills: ' + e.message + '</td></tr>';
+  }
+}
+
+function applyFilters(){
+  const q = document.getElementById('searchInput').value.toLowerCase().trim();
+  const year = document.getElementById('yearFilter').value;
+  const month = document.getElementById('monthFilter').value;
+  const pay = document.getElementById('payFilter').value;
+
+  filtered = allBills.filter(b => {
+    if(year && !(b.date||'').startsWith(year)) return false;
+    if(month && (b.date||'').slice(5,7) !== month) return false;
+    if(pay && (b.pay||'').toLowerCase() !== pay.toLowerCase()) return false;
+    if(q){
+      const hay = ((b.id||'') + ' ' + (b.cust||'') + ' ' + (b.phone||'') + ' ' + (b.doctor||'') + ' ' +
+        (b.items||[]).map(i => i.name||'').join(' ')).toLowerCase();
+      if(hay.indexOf(q) < 0) return false;
+    }
+    return true;
+  });
+
+  currentPage = 1;
+  renderTable();
+  renderKPIs();
+}
+
+function renderKPIs(){
+  const total = filtered.length;
+  const sumRev = filtered.reduce((s,b) => s + (b.total||0), 0);
+  const sumGst = filtered.reduce((s,b) => s + (b.tax||0), 0);
+  const uniqueCust = new Set(filtered.map(b => (b.phone||'').replace(/\D/g,'')).filter(p => p && p.length === 10)).size;
+  const avgBill = total > 0 ? sumRev/total : 0;
+  document.getElementById('kpiRow').innerHTML = `
+    <div class="kpi"><div class="lbl">Bills</div><div class="val">${total.toLocaleString('en-IN')}</div></div>
+    <div class="kpi green"><div class="lbl">Total Revenue</div><div class="val">₹${sumRev.toLocaleString('en-IN',{maximumFractionDigits:0})}</div></div>
+    <div class="kpi orange"><div class="lbl">Total GST</div><div class="val">₹${sumGst.toLocaleString('en-IN',{maximumFractionDigits:0})}</div></div>
+    <div class="kpi blue"><div class="lbl">Avg Bill</div><div class="val">₹${avgBill.toLocaleString('en-IN',{maximumFractionDigits:0})}</div></div>
+    <div class="kpi"><div class="lbl">Unique Customers</div><div class="val">${uniqueCust}</div></div>
+  `;
+}
+
+function renderTable(){
+  const tb = document.querySelector('#billsTable tbody');
+  if(!filtered.length){
+    tb.innerHTML = '<tr><td colspan="9" class="empty"><div class="icon">📭</div>No bills match the current filters</td></tr>';
+    document.getElementById('pagination').innerHTML = '';
+    return;
+  }
+  const start = (currentPage-1) * PER_PAGE;
+  const page = filtered.slice(start, start + PER_PAGE);
+  tb.innerHTML = page.map(b => {
+    const items = b.items || [];
+    const itemSummary = items.slice(0,2).map(i => i.name).join(', ') + (items.length > 2 ? `, +${items.length-2}` : '');
+    const payCls = 'pay-' + (b.pay||'cash').toLowerCase().replace(/[^a-z]/g,'');
+    return `
+      <tr id="row-${b.id}">
+        <td class="date-cell">${b.date||'-'}</td>
+        <td><span class="bill-id">${b.id}</span></td>
+        <td><div class="cust">${b.cust||'Walk-in'}${b.phone?'<span class="phone">'+b.phone+'</span>':''}</div></td>
+        <td style="max-width:280px;">${items.length} <span style="color:#94a3b8;">items</span> · <span style="color:#64748b;font-size:.78rem;">${itemSummary||'-'}</span></td>
+        <td><span class="pill ${payCls}">${b.pay||'Cash'}</span></td>
+        <td class="amt-cell">₹${(b.sub||0).toFixed(2)}</td>
+        <td class="amt-cell" style="color:#64748b;">₹${(b.tax||0).toFixed(2)}</td>
+        <td class="amt-cell">₹${(b.total||0).toFixed(2)}</td>
+        <td><div class="row-actions">
+          <button class="btn-view" onclick="toggleDetail('${b.id}')">View</button>
+        </div></td>
+      </tr>
+      <tr id="detail-${b.id}" style="display:none;" class="detail-row">
+        <td colspan="9"><div class="detail-content" id="detail-content-${b.id}"></div></td>
+      </tr>`;
+  }).join('');
+  renderPagination();
+}
+
+function toggleDetail(id){
+  const row = document.getElementById('row-' + id);
+  const det = document.getElementById('detail-' + id);
+  if(det.style.display === 'none'){
+    document.querySelectorAll('[id^="detail-"]').forEach(el => { if(el !== det) el.style.display = 'none'; });
+    document.querySelectorAll('[id^="row-"]').forEach(el => el.classList.remove('expanded'));
+    det.style.display = '';
+    row.classList.add('expanded');
+    renderDetail(id);
+  } else {
+    det.style.display = 'none';
+    row.classList.remove('expanded');
+  }
+}
+
+function renderDetail(id){
+  const b = filtered.find(x => x.id === id);
+  if(!b) return;
+  const items = b.items || [];
+  let html = `
+    <div class="detail-grid">
+      <div><span class="lbl">Doctor:</span> <span class="val">${b.doctor || 'Self'}</span></div>
+      <div><span class="lbl">Staff:</span> <span class="val">${b.staff_name || '-'}</span></div>
+      <div><span class="lbl">Bill Type:</span> <span class="val">${b.bill_type || 'retail'}</span></div>
+      <div><span class="lbl">Payment Verified:</span> <span class="val" style="color:${b.payment_verified?'#16a34a':'#dc2626'};">${b.payment_verified ? '✓ Yes' : '✗ Pending'}</span></div>
+    </div>
+    <table class="items-tbl">
+      <thead><tr><th>#</th><th>Medicine</th><th style="text-align:center;">Qty</th><th style="text-align:right;">Rate</th><th style="text-align:right;">Disc</th><th style="text-align:right;">Amount</th></tr></thead>
+      <tbody>`;
+  items.forEach((it, idx) => {
+    html += `<tr>
+      <td>${idx+1}</td>
+      <td><strong>${it.name||'-'}</strong></td>
+      <td style="text-align:center;font-family:monospace;">${it.qty||1}</td>
+      <td style="text-align:right;font-family:monospace;">₹${(it.price||0).toFixed(2)}</td>
+      <td style="text-align:right;font-family:monospace;color:#dc2626;">${it.disc?(it.disc+'%'):'-'}</td>
+      <td style="text-align:right;font-family:monospace;color:#16a34a;font-weight:700;">₹${(it.amount||(it.price||0)*(it.qty||1)).toFixed(2)}</td>
+    </tr>`;
+  });
+  html += `</tbody></table>
+    <div class="totals-strip">
+      <div class="t"><span>Subtotal:</span><span class="mono">₹${(b.sub||0).toFixed(2)}</span></div>
+      ${b.disc > 0 ? `<div class="t"><span>Discount:</span><span class="mono" style="color:#dc2626;">-₹${b.disc.toFixed(2)}</span></div>` : ''}
+      <div class="t"><span>GST:</span><span class="mono">₹${(b.tax||0).toFixed(2)}</span></div>
+      <div class="t grand"><span>TOTAL:</span><span class="mono">₹${(b.total||0).toFixed(2)}</span></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;">
+      <button class="btn btn-wa" onclick="sendWA('${id}')"><i class="fab fa-whatsapp"></i> Send to WhatsApp</button>
+      <button class="btn btn-print" onclick="window.open('/bill/${id}','_blank')"><i class="fas fa-print"></i> Print</button>
+      <a class="btn btn-blue" href="/bill/${id}" target="_blank"><i class="fas fa-external-link-alt"></i> Open Receipt</a>
+    </div>`;
+  document.getElementById('detail-content-' + id).innerHTML = html;
+}
+
+function sendWA(id){
+  const b = filtered.find(x => x.id === id);
+  if(!b) return;
+  let phone = (b.phone||'').replace(/[^0-9]/g, '');
+  if(!phone){
+    phone = prompt('Customer WhatsApp number?');
+    if(!phone) return;
+    phone = phone.replace(/[^0-9]/g, '');
+  }
+  if(phone.length === 10) phone = '91' + phone;
+
+  const items = b.items || [];
+  const lines = [];
+  lines.push('🏥 *SELVAM MEDICALS*');
+  lines.push('━━━━━━━━━━━━━━━');
+  lines.push('Bill: ' + b.id);
+  lines.push('Date: ' + b.date);
+  if(b.cust) lines.push('Customer: ' + b.cust);
+  if(b.doctor && b.doctor !== 'Self') lines.push('Doctor: ' + b.doctor);
+  lines.push('━━━━━━━━━━━━━━━');
+  items.forEach((it,i) => {
+    lines.push(`${i+1}. *${it.name}*  ${it.qty}×₹${(it.price||0).toFixed(2)} = ₹${(it.amount||(it.price*it.qty)).toFixed(2)}`);
+  });
+  lines.push('━━━━━━━━━━━━━━━');
+  lines.push('Subtotal: ₹' + (b.sub||0).toFixed(2));
+  if(b.disc > 0) lines.push('Discount: -₹' + b.disc.toFixed(2));
+  lines.push('GST: ₹' + (b.tax||0).toFixed(2));
+  lines.push('*TOTAL: ₹' + (b.total||0).toFixed(2) + '*');
+  lines.push('━━━━━━━━━━━━━━━');
+  lines.push('Payment: ' + (b.pay||'Cash'));
+  lines.push('');
+  lines.push('Thank you! 🙏');
+  lines.push('View bill: ' + window.location.origin + '/bill/' + b.id);
+
+  const text = encodeURIComponent(lines.join('\n'));
+  window.open(`https://wa.me/${phone}?text=${text}`, '_blank');
+  showToast('✓ WhatsApp opened in new tab');
+}
+
+function renderPagination(){
+  const totalPages = Math.ceil(filtered.length / PER_PAGE);
+  if(totalPages <= 1){ document.getElementById('pagination').innerHTML = ''; return; }
+  let html = `<button onclick="changePage(${currentPage-1})" ${currentPage===1?'disabled':''}>← Prev</button>`;
+  const pages = new Set([1, totalPages, currentPage-1, currentPage, currentPage+1]);
+  if(currentPage > 3) pages.add(2);
+  if(currentPage < totalPages - 2) pages.add(totalPages - 1);
+  const sortedPages = [...pages].filter(p => p >= 1 && p <= totalPages).sort((a,b)=>a-b);
+  let lastP = 0;
+  sortedPages.forEach(p => {
+    if(p - lastP > 1) html += '<span class="info">…</span>';
+    html += `<button onclick="changePage(${p})" class="${p===currentPage?'active':''}">${p}</button>`;
+    lastP = p;
+  });
+  html += `<button onclick="changePage(${currentPage+1})" ${currentPage===totalPages?'disabled':''}>Next →</button>`;
+  html += `<span class="info">${filtered.length} bills · page ${currentPage} of ${totalPages}</span>`;
+  document.getElementById('pagination').innerHTML = html;
+}
+
+function changePage(p){
+  const totalPages = Math.ceil(filtered.length / PER_PAGE);
+  if(p < 1 || p > totalPages) return;
+  currentPage = p;
+  renderTable();
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function onSearch(){
+  clearTimeout(searchDebounce);
+  searchDebounce = setTimeout(applyFilters, 220);
+}
+
+function exportCSV(){
+  const rows = [['Date','Bill ID','Customer','Phone','Items','Item Names','Payment','Subtotal','Discount','GST','Total','Doctor','Staff']];
+  filtered.forEach(b => {
+    const items = b.items || [];
+    rows.push([
+      b.date||'', b.id||'', b.cust||'', b.phone||'',
+      items.length, items.map(i => `${i.name}(${i.qty})`).join(' | '),
+      b.pay||'', (b.sub||0).toFixed(2), (b.disc||0).toFixed(2),
+      (b.tax||0).toFixed(2), (b.total||0).toFixed(2),
+      b.doctor||'', b.staff_name||''
+    ]);
+  });
+  const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `bills_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  showToast('✓ Downloaded ' + filtered.length + ' bills as CSV');
+}
+
+function showToast(msg, err){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.toggle('err', !!err);
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+loadBills();
+</script>
+</body>
+</html>

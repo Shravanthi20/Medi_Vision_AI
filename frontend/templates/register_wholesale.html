@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wholesale Registration — MediVision AI</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --green: #16a34a; --green-dark: #15803d; --green-light: #dcfce7; --gray: #6b7280; --gray-border: #e5e7eb; --gray-bg: #f9fafb; --err: #dc2626; --radius: 12px; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f0fdf4; min-height: 100vh; padding: 0; }
+    .page { display: flex; min-height: 100vh; }
+
+    /* SIDEBAR */
+    .sidebar { width: 300px; background: var(--green-dark); color: white; padding: 40px 32px; flex-shrink: 0; }
+    @media(max-width:700px){ .sidebar{display:none} }
+    .s-logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 1.2rem; margin-bottom: 48px; }
+    .s-cross { width: 36px; height: 36px; background: rgba(255,255,255,.2); border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+    .s-cross svg { fill: white; }
+    .s-title { font-size: 1rem; font-weight: 600; opacity: .7; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 1px; }
+    .step-list { list-style: none; }
+    .step-list li { display: flex; align-items: center; gap: 14px; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,.1); opacity: .55; transition: opacity .3s; }
+    .step-list li.active { opacity: 1; }
+    .step-list li.done { opacity: .75; }
+    .step-num { width: 28px; height: 28px; border-radius: 50%; border: 2px solid rgba(255,255,255,.4); display: flex; align-items: center; justify-content: center; font-size: .8rem; font-weight: 700; flex-shrink: 0; }
+    .step-list li.active .step-num { background: white; color: var(--green-dark); border-color: white; }
+    .step-list li.done .step-num { background: rgba(255,255,255,.25); border-color: rgba(255,255,255,.5); }
+    .step-list li.done .step-num::after { content: "✓"; }
+    .step-text { font-size: .88rem; }
+    .step-text span { font-size: .75rem; opacity: .7; display: block; }
+    .s-note { margin-top: 40px; background: rgba(255,255,255,.1); border-radius: 10px; padding: 16px; font-size: .82rem; opacity: .85; line-height: 1.6; }
+
+    /* MAIN */
+    .main { flex: 1; padding: 48px 5%; max-width: 720px; }
+    .top-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 36px; }
+    .top-bar a { font-size: .85rem; color: var(--green); font-weight: 600; }
+    .step-indicator { display: flex; gap: 6px; margin-bottom: 8px; }
+    .ind { height: 4px; border-radius: 2px; flex: 1; background: var(--gray-border); transition: background .3s; }
+    .ind.active { background: var(--green); }
+    .step-panel { display: none; }
+    .step-panel.active { display: block; }
+    h1 { font-size: 1.7rem; font-weight: 800; margin-bottom: 4px; }
+    .step-sub { color: var(--gray); font-size: .95rem; margin-bottom: 32px; }
+
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    @media(max-width:500px){ .form-grid{grid-template-columns:1fr} }
+    .fg-full { grid-column: 1 / -1; }
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    .field label { font-size: .82rem; font-weight: 700; color: #374151; }
+    .req { color: var(--err); }
+    .field input, .field select, .field textarea {
+      padding: 11px 14px; border: 1.5px solid var(--gray-border); border-radius: 8px;
+      font-size: .93rem; outline: none; transition: border .2s; background: white;
+      font-family: inherit;
+    }
+    .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--green); }
+    .field textarea { resize: vertical; min-height: 80px; }
+    .field-err { font-size: .78rem; color: var(--err); display: none; }
+    .field.invalid .field-err { display: block; }
+    .field.invalid input, .field.invalid select { border-color: var(--err); }
+    .hint { font-size: .76rem; color: var(--gray); }
+
+    .section-divider { font-size: .78rem; font-weight: 700; color: var(--green); text-transform: uppercase; letter-spacing: 1px; margin: 28px 0 18px; display: flex; align-items: center; gap: 10px; }
+    .section-divider::after { content: ''; flex: 1; height: 1px; background: var(--gray-border); }
+
+    .btn-row { display: flex; justify-content: space-between; align-items: center; margin-top: 32px; }
+    .btn { padding: 12px 28px; border-radius: 10px; font-weight: 700; font-size: .93rem; cursor: pointer; border: none; transition: all .2s; }
+    .btn-outline { background: transparent; border: 1.5px solid var(--gray-border); color: var(--gray); }
+    .btn-outline:hover { border-color: var(--green); color: var(--green); }
+    .btn-solid { background: var(--green); color: white; }
+    .btn-solid:hover { background: var(--green-dark); }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* SUCCESS */
+    .success-box { text-align: center; padding: 60px 20px; }
+    .success-icon { font-size: 4rem; margin-bottom: 20px; }
+    .success-box h2 { font-size: 1.6rem; font-weight: 800; margin-bottom: 10px; }
+    .success-box p { color: var(--gray); font-size: 1rem; max-width: 440px; margin: 0 auto; line-height: 1.7; }
+    .info-card { background: var(--green-light); border-radius: var(--radius); padding: 20px 24px; margin-top: 24px; text-align: left; }
+    .info-card h4 { font-size: .9rem; font-weight: 700; color: var(--green-dark); margin-bottom: 8px; }
+    .info-card ul { list-style: none; }
+    .info-card ul li { font-size: .86rem; color: #166534; padding: 3px 0 3px 18px; position: relative; }
+    .info-card ul li::before { content: "✓"; position: absolute; left: 0; font-weight: 700; }
+
+    .overall-err { background: #fee2e2; color: var(--err); border-radius: 8px; padding: 12px 16px; font-size: .88rem; margin-bottom: 16px; display: none; }
+  </style>
+</head>
+<body>
+<div class="page">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="s-logo">
+      <div class="s-cross"><svg width="18" height="18" viewBox="0 0 20 20"><rect x="8" y="2" width="4" height="16" rx="1"/><rect x="2" y="8" width="16" height="4" rx="1"/></svg></div>
+      MediVision AI
+    </div>
+    <div class="s-title">Wholesale Registration</div>
+    <ul class="step-list" id="sideSteps">
+      <li class="active" data-s="1"><div class="step-num">1</div><div class="step-text">Business Info <span>Name, address, city</span></div></li>
+      <li data-s="2"><div class="step-num">2</div><div class="step-text">Owner Details <span>Contact &amp; personal info</span></div></li>
+      <li data-s="3"><div class="step-num">3</div><div class="step-text">Licences &amp; GST <span>Drug license, GSTIN, PAN</span></div></li>
+      <li data-s="4"><div class="step-num">4</div><div class="step-text">Bank &amp; Business <span>Turnover, bank details</span></div></li>
+      <li data-s="5"><div class="step-num">5</div><div class="step-text">Review &amp; Submit</div></li>
+    </ul>
+    <div class="s-note">
+      📋 You will need:<br>
+      • Drug license number<br>
+      • GSTIN (15-digit)<br>
+      • Owner Aadhaar / PAN<br>
+      • Bank account details<br><br>
+      Approval takes up to 24 hours. You'll receive login credentials via phone/email.
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <div class="top-bar">
+      <a href="/register">← Back to account types</a>
+    </div>
+
+    <div class="step-indicator" id="stepInd">
+      <div class="ind active"></div>
+      <div class="ind"></div>
+      <div class="ind"></div>
+      <div class="ind"></div>
+      <div class="ind"></div>
+    </div>
+
+    <!-- STEP 1 — Business Info -->
+    <div class="step-panel active" id="step1">
+      <h1>Business Information</h1>
+      <p class="step-sub">Tell us about your wholesale distribution business.</p>
+      <div class="form-grid">
+        <div class="field fg-full" id="f-business_name">
+          <label>Business / Firm Name <span class="req">*</span></label>
+          <input type="text" id="business_name" placeholder="e.g. SS & Co Wholesale Pharmaceuticals" />
+          <span class="field-err">Business name is required</span>
+        </div>
+        <div class="field fg-full" id="f-address">
+          <label>Business Address <span class="req">*</span></label>
+          <textarea id="address" placeholder="Door No, Street, Area"></textarea>
+          <span class="field-err">Address is required</span>
+        </div>
+        <div class="field" id="f-city">
+          <label>City <span class="req">*</span></label>
+          <input type="text" id="city" placeholder="e.g. Coimbatore" />
+          <span class="field-err">City is required</span>
+        </div>
+        <div class="field" id="f-state">
+          <label>State <span class="req">*</span></label>
+          <select id="state">
+            <option value="">Select state</option>
+            <option>Tamil Nadu</option><option>Kerala</option><option>Karnataka</option>
+            <option>Andhra Pradesh</option><option>Telangana</option><option>Maharashtra</option>
+            <option>Gujarat</option><option>Rajasthan</option><option>Delhi</option>
+            <option>Uttar Pradesh</option><option>West Bengal</option><option>Other</option>
+          </select>
+          <span class="field-err">State is required</span>
+        </div>
+        <div class="field">
+          <label>Pincode</label>
+          <input type="text" id="pincode" placeholder="641001" maxlength="6" />
+        </div>
+        <div class="field">
+          <label>Monthly Turnover (approx)</label>
+          <select id="monthly_turnover">
+            <option value="">Select range</option>
+            <option>Below ₹5 Lakhs</option><option>₹5–20 Lakhs</option>
+            <option>₹20–50 Lakhs</option><option>₹50 Lakhs – 1 Crore</option>
+            <option>Above 1 Crore</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>No. of Retail Clients (approx)</label>
+          <select id="no_of_shops">
+            <option value="">Select range</option>
+            <option>1–10</option><option>10–50</option><option>50–200</option><option>200+</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Current Billing Software Used</label>
+          <input type="text" id="software_used" placeholder="e.g. Marg, Busy, None" />
+        </div>
+      </div>
+      <div class="btn-row">
+        <span></span>
+        <button class="btn btn-solid" onclick="goStep(2)">Next →</button>
+      </div>
+    </div>
+
+    <!-- STEP 2 — Owner Details -->
+    <div class="step-panel" id="step2">
+      <h1>Owner Details</h1>
+      <p class="step-sub">We need to verify the owner of the business.</p>
+      <div class="form-grid">
+        <div class="field" id="f-owner_name">
+          <label>Owner Full Name <span class="req">*</span></label>
+          <input type="text" id="owner_name" placeholder="As per Aadhaar / PAN" />
+          <span class="field-err">Owner name is required</span>
+        </div>
+        <div class="field">
+          <label>Designation</label>
+          <input type="text" id="designation" placeholder="e.g. Proprietor, Partner, Director" />
+        </div>
+        <div class="field" id="f-owner_phone">
+          <label>Owner Mobile <span class="req">*</span></label>
+          <input type="tel" id="owner_phone" placeholder="10-digit mobile number" maxlength="10" />
+          <span class="field-err">Valid 10-digit mobile required</span>
+        </div>
+        <div class="field">
+          <label>Alternate Phone</label>
+          <input type="tel" id="alt_phone" placeholder="Optional" maxlength="10" />
+        </div>
+        <div class="field fg-full" id="f-owner_email">
+          <label>Email Address <span class="req">*</span></label>
+          <input type="email" id="owner_email" placeholder="owner@yourfirm.com" />
+          <span class="field-err">Valid email is required</span>
+        </div>
+        <div class="field">
+          <label>No. of Staff / Employees</label>
+          <select id="no_of_staff">
+            <option value="">Select</option>
+            <option>1–5</option><option>5–20</option><option>20–50</option><option>50+</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>How did you hear about us?</label>
+          <select id="hear_from">
+            <option value="">Select</option>
+            <option>Wholesale Association</option><option>Existing customer referral</option>
+            <option>Google Search</option><option>Social Media</option><option>Sales team</option><option>Other</option>
+          </select>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-outline" onclick="goStep(1)">← Back</button>
+        <button class="btn btn-solid" onclick="goStep(3)">Next →</button>
+      </div>
+    </div>
+
+    <!-- STEP 3 — Licences & GST -->
+    <div class="step-panel" id="step3">
+      <h1>Licences &amp; Registration</h1>
+      <p class="step-sub">These details are mandatory for drug trade verification.</p>
+      <div class="form-grid">
+        <div class="field fg-full" id="f-drug_license">
+          <label>Drug License Number <span class="req">*</span></label>
+          <input type="text" id="drug_license" placeholder="e.g. TN/WD/2023/12345" />
+          <span class="field-err">Drug license number is required</span>
+          <span class="hint">Wholesale drug license issued by state licensing authority</span>
+        </div>
+        <div class="field">
+          <label>License Validity Date</label>
+          <input type="date" id="dl_validity" />
+        </div>
+        <div class="field" id="f-gstin">
+          <label>GSTIN <span class="req">*</span></label>
+          <input type="text" id="gstin" placeholder="15-digit GSTIN" maxlength="15" style="text-transform:uppercase" />
+          <span class="field-err">Valid 15-digit GSTIN required</span>
+        </div>
+        <div class="field" id="f-pan">
+          <label>PAN Number <span class="req">*</span></label>
+          <input type="text" id="pan" placeholder="ABCDE1234F" maxlength="10" style="text-transform:uppercase" />
+          <span class="field-err">Valid PAN required</span>
+        </div>
+        <div class="field fg-full">
+          <label>FSSAI License (if applicable)</label>
+          <input type="text" id="fssai" placeholder="FSSAI license number" />
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-outline" onclick="goStep(2)">← Back</button>
+        <button class="btn btn-solid" onclick="goStep(4)">Next →</button>
+      </div>
+    </div>
+
+    <!-- STEP 4 — Bank Details -->
+    <div class="step-panel" id="step4">
+      <h1>Bank &amp; Payment Details</h1>
+      <p class="step-sub">Used for billing reconciliation and payments. All information is kept confidential.</p>
+      <div class="form-grid">
+        <div class="field" id="f-bank_name">
+          <label>Bank Name <span class="req">*</span></label>
+          <input type="text" id="bank_name" placeholder="e.g. State Bank of India" />
+          <span class="field-err">Bank name is required</span>
+        </div>
+        <div class="field">
+          <label>Branch Name</label>
+          <input type="text" id="bank_branch" placeholder="e.g. Gandhipuram Branch" />
+        </div>
+        <div class="field" id="f-bank_account">
+          <label>Account Number <span class="req">*</span></label>
+          <input type="text" id="bank_account" placeholder="Account number" />
+          <span class="field-err">Account number is required</span>
+        </div>
+        <div class="field" id="f-bank_ifsc">
+          <label>IFSC Code <span class="req">*</span></label>
+          <input type="text" id="bank_ifsc" placeholder="e.g. SBIN0001234" maxlength="11" style="text-transform:uppercase" />
+          <span class="field-err">IFSC code is required</span>
+        </div>
+        <div class="field fg-full">
+          <label>UPI ID (optional, for quick payments)</label>
+          <input type="text" id="upi_id" placeholder="yourname@upi" />
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-outline" onclick="goStep(3)">← Back</button>
+        <button class="btn btn-solid" onclick="goStep(5)">Review →</button>
+      </div>
+    </div>
+
+    <!-- STEP 5 — Review & Submit -->
+    <div class="step-panel" id="step5">
+      <h1>Review &amp; Submit</h1>
+      <p class="step-sub">Please review your information before submitting.</p>
+      <div id="reviewContent" style="background:white;border-radius:12px;border:1px solid var(--gray-border);padding:24px;margin-bottom:20px;font-size:.9rem;"></div>
+      <div class="overall-err" id="submitErr"></div>
+      <div style="background:#fef9c3;border-radius:10px;padding:14px 18px;font-size:.84rem;color:#713f12;margin-bottom:20px;">
+        ⚠️ By submitting, you confirm that all information provided is accurate. False information may result in rejection or account suspension.
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-outline" onclick="goStep(4)">← Back</button>
+        <button class="btn btn-solid" id="submitBtn" onclick="submitForm()">Submit Registration</button>
+      </div>
+    </div>
+
+    <!-- SUCCESS -->
+    <div class="step-panel" id="stepSuccess">
+      <div class="success-box">
+        <div class="success-icon">🎉</div>
+        <h2>Registration Submitted!</h2>
+        <p>Thank you for registering with MediVision AI. Our team will verify your drug license and GSTIN and contact you within <strong>24 hours</strong> with your login credentials.</p>
+        <div class="info-card">
+          <h4>What happens next?</h4>
+          <ul>
+            <li>Our team verifies your drug license &amp; GSTIN</li>
+            <li>We call you on <strong id="confirmPhone"></strong> to confirm identity</li>
+            <li>Login credentials are sent via SMS</li>
+            <li>You can start using the platform immediately</li>
+          </ul>
+        </div>
+        <a href="/" style="display:inline-block;margin-top:28px;color:var(--green);font-weight:700;font-size:.95rem;">← Return to homepage</a>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+let currentStep = 1;
+const totalSteps = 5;
+
+function goStep(n) {
+  if (n > currentStep && !validateStep(currentStep)) return;
+  if (n === 5) buildReview();
+  document.getElementById('step'+currentStep).classList.remove('active');
+  currentStep = n;
+  document.getElementById('step'+currentStep).classList.add('active');
+  updateSidebar();
+  updateIndicator();
+  window.scrollTo(0,0);
+}
+
+function updateSidebar() {
+  document.querySelectorAll('#sideSteps li').forEach(li => {
+    const s = parseInt(li.dataset.s);
+    li.classList.remove('active','done');
+    if (s === currentStep) li.classList.add('active');
+    else if (s < currentStep) li.classList.add('done');
+  });
+}
+
+function updateIndicator() {
+  document.querySelectorAll('#stepInd .ind').forEach((ind, i) => {
+    ind.classList.toggle('active', i < currentStep);
+  });
+}
+
+function validateStep(step) {
+  let ok = true;
+  const checks = {
+    1: [
+      {id:'business_name', msg:'Business name is required'},
+      {id:'address', msg:'Address is required'},
+      {id:'city', msg:'City is required'},
+      {id:'state', msg:'State is required'},
+    ],
+    2: [
+      {id:'owner_name', msg:'Owner name is required'},
+      {id:'owner_phone', msg:'Valid 10-digit mobile required', fn: v => /^\d{10}$/.test(v)},
+      {id:'owner_email', msg:'Valid email is required', fn: v => /\S+@\S+\.\S+/.test(v)},
+    ],
+    3: [
+      {id:'drug_license', msg:'Drug license number is required'},
+      {id:'gstin', msg:'Valid 15-character GSTIN required', fn: v => v.length === 15},
+      {id:'pan', msg:'Valid 10-character PAN required', fn: v => /^[A-Z]{5}[0-9]{4}[A-Z]$/.test(v)},
+    ],
+    4: [
+      {id:'bank_name', msg:'Bank name is required'},
+      {id:'bank_account', msg:'Account number is required'},
+      {id:'bank_ifsc', msg:'IFSC code is required'},
+    ],
+  };
+  (checks[step] || []).forEach(({ id, fn }) => {
+    const el = document.getElementById(id);
+    const wrap = document.getElementById('f-' + id);
+    if (!el || !wrap) return;
+    const val = el.value.trim();
+    const valid = val && (fn ? fn(val) : true);
+    wrap.classList.toggle('invalid', !valid);
+    if (!valid) ok = false;
+  });
+  return ok;
+}
+
+function buildReview() {
+  const fields = [
+    ['Business Name', 'business_name'], ['Address', 'address'], ['City', 'city'],
+    ['State', 'state'], ['Pincode', 'pincode'], ['Monthly Turnover', 'monthly_turnover'],
+    ['No. of Retail Clients', 'no_of_shops'], ['Current Software', 'software_used'],
+    ['Owner Name', 'owner_name'], ['Owner Phone', 'owner_phone'], ['Email', 'owner_email'],
+    ['Drug License', 'drug_license'], ['GSTIN', 'gstin'], ['PAN', 'pan'],
+    ['Bank Name', 'bank_name'], ['Account Number', 'bank_account'], ['IFSC', 'bank_ifsc'],
+  ];
+  let html = '<table style="width:100%;border-collapse:collapse">';
+  fields.forEach(([label, id]) => {
+    const val = document.getElementById(id)?.value || '—';
+    html += `<tr style="border-bottom:1px solid #f3f4f6">
+      <td style="padding:8px 4px;font-size:.8rem;font-weight:700;color:#6b7280;width:40%">${label}</td>
+      <td style="padding:8px 4px;font-size:.88rem">${val || '—'}</td>
+    </tr>`;
+  });
+  html += '</table>';
+  document.getElementById('reviewContent').innerHTML = html;
+}
+
+async function submitForm() {
+  const btn = document.getElementById('submitBtn');
+  const errEl = document.getElementById('submitErr');
+  btn.disabled = true;
+  btn.textContent = 'Submitting...';
+  errEl.style.display = 'none';
+  const payload = {
+    reg_type: 'wholesale',
+    business_name: document.getElementById('business_name').value,
+    address: document.getElementById('address').value,
+    city: document.getElementById('city').value,
+    state: document.getElementById('state').value,
+    pincode: document.getElementById('pincode').value,
+    monthly_turnover: document.getElementById('monthly_turnover').value,
+    no_of_shops: document.getElementById('no_of_shops').value,
+    software_used: document.getElementById('software_used').value,
+    owner_name: document.getElementById('owner_name').value,
+    owner_phone: document.getElementById('owner_phone').value,
+    owner_email: document.getElementById('owner_email').value,
+    alt_phone: document.getElementById('alt_phone').value,
+    no_of_staff: document.getElementById('no_of_staff').value,
+    hear_from: document.getElementById('hear_from').value,
+    drug_license: document.getElementById('drug_license').value,
+    gstin: document.getElementById('gstin').value,
+    pan: document.getElementById('pan').value,
+    bank_name: document.getElementById('bank_name').value,
+    bank_account: document.getElementById('bank_account').value,
+    bank_ifsc: document.getElementById('bank_ifsc').value,
+  };
+  try {
+    const res = await fetch('/api/register', {
+      method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (data.status === 'success') {
+      document.getElementById('step5').classList.remove('active');
+      document.getElementById('stepSuccess').classList.add('active');
+      document.getElementById('confirmPhone').textContent = payload.owner_phone;
+    } else {
+      errEl.textContent = data.message || 'Submission failed. Please try again.';
+      errEl.style.display = 'block';
+    }
+  } catch(e) {
+    errEl.textContent = 'Network error. Please check your connection and try again.';
+    errEl.style.display = 'block';
+  }
+  btn.disabled = false;
+  btn.textContent = 'Submit Registration';
+}
+</script>
+</body>
+</html>

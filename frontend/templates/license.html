@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Activate License — MediVision AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:Inter,sans-serif;background:#0b0e16;color:#e2e8f0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 70% 50% at 50% 30%,rgba(249,115,22,.08) 0%,transparent 60%);pointer-events:none;}
+.wrap{max-width:560px;width:100%;position:relative;z-index:1;}
+.brand{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:24px;}
+.brand .ic{width:50px;height:50px;border-radius:12px;background:linear-gradient(135deg,#f97316,#ea580c);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1.1rem;color:#fff;}
+.brand .nm{font-weight:900;font-size:1.4rem;}
+.brand .nm em{color:#16a34a;font-style:normal;}
+
+.card{background:#141824;border:1px solid rgba(255,255,255,.1);border-radius:18px;padding:32px;box-shadow:0 20px 60px rgba(0,0,0,.4);}
+.status-banner{display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:10px;margin-bottom:20px;font-size:.88rem;font-weight:600;}
+.s-grace{background:rgba(251,191,36,.12);color:#fde68a;border:1px solid rgba(251,191,36,.3);}
+.s-active{background:rgba(34,197,94,.12);color:#86efac;border:1px solid rgba(34,197,94,.3);}
+.s-bad{background:rgba(239,68,68,.12);color:#fca5a5;border:1px solid rgba(239,68,68,.3);}
+
+h1{font-size:1.6rem;font-weight:800;color:#fff;margin-bottom:6px;}
+.sub{color:#94a3b8;font-size:.92rem;margin-bottom:20px;}
+
+.machine-block{background:#0b0e16;border:1.5px dashed rgba(249,115,22,.4);border-radius:12px;padding:18px;margin-bottom:18px;text-align:center;}
+.machine-block .lbl{color:#fb923c;font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;font-weight:700;}
+.machine-code{font-family:'JetBrains Mono',monospace;font-size:1.5rem;font-weight:800;color:#fff;margin-top:8px;letter-spacing:.05em;}
+.copy-btn{margin-top:8px;background:rgba(249,115,22,.1);color:#fb923c;border:1px solid rgba(249,115,22,.3);padding:5px 12px;border-radius:6px;font-size:.78rem;cursor:pointer;font-family:inherit;}
+
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:.74rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px;}
+.input{width:100%;background:#0b0e16;border:1.5px solid rgba(255,255,255,.1);border-radius:9px;padding:11px 14px;color:#e2e8f0;font-family:inherit;font-size:.92rem;}
+.input:focus{outline:none;border-color:#f97316;}
+.input.mono{font-family:'JetBrains Mono',monospace;letter-spacing:.05em;text-transform:uppercase;}
+
+.btn{width:100%;background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;padding:13px;border-radius:10px;font-weight:800;font-size:.95rem;border:none;cursor:pointer;font-family:inherit;margin-top:6px;}
+.btn:hover{opacity:.9;}
+.btn:disabled{opacity:.5;cursor:not-allowed;}
+
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px;padding-top:16px;border-top:1px dashed rgba(255,255,255,.06);}
+.info-grid .lbl{color:#94a3b8;font-size:.74rem;text-transform:uppercase;letter-spacing:.04em;}
+.info-grid .val{color:#fff;font-family:'JetBrains Mono',monospace;font-size:.82rem;margin-top:2px;word-break:break-all;}
+
+.help-box{background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.2);border-radius:10px;padding:14px;margin-top:18px;font-size:.82rem;color:#cbd5e1;line-height:1.6;}
+.help-box strong{color:#4ade80;}
+
+.toast{position:fixed;bottom:30px;right:30px;background:#16a34a;color:#fff;padding:14px 22px;border-radius:10px;font-weight:700;z-index:300;display:none;}
+.toast.show{display:block;}
+.toast.err{background:#ef4444;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand">
+    <div class="ic">MV</div>
+    <div class="nm">MediVision <em>AI</em></div>
+  </div>
+
+  <div class="card">
+    <div id="statusBanner" class="status-banner s-grace">Loading license status…</div>
+
+    <h1>🔐 License Activation</h1>
+    <p class="sub">Tie this MediVision install to your shop. Each machine code is unique and bound to this hardware.</p>
+
+    <div class="machine-block">
+      <div class="lbl">Your Machine Code (give this to vendor)</div>
+      <div class="machine-code" id="machineCode">Loading…</div>
+      <button class="copy-btn" onclick="copyMC()"><i class="fas fa-copy"></i> Copy</button>
+    </div>
+
+    <div class="field">
+      <label>Shop Name</label>
+      <input id="shopName" class="input" placeholder="e.g. Selvam Medicals"/>
+    </div>
+    <div class="field">
+      <label>Owner Name</label>
+      <input id="ownerName" class="input" placeholder="e.g. Arvind Selvam SR"/>
+    </div>
+    <div class="field">
+      <label>Activation Code (from vendor)</label>
+      <input id="actCode" class="input mono" placeholder="XXXX-XXXX-XXXX-XXXX"/>
+    </div>
+
+    <button class="btn" onclick="activate()" id="actBtn">Activate License</button>
+
+    <div class="info-grid" id="hwInfo"></div>
+
+    <div class="help-box">
+      <strong>How offline activation works:</strong> Send your Machine Code to the MediVision vendor (Arvind Selvam SR · arvind@selvammedicals.in). They'll generate a unique Activation Code matching your hardware. Paste it above to permanently activate this install. The license is tied to this PC's hardware fingerprint — it cannot be moved or pirated.
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+async function loadInfo(){
+  const r = await fetch('/api/license/info');
+  const d = await r.json();
+  document.getElementById('machineCode').textContent = d.machine_code;
+
+  const sb = document.getElementById('statusBanner');
+  if(d.valid){
+    sb.className = 'status-banner s-active';
+    sb.innerHTML = `<i class="fas fa-check-circle"></i> ACTIVE · Licensed to ${d.shop_name || 'this shop'} · Expires ${d.expires_at}`;
+    document.getElementById('shopName').value = d.shop_name || '';
+    document.getElementById('ownerName').value = d.owner_name || '';
+    document.getElementById('actBtn').textContent = 'Re-activate (overwrite)';
+  } else if(d.reason === 'not_activated' && d.grace_days_remaining > 0){
+    sb.className = 'status-banner s-grace';
+    sb.innerHTML = `<i class="fas fa-clock"></i> GRACE PERIOD · ${d.grace_days_remaining} days left to activate`;
+  } else {
+    sb.className = 'status-banner s-bad';
+    sb.innerHTML = `<i class="fas fa-triangle-exclamation"></i> ${d.reason.toUpperCase().replace(/_/g,' ')} — please activate`;
+  }
+
+  document.getElementById('hwInfo').innerHTML = `
+    <div><div class="lbl">Hardware</div><div class="val">${d.hardware}</div></div>
+    <div><div class="lbl">System</div><div class="val">${d.system.substring(0,30)}…</div></div>
+  `;
+}
+
+function copyMC(){
+  navigator.clipboard.writeText(document.getElementById('machineCode').textContent);
+  showToast('✓ Copied to clipboard');
+}
+
+async function activate(){
+  const body = {
+    shop_name: document.getElementById('shopName').value,
+    owner_name: document.getElementById('ownerName').value,
+    activation_code: document.getElementById('actCode').value.toUpperCase()
+  };
+  if(!body.shop_name || !body.activation_code){
+    showToast('Fill shop name + activation code', true); return;
+  }
+  const r = await fetch('/api/license/activate', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const d = await r.json();
+  if(d.status === 'ok'){
+    showToast('✓ License activated! Redirecting…');
+    setTimeout(() => window.location = '/portal', 1500);
+  } else {
+    showToast(d.error || 'Invalid activation code', true);
+  }
+}
+
+function showToast(msg, err){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.toggle('err', !!err);
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+loadInfo();
+</script>
+</body>
+</html>

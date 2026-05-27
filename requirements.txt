@@ -9,3 +9,5 @@ Flask-Marshmallow
 marshmallow-sqlalchemy
 pytest
 flask-limiter
+xlrd
+openpyxl

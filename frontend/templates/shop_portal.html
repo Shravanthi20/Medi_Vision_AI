@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Shop Order Portal — Selvam Medicals</title>
+<style>
+  :root{--bg:#f8fafc;--card:#fff;--border:#e2e8f0;--blue:#2563eb;--green:#16a34a;--orange:#ea580c;--red:#dc2626;--yellow:#d97706;--text:#1e293b;--muted:#64748b;--acc:#2563eb;--font:'Inter',sans-serif;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;}
+
+  /* Header */
+  .header{background:linear-gradient(135deg,#1e3a8a,#1e40af);color:#fff;padding:0;position:sticky;top:0;z-index:50;box-shadow:0 2px 12px rgba(30,58,138,.3);}
+  .header-inner{max-width:1200px;margin:0 auto;padding:0 20px;height:56px;display:flex;align-items:center;gap:16px;}
+  .header-logo{font-weight:800;font-size:1rem;display:flex;align-items:center;gap:8px;}
+  .header-logo span{background:rgba(255,255,255,.15);padding:4px 10px;border-radius:6px;font-size:.75rem;}
+  .header-nav{display:flex;gap:4px;margin-left:auto;}
+  .hnav{padding:7px 14px;border-radius:7px;cursor:pointer;font-size:.82rem;color:rgba(255,255,255,.7);transition:all .2s;border:none;background:none;font-family:var(--font);}
+  .hnav:hover,.hnav.active{background:rgba(255,255,255,.15);color:#fff;}
+  .cart-btn{background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.3);padding:7px 14px;border-radius:7px;cursor:pointer;font-size:.82rem;font-weight:700;font-family:var(--font);display:flex;align-items:center;gap:6px;}
+  .cart-count{background:#fff;color:var(--blue);border-radius:50%;width:18px;height:18px;font-size:.7rem;font-weight:800;display:flex;align-items:center;justify-content:center;}
+
+  /* Main layout */
+  .main{max-width:1200px;margin:0 auto;padding:24px 20px;}
+
+  /* Section switching */
+  .section{display:none;}
+  .section.active{display:block;}
+
+  /* Welcome strip */
+  .welcome-strip{background:linear-gradient(90deg,#eff6ff,#f0fdf4);border:1px solid #bfdbfe;border-radius:12px;padding:16px 20px;margin-bottom:22px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;}
+  .welcome-strip h2{font-size:1rem;font-weight:700;}
+  .welcome-strip p{font-size:.82rem;color:var(--muted);margin-top:2px;}
+  .strip-stat{text-align:right;}
+  .strip-stat .val{font-size:1.3rem;font-weight:800;color:var(--blue);}
+  .strip-stat .lbl{font-size:.72rem;color:var(--muted);}
+
+  /* KPI row */
+  .kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:22px;}
+  .kpi{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;}
+  .kpi-val{font-size:1.4rem;font-weight:800;font-family:'JetBrains Mono',monospace;}
+  .kpi-lbl{font-size:.7rem;color:var(--muted);margin-top:3px;}
+  .kpi.blue .kpi-val{color:var(--blue);}
+  .kpi.green .kpi-val{color:var(--green);}
+  .kpi.orange .kpi-val{color:var(--orange);}
+  .kpi.red .kpi-val{color:var(--red);}
+
+  /* Browse section */
+  .browse-toolbar{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px;align-items:center;}
+  .browse-toolbar input{flex:1;min-width:200px;border:1.5px solid var(--border);border-radius:9px;padding:9px 14px;font-family:var(--font);font-size:.85rem;color:var(--text);}
+  .browse-toolbar input:focus{outline:none;border-color:var(--blue);}
+  .browse-toolbar select{border:1.5px solid var(--border);border-radius:9px;padding:9px 12px;font-family:var(--font);font-size:.84rem;color:var(--text);}
+
+  /* Scheme banner */
+  .scheme-banner{background:linear-gradient(90deg,#fef3c7,#fef9ee);border:1.5px solid #fcd34d;border-radius:10px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .scheme-banner .tag{background:#f59e0b;color:#fff;font-size:.7rem;font-weight:800;padding:3px 9px;border-radius:10px;}
+  .scheme-banner p{font-size:.83rem;font-weight:600;}
+
+  /* Product grid */
+  .prod-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin-bottom:24px;}
+  .prod-card{background:var(--card);border:1.5px solid var(--border);border-radius:12px;padding:16px;transition:box-shadow .2s,border-color .2s;}
+  .prod-card:hover{box-shadow:0 6px 20px rgba(0,0,0,.08);border-color:#bfdbfe;}
+  .prod-name{font-weight:700;font-size:.88rem;margin-bottom:3px;line-height:1.3;}
+  .prod-generic{font-size:.72rem;color:var(--muted);margin-bottom:8px;}
+  .prod-cat{display:inline-block;background:#eff6ff;color:var(--blue);border-radius:12px;font-size:.66rem;font-weight:700;padding:2px 8px;margin-bottom:8px;}
+  .prod-price{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+  .price-ws{font-size:1.05rem;font-weight:800;color:var(--blue);}
+  .price-mrp{font-size:.78rem;color:var(--muted);text-decoration:line-through;}
+  .price-save{background:#dcfce7;color:var(--green);font-size:.68rem;font-weight:700;padding:2px 7px;border-radius:10px;}
+  .scheme-tag{background:#fef3c7;color:#92400e;font-size:.68rem;font-weight:700;padding:2px 7px;border-radius:10px;margin-left:4px;}
+  .qty-row{display:flex;align-items:center;gap:8px;}
+  .qty-btn{width:28px;height:28px;border:1.5px solid var(--border);border-radius:6px;background:#fff;cursor:pointer;font-size:1rem;font-weight:700;color:var(--text);display:flex;align-items:center;justify-content:center;transition:all .2s;}
+  .qty-btn:hover{border-color:var(--blue);color:var(--blue);}
+  .qty-input{width:48px;text-align:center;border:1.5px solid var(--border);border-radius:6px;padding:4px;font-family:'JetBrains Mono',monospace;font-size:.85rem;color:var(--text);}
+  .qty-input:focus{outline:none;border-color:var(--blue);}
+  .add-btn{flex:1;background:var(--blue);color:#fff;border:none;border-radius:7px;padding:8px;font-family:var(--font);font-size:.78rem;font-weight:700;cursor:pointer;transition:opacity .2s;}
+  .add-btn:hover{opacity:.85;}
+  .add-btn.added{background:var(--green);}
+  .stock-tag{font-size:.7rem;color:var(--muted);}
+  .out-tag{font-size:.7rem;color:var(--red);font-weight:700;}
+
+  /* Cart sidebar */
+  .cart-panel{position:fixed;right:0;top:56px;bottom:0;width:340px;background:var(--card);border-left:1.5px solid var(--border);z-index:40;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .3s;box-shadow:-4px 0 20px rgba(0,0,0,.1);}
+  .cart-panel.open{transform:translateX(0);}
+  .cart-head{padding:16px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+  .cart-head h3{font-size:.95rem;font-weight:700;}
+  .cart-close{background:none;border:none;font-size:1.1rem;cursor:pointer;color:var(--muted);}
+  .cart-items{flex:1;overflow-y:auto;padding:12px 16px;}
+  .cart-item{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid #f1f5f9;}
+  .ci-name{font-size:.82rem;font-weight:600;flex:1;}
+  .ci-qty{font-family:'JetBrains Mono',monospace;font-size:.78rem;color:var(--muted);}
+  .ci-price{font-family:'JetBrains Mono',monospace;font-size:.82rem;font-weight:700;color:var(--blue);}
+  .ci-remove{background:none;border:none;color:#d1d5db;cursor:pointer;font-size:.9rem;}
+  .ci-remove:hover{color:var(--red);}
+  .cart-foot{padding:14px 18px;border-top:1px solid var(--border);}
+  .cart-summary{font-size:.82rem;margin-bottom:12px;}
+  .cart-summary div{display:flex;justify-content:space-between;padding:3px 0;}
+  .cart-summary .total-row{font-weight:700;font-size:.92rem;border-top:1px solid var(--border);padding-top:8px;margin-top:4px;}
+  .checkout-btn{width:100%;background:var(--blue);color:#fff;border:none;border-radius:9px;padding:12px;font-family:var(--font);font-size:.9rem;font-weight:700;cursor:pointer;transition:opacity .2s;}
+  .checkout-btn:hover{opacity:.88;}
+
+  /* Orders section */
+  .order-pipeline{display:flex;gap:0;margin-bottom:20px;border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+  .pipe-s{flex:1;text-align:center;padding:12px 8px;background:var(--card);cursor:pointer;transition:background .2s;font-size:.78rem;}
+  .pipe-s + .pipe-s{border-left:1px solid var(--border);}
+  .pipe-s.active{background:#eff6ff;}
+  .pipe-s .pc{font-size:1.3rem;font-weight:800;color:var(--text);}
+  .pipe-s.active .pc{color:var(--blue);}
+  .pipe-s .pl{font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;}
+
+  /* Tables */
+  .tbl-wrap{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+  table{width:100%;border-collapse:collapse;}
+  th{padding:9px 14px;text-align:left;font-size:.7rem;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);background:#f8fafc;font-weight:700;}
+  td{padding:10px 14px;font-size:.82rem;border-top:1px solid #f1f5f9;vertical-align:middle;}
+  tr:hover td{background:#fafafa;}
+  .badge{display:inline-block;padding:2px 9px;border-radius:12px;font-size:.7rem;font-weight:700;}
+  .b-yellow{background:#fef9c3;color:#854d0e;}
+  .b-blue{background:#dbeafe;color:#1d4ed8;}
+  .b-orange{background:#ffedd5;color:#9a3412;}
+  .b-purple{background:#f3e8ff;color:#6b21a8;}
+  .b-green{background:#dcfce7;color:#166534;}
+  .b-gray{background:#f1f5f9;color:#64748b;}
+
+  /* Account/Ledger */
+  .account-card{background:linear-gradient(135deg,#1e3a8a,#2563eb);color:#fff;border-radius:14px;padding:24px;margin-bottom:20px;}
+  .account-card .lbl{font-size:.75rem;opacity:.7;margin-bottom:4px;}
+  .account-card .val{font-size:2rem;font-weight:800;font-family:'JetBrains Mono',monospace;}
+  .acc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:16px;}
+  .acc-stat{background:rgba(255,255,255,.12);border-radius:10px;padding:12px;}
+  .acc-stat .sv{font-size:1.1rem;font-weight:700;font-family:'JetBrains Mono',monospace;}
+  .acc-stat .sl{font-size:.68rem;opacity:.7;margin-top:2px;}
+
+  /* Checkout modal */
+  .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;}
+  .modal-box{background:var(--card);border-radius:16px;width:100%;max-width:540px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2);}
+  .modal-head{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+  .modal-head h3{font-size:1rem;font-weight:700;}
+  .modal-close{background:none;border:none;font-size:1.2rem;cursor:pointer;color:var(--muted);}
+  .modal-body{padding:20px 22px;}
+  .modal-foot{padding:14px 22px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end;}
+  .btn{padding:9px 18px;border-radius:8px;font-size:.84rem;font-weight:700;cursor:pointer;border:none;font-family:var(--font);}
+  .btn-blue{background:var(--blue);color:#fff;}
+  .btn-outline{background:transparent;border:1.5px solid var(--border);color:var(--text);}
+  .form-row{margin-bottom:14px;}
+  .form-row label{display:block;font-size:.75rem;font-weight:700;color:var(--muted);margin-bottom:5px;}
+  .form-row input,.form-row select,.form-row textarea{width:100%;border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-family:var(--font);font-size:.85rem;}
+  .form-row input:focus,.form-row select:focus,.form-row textarea:focus{outline:none;border-color:var(--blue);}
+
+  /* Toast */
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--green);color:#fff;padding:10px 20px;border-radius:8px;font-size:.84rem;font-weight:700;z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;}
+  .toast.show{opacity:1;}
+  .toast.err{background:var(--red);}
+
+  /* Success state */
+  .success-state{text-align:center;padding:40px 20px;}
+  .success-icon{font-size:4rem;margin-bottom:16px;}
+  .success-state h2{font-size:1.3rem;font-weight:800;margin-bottom:8px;}
+
+  .hidden{display:none!important;}
+  .mono{font-family:'JetBrains Mono',monospace;}
+
+  @media(max-width:600px){.prod-grid{grid-template-columns:1fr 1fr;}.cart-panel{width:100%;top:auto;bottom:0;height:70vh;border-radius:16px 16px 0 0;}}
+</style>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-inner">
+    <div class="header-logo">
+      💊 Selvam Medicals <span id="shopNameTag">—</span>
+    </div>
+    <nav class="header-nav">
+      <button class="hnav active" onclick="switchSection('browse',this)">🛍️ Browse & Order</button>
+      <button class="hnav" onclick="switchSection('my-orders',this)">📦 My Orders</button>
+      <button class="hnav" onclick="switchSection('account',this)">📒 Account</button>
+      <button class="hnav" onclick="switchSection('schemes',this)">🎁 Schemes</button>
+    </nav>
+    <button class="cart-btn" onclick="toggleCart()">
+      🛒 Cart <span class="cart-count" id="cartCount">0</span>
+    </button>
+    <button class="hnav" onclick="doLogout()" style="margin-left:4px;">Sign Out</button>
+  </div>
+</div>
+
+<!-- Cart Panel -->
+<div class="cart-panel" id="cartPanel">
+  <div class="cart-head">
+    <h3>🛒 Your Cart</h3>
+    <button class="cart-close" onclick="toggleCart()">✕</button>
+  </div>
+  <div class="cart-items" id="cartItemsEl">
+    <div style="text-align:center;padding:40px;color:var(--muted);font-size:.84rem;">Cart is empty.<br>Browse medicines to add items.</div>
+  </div>
+  <div class="cart-foot">
+    <div class="cart-summary" id="cartSummaryEl"></div>
+    <button class="checkout-btn" onclick="openCheckout()">Proceed to Order →</button>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- ═══ BROWSE ════════════════════════════════════════════════ -->
+  <div class="section active" id="sec-browse">
+
+    <!-- Welcome -->
+    <div class="welcome-strip" id="welcomeStrip">
+      <div>
+        <h2 id="welcomeName">Welcome back!</h2>
+        <p id="welcomeMeta">Loading shop details…</p>
+      </div>
+      <div class="strip-stat">
+        <div class="val" id="stripBalance">—</div>
+        <div class="lbl">Account Balance</div>
+      </div>
+    </div>
+
+    <!-- Scheme banner -->
+    <div class="scheme-banner" id="schemeBanner" style="display:none;">
+      <span class="tag">🎁 OFFER</span>
+      <p id="schemeBannerText"></p>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="browse-toolbar">
+      <input type="text" id="browseSearch" placeholder="🔍  Search medicines, generics…" oninput="applyBrowseFilter()">
+      <select id="browseCat" onchange="applyBrowseFilter()">
+        <option value="">All Categories</option>
+      </select>
+      <select id="browseSort" onchange="applyBrowseFilter()">
+        <option value="name">A–Z</option>
+        <option value="price_asc">Price ↑</option>
+        <option value="price_desc">Price ↓</option>
+        <option value="stock">By Stock</option>
+      </select>
+    </div>
+
+    <!-- Grid -->
+    <div class="prod-grid" id="prodGrid">
+      <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted)">Loading medicines…</div>
+    </div>
+    <div id="loadMoreWrap" style="text-align:center;margin-bottom:20px;display:none;">
+      <button onclick="showMoreProds()" style="background:var(--card);border:1.5px solid var(--border);border-radius:9px;padding:10px 28px;font-family:var(--font);font-size:.88rem;font-weight:600;cursor:pointer;color:var(--text);">Load More ↓</button>
+    </div>
+  </div>
+
+  <!-- ═══ MY ORDERS ════════════════════════════════════════════ -->
+  <div class="section" id="sec-my-orders">
+    <div class="order-pipeline" id="myPipeline">
+      <div class="pipe-s active" onclick="filterMyOrders('',this)"><div class="pc" id="mpAll">—</div><div class="pl">All</div></div>
+      <div class="pipe-s" onclick="filterMyOrders('pending',this)"><div class="pc" id="mpPending">—</div><div class="pl">Pending</div></div>
+      <div class="pipe-s" onclick="filterMyOrders('confirmed',this)"><div class="pc" id="mpConf">—</div><div class="pl">Confirmed</div></div>
+      <div class="pipe-s" onclick="filterMyOrders('dispatched',this)"><div class="pc" id="mpDisp">—</div><div class="pl">Dispatched</div></div>
+      <div class="pipe-s" onclick="filterMyOrders('delivered',this)"><div class="pc" id="mpDel">—</div><div class="pl">Delivered</div></div>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Order #</th><th>Date</th><th>Items</th><th>Amount</th><th>Status</th><th>Delivery</th></tr></thead>
+        <tbody id="myOrdersTbody"><tr><td colspan="6" style="text-align:center;padding:30px;color:var(--muted)">Loading…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ═══ ACCOUNT ══════════════════════════════════════════════ -->
+  <div class="section" id="sec-account">
+    <div class="account-card" id="accountCard">
+      <div class="lbl">Outstanding Balance</div>
+      <div class="val" id="acBalance">—</div>
+      <div class="acc-grid">
+        <div class="acc-stat"><div class="sv" id="acInvoiced">—</div><div class="sl">Total Invoiced</div></div>
+        <div class="acc-stat"><div class="sv" id="acPaid">—</div><div class="sl">Total Paid</div></div>
+        <div class="acc-stat"><div class="sv" id="acCredit">—</div><div class="sl">Credit Limit</div></div>
+      </div>
+    </div>
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
+      <table>
+        <thead><tr><th>Date</th><th>Type</th><th>Description</th><th>Debit</th><th>Credit</th><th>Balance</th></tr></thead>
+        <tbody id="ledgerTbody"><tr><td colspan="6" style="text-align:center;padding:30px;color:var(--muted)">Loading…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ═══ SCHEMES ══════════════════════════════════════════════ -->
+  <div class="section" id="sec-schemes">
+    <div style="margin-bottom:20px;">
+      <h2 style="font-size:1rem;font-weight:700;margin-bottom:6px;">🎁 Active Schemes &amp; Offers</h2>
+      <p style="font-size:.83rem;color:var(--muted);">Special deals available for your shop this month.</p>
+    </div>
+    <div id="schemesGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;">
+      <div style="text-align:center;padding:40px;color:var(--muted)">Loading schemes…</div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<!-- Checkout Modal -->
+<div class="modal-bg hidden" id="checkoutModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3>📦 Confirm Order</h3>
+      <button class="modal-close" onclick="closeCheckout()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="checkoutSummary"></div>
+      <div class="form-row">
+        <label>Delivery Address</label>
+        <textarea id="coAddress" rows="2"></textarea>
+      </div>
+      <div class="form-row">
+        <label>Preferred Delivery Date</label>
+        <input type="date" id="coDate">
+      </div>
+      <div class="form-row">
+        <label>Special Instructions (optional)</label>
+        <input type="text" id="coNotes" placeholder="Urgent / Cold chain required / etc.">
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeCheckout()">Cancel</button>
+      <button class="btn btn-blue" onclick="submitOrder()">✅ Place Order</button>
+    </div>
+  </div>
+</div>
+
+<!-- Success Modal -->
+<div class="modal-bg hidden" id="successModal">
+  <div class="modal-box" style="max-width:400px;">
+    <div class="modal-body">
+      <div class="success-state">
+        <div class="success-icon">🎉</div>
+        <h2>Order Placed!</h2>
+        <p style="color:var(--muted);font-size:.88rem;margin-bottom:6px;" id="successMsg">Your order has been sent to Selvam Medicals.</p>
+        <p class="mono" style="font-size:1.1rem;font-weight:800;color:var(--blue);margin:12px 0;" id="successOrderNo"></p>
+        <p style="font-size:.82rem;color:var(--muted);">You'll receive confirmation soon. Track it under "My Orders".</p>
+        <button class="btn btn-blue" style="margin-top:20px;width:100%;" onclick="afterOrder()">View My Orders →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── State ─────────────────────────────────────────────────────
+let shopUser = null;
+let allMeds = [], filteredMeds = [], shownCount = 24;
+let cart = {};            // {med_id: {item, qty}}
+let myOrders = [];
+let schemes = [];
+let myOrderFilter = '';
+
+// ── Boot ──────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async ()=>{
+  const u = sessionStorage.getItem('shopUser');
+  if(!u){ window.location.href='/shop-login'; return; }
+  shopUser = JSON.parse(u);
+  document.getElementById('shopNameTag').textContent = shopUser.name;
+  document.getElementById('welcomeName').textContent = `Welcome, ${shopUser.name}`;
+  document.getElementById('welcomeMeta').textContent = `${shopUser.city||''} · Credit: ₹${fmt(shopUser.credit_limit||0)} · Discount: ${shopUser.discount||0}%`;
+
+  const tmr = new Date(); tmr.setDate(tmr.getDate()+1);
+  document.getElementById('coDate').value = tmr.toISOString().slice(0,10);
+  document.getElementById('coAddress').value = shopUser.address||'';
+
+  await Promise.all([loadMeds(), loadMyOrders(), loadSchemes(), loadAccount()]);
+});
+
+// ── Section nav ───────────────────────────────────────────────
+function switchSection(name, el){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById(`sec-${name}`).classList.add('active');
+  document.querySelectorAll('.hnav').forEach(n=>n.classList.remove('active'));
+  if(el) el.classList.add('active');
+  if(name==='my-orders') renderMyOrders(myOrders);
+  if(name==='account') loadAccount();
+  if(name==='schemes') renderSchemes();
+}
+
+// ── Medicines ─────────────────────────────────────────────────
+async function loadMeds(){
+  const r = await fetch('/api/ws/stock?limit=2000');
+  const d = await r.json();
+  allMeds = d.items||[];
+  const cats = [...new Set(allMeds.map(m=>m.category).filter(Boolean))].sort();
+  const sel = document.getElementById('browseCat');
+  sel.innerHTML = '<option value="">All Categories</option>'+cats.map(c=>`<option>${c}</option>`).join('');
+  applyBrowseFilter();
+}
+
+function applyBrowseFilter(){
+  const q = document.getElementById('browseSearch').value.toLowerCase();
+  const cat = document.getElementById('browseCat').value;
+  const srt = document.getElementById('browseSort').value;
+  filteredMeds = allMeds.filter(m=>{
+    if(cat && m.category!==cat) return false;
+    if(q && !(m.name||'').toLowerCase().includes(q) && !(m.generic||'').toLowerCase().includes(q)) return false;
+    return true;
+  });
+  if(srt==='name') filteredMeds.sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+  else if(srt==='price_asc') filteredMeds.sort((a,b)=>wsPrice(a)-wsPrice(b));
+  else if(srt==='price_desc') filteredMeds.sort((a,b)=>wsPrice(b)-wsPrice(a));
+  else if(srt==='stock') filteredMeds.sort((a,b)=>(b.stock||0)-(a.stock||0));
+  shownCount = 24;
+  renderProds();
+}
+
+function wsPrice(m){ return (m.mrp||0)*0.85*(1-(shopUser?.discount||0)/100); }
+
+function showMoreProds(){ shownCount+=24; renderProds(); }
+
+function renderProds(){
+  const page = filteredMeds.slice(0,shownCount);
+  const grid = document.getElementById('prodGrid');
+  grid.innerHTML = page.map(m=>{
+    const ws = wsPrice(m);
+    const save = m.mrp>0 ? ((m.mrp-ws)/m.mrp*100).toFixed(0) : 0;
+    const inCart = cart[m.id];
+    const qty = inCart?.qty||1;
+    const sch = schemes.find(s=>s.applies_to===m.category||s.applies_to==='all');
+    const schTag = sch ? `<span class="scheme-tag">🎁 ${sch.label}</span>` : '';
+    const stockOk = (m.stock||0)>0;
+    return `<div class="prod-card" id="pc-${m.id}">
+      <div class="prod-name">${m.name}</div>
+      <div class="prod-generic">${m.generic||'—'}</div>
+      <span class="prod-cat">${m.category||'General'}</span>
+      <div class="prod-price">
+        <span class="price-ws">₹${ws.toFixed(2)}</span>
+        <span class="price-mrp">₹${(m.mrp||0).toFixed(2)}</span>
+        <span class="price-save">-${save}%</span>
+        ${schTag}
+      </div>
+      ${stockOk
+        ? `<div class="qty-row">
+            <button class="qty-btn" onclick="changeQty(${m.id},-1)">−</button>
+            <input class="qty-input" type="number" min="1" value="${qty}" id="qty-${m.id}" onchange="setQty(${m.id},this.value)">
+            <button class="qty-btn" onclick="changeQty(${m.id},1)">+</button>
+            <button class="add-btn ${inCart?'added':''}" id="ab-${m.id}" onclick="addToCart(${m.id},'${m.name.replace(/'/g,"\\'")}','${(m.generic||'').replace(/'/g,"\\'")}',${ws.toFixed(2)},${m.mrp||0})">
+              ${inCart?'✓ Added':'Add'}
+            </button>
+          </div>
+          <div class="stock-tag">Stock: ${m.stock}</div>`
+        : `<div class="out-tag">❌ Out of Stock</div>`
+      }
+    </div>`;
+  }).join('');
+  document.getElementById('loadMoreWrap').style.display = shownCount<filteredMeds.length?'block':'none';
+}
+
+function changeQty(id, delta){
+  const input = document.getElementById(`qty-${id}`);
+  if(!input) return;
+  const v = Math.max(1, parseInt(input.value||1)+delta);
+  input.value = v;
+  if(cart[id]){ cart[id].qty=v; updateCartUI(); }
+}
+function setQty(id, val){
+  const v = Math.max(1, parseInt(val)||1);
+  if(cart[id]){ cart[id].qty=v; updateCartUI(); }
+}
+
+function addToCart(medId, name, generic, ws, mrp){
+  const qtyEl = document.getElementById(`qty-${medId}`);
+  const qty = qtyEl ? (parseInt(qtyEl.value)||1) : 1;
+  cart[medId] = {med_id:medId, medicine_name:name, generic_name:generic, ws_rate:ws, mrp, qty};
+  document.getElementById(`ab-${medId}`)?.classList.add('added');
+  document.getElementById(`ab-${medId}`).textContent='✓ Added';
+  updateCartUI();
+  showToast(`${name.slice(0,22)} added ✓`);
+}
+
+function removeFromCart(medId){
+  delete cart[medId];
+  updateCartUI();
+  renderProds();
+}
+
+function updateCartUI(){
+  const items = Object.values(cart);
+  document.getElementById('cartCount').textContent = items.length;
+  const cartEl = document.getElementById('cartItemsEl');
+  if(!items.length){
+    cartEl.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted);font-size:.84rem;">Cart is empty.</div>`;
+    document.getElementById('cartSummaryEl').innerHTML='';
+    return;
+  }
+  cartEl.innerHTML = items.map(i=>`
+    <div class="cart-item">
+      <div style="flex:1;">
+        <div class="ci-name">${i.medicine_name}</div>
+        <div class="ci-qty">${i.qty} × ₹${i.ws_rate.toFixed(2)}</div>
+      </div>
+      <span class="ci-price">₹${(i.qty*i.ws_rate).toFixed(2)}</span>
+      <button class="ci-remove" onclick="removeFromCart(${i.med_id})">✕</button>
+    </div>`).join('');
+  const sub = items.reduce((s,i)=>s+i.qty*i.ws_rate,0);
+  const gst = sub*0.12;
+  document.getElementById('cartSummaryEl').innerHTML = `
+    <div><span style="color:var(--muted)">Subtotal</span><span class="mono">₹${fmt(sub)}</span></div>
+    <div><span style="color:var(--muted)">GST (12%)</span><span class="mono">₹${fmt(gst)}</span></div>
+    <div class="total-row"><span>Total</span><span class="mono" style="color:var(--blue)">₹${fmt(sub+gst)}</span></div>`;
+}
+
+function toggleCart(){
+  document.getElementById('cartPanel').classList.toggle('open');
+}
+
+// ── Checkout ──────────────────────────────────────────────────
+function openCheckout(){
+  const items = Object.values(cart);
+  if(!items.length){ showToast('Cart is empty',true); return; }
+  const sub = items.reduce((s,i)=>s+i.qty*i.ws_rate,0);
+  const gst = sub*0.12;
+  document.getElementById('checkoutSummary').innerHTML = `
+    <div style="background:#f8fafc;border-radius:10px;padding:14px;margin-bottom:16px;font-size:.83rem;">
+      <div style="font-weight:700;margin-bottom:10px;">${items.length} items in order</div>
+      ${items.slice(0,5).map(i=>`<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #f1f5f9;">
+        <span>${i.medicine_name} × ${i.qty}</span>
+        <span class="mono">₹${(i.qty*i.ws_rate).toFixed(2)}</span>
+      </div>`).join('')}
+      ${items.length>5?`<div style="color:var(--muted);margin-top:4px;">…and ${items.length-5} more</div>`:''}
+      <div style="display:flex;justify-content:space-between;font-weight:700;padding-top:8px;margin-top:4px;border-top:1px solid #e2e8f0;">
+        <span>Total (incl. GST)</span>
+        <span class="mono" style="color:var(--blue)">₹${fmt(sub+gst)}</span>
+      </div>
+    </div>`;
+  document.getElementById('checkoutModal').classList.remove('hidden');
+  document.getElementById('cartPanel').classList.remove('open');
+}
+function closeCheckout(){ document.getElementById('checkoutModal').classList.add('hidden'); }
+
+async function submitOrder(){
+  const items = Object.values(cart);
+  if(!items.length) return;
+  const sub = items.reduce((s,i)=>s+i.qty*i.ws_rate,0);
+  const gst = sub*0.12;
+  const payload = {
+    shop_id: shopUser.id,
+    shop_name: shopUser.name,
+    delivery_address: document.getElementById('coAddress').value.trim(),
+    delivery_date: document.getElementById('coDate').value,
+    notes: document.getElementById('coNotes').value.trim(),
+    items,
+    subtotal: sub, gst_amount: gst, total: sub+gst,
+    source: 'shop_portal'
+  };
+  const r = await fetch('/api/ws/orders',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+  const d = await r.json();
+  closeCheckout();
+  if(d.order_no){
+    cart = {};
+    updateCartUI();
+    document.getElementById('successOrderNo').textContent = d.order_no;
+    document.getElementById('successModal').classList.remove('hidden');
+    await loadMyOrders();
+  } else { showToast('Failed to place order',true); }
+}
+
+function afterOrder(){
+  document.getElementById('successModal').classList.add('hidden');
+  switchSection('my-orders', document.querySelectorAll('.hnav')[1]);
+}
+
+// ── My Orders ────────────────────────────────────────────────
+async function loadMyOrders(){
+  const r = await fetch(`/api/ws/orders?shop_id=${shopUser.id}`);
+  const d = await r.json();
+  myOrders = (d.orders||[]).filter(o=>o.shop_id==shopUser.id);
+  const counts={all:myOrders.length,pending:0,confirmed:0,dispatched:0,delivered:0};
+  myOrders.forEach(o=>{if(counts[o.status]!==undefined) counts[o.status]++;});
+  document.getElementById('mpAll').textContent=counts.all;
+  document.getElementById('mpPending').textContent=counts.pending;
+  document.getElementById('mpConf').textContent=counts.confirmed;
+  document.getElementById('mpDisp').textContent=counts.dispatched;
+  document.getElementById('mpDel').textContent=counts.delivered;
+}
+
+function filterMyOrders(status, el){
+  myOrderFilter = status;
+  document.querySelectorAll('.pipe-s').forEach(s=>s.classList.remove('active'));
+  el.classList.add('active');
+  renderMyOrders(status ? myOrders.filter(o=>o.status===status) : myOrders);
+}
+
+function renderMyOrders(orders){
+  const tbody = document.getElementById('myOrdersTbody');
+  if(!orders.length){
+    tbody.innerHTML=`<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--muted)">No orders yet. <a onclick="switchSection('browse',null)" style="color:var(--blue);cursor:pointer;">Browse medicines →</a></td></tr>`;
+    return;
+  }
+  const sBadge = s=>{const m={'pending':'b-yellow','confirmed':'b-blue','picking':'b-orange','dispatched':'b-purple','delivered':'b-green','invoiced':'b-gray'};return`<span class="badge ${m[s]||'b-gray'}">${s}</span>`;};
+  tbody.innerHTML = orders.map(o=>`<tr>
+    <td class="mono" style="color:var(--blue);font-weight:700;">${o.order_no}</td>
+    <td>${o.created_at?o.created_at.slice(0,10):'—'}</td>
+    <td>${o.item_count||'—'}</td>
+    <td class="mono" style="font-weight:700;">₹${fmt(o.total||0)}</td>
+    <td>${sBadge(o.status)}</td>
+    <td style="color:var(--muted);font-size:.78rem;">${o.delivery_date||'—'}</td>
+  </tr>`).join('');
+}
+
+// ── Account / Ledger ──────────────────────────────────────────
+async function loadAccount(){
+  if(!shopUser?.id) return;
+  const [lr, sr] = await Promise.all([
+    fetch(`/api/ws/ledger/${shopUser.id}`),
+    fetch(`/api/ws/shops`)
+  ]);
+  const ld = await lr.json(); const sd = await sr.json();
+  const shop = (sd.shops||[]).find(s=>s.id==shopUser.id)||{};
+  const summ = ld.summary||{};
+  const outstanding = summ.outstanding||0;
+  document.getElementById('acBalance').textContent=`₹${fmt(outstanding)}`;
+  document.getElementById('acInvoiced').textContent=`₹${fmt(summ.total_invoiced||0)}`;
+  document.getElementById('acPaid').textContent=`₹${fmt(summ.total_paid||0)}`;
+  document.getElementById('acCredit').textContent=`₹${fmt(shop.credit_limit||0)}`;
+  document.getElementById('stripBalance').textContent=`₹${fmt(outstanding)}`;
+  const entries = ld.entries||[];
+  let balance=0;
+  document.getElementById('ledgerTbody').innerHTML = entries.length
+    ? entries.map(e=>{
+        balance+=(e.debit||0)-(e.credit||0);
+        return `<tr>
+          <td>${(e.date||'—').slice(0,10)}</td>
+          <td><span class="badge ${e.type==='invoice'?'b-orange':'b-green'}">${e.type}</span></td>
+          <td>${e.description||'—'}</td>
+          <td class="mono" style="color:${e.debit?'var(--red)':''};">${e.debit?'₹'+fmt(e.debit):''}</td>
+          <td class="mono" style="color:${e.credit?'var(--green)':''};">${e.credit?'₹'+fmt(e.credit):''}</td>
+          <td class="mono" style="font-weight:700;color:${balance>0?'var(--red)':'var(--green)'};">₹${fmt(Math.abs(balance))} ${balance>0?'Dr':'Cr'}</td>
+        </tr>`;
+      }).join('')
+    : `<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--muted)">No transactions yet.</td></tr>`;
+}
+
+// ── Schemes ───────────────────────────────────────────────────
+async function loadSchemes(){
+  const r = await fetch('/api/ws/schemes');
+  const d = await r.json();
+  schemes = d.schemes||[];
+  if(schemes.length){
+    const s = schemes[0];
+    document.getElementById('schemeBanner').style.display='flex';
+    document.getElementById('schemeBannerText').textContent=`${s.title}: ${s.description}`;
+  }
+}
+function renderSchemes(){
+  const grid = document.getElementById('schemesGrid');
+  if(!schemes.length){
+    grid.innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted)">No active schemes right now. Check back soon!</div>`;
+    return;
+  }
+  const colors=['#eff6ff','#f0fdf4','#fef9c3','#fdf4ff'];
+  const border=['#bfdbfe','#bbf7d0','#fde68a','#e9d5ff'];
+  grid.innerHTML=schemes.map((s,i)=>`
+    <div style="background:${colors[i%4]};border:2px solid ${border[i%4]};border-radius:14px;padding:20px;">
+      <div style="font-size:1.8rem;margin-bottom:10px;">${s.icon||'🎁'}</div>
+      <h3 style="font-size:.95rem;font-weight:800;margin-bottom:6px;">${s.title}</h3>
+      <p style="font-size:.82rem;color:var(--muted);margin-bottom:10px;">${s.description}</p>
+      ${s.applies_to?`<span style="background:#fff;border-radius:12px;padding:3px 10px;font-size:.72rem;font-weight:700;color:var(--blue);">Applies to: ${s.applies_to}</span>`:''}
+      <div style="margin-top:12px;font-size:.78rem;color:var(--muted);">Valid till: <strong>${s.valid_till||'Month end'}</strong></div>
+    </div>`).join('');
+}
+
+// ── Helpers ───────────────────────────────────────────────────
+function fmt(n){ return Number(n||0).toLocaleString('en-IN',{maximumFractionDigits:0}); }
+function showToast(msg,isErr=false){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast'+(isErr?' err':'')+' show';
+  setTimeout(()=>t.className='toast',2500);
+}
+function doLogout(){
+  sessionStorage.removeItem('shopUser');
+  window.location.href='/shop-login';
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>AI Call Dashboard — MediVision AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&family=Noto+Sans+Tamil:wght@400;600&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:Inter,sans-serif;background:#0b0e16;color:#e2e8f0;min-height:100vh;}
+.tamil{font-family:'Noto Sans Tamil',Inter,sans-serif;}
+.mono{font-family:'JetBrains Mono',monospace;}
+.topbar{background:#111827;border-bottom:1px solid rgba(255,255,255,.08);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;}
+.brand{font-weight:800;color:#f97316;font-size:1.05rem;}
+.brand i{margin-right:8px;}
+.nav-links{display:flex;gap:14px;}
+.nav-links a{color:#94a3b8;font-size:.85rem;text-decoration:none;}
+.nav-links a:hover{color:#fff;}
+.wrap{max-width:1400px;margin:0 auto;padding:24px;}
+h1{font-size:1.6rem;font-weight:800;color:#fff;}
+.sub{color:#94a3b8;font-size:.9rem;margin-bottom:24px;}
+
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:22px;}
+.kpi{background:linear-gradient(145deg,#141824,#0f1320);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:14px 16px;cursor:pointer;transition:transform .2s,border-color .2s;}
+.kpi:hover{transform:translateY(-2px);border-color:rgba(249,115,22,.3);}
+.kpi.active{border-color:#f97316;background:rgba(249,115,22,.08);}
+.kpi .lbl{color:#94a3b8;font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;}
+.kpi .val{color:#fff;font-size:1.5rem;font-weight:800;font-family:'JetBrains Mono',monospace;}
+.kpi.q .val{color:#fcd34d;}.kpi.c .val{color:#60a5fa;}.kpi.p1 .val{color:#4ade80;}.kpi.p2 .val{color:#fca5a5;}.kpi.d .val{color:#cbd5e1;}.kpi.f .val{color:#f87171;}
+
+.toolbar{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;align-items:center;}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:10px 16px;border-radius:9px;font-weight:700;font-size:.85rem;border:none;cursor:pointer;font-family:inherit;}
+.btn-primary{background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;}
+.btn-green{background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;}
+.btn-blue{background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;}
+.btn-ghost{background:rgba(255,255,255,.05);color:#94a3b8;border:1px solid rgba(255,255,255,.1);}
+.btn-red{background:rgba(239,68,68,.15);color:#fca5a5;border:1px solid rgba(239,68,68,.3);}
+
+.tbl-wrap{background:#141824;border:1px solid rgba(255,255,255,.08);border-radius:14px;overflow:hidden;}
+.tbl{width:100%;border-collapse:collapse;}
+.tbl th{background:#0d111a;color:#94a3b8;font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;text-align:left;padding:11px 14px;border-bottom:1px solid rgba(255,255,255,.06);}
+.tbl td{padding:11px 14px;font-size:.85rem;border-bottom:1px solid rgba(255,255,255,.04);vertical-align:middle;}
+.tbl tr:hover td{background:rgba(255,255,255,.02);}
+.cust-name{font-weight:600;color:#fff;}
+.cust-phone{color:#94a3b8;font-size:.78rem;font-family:monospace;}
+.pill{padding:3px 10px;border-radius:99px;font-size:.7rem;font-weight:700;display:inline-block;}
+.p-queued{background:rgba(252,211,77,.18);color:#fcd34d;}
+.p-calling{background:rgba(96,165,250,.18);color:#60a5fa;animation:pulse 1.4s infinite;}
+.p-press1{background:rgba(34,197,94,.2);color:#4ade80;}
+.p-press2{background:rgba(239,68,68,.2);color:#fca5a5;}
+.p-done{background:rgba(203,213,225,.15);color:#cbd5e1;}
+.p-failed{background:rgba(239,68,68,.18);color:#f87171;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.6;}}
+
+.act-btns{display:flex;gap:5px;flex-wrap:wrap;}
+.act-btns button{padding:5px 10px;border-radius:6px;font-size:.74rem;font-weight:700;border:none;cursor:pointer;font-family:inherit;}
+.act-call{background:rgba(34,197,94,.2);color:#4ade80;}
+.act-wa{background:rgba(37,211,102,.2);color:#22c55e;}
+.act-p1{background:rgba(34,197,94,.25);color:#4ade80;border:1px solid rgba(34,197,94,.4);}
+.act-p2{background:rgba(239,68,68,.2);color:#fca5a5;}
+.act-skip{background:rgba(100,116,139,.2);color:#cbd5e1;}
+
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);align-items:center;justify-content:center;z-index:200;backdrop-filter:blur(4px);}
+.modal-bg.show{display:flex;}
+.modal{background:#141824;border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:28px;width:520px;max-width:92vw;max-height:90vh;overflow-y:auto;}
+.modal h3{color:#f97316;font-size:1.05rem;margin-bottom:14px;}
+
+.input,select,textarea{width:100%;background:#0b0e16;border:1.5px solid rgba(255,255,255,.1);border-radius:9px;padding:10px 14px;color:#e2e8f0;font-family:inherit;font-size:.9rem;}
+.input:focus,select:focus,textarea:focus{outline:none;border-color:#f97316;}
+textarea{resize:vertical;min-height:90px;}
+
+.field{margin-bottom:12px;}
+.field label{display:block;font-size:.74rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px;}
+
+.plans-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:22px;}
+.plan{background:linear-gradient(145deg,#141824,#0f1320);border:1.5px solid rgba(255,255,255,.08);border-radius:12px;padding:18px;text-align:center;}
+.plan.pop{border-color:#f97316;background:linear-gradient(145deg,rgba(249,115,22,.08),#0f1320);}
+.plan .name{color:#fb923c;font-weight:800;font-size:.92rem;text-transform:uppercase;letter-spacing:.05em;}
+.plan .price{font-size:1.8rem;font-weight:900;color:#fff;margin-top:6px;font-family:'JetBrains Mono',monospace;}
+.plan .price small{font-size:.7rem;color:#94a3b8;font-weight:400;}
+.plan .feat{color:#cbd5e1;font-size:.82rem;margin-top:8px;line-height:1.6;}
+.plan .feat strong{color:#4ade80;}
+
+.greet-card{background:#0d111a;border:1px solid rgba(249,115,22,.2);border-radius:10px;padding:12px;margin-top:8px;}
+.greet-card .lang{font-size:.7rem;color:#fb923c;font-weight:700;text-transform:uppercase;}
+
+.empty{text-align:center;padding:60px 20px;color:#64748b;}
+.empty .icon{font-size:2.5rem;margin-bottom:10px;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand"><i class="fas fa-phone-volume"></i> AI Call Dashboard</div>
+  <div class="nav-links">
+    <a href="/portal">Portal</a>
+    <a href="/refill-reminders">Reminder Settings</a>
+    <a href="/pickpack">Pick &amp; Pack</a>
+  </div>
+</div>
+
+<div class="wrap">
+  <h1>📞 AI Refill Reminder Dashboard</h1>
+  <p class="sub">Auto-detected refill candidates · Tamil/English voice calls · IVR Press-1 reorder · Press-2 decline</p>
+
+  <!-- Plan info -->
+  <div class="plans-grid" id="plansGrid"></div>
+
+  <!-- KPIs (clickable filters) -->
+  <div class="kpi-row">
+    <div class="kpi q" data-status="queued" onclick="filterStatus('queued')"><div class="lbl">Queued</div><div class="val" id="kpiQueued">0</div></div>
+    <div class="kpi c" data-status="calling" onclick="filterStatus('calling')"><div class="lbl">Calling Now</div><div class="val" id="kpiCalling">0</div></div>
+    <div class="kpi p1" data-status="press1" onclick="filterStatus('press1')"><div class="lbl">Press 1 (Reorder)</div><div class="val" id="kpiP1">0</div></div>
+    <div class="kpi p2" data-status="press2" onclick="filterStatus('press2')"><div class="lbl">Press 2 (Decline)</div><div class="val" id="kpiP2">0</div></div>
+    <div class="kpi d" data-status="done" onclick="filterStatus('done')"><div class="lbl">Done</div><div class="val" id="kpiDone">0</div></div>
+    <div class="kpi f" data-status="failed" onclick="filterStatus('failed')"><div class="lbl">Failed</div><div class="val" id="kpiFailed">0</div></div>
+    <div class="kpi" data-status="" onclick="filterStatus('')"><div class="lbl">All</div><div class="val" id="kpiAll">0</div></div>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <button class="btn btn-primary" onclick="autoDetect()"><i class="fas fa-magic"></i> Auto-Detect Refill Candidates</button>
+    <button class="btn btn-green" onclick="openAddCall()"><i class="fas fa-plus"></i> Manual Add</button>
+    <button class="btn btn-blue" onclick="callNextInQueue()"><i class="fas fa-play"></i> Call Next</button>
+    <button class="btn btn-ghost" onclick="window.location='/refill-reminders'"><i class="fas fa-cog"></i> Settings</button>
+  </div>
+
+  <!-- Greeting templates -->
+  <div class="greet-card">
+    <div class="lang">📞 Default Tamil greeting (customisable in Settings)</div>
+    <div class="tamil" style="color:#e2e8f0;margin-top:6px;line-height:1.7;font-size:.92rem;">
+      வணக்கம்! Selvam Medicals-ல் இருந்து அழைக்கிறோம். உங்கள் வழக்கமான மருந்து 3 நாட்களில் முடியும். மீண்டும் ஆர்டர் செய்ய <strong style="color:#4ade80;">1</strong> -ஐ அழுத்தவும், வேண்டாம் என்றால் <strong style="color:#fca5a5;">2</strong> -ஐ அழுத்தவும்.
+    </div>
+    <div style="color:#94a3b8;font-size:.78rem;margin-top:6px;">
+      <i>EN:</i> "Hello, calling from Selvam Medicals. Your regular medicines will run out in 3 days. Press <strong style="color:#4ade80;">1</strong> to reorder, <strong style="color:#fca5a5;">2</strong> to decline."
+    </div>
+  </div>
+
+  <!-- Calls table -->
+  <div class="tbl-wrap" style="margin-top:18px;">
+    <table class="tbl" id="callsTable">
+      <thead><tr>
+        <th>Customer</th><th>Medicine</th><th>Stockout</th><th>Scheduled</th><th>Status</th><th>Actions</th>
+      </tr></thead>
+      <tbody><tr><td colspan="6"><div class="empty"><div class="icon">📞</div>Loading…</div></td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ADD CALL MODAL -->
+<div class="modal-bg" id="addModal" onclick="if(event.target===this)closeAdd()">
+  <div class="modal">
+    <h3>➕ Add Customer to Call Queue</h3>
+    <div class="field"><label>Customer Name</label><input id="addName" class="input"/></div>
+    <div class="field"><label>Phone</label><input id="addPhone" class="input" placeholder="10-digit number"/></div>
+    <div class="field"><label>Type</label>
+      <select id="addKind">
+        <option value="refill">Refill reminder</option>
+        <option value="followup">Follow-up</option>
+        <option value="birthday">Birthday greetings</option>
+        <option value="outofstock">Out-of-stock alert</option>
+        <option value="promo">Promotion</option>
+      </select>
+    </div>
+    <div class="field"><label>Medicine / Note</label><input id="addMed" class="input"/></div>
+    <div class="field"><label>Language</label>
+      <select id="addLang"><option value="ta">தமிழ் (Tamil)</option><option value="en">English</option><option value="hi">हिंदी</option></select>
+    </div>
+    <div class="field"><label>Scheduled (YYYY-MM-DD HH:MM)</label><input id="addSched" class="input"/></div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-ghost" onclick="closeAdd()" style="flex:1">Cancel</button>
+      <button class="btn btn-primary" onclick="saveCall()" style="flex:2"><i class="fas fa-save"></i> Add to Queue</button>
+    </div>
+  </div>
+</div>
+
+<!-- CALL IN PROGRESS MODAL (mock IVR) -->
+<div class="modal-bg" id="callModal" onclick="if(event.target===this)closeCall()">
+  <div class="modal" style="width:540px;">
+    <h3>📞 Call in Progress</h3>
+    <div id="callDetails" style="background:#0d111a;padding:14px;border-radius:10px;margin-bottom:14px;">
+      <div style="color:#94a3b8;font-size:.82rem;">Calling…</div>
+      <div style="font-size:1.15rem;font-weight:700;margin-top:4px;" id="callCustomer">Customer</div>
+      <div style="color:#94a3b8;font-family:monospace;font-size:.85rem;" id="callPhone">+91 …</div>
+    </div>
+
+    <div class="tamil" style="background:rgba(249,115,22,.08);border:1px solid rgba(249,115,22,.25);border-radius:10px;padding:14px;font-size:.92rem;line-height:1.7;color:#fcd34d;margin-bottom:14px;" id="callScript">
+      Loading script...
+    </div>
+
+    <div style="color:#94a3b8;font-size:.82rem;margin-bottom:10px;">Customer response:</div>
+    <div class="act-btns" style="gap:8px;">
+      <button class="btn btn-green" style="flex:1" onclick="recordResp('press1')"><strong>1</strong> &nbsp;✓ Reorder (auto-bill)</button>
+      <button class="btn btn-red" style="flex:1" onclick="recordResp('press2')"><strong>2</strong> &nbsp;✗ No order</button>
+    </div>
+    <div class="act-btns" style="margin-top:8px;gap:8px;">
+      <button class="btn btn-ghost" style="flex:1" onclick="recordResp('voicemail')">📼 Voicemail</button>
+      <button class="btn btn-ghost" style="flex:1" onclick="recordResp('no_answer')">🔕 No answer</button>
+      <button class="btn btn-ghost" style="flex:1" onclick="closeCall()">Skip</button>
+    </div>
+
+    <div style="margin-top:14px;border-top:1px dashed rgba(255,255,255,.08);padding-top:12px;">
+      <button class="btn act-wa" style="width:100%" onclick="sendWAFromCall()"><i class="fab fa-whatsapp"></i> Send WhatsApp instead (free)</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let curStatus = '';
+let activeCall = null;
+
+async function loadPlans(){
+  const r = await fetch('/api/calls/plans');
+  const d = await r.json();
+  document.getElementById('plansGrid').innerHTML = d.plans.map((p,i) => `
+    <div class="plan ${i===1?'pop':''}">
+      ${i===1?'<div style="position:absolute;top:8px;right:8px;background:#f97316;color:#fff;font-size:.6rem;padding:2px 8px;border-radius:99px;font-weight:700;">POPULAR</div>':''}
+      <div class="name">${p.plan_name}</div>
+      <div class="price">₹${p.price_per_month}<small>/month</small></div>
+      <div class="feat">
+        <strong>${p.included_calls}</strong> AI calls/mo<br/>
+        + ₹${p.extra_call_cost}/extra call<br/>
+        <strong>${p.whatsapp_included}</strong> WA reminders<br/>
+        Tamil + English + Hindi
+      </div>
+    </div>`).join('');
+}
+
+async function loadCalls(){
+  const url = '/api/calls/queue' + (curStatus ? '?status=' + curStatus : '');
+  const r = await fetch(url);
+  const d = await r.json();
+
+  document.getElementById('kpiQueued').textContent = d.stats.queued;
+  document.getElementById('kpiCalling').textContent = d.stats.calling;
+  document.getElementById('kpiP1').textContent = d.stats.press1;
+  document.getElementById('kpiP2').textContent = d.stats.press2;
+  document.getElementById('kpiDone').textContent = d.stats.done;
+  document.getElementById('kpiFailed').textContent = d.stats.failed;
+  document.getElementById('kpiAll').textContent = Object.values(d.stats).reduce((a,b)=>a+b,0);
+
+  const tb = document.querySelector('#callsTable tbody');
+  if(!d.calls.length){
+    tb.innerHTML = '<tr><td colspan="6"><div class="empty"><div class="icon">📋</div>No calls in this status</div></td></tr>';
+    return;
+  }
+  tb.innerHTML = d.calls.map(c => `
+    <tr>
+      <td><div class="cust-name">${c.customer_name||'-'}</div><div class="cust-phone">${c.customer_phone}</div></td>
+      <td>${c.medicine||'-'}</td>
+      <td class="mono">${c.expected_stockout||'-'}</td>
+      <td class="mono" style="font-size:.78rem;">${c.scheduled_at}</td>
+      <td><span class="pill p-${c.status}">${c.status.toUpperCase()}</span> ${c.resulting_bill?'<br/><span style="color:#4ade80;font-family:monospace;font-size:.74rem;">→ '+c.resulting_bill+'</span>':''}</td>
+      <td><div class="act-btns">
+        ${c.status==='queued' ? `<button class="act-call" onclick="startCall(${c.id})">📞 Call</button><button class="act-wa" onclick="quickWA(${c.id}, ${JSON.stringify(c).replace(/"/g,'&quot;')})">💬 WA</button>` : ''}
+        ${c.status==='calling' ? `<button class="act-p1" onclick="recordResponse(${c.id}, 'press1')">Press 1</button><button class="act-p2" onclick="recordResponse(${c.id}, 'press2')">Press 2</button>` : ''}
+        ${(c.status==='queued'||c.status==='failed') ? `<button class="act-skip" onclick="skipCall(${c.id})">Skip</button>` : ''}
+      </div></td>
+    </tr>`).join('');
+}
+
+function filterStatus(s){
+  curStatus = s;
+  document.querySelectorAll('.kpi').forEach(el => el.classList.toggle('active', el.dataset.status === s));
+  loadCalls();
+}
+
+async function autoDetect(){
+  const r = await fetch('/api/reminders/auto-detect', {method:'POST'});
+  const d = await r.json();
+  alert(`✓ Detected and queued ${d.queued} refill candidates`);
+  loadCalls();
+}
+
+function openAddCall(){
+  document.getElementById('addSched').value = new Date().toISOString().slice(0,16).replace('T',' ');
+  document.getElementById('addModal').classList.add('show');
+}
+function closeAdd(){ document.getElementById('addModal').classList.remove('show'); }
+async function saveCall(){
+  const body = {
+    customer_name: document.getElementById('addName').value,
+    customer_phone: document.getElementById('addPhone').value,
+    kind: document.getElementById('addKind').value,
+    medicine: document.getElementById('addMed').value,
+    language: document.getElementById('addLang').value,
+    scheduled_at: document.getElementById('addSched').value
+  };
+  await fetch('/api/calls/queue', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  closeAdd();
+  loadCalls();
+}
+
+async function startCall(cid){
+  // Get call details
+  const r = await fetch('/api/calls/queue?status=queued');
+  const d = await r.json();
+  const call = d.calls.find(c => c.id === cid);
+  if(!call) return;
+
+  await fetch(`/api/calls/${cid}/start`, {method:'POST'});
+  activeCall = call;
+  document.getElementById('callCustomer').textContent = call.customer_name || 'Unknown';
+  document.getElementById('callPhone').textContent = '+91 ' + call.customer_phone;
+
+  // Build script based on language
+  let script = '';
+  if(call.language === 'ta'){
+    script = `வணக்கம் ${call.customer_name || ''}! Selvam Medicals-ல் இருந்து அழைக்கிறோம்.
+
+உங்கள் வழக்கமான மருந்து ${call.medicine || ''} 3 நாட்களில் முடியும்.
+
+மீண்டும் ஆர்டர் செய்ய <b style="color:#4ade80;">1</b> -ஐ அழுத்தவும்.
+வேண்டாம் என்றால் <b style="color:#fca5a5;">2</b> -ஐ அழுத்தவும்.`;
+  } else {
+    script = `Hello ${call.customer_name || ''}! This is Selvam Medicals calling.
+
+Your regular medicine ${call.medicine || ''} will run out in 3 days.
+
+Press <b style="color:#4ade80;">1</b> to reorder.
+Press <b style="color:#fca5a5;">2</b> if you don't need it.`;
+  }
+  document.getElementById('callScript').innerHTML = script.replace(/\n/g, '<br/>');
+  document.getElementById('callModal').classList.add('show');
+  loadCalls();
+}
+
+async function recordResp(resp){
+  if(!activeCall) return;
+  const r = await fetch(`/api/calls/${activeCall.id}/response`, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({response:resp})});
+  const d = await r.json();
+  if(resp === 'press1' && d.resulting_bill){
+    alert(`✓ Press 1 — Reorder! Auto-created bill: ${d.resulting_bill}\nIt's now in the Pick & Pack queue.`);
+  } else {
+    alert(`✓ Response recorded: ${resp}`);
+  }
+  closeCall();
+  loadCalls();
+}
+
+async function recordResponse(cid, resp){
+  const r = await fetch(`/api/calls/${cid}/response`, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({response:resp})});
+  const d = await r.json();
+  loadCalls();
+}
+
+function closeCall(){ document.getElementById('callModal').classList.remove('show'); activeCall = null; }
+
+async function skipCall(cid){
+  await fetch(`/api/calls/${cid}/response`, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({response:'skipped'})});
+  loadCalls();
+}
+
+async function callNextInQueue(){
+  const r = await fetch('/api/calls/queue?status=queued');
+  const d = await r.json();
+  if(d.calls.length === 0){ alert('No calls in queue. Run Auto-Detect first.'); return; }
+  startCall(d.calls[0].id);
+}
+
+function quickWA(cid, callObj){
+  // Send WA instead of call
+  let phone = callObj.customer_phone.replace(/[^0-9]/g, '');
+  if(phone.length === 10) phone = '91' + phone;
+  const msg = callObj.language === 'ta'
+    ? `வணக்கம் ${callObj.customer_name||''}! Selvam Medicals: உங்கள் மருந்து ${callObj.medicine||''} 3 நாட்களில் முடியும். REORDER என்று பதிலளிக்கவும்.`
+    : `Hello ${callObj.customer_name||''}! Selvam Medicals: your medicine ${callObj.medicine||''} will run out in 3 days. Reply REORDER to refill.`;
+  fetch(`/api/calls/${cid}/whatsapp`, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:msg})});
+  window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
+  setTimeout(() => loadCalls(), 1500);
+}
+
+function sendWAFromCall(){
+  if(!activeCall) return;
+  quickWA(activeCall.id, activeCall);
+}
+
+loadPlans();
+loadCalls();
+setInterval(loadCalls, 30000);
+</script>
+</body>
+</html>

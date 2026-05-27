@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Offline — MediVision AI</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#f97316">
+<style>
+  :root{--bg:#0b0e16;--card:#151923;--acc:#f97316;--txt:#e2e8f0;--sub:#64748b;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--txt);font-family:'Inter',system-ui,sans-serif;
+    min-height:100vh;display:flex;align-items:center;justify-content:center;}
+  .wrap{text-align:center;padding:40px 24px;max-width:480px;}
+  .icon{font-size:80px;margin-bottom:24px;animation:pulse 2s infinite;}
+  @keyframes pulse{0%,100%{transform:scale(1);}50%{transform:scale(1.05);}}
+  h1{font-size:28px;font-weight:700;margin-bottom:12px;}
+  p{color:var(--sub);font-size:15px;line-height:1.6;margin-bottom:32px;}
+  .cards{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:32px;}
+  .card{background:var(--card);border-radius:12px;padding:16px;text-align:left;}
+  .card .c-title{font-size:12px;font-weight:600;color:var(--acc);text-transform:uppercase;
+    letter-spacing:.5px;margin-bottom:6px;}
+  .card p{font-size:13px;color:var(--sub);margin:0;}
+  .btn{display:inline-flex;align-items:center;gap:8px;background:var(--acc);color:#fff;
+    border:none;border-radius:10px;padding:12px 28px;font-size:15px;font-weight:600;
+    cursor:pointer;text-decoration:none;transition:opacity .2s;}
+  .btn:hover{opacity:.85;}
+  .status{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--sub);
+    margin-top:16px;}
+  .dot{width:8px;height:8px;border-radius:50%;background:#ef4444;
+    animation:blink 1.5s infinite;}
+  @keyframes blink{0%,100%{opacity:1;}50%{opacity:.3;}}
+  .dot.online{background:#22c55e;animation:none;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="icon">📡</div>
+  <h1>You're Offline</h1>
+  <p>No internet connection right now. Some features need the server to work, but cached pages are available below.</p>
+
+  <div class="cards">
+    <div class="card">
+      <div class="c-title">✅ Available Offline</div>
+      <p>Voice billing drafts, cached pages, recent bill data</p>
+    </div>
+    <div class="card">
+      <div class="c-title">⚡ Needs Connection</div>
+      <p>Live stock sync, new orders, reports, AI features</p>
+    </div>
+  </div>
+
+  <a href="/" class="btn" onclick="window.location.reload();return false;">🔄 Try Again</a>
+
+  <div style="margin-top:24px;">
+    <a href="/voice-billing" style="color:var(--acc);font-size:14px;text-decoration:none;">
+      🎤 Voice Billing (offline mode)
+    </a>
+  </div>
+
+  <div class="status" id="netStatus">
+    <div class="dot" id="dot"></div>
+    <span id="statusTxt">Offline</span>
+  </div>
+</div>
+
+<script>
+function checkNet(){
+  const online = navigator.onLine;
+  document.getElementById('dot').className = 'dot' + (online ? ' online' : '');
+  document.getElementById('statusTxt').textContent = online ? 'Back online — ' : 'Offline';
+  if(online){
+    document.getElementById('statusTxt').innerHTML = 'Back online — <a href="/" style="color:var(--acc)">Go to App →</a>';
+  }
+}
+window.addEventListener('online', checkNet);
+window.addEventListener('offline', checkNet);
+checkNet();
+</script>
+</body>
+</html>

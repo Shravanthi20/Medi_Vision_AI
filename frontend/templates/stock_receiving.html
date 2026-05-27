@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Smart Stock Receiving — Selvam Medicals</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@600&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<style>
+:root{--bg:#0b0e16;--sb:#111827;--card:#151d2b;--card2:#1a2236;--brd:#1f2d40;--tx:#e2e8f0;--mt:#64748b;--acc:#f97316;--grn:#22c55e;--red:#ef4444;--blu:#3b82f6;--yel:#eab308;}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;background:var(--bg);color:var(--tx);font-family:Inter,sans-serif;font-size:13px;}
+.shell{display:flex;height:100vh;overflow:hidden;}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.topbar{height:56px;background:var(--sb);border-bottom:1px solid var(--brd);display:flex;align-items:center;gap:12px;padding:0 20px;flex-shrink:0;}
+.topbar a{display:flex;align-items:center;gap:7px;color:var(--mt);font-size:12px;text-decoration:none;padding:5px 10px;border-radius:6px;border:1px solid var(--brd);transition:all .2s;}
+.topbar a:hover{border-color:var(--acc);color:var(--acc);}
+.topbar h1{font-size:15px;font-weight:600;}
+.content{flex:1;display:flex;overflow:hidden;}
+.left{width:340px;flex-shrink:0;background:var(--sb);border-right:1px solid var(--brd);display:flex;flex-direction:column;overflow-y:auto;padding:16px;}
+.right{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.sec-title{font-size:11px;font-weight:600;color:var(--mt);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px;}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:7px;border:1px solid var(--brd);background:var(--card2);color:var(--tx);font-size:12px;font-family:Inter,sans-serif;cursor:pointer;transition:all .2s;}
+.btn:hover{border-color:var(--acc);color:var(--acc);}
+.btn.acc{background:var(--acc);border-color:var(--acc);color:#fff;}
+.btn.acc:hover{opacity:.88;}
+.btn.grn{background:var(--grn);border-color:var(--grn);color:#fff;}
+.fi{position:relative;display:flex;align-items:center;width:100%;}
+.fi i{position:absolute;left:9px;color:var(--mt);font-size:11px;pointer-events:none;}
+.fi input,.fi select{width:100%;background:var(--bg);border:1px solid var(--brd);border-radius:7px;padding:7px 10px 7px 28px;color:var(--tx);font-size:12px;font-family:Inter,sans-serif;outline:none;transition:border-color .2s;}
+.fi input:focus,.fi select:focus{border-color:var(--acc);}
+.order-card{background:var(--card2);border:1px solid var(--brd);border-radius:10px;padding:12px;margin-bottom:8px;cursor:pointer;transition:all .2s;}
+.order-card:hover,.order-card.active{border-color:var(--acc);background:rgba(249,115,22,.05);}
+.order-card .oc-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;}
+.order-card .oc-supplier{font-weight:600;font-size:13px;}
+.order-card .oc-code{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--acc);background:rgba(249,115,22,.1);padding:2px 8px;border-radius:4px;}
+.order-card .oc-meta{font-size:11px;color:var(--mt);}
+.badge{display:inline-block;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:600;text-transform:uppercase;}
+.badge.pending{background:rgba(234,179,8,.12);color:var(--yel);}
+.badge.completed{background:rgba(34,197,94,.12);color:var(--grn);}
+.badge.partial{background:rgba(59,130,246,.12);color:var(--blu);}
+/* checklist area */
+.checklist-header{padding:14px 20px;background:var(--sb);border-bottom:1px solid var(--brd);display:flex;align-items:center;gap:10px;flex-shrink:0;}
+.checklist-header h2{font-size:14px;font-weight:600;flex:1;}
+.items-area{flex:1;overflow-y:auto;padding:16px 20px;}
+.item-row{background:var(--card2);border:1px solid var(--brd);border-radius:10px;padding:12px 14px;margin-bottom:8px;transition:border-color .2s;}
+.item-row.verified{border-color:var(--grn);background:rgba(34,197,94,.04);}
+.item-row.mismatch{border-color:var(--yel);background:rgba(234,179,8,.04);}
+.item-row .ir-head{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.ir-check{width:20px;height:20px;border-radius:5px;border:2px solid var(--brd);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s;}
+.ir-check.on{background:var(--grn);border-color:var(--grn);}
+.ir-name{font-weight:600;font-size:13px;flex:1;}
+.ir-exp{font-size:11px;color:var(--mt);}
+.ir-fields{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+.fg{display:flex;flex-direction:column;gap:3px;}
+.fg label{font-size:10px;color:var(--mt);text-transform:uppercase;letter-spacing:.04em;}
+.fg input{background:var(--bg);border:1px solid var(--brd);border-radius:6px;padding:5px 8px;color:var(--tx);font-size:12px;font-family:Inter,sans-serif;outline:none;transition:border-color .2s;}
+.fg input:focus{border-color:var(--acc);}
+.fg input.mismatch-field{border-color:var(--yel);}
+.footer-bar{padding:12px 20px;background:var(--sb);border-top:1px solid var(--brd);display:flex;align-items:center;gap:10px;flex-shrink:0;}
+.footer-bar .stats{font-size:12px;color:var(--mt);flex:1;}
+.empty{text-align:center;padding:60px 20px;color:var(--mt);}
+.empty i{font-size:36px;display:block;margin-bottom:10px;}
+/* new order form */
+.new-order-form{background:var(--card2);border:1px solid var(--brd);border-radius:10px;padding:14px;margin-bottom:12px;}
+.nof-title{font-size:12.5px;font-weight:600;margin-bottom:10px;display:flex;align-items:center;gap:7px;}
+.nof-fields{display:flex;flex-direction:column;gap:7px;}
+.item-entry-row{display:flex;gap:6px;align-items:center;}
+.item-entry-row input{flex:1;background:var(--bg);border:1px solid var(--brd);border-radius:6px;padding:6px 8px;color:var(--tx);font-size:11.5px;font-family:Inter,sans-serif;outline:none;}
+.item-entry-row input:focus{border-color:var(--acc);}
+.remove-btn{width:24px;height:24px;border-radius:5px;border:1px solid var(--brd);background:transparent;color:var(--red);font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+#toast{position:fixed;bottom:20px;right:20px;z-index:200;background:var(--card2);border:1px solid var(--brd);border-radius:10px;padding:10px 16px;font-size:12.5px;box-shadow:0 4px 20px rgba(0,0,0,.5);transform:translateY(20px);opacity:0;transition:all .3s;pointer-events:none;}
+#toast.show{transform:translateY(0);opacity:1;}
+#toast.ok{border-color:var(--grn);}
+#toast.err{border-color:var(--red);}
+.spin{animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+</style>
+</head>
+<body>
+<div class="shell"><div class="main">
+<div class="topbar">
+  <a href="/internal"><i class="fas fa-arrow-left"></i> POS</a>
+  <i class="fas fa-boxes-stacked" style="color:var(--acc)"></i>
+  <h1>Smart Stock Receiving</h1>
+  <span style="margin-left:auto;font-size:11.5px;color:var(--mt)" id="daily-code-label"></span>
+</div>
+<div class="content">
+  <!-- LEFT: orders list + new order -->
+  <div class="left">
+    <div class="sec-title">New Order</div>
+    <div class="new-order-form">
+      <div class="nof-title"><i class="fas fa-plus-circle" style="color:var(--acc)"></i> Create Receiving Order</div>
+      <div class="nof-fields">
+        <div class="fi"><i class="fas fa-truck"></i><input type="text" id="nof-supplier" placeholder="Supplier / Wholesaler name"/></div>
+        <div class="fi"><i class="fas fa-calendar"></i><input type="date" id="nof-date"/></div>
+        <div id="nof-items"></div>
+        <button class="btn" style="width:100%;justify-content:center;font-size:11.5px" onclick="addItemEntry()">
+          <i class="fas fa-plus"></i> Add Medicine Line</button>
+        <button class="btn acc" style="width:100%;justify-content:center" onclick="createOrder()">
+          <i class="fas fa-paper-plane"></i> Create Order</button>
+      </div>
+    </div>
+    <div class="sec-title" style="margin-top:8px">Pending Orders</div>
+    <div id="orders-list"><div class="empty" style="padding:20px"><i class="fas fa-circle-notch spin"></i></div></div>
+  </div>
+  <!-- RIGHT: checklist -->
+  <div class="right">
+    <div class="checklist-header">
+      <i class="fas fa-clipboard-check" style="color:var(--acc)"></i>
+      <h2 id="checklist-title">Select an order to start receiving</h2>
+      <div style="display:flex;gap:8px;margin-left:auto">
+        <input type="text" id="staff-name-input" placeholder="Staff name" style="background:var(--card2);border:1px solid var(--brd);border-radius:7px;padding:6px 10px;color:var(--tx);font-size:12px;font-family:Inter,sans-serif;outline:none;width:140px;"/>
+        <button class="btn grn" id="complete-btn" onclick="completeOrder()" style="display:none">
+          <i class="fas fa-check-double"></i> Complete & Import Stock</button>
+      </div>
+    </div>
+    <div class="items-area" id="checklist-area">
+      <div class="empty">
+        <i class="fas fa-arrow-left"></i>
+        <div>Select or create an order<br/><span style="font-size:11px">Staff verify each item against the delivery</span></div>
+      </div>
+    </div>
+    <div class="footer-bar" id="footer-bar" style="display:none">
+      <span class="stats" id="verify-stats">0 / 0 items verified</span>
+      <button class="btn" onclick="markAllVerified()"><i class="fas fa-check"></i> Mark All Verified</button>
+    </div>
+  </div>
+</div>
+</div></div>
+<div id="toast"></div>
+<script>
+let activeOrder = null;
+let orders      = [];
+
+// Init date
+document.getElementById('nof-date').value = new Date().toISOString().slice(0,10);
+document.getElementById('daily-code-label').textContent = 'Today Code: ' + String(Math.floor(Date.now()/1000)).slice(-6);
+
+loadOrders();
+
+async function loadOrders(){
+  const res = await fetch('/api/receiving/orders');
+  orders    = await res.json();
+  renderOrders();
+}
+
+function renderOrders(){
+  const div = document.getElementById('orders-list');
+  if(!orders.length){
+    div.innerHTML = '<div class="empty" style="padding:20px;font-size:12px">No orders yet.</div>'; return;
+  }
+  div.innerHTML = orders.map(o => `
+    <div class="order-card ${activeOrder===o.id?'active':''}" onclick="loadOrder(${o.id})">
+      <div class="oc-head">
+        <span class="oc-supplier">${esc(o.supplier_name||'Supplier')}</span>
+        <span class="oc-code">${esc(o.daily_code||'')}</span>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <span class="oc-meta">${esc(o.po_date||'')} · ${itemCount(o.items)} items</span>
+        <span class="badge ${o.status||'pending'}">${o.status||'pending'}</span>
+      </div>
+    </div>`).join('');
+}
+
+function itemCount(raw){
+  try{ return JSON.parse(raw||'[]').length; }catch{ return 0; }
+}
+
+async function loadOrder(id){
+  activeOrder = id;
+  renderOrders();
+  const res = await fetch(`/api/receiving/orders/${id}`);
+  const o   = await res.json();
+  document.getElementById('checklist-title').textContent = `${o.supplier_name} — ${o.po_date} (Code: ${o.daily_code})`;
+  const completed = o.status === 'completed';
+  document.getElementById('complete-btn').style.display = completed ? 'none' : '';
+  document.getElementById('footer-bar').style.display = '';
+  renderChecklist(o.items, id, completed);
+}
+
+function renderChecklist(items, oid, completed){
+  const area = document.getElementById('checklist-area');
+  if(!items.length){
+    area.innerHTML = '<div class="empty"><i class="fas fa-inbox"></i><div>No items in this order.</div></div>'; return;
+  }
+  area.innerHTML = items.map((item,i) => {
+    const v = item.verified;
+    const mismatch = v && parseInt(item.actual_qty||0) !== parseInt(item.qty||0);
+    return `<div class="item-row ${v?'verified':''} ${mismatch?'mismatch':''}" id="ir-${i}">
+      <div class="ir-head">
+        <div class="ir-check ${v?'on':''}" onclick="toggleVerify(${oid},${i},this)" title="Click to verify">
+          ${v?'<i class="fas fa-check" style="font-size:10px;color:#fff"></i>':''}
+        </div>
+        <span class="ir-name">${esc(item.name||'Item')}</span>
+        <span class="ir-exp">Expected: ${item.qty||0} ${item.unit||'units'}</span>
+        ${completed?`<span class="badge completed" style="margin-left:auto">Received</span>`:''}
+      </div>
+      <div class="ir-fields">
+        <div class="fg"><label>Actual Qty</label>
+          <input type="number" value="${item.actual_qty||item.qty||''}"
+            class="${mismatch?'mismatch-field':''}"
+            onchange="updateField(${oid},${i},'actual_qty',this.value)"
+            ${completed?'readonly':''}/>
+        </div>
+        <div class="fg"><label>Batch No.</label>
+          <input type="text" value="${esc(item.actual_batch||item.batch||'')}"
+            onchange="updateField(${oid},${i},'actual_batch',this.value)"
+            ${completed?'readonly':''}/>
+        </div>
+        <div class="fg"><label>Expiry</label>
+          <input type="date" value="${item.actual_expiry||item.expiry||''}"
+            onchange="updateField(${oid},${i},'actual_expiry',this.value)"
+            ${completed?'readonly':''}/>
+        </div>
+        <div class="fg"><label>MRP (₹)</label>
+          <input type="number" step="0.01" value="${item.actual_mrp||item.mrp||''}"
+            onchange="updateField(${oid},${i},'actual_mrp',this.value)"
+            ${completed?'readonly':''}/>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  updateStats(items);
+}
+
+async function toggleVerify(oid,idx,el){
+  const row      = document.getElementById(`ir-${idx}`);
+  const verified = !el.classList.contains('on');
+  const actQty   = row.querySelector('input[type=number]').value;
+  const actBatch = row.querySelectorAll('input')[1].value;
+  const actExp   = row.querySelectorAll('input')[2].value;
+  const actMrp   = row.querySelectorAll('input')[3].value;
+
+  await fetch(`/api/receiving/orders/${oid}/verify-item`,{
+    method:'PUT',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({index:idx,verified,actual_qty:actQty,actual_batch:actBatch,actual_expiry:actExp,actual_mrp:actMrp})
+  });
+  loadOrder(oid);
+}
+
+async function updateField(oid,idx,field,value){
+  await fetch(`/api/receiving/orders/${oid}/verify-item`,{
+    method:'PUT',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({index:idx,[field]:value,verified:true})
+  });
+}
+
+async function markAllVerified(){
+  if(!activeOrder) return;
+  const res = await fetch(`/api/receiving/orders/${activeOrder}`);
+  const o   = await res.json();
+  for(let i=0;i<o.items.length;i++){
+    await fetch(`/api/receiving/orders/${activeOrder}/verify-item`,{
+      method:'PUT',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({index:i,verified:true,actual_qty:o.items[i].qty||0})
+    });
+  }
+  loadOrder(activeOrder);
+  toast('All items marked verified','ok');
+}
+
+async function completeOrder(){
+  if(!activeOrder) return;
+  const staff = document.getElementById('staff-name-input').value || 'Staff';
+  if(!confirm(`Complete order and import stock? Received by: ${staff}`)) return;
+  const res  = await fetch(`/api/receiving/orders/${activeOrder}/complete`,{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({received_by:staff})
+  });
+  const data = await res.json();
+  toast(`Imported ${data.imported} medicines to stock!`,'ok');
+  if(data.return_note?.length){
+    toast(`Return note: ${data.return_note.length} excess items. Check the return items tab.`,'ok');
+  }
+  loadOrders();
+  loadOrder(activeOrder);
+}
+
+function updateStats(items){
+  const total    = items.length;
+  const verified = items.filter(i=>i.verified).length;
+  document.getElementById('verify-stats').textContent = `${verified} / ${total} items verified`;
+}
+
+// ── New order form ───────────────────────────────────────────────────
+let itemEntries = [{name:'',qty:'',batch:'',expiry:'',mrp:''}];
+renderEntries();
+
+function addItemEntry(){
+  itemEntries.push({name:'',qty:'',batch:'',expiry:'',mrp:''});
+  renderEntries();
+}
+function removeEntry(i){
+  itemEntries.splice(i,1);
+  if(!itemEntries.length) itemEntries.push({name:'',qty:'',batch:'',expiry:'',mrp:''});
+  renderEntries();
+}
+function renderEntries(){
+  document.getElementById('nof-items').innerHTML = itemEntries.map((e,i)=>`
+    <div class="item-entry-row">
+      <input placeholder="Medicine name" value="${esc(e.name)}" oninput="itemEntries[${i}].name=this.value" style="flex:2"/>
+      <input placeholder="Qty" type="number" value="${e.qty}" oninput="itemEntries[${i}].qty=this.value" style="flex:1;min-width:50px"/>
+      <button class="remove-btn" onclick="removeEntry(${i})"><i class="fas fa-times"></i></button>
+    </div>`).join('');
+}
+
+async function createOrder(){
+  const supplier = document.getElementById('nof-supplier').value.trim();
+  const date     = document.getElementById('nof-date').value;
+  if(!supplier){ toast('Enter supplier name','err'); return; }
+  const items = itemEntries.filter(e=>e.name.trim()).map(e=>({
+    name:e.name.trim(), qty:parseInt(e.qty)||0, batch:'', expiry:'', mrp:0, verified:false
+  }));
+  if(!items.length){ toast('Add at least one medicine','err'); return; }
+
+  const res  = await fetch('/api/receiving/orders',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({supplier_name:supplier,po_date:date,items})
+  });
+  const data = await res.json();
+  toast(`Order created! Daily Code: ${data.daily_code}`,'ok');
+  itemEntries = [{name:'',qty:'',batch:'',expiry:'',mrp:''}];
+  renderEntries();
+  document.getElementById('nof-supplier').value='';
+  loadOrders();
+  setTimeout(()=>loadOrder(data.id),500);
+}
+
+function esc(s){const d=document.createElement('span');d.textContent=String(s||'');return d.innerHTML;}
+function toast(msg,type=''){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className='show '+type;
+  if(type) setTimeout(()=>t.className='',3500);
+}
+</script>
+</body></html>

@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Staff Targets & Salary — MediVision AI</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',sans-serif;background:#f0f4f8;min-height:100vh}
+.topbar{background:#1a237e;color:#fff;padding:14px 24px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.topbar a{color:#90caf9;text-decoration:none;font-size:.85rem}
+.topbar h2{font-size:1.1rem;flex:1}
+.container{max-width:1200px;margin:0 auto;padding:16px}
+.tabs{display:flex;gap:4px;background:#e8eaf6;padding:4px;border-radius:10px;margin-bottom:16px;flex-wrap:wrap}
+.tab{padding:9px 16px;border:none;border-radius:7px;cursor:pointer;font-weight:600;font-size:.87rem;color:#666;background:none;transition:.2s}
+.tab.active{background:#1a237e;color:#fff}
+.panel{display:none}.panel.active{display:block}
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px}
+.kpi{background:#fff;border-radius:10px;padding:16px;box-shadow:0 2px 6px rgba(0,0,0,.07);text-align:center;border-top:4px solid #1a237e;position:relative}
+.kpi.green{border-color:#2e7d32}.kpi.amber{border-color:#f57f17}.kpi.red{border-color:#c62828}
+.kpi-val{font-size:1.7rem;font-weight:800;color:#1a237e}
+.kpi.green .kpi-val{color:#2e7d32}.kpi.amber .kpi-val{color:#f57f17}.kpi.red .kpi-val{color:#c62828}
+.kpi-lbl{font-size:.78rem;color:#888;margin-top:4px;font-weight:600}
+.card{background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.08);margin-bottom:16px;overflow:hidden}
+.card-hdr{padding:13px 16px;background:#1a237e;color:#fff;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.card-hdr h3{font-size:.93rem;font-weight:700}
+/* Staff salary card */
+.salary-card{background:#fff;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,.09);margin-bottom:14px;overflow:hidden;border-left:5px solid #1a237e}
+.salary-card.achieved{border-color:#2e7d32}
+.salary-card.partial{border-color:#f57f17}
+.salary-card.missed{border-color:#c62828}
+.salary-header{padding:14px 16px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #f0f0f0}
+.salary-avatar{width:46px;height:46px;border-radius:50%;background:#1a237e;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1.1rem;flex-shrink:0}
+.salary-info{flex:1}
+.salary-info h4{font-size:1rem;font-weight:700;color:#1a237e}
+.salary-info p{font-size:.82rem;color:#888;margin-top:2px}
+.salary-body{padding:14px 16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}
+.metric{text-align:center;padding:10px;background:#f8f9ff;border-radius:8px}
+.metric-val{font-size:1.2rem;font-weight:800;color:#1a237e}
+.metric-lbl{font-size:.72rem;color:#888;margin-top:2px;font-weight:600;text-transform:uppercase}
+/* Progress arc */
+.arc-wrap{position:relative;width:80px;height:80px;margin:0 auto 6px}
+.arc-wrap svg{transform:rotate(-90deg)}
+.arc-text{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:1rem;font-weight:800;color:#1a237e}
+/* Formula builder */
+.formula-box{background:#f8f9ff;border-radius:10px;padding:16px;margin-bottom:12px;border:1.5px solid #e8eaf6}
+.formula-title{font-size:.88rem;font-weight:700;color:#1a237e;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.formula-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;font-size:.88rem;color:#555}
+.formula-input{padding:7px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:.9rem;width:120px;outline:none}
+.formula-input:focus{border-color:#1a237e}
+.formula-result{background:#e8f5e9;border-radius:8px;padding:10px 14px;font-size:.92rem;color:#1b5e20;font-weight:600;margin-top:8px}
+/* Target form */
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.fg{display:flex;flex-direction:column;gap:4px}
+.fg label{font-size:.78rem;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.3px}
+.fg input,.fg select{padding:9px 11px;border:1.5px solid #ddd;border-radius:7px;font-size:.9rem;outline:none;transition:.2s}
+.fg input:focus{border-color:#1a237e}
+.btn{padding:9px 18px;border:none;border-radius:7px;font-size:.87rem;font-weight:700;cursor:pointer;transition:.2s;display:inline-flex;align-items:center;gap:6px}
+.btn-primary{background:#1a237e;color:#fff}.btn-primary:hover{background:#283593}
+.btn-success{background:#2e7d32;color:#fff}
+.btn-amber{background:#f57f17;color:#fff}
+.btn-outline{background:#fff;color:#1a237e;border:2px solid #1a237e}
+.btn-sm{padding:6px 12px;font-size:.8rem}
+table{width:100%;border-collapse:collapse}
+th{background:#f5f5f5;padding:9px 12px;text-align:left;font-size:.79rem;color:#555;font-weight:700;border-bottom:2px solid #e0e0e0;white-space:nowrap}
+td{padding:9px 12px;font-size:.86rem;border-bottom:1px solid #f0f0f0;vertical-align:middle}
+.pct-bar{height:8px;background:#e0e0e0;border-radius:4px;overflow:hidden;margin-top:3px;min-width:60px}
+.pct-fill{height:100%;border-radius:4px;transition:.6s}
+.badge{display:inline-block;padding:3px 9px;border-radius:12px;font-size:.74rem;font-weight:700}
+.badge-achieved{background:#e8f5e9;color:#2e7d32}
+.badge-partial{background:#fff8e1;color:#f57f17}
+.badge-missed{background:#ffebee;color:#c62828}
+.badge-no-target{background:#f5f5f5;color:#888}
+.payslip{background:#fff;border-radius:10px;padding:20px;border:2px solid #1a237e;max-width:500px;font-size:.88rem}
+.payslip-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f0f0f0}
+.payslip-total{display:flex;justify-content:space-between;padding:10px 0;font-size:1.1rem;font-weight:800;color:#1a237e;border-top:2px solid #1a237e;margin-top:4px}
+select{padding:7px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:.88rem;outline:none}
+.toast{position:fixed;bottom:24px;right:24px;background:#1a237e;color:#fff;padding:12px 20px;border-radius:8px;display:none;z-index:9999;font-weight:600}
+@media(max-width:600px){.salary-body{grid-template-columns:repeat(2,1fr)}.formula-row{flex-direction:column;align-items:flex-start}}
+@media print{.topbar,.tabs,.btn,.card-hdr button{display:none!important}}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <a href="/portal">← Dashboard</a>
+  <h2>👥 Staff Targets &amp; Salary</h2>
+  <select id="monthPicker" onchange="loadAll()" style="padding:7px 12px;border:none;border-radius:6px;font-size:.88rem;background:rgba(255,255,255,.2);color:#fff">
+  </select>
+  <button class="btn btn-primary btn-sm" style="background:rgba(255,255,255,.2)" onclick="loadAll()">↻ Refresh</button>
+</div>
+
+<div class="container">
+  <!-- Summary KPIs -->
+  <div class="kpi-row" id="kpiRow">
+    <div class="kpi"><div class="kpi-val">—</div><div class="kpi-lbl">Loading...</div></div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('dashboard')">🏠 Dashboard</button>
+    <button class="tab" onclick="switchTab('targets')">🎯 Set Targets</button>
+    <button class="tab" onclick="switchTab('salary')">💰 Salary Sheet</button>
+    <button class="tab" onclick="switchTab('history')">📋 History</button>
+  </div>
+
+  <!-- DASHBOARD TAB -->
+  <div class="panel active" id="panel-dashboard">
+    <div id="staffCards"><div style="text-align:center;padding:40px;color:#888">Loading staff performance...</div></div>
+  </div>
+
+  <!-- TARGETS TAB -->
+  <div class="panel" id="panel-targets">
+    <!-- Formula builder -->
+    <div class="card">
+      <div class="card-hdr"><h3>🧮 Commission Formula Builder</h3></div>
+      <div style="padding:16px">
+        <div class="formula-box">
+          <div class="formula-title">💡 How salary is calculated</div>
+          <div class="formula-row">
+            Base Salary: <strong>₹</strong>
+            <input class="formula-input" id="fBase" type="number" value="8000" min="0" oninput="calcFormula()">
+            +&nbsp; Commission:
+            <input class="formula-input" id="fCommPct" type="number" value="15" min="0" max="100" oninput="calcFormula()"> % of profit generated
+          </div>
+          <div class="formula-row">
+            + Bonus: <strong>₹</strong>
+            <input class="formula-input" id="fBonus" type="number" value="3000" min="0" oninput="calcFormula()">
+            &nbsp;when they achieve
+            <input class="formula-input" id="fBonusPct" type="number" value="80" min="0" max="100" oninput="calcFormula()"> % of target
+          </div>
+          <div class="formula-row">
+            Example: Sales target ₹
+            <input class="formula-input" id="fTarget" type="number" value="100000" min="0" oninput="calcFormula()">
+            &nbsp;→ Profit generated ₹
+            <input class="formula-input" id="fProfit" type="number" value="20000" min="0" oninput="calcFormula()">
+          </div>
+          <div class="formula-result" id="formulaResult">Set values above to see calculation</div>
+        </div>
+
+        <div class="card-hdr" style="border-radius:8px;margin-bottom:12px"><h3>🎯 Set Target for Staff Member</h3></div>
+        <div class="form-grid" style="margin-bottom:12px">
+          <div class="fg">
+            <label>Staff Member *</label>
+            <select id="tStaff" onchange="prefillFromStaff()">
+              <option value="">Select staff...</option>
+            </select>
+          </div>
+          <div class="fg">
+            <label>Month</label>
+            <select id="tMonth"></select>
+          </div>
+          <div class="fg">
+            <label>Sales Target (₹)</label>
+            <input type="number" id="tSalesTarget" min="0" placeholder="e.g. 100000">
+          </div>
+          <div class="fg">
+            <label>Profit Target (₹)</label>
+            <input type="number" id="tProfitTarget" min="0" placeholder="e.g. 20000">
+          </div>
+          <div class="fg">
+            <label>Base Salary (₹/month)</label>
+            <input type="number" id="tBaseSalary" min="0" placeholder="e.g. 8000">
+          </div>
+          <div class="fg">
+            <label>Commission (% of Profit)</label>
+            <input type="number" id="tCommPct" min="0" max="100" step="0.5" placeholder="e.g. 15">
+          </div>
+          <div class="fg">
+            <label>Bonus Amount (₹)</label>
+            <input type="number" id="tBonus" min="0" placeholder="e.g. 3000">
+          </div>
+          <div class="fg">
+            <label>Bonus if Target Achieved (%)</label>
+            <input type="number" id="tBonusAt" min="0" max="100" value="80" placeholder="e.g. 80">
+          </div>
+          <div class="fg" style="grid-column:1/-1">
+            <label>Notes (Optional)</label>
+            <input type="text" id="tNotes" placeholder="Special conditions, remarks...">
+          </div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-primary" onclick="saveTarget()">💾 Save Target</button>
+          <button class="btn btn-outline" onclick="clearTargetForm()">Clear</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Existing targets table -->
+    <div class="card">
+      <div class="card-hdr"><h3>Current Targets</h3></div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>Staff</th><th>Month</th><th>Sales Target</th><th>Profit Target</th><th>Base Salary</th><th>Commission</th><th>Bonus</th><th>Bonus At%</th><th>Edit</th></tr></thead>
+          <tbody id="targetsBody"><tr><td colspan="9" style="text-align:center;padding:16px;color:#888">No targets set yet</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- SALARY SHEET TAB -->
+  <div class="panel" id="panel-salary">
+    <div class="card">
+      <div class="card-hdr">
+        <h3>💰 Monthly Salary Sheet</h3>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-success btn-sm" onclick="saveAllSalaries()">💾 Finalize &amp; Save</button>
+          <button class="btn btn-outline btn-sm" onclick="window.print()">🖨 Print</button>
+        </div>
+      </div>
+      <div id="salarySheet"><div style="padding:20px;text-align:center;color:#888">Calculating...</div></div>
+    </div>
+  </div>
+
+  <!-- HISTORY TAB -->
+  <div class="panel" id="panel-history">
+    <div class="card">
+      <div class="card-hdr">
+        <h3>📋 Salary History</h3>
+        <select id="histStaff" onchange="loadHistory()" style="padding:6px;border-radius:5px;border:none">
+          <option value="">All Staff</option>
+        </select>
+      </div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>Month</th><th>Staff</th><th>Base</th><th>Sales</th><th>Profit Gen.</th><th>Target %</th><th>Commission</th><th>Bonus</th><th>Advance</th><th>Net Salary</th><th>Status</th></tr></thead>
+          <tbody id="historyBody"><tr><td colspan="11" style="text-align:center;padding:16px;color:#888">Loading...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Payslip modal -->
+<div id="payslipModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:12px;padding:24px;max-width:520px;width:95%;max-height:90vh;overflow-y:auto">
+    <h3 style="color:#1a237e;margin-bottom:16px">🧾 Pay Slip</h3>
+    <div id="payslipContent"></div>
+    <div style="display:flex;gap:8px;margin-top:16px">
+      <button class="btn btn-outline btn-sm" onclick="document.getElementById('payslipModal').style.display='none'">Close</button>
+      <button class="btn btn-primary btn-sm" onclick="window.print()">🖨 Print</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let allStaff=[], salaryData=[], currentTargets=[];
+const MONTHS=[];
+(()=>{
+  // Build last 12 months
+  const now=new Date();
+  for(let i=0;i<12;i++){
+    const d=new Date(now.getFullYear(),now.getMonth()-i,1);
+    const val=d.toISOString().substring(0,7);
+    const lbl=d.toLocaleString('default',{month:'long',year:'numeric'});
+    MONTHS.push({val,lbl});
+  }
+})();
+
+function initMonthPickers() {
+  const opts=MONTHS.map(m=>`<option value="${m.val}">${m.lbl}</option>`).join('');
+  document.getElementById('monthPicker').innerHTML=opts;
+  document.getElementById('tMonth').innerHTML=opts;
+}
+
+async function loadAll() {
+  const month=document.getElementById('monthPicker').value;
+  const [staffList, calc] = await Promise.all([
+    fetch('/api/staff/list').then(r=>r.json()).catch(()=>[]),
+    fetch(`/api/staff/salary-calc?month=${month}`).then(r=>r.json()).catch(()=>({}))
+  ]);
+  allStaff=staffList;
+  salaryData=calc.staff||[];
+  populateStaffDropdowns();
+  renderKPIs();
+  renderDashboard();
+  renderSalarySheet();
+  loadTargets(month);
+}
+
+function renderKPIs() {
+  const total=salaryData.reduce((s,x)=>s+x.net_salary,0);
+  const totalSales=salaryData.reduce((s,x)=>s+x.sales_achieved,0);
+  const totalProfit=salaryData.reduce((s,x)=>s+x.profit_generated,0);
+  const achieved=salaryData.filter(x=>x.target_pct>=100).length;
+  const partial=salaryData.filter(x=>x.target_pct>=80&&x.target_pct<100).length;
+  const withTarget=salaryData.filter(x=>x.has_target).length;
+  document.getElementById('kpiRow').innerHTML=`
+    <div class="kpi"><div class="kpi-val">${allStaff.length}</div><div class="kpi-lbl">Total Staff</div></div>
+    <div class="kpi green"><div class="kpi-val">${achieved}</div><div class="kpi-lbl">Target Achieved</div></div>
+    <div class="kpi amber"><div class="kpi-val">${partial}</div><div class="kpi-lbl">Partially Achieved</div></div>
+    <div class="kpi"><div class="kpi-val">₹${fmt(totalSales)}</div><div class="kpi-lbl">Total Sales</div></div>
+    <div class="kpi green"><div class="kpi-val">₹${fmt(totalProfit)}</div><div class="kpi-lbl">Profit Generated</div></div>
+    <div class="kpi amber"><div class="kpi-val">₹${fmt(total)}</div><div class="kpi-lbl">Total Salaries</div></div>`;
+}
+
+function renderDashboard() {
+  const cont=document.getElementById('staffCards');
+  if(!salaryData.length){cont.innerHTML='<div style="text-align:center;padding:40px;color:#888">No staff data. Add staff in Settings first.</div>';return;}
+  cont.innerHTML=salaryData.map(s=>{
+    const pct=Math.min(s.target_pct||0,100);
+    const cls=pct>=100?'achieved':pct>=80?'partial':'missed';
+    const col=pct>=100?'#2e7d32':pct>=80?'#f57f17':'#c62828';
+    const hasTgt=s.has_target;
+    // SVG arc
+    const r=34; const circ=2*Math.PI*r; const offset=circ-(pct/100*circ);
+    return `<div class="salary-card ${hasTgt?cls:''}">
+      <div class="salary-header">
+        <div class="salary-avatar" style="background:${col}">${(s.staff_name||'?')[0]}</div>
+        <div class="salary-info">
+          <h4>${s.staff_name} <span style="font-size:.75rem;color:#888;font-weight:400">${s.role||''}</span></h4>
+          <p>${s.bills_count} bills this month · Base: ₹${fmt(s.base_salary)}/mo</p>
+        </div>
+        <div style="text-align:center;margin-left:auto">
+          ${hasTgt?`<div class="arc-wrap">
+            <svg width="80" height="80" viewBox="0 0 80 80">
+              <circle cx="40" cy="40" r="${r}" fill="none" stroke="#e8eaf6" stroke-width="8"/>
+              <circle cx="40" cy="40" r="${r}" fill="none" stroke="${col}" stroke-width="8"
+                stroke-dasharray="${circ}" stroke-dashoffset="${offset}" stroke-linecap="round"/>
+            </svg>
+            <div class="arc-text" style="color:${col}">${s.target_pct||0}%</div>
+          </div>
+          <div style="font-size:.72rem;color:#888">Target</div>`
+          :`<div style="padding:10px;background:#f5f5f5;border-radius:8px;font-size:.78rem;color:#888">No target<br>set yet</div>`}
+        </div>
+      </div>
+      <div class="salary-body">
+        <div class="metric">
+          <div class="metric-val">₹${fmt(s.sales_achieved)}</div>
+          <div class="metric-lbl">Sales</div>
+          ${hasTgt?`<div style="font-size:.7rem;color:#888">Target: ₹${fmt(s.sales_target)}</div>`:''}
+          ${hasTgt?`<div class="pct-bar"><div class="pct-fill" style="width:${Math.min(s.sales_achieved/Math.max(s.sales_target,1)*100,100)}%;background:${col}"></div></div>`:''}
+        </div>
+        <div class="metric">
+          <div class="metric-val" style="color:#2e7d32">₹${fmt(s.profit_generated)}</div>
+          <div class="metric-lbl">Profit Gen.</div>
+          ${hasTgt&&s.profit_target?`<div style="font-size:.7rem;color:#888">Target: ₹${fmt(s.profit_target)}</div>`:''}
+        </div>
+        <div class="metric">
+          <div class="metric-val" style="color:#1565c0">₹${fmt(s.commission_earned)}</div>
+          <div class="metric-lbl">Commission (${s.commission_pct||0}%)</div>
+        </div>
+        <div class="metric" style="background:${s.bonus_earned>0?'#e8f5e9':'#f5f5f5'}">
+          <div class="metric-val" style="color:${s.bonus_earned>0?'#2e7d32':'#aaa'}">₹${fmt(s.bonus_earned)}</div>
+          <div class="metric-lbl">Bonus ${s.bonus_earned>0?'✓':'(need '+s.bonus_threshold+'%)'}</div>
+        </div>
+        <div class="metric" style="background:#fff8e1">
+          <div class="metric-val" style="color:#c62828">₹${fmt(s.advance_deducted)}</div>
+          <div class="metric-lbl">Advance Deducted</div>
+        </div>
+        <div class="metric" style="background:#e8eaf6">
+          <div class="metric-val" style="color:#1a237e;font-size:1.4rem">₹${fmt(s.net_salary)}</div>
+          <div class="metric-lbl">NET SALARY</div>
+        </div>
+      </div>
+      <div style="padding:10px 16px;border-top:1px solid #f0f0f0;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-primary btn-sm" onclick="showPayslip(${JSON.stringify(s).replace(/"/g,'&quot;')})">🧾 Pay Slip</button>
+        <button class="btn btn-outline btn-sm" onclick="editTarget(${s.staff_id})">🎯 Edit Target</button>
+        ${hasTgt?'':` <button class="btn btn-amber btn-sm" onclick="quickTarget(${s.staff_id},'${s.staff_name}')">+ Set Target</button>`}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderSalarySheet() {
+  const month=document.getElementById('monthPicker').value;
+  const grand={base:0,comm:0,bonus:0,adv:0,net:0,sales:0,profit:0};
+  salaryData.forEach(s=>{grand.base+=s.base_salary;grand.comm+=s.commission_earned;grand.bonus+=s.bonus_earned;grand.adv+=s.advance_deducted;grand.net+=s.net_salary;grand.sales+=s.sales_achieved;grand.profit+=s.profit_generated;});
+  const tableRows=salaryData.map((s,i)=>{
+    const pct=s.target_pct||0;
+    const cls=pct>=100?'achieved':pct>=80?'partial':s.has_target?'missed':'no-target';
+    return `<tr>
+      <td><strong>${s.staff_name}</strong><br><span style="font-size:.75rem;color:#888">${s.role||''}</span></td>
+      <td>₹${fmt(s.base_salary)}</td>
+      <td>₹${fmt(s.sales_achieved)}<br><span style="font-size:.72rem;color:#888">${s.has_target?'Tgt:₹'+fmt(s.sales_target):'-'}</span></td>
+      <td style="color:#2e7d32">₹${fmt(s.profit_generated)}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:6px">
+          <div class="pct-bar" style="width:60px"><div class="pct-fill" style="width:${Math.min(pct,100)}%;background:${pct>=100?'#2e7d32':pct>=80?'#f57f17':'#c62828'}"></div></div>
+          <strong>${pct}%</strong>
+        </div>
+      </td>
+      <td style="color:#1565c0">₹${fmt(s.commission_earned)}</td>
+      <td style="color:${s.bonus_earned>0?'#2e7d32':'#aaa'}">₹${fmt(s.bonus_earned)}</td>
+      <td style="color:#c62828">₹${fmt(s.advance_deducted)}</td>
+      <td><strong style="font-size:1rem;color:#1a237e">₹${fmt(s.net_salary)}</strong></td>
+      <td><span class="badge badge-${cls}">${pct>=100?'Achieved':pct>=80?'Partial':s.has_target?'Missed':'No Target'}</span></td>
+    </tr>`;
+  }).join('');
+  document.getElementById('salarySheet').innerHTML=`
+    <div style="overflow-x:auto">
+      <table>
+        <thead><tr><th>Staff</th><th>Base Salary</th><th>Sales / Target</th><th>Profit Gen.</th><th>Target %</th><th>Commission</th><th>Bonus</th><th>Advance</th><th>Net Salary</th><th>Status</th></tr></thead>
+        <tbody>${tableRows}</tbody>
+        <tfoot>
+          <tr style="background:#e8eaf6;font-weight:700">
+            <td>TOTAL</td>
+            <td>₹${fmt(grand.base)}</td>
+            <td>₹${fmt(grand.sales)}</td>
+            <td>₹${fmt(grand.profit)}</td>
+            <td>—</td>
+            <td>₹${fmt(grand.comm)}</td>
+            <td>₹${fmt(grand.bonus)}</td>
+            <td style="color:#c62828">₹${fmt(grand.adv)}</td>
+            <td style="color:#1a237e;font-size:1rem">₹${fmt(grand.net)}</td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+    <div style="background:#e8f5e9;border-radius:8px;padding:12px;margin:12px 16px;font-size:.88rem;color:#1b5e20">
+      <strong>💡 ROI Check:</strong> Profit Generated ₹${fmt(grand.profit)} · Total Salary Payout ₹${fmt(grand.net)} ·
+      Net Profit After Salaries: <strong>₹${fmt(grand.profit-grand.net)}</strong>
+      (${grand.profit>0?((grand.profit-grand.net)/grand.profit*100).toFixed(1):0}% of profit retained)
+    </div>`;
+}
+
+async function loadTargets(month) {
+  const data=await fetch(`/api/staff/targets?month=${month}`).then(r=>r.json()).catch(()=>({targets:[]}));
+  currentTargets=data.targets||[];
+  const tbody=document.getElementById('targetsBody');
+  if(!currentTargets.length){tbody.innerHTML='<tr><td colspan="9" style="text-align:center;padding:16px;color:#888">No targets set for this month</td></tr>';return;}
+  tbody.innerHTML=currentTargets.map(t=>`<tr>
+    <td><strong>${t.staff_name}</strong></td>
+    <td>${t.month}</td>
+    <td>₹${fmt(t.sales_target)}</td>
+    <td>₹${fmt(t.profit_target)}</td>
+    <td>₹${fmt(t.base_salary)}</td>
+    <td>${t.commission_pct||0}%</td>
+    <td>₹${fmt(t.bonus_amount)}</td>
+    <td>${t.bonus_at_pct||80}%</td>
+    <td><button class="btn btn-outline btn-sm" onclick="editTarget(${t.staff_id})">Edit</button></td>
+  </tr>`).join('');
+}
+
+async function saveTarget() {
+  const sid=parseInt(document.getElementById('tStaff').value);
+  if(!sid){showToast('Select a staff member','error');return;}
+  const sname=allStaff.find(s=>s.id===sid)?.name||'';
+  const payload={
+    staff_id:sid, staff_name:sname,
+    month:document.getElementById('tMonth').value,
+    sales_target:parseFloat(document.getElementById('tSalesTarget').value)||0,
+    profit_target:parseFloat(document.getElementById('tProfitTarget').value)||0,
+    base_salary:parseFloat(document.getElementById('tBaseSalary').value)||0,
+    commission_pct:parseFloat(document.getElementById('tCommPct').value)||0,
+    bonus_amount:parseFloat(document.getElementById('tBonus').value)||0,
+    bonus_at_pct:parseFloat(document.getElementById('tBonusAt').value)||80,
+    notes:document.getElementById('tNotes').value
+  };
+  const res=await fetch('/api/staff/targets',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}).then(r=>r.json());
+  if(res.status==='success'){showToast('Target saved for '+sname+'!');clearTargetForm();loadAll();}
+  else showToast('Error: '+(res.message||'Failed'),'error');
+}
+
+function editTarget(staffId) {
+  const t=currentTargets.find(x=>x.staff_id===staffId);
+  if(t){
+    document.getElementById('tStaff').value=t.staff_id;
+    document.getElementById('tMonth').value=t.month;
+    document.getElementById('tSalesTarget').value=t.sales_target||0;
+    document.getElementById('tProfitTarget').value=t.profit_target||0;
+    document.getElementById('tBaseSalary').value=t.base_salary||0;
+    document.getElementById('tCommPct').value=t.commission_pct||0;
+    document.getElementById('tBonus').value=t.bonus_amount||0;
+    document.getElementById('tBonusAt').value=t.bonus_at_pct||80;
+    document.getElementById('tNotes').value=t.notes||'';
+  } else {
+    document.getElementById('tStaff').value=staffId;
+    const s=allStaff.find(x=>x.id===staffId);
+    if(s) document.getElementById('tBaseSalary').value=s.salary||0;
+  }
+  switchTab('targets');
+  showToast('Edit target form loaded');
+}
+
+function quickTarget(staffId, name) {
+  document.getElementById('tStaff').value=staffId;
+  const s=allStaff.find(x=>x.id===staffId);
+  if(s) document.getElementById('tBaseSalary').value=s.salary||0;
+  switchTab('targets');
+  showToast('Set target for '+name);
+}
+
+function clearTargetForm() {
+  ['tSalesTarget','tProfitTarget','tBaseSalary','tCommPct','tBonus','tNotes'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('tStaff').value='';
+  document.getElementById('tBonusAt').value=80;
+}
+
+function prefillFromStaff() {
+  const sid=parseInt(document.getElementById('tStaff').value);
+  const s=allStaff.find(x=>x.id===sid);
+  if(s&&s.salary) document.getElementById('tBaseSalary').value=s.salary;
+}
+
+function calcFormula() {
+  const base=parseFloat(document.getElementById('fBase').value)||0;
+  const commPct=parseFloat(document.getElementById('fCommPct').value)||0;
+  const bonus=parseFloat(document.getElementById('fBonus').value)||0;
+  const bonusPct=parseFloat(document.getElementById('fBonusPct').value)||80;
+  const target=parseFloat(document.getElementById('fTarget').value)||0;
+  const profit=parseFloat(document.getElementById('fProfit').value)||0;
+  const achPct=target>0?profit/target*100:0;
+  const commission=profit*commPct/100;
+  const bonusEarned=achPct>=bonusPct?bonus:0;
+  const net=base+commission+bonusEarned;
+  const roi=profit>0?(net/profit*100).toFixed(1):0;
+  document.getElementById('formulaResult').innerHTML=
+    `<strong>📊 Calculation:</strong><br>
+    Base: ₹${fmt(base)} + Commission (${commPct}% × ₹${fmt(profit)} profit): ₹${fmt(commission)}
+    + Bonus (${achPct.toFixed(0)}% achieved ${achPct>=bonusPct?'≥':'<'}${bonusPct}%): ₹${fmt(bonusEarned)}<br>
+    = <strong style="font-size:1.1rem">Net Salary: ₹${fmt(net)}</strong> &nbsp;&nbsp;
+    Staff cost = ${roi}% of profit generated &nbsp;&nbsp;
+    ${roi<=20?'✅ Healthy':'⚠️ High salary cost vs profit'}`;
+}
+
+async function saveAllSalaries() {
+  const month=document.getElementById('monthPicker').value;
+  const res=await fetch('/api/staff/salary-save',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({month,status:'finalized',records:salaryData})}).then(r=>r.json());
+  showToast(res.status==='success'?'Salary sheet saved for '+month+'!':'Error: '+(res.message||'Failed'),
+    res.status==='success'?'success':'error');
+}
+
+function showPayslip(s) {
+  const m=document.getElementById('monthPicker').value;
+  document.getElementById('payslipContent').innerHTML=`
+    <div class="payslip">
+      <h4 style="text-align:center;color:#1a237e;margin-bottom:4px">PAY SLIP</h4>
+      <div style="text-align:center;font-size:.8rem;color:#888;margin-bottom:14px">${m}</div>
+      <div class="payslip-row"><span>Employee</span><strong>${s.staff_name}</strong></div>
+      <div class="payslip-row"><span>Role</span><span>${s.role||'—'}</span></div>
+      <div class="payslip-row" style="margin-top:10px"><strong>EARNINGS</strong><span></span></div>
+      <div class="payslip-row"><span>Basic Salary</span><span>₹${fmt(s.base_salary)}</span></div>
+      <div class="payslip-row"><span>Commission (${s.commission_pct||0}% of ₹${fmt(s.profit_generated)} profit)</span><span style="color:#2e7d32">₹${fmt(s.commission_earned)}</span></div>
+      <div class="payslip-row"><span>Performance Bonus</span><span style="color:${s.bonus_earned>0?'#2e7d32':'#aaa'}">₹${fmt(s.bonus_earned)}</span></div>
+      <div class="payslip-row"><strong>Gross Total</strong><strong>₹${fmt(s.base_salary+s.commission_earned+s.bonus_earned)}</strong></div>
+      <div class="payslip-row" style="margin-top:10px"><strong>DEDUCTIONS</strong><span></span></div>
+      <div class="payslip-row"><span>Advance Recovered</span><span style="color:#c62828">₹${fmt(s.advance_deducted)}</span></div>
+      <div class="payslip-total"><span>NET SALARY</span><span>₹${fmt(s.net_salary)}</span></div>
+      <div style="margin-top:12px;padding-top:12px;border-top:1px dashed #ddd;font-size:.78rem;color:#888;display:grid;grid-template-columns:1fr 1fr;gap:6px">
+        <div>Sales Achieved: ₹${fmt(s.sales_achieved)}</div>
+        <div>Target: ₹${fmt(s.sales_target)}</div>
+        <div>Achievement: ${s.target_pct||0}%</div>
+        <div>Bills: ${s.bills_count}</div>
+      </div>
+      <div style="margin-top:16px;text-align:center;font-size:.75rem;color:#aaa">MediVision AI · Salary Auto-calculated</div>
+    </div>`;
+  document.getElementById('payslipModal').style.display='flex';
+}
+
+async function loadHistory() {
+  const sid=document.getElementById('histStaff').value;
+  let url='/api/staff/salary-history'; if(sid) url+='?staff_id='+sid;
+  const rows=await fetch(url).then(r=>r.json()).catch(()=>[]);
+  const tbody=document.getElementById('historyBody');
+  if(!rows.length){tbody.innerHTML='<tr><td colspan="11" style="text-align:center;padding:16px;color:#888">No salary history yet</td></tr>';return;}
+  tbody.innerHTML=rows.map(r=>`<tr>
+    <td>${r.month}</td>
+    <td>${r.staff_name}</td>
+    <td>₹${fmt(r.base_salary)}</td>
+    <td>₹${fmt(r.sales_achieved)}</td>
+    <td>₹${fmt(r.profit_generated)}</td>
+    <td>${(r.target_achievement_pct||0).toFixed(1)}%</td>
+    <td>₹${fmt(r.commission_earned)}</td>
+    <td>₹${fmt(r.bonus_earned)}</td>
+    <td style="color:#c62828">₹${fmt(r.advance_taken)}</td>
+    <td><strong style="color:#1a237e">₹${fmt(r.net_salary)}</strong></td>
+    <td><span class="badge badge-${r.status==='finalized'?'achieved':'partial'}">${r.status}</span></td>
+  </tr>`).join('');
+}
+
+function populateStaffDropdowns() {
+  const opts=allStaff.map(s=>`<option value="${s.id}">${s.name} (${s.role})</option>`).join('');
+  document.getElementById('tStaff').innerHTML='<option value="">Select staff...</option>'+opts;
+  document.getElementById('histStaff').innerHTML='<option value="">All Staff</option>'+opts;
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach((t,i)=>{
+    t.classList.toggle('active',['dashboard','targets','salary','history'][i]===tab);
+  });
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+tab).classList.add('active');
+  if(tab==='history') loadHistory();
+}
+
+function fmt(n){
+  n=parseFloat(n)||0;
+  if(n>=100000) return (n/100000).toFixed(1)+'L';
+  if(n>=1000)   return (n/1000).toFixed(1)+'K';
+  return n.toFixed(0);
+}
+function showToast(msg,type='success'){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.style.background=type==='error'?'#c62828':'#1a237e';
+  t.style.display='block'; setTimeout(()=>t.style.display='none',2500);
+}
+
+initMonthPickers();
+loadAll();
+// Live formula calc
+['fBase','fCommPct','fBonus','fBonusPct','fTarget','fProfit'].forEach(id=>
+  document.getElementById(id).addEventListener('input',calcFormula));
+calcFormula();
+</script>
+</body>
+</html>

@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>Voice Billing — MediVision AI</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#f97316">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0b0e16; --card:#151923; --card2:#1a2030; --brd:#1e2a3a;
+  --acc:#f97316; --acc2:#ea6b0a; --txt:#e2e8f0; --sub:#64748b;
+  --grn:#22c55e; --red:#ef4444; --yel:#eab308; --blu:#3b82f6;
+  --radius:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--txt);font-family:'Inter',system-ui,sans-serif;
+  min-height:100vh;overflow-x:hidden;}
+
+/* ── Header ── */
+.header{background:var(--card);border-bottom:1px solid var(--brd);
+  padding:14px 20px;display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:100;}
+.header-left{display:flex;align-items:center;gap:12px;}
+.back-btn{background:var(--card2);border:1px solid var(--brd);border-radius:8px;
+  padding:8px 12px;color:var(--txt);text-decoration:none;font-size:13px;
+  cursor:pointer;transition:.2s;}
+.back-btn:hover{border-color:var(--acc);}
+.page-title{font-size:18px;font-weight:700;}
+.page-sub{font-size:12px;color:var(--sub);}
+.header-actions{display:flex;gap:10px;}
+.hbtn{background:var(--card2);border:1px solid var(--brd);border-radius:8px;
+  padding:8px 14px;color:var(--txt);font-size:13px;font-weight:500;cursor:pointer;
+  transition:.2s;display:flex;align-items:center;gap:6px;}
+.hbtn:hover{border-color:var(--acc);color:var(--acc);}
+.hbtn.primary{background:var(--acc);border-color:var(--acc);color:#fff;}
+.hbtn.primary:hover{background:var(--acc2);}
+
+/* ── Layout ── */
+.layout{display:grid;grid-template-columns:1fr 380px;gap:20px;padding:20px;max-width:1200px;margin:0 auto;}
+@media(max-width:900px){.layout{grid-template-columns:1fr;}}
+
+/* ── Main panel ── */
+.main-panel{display:flex;flex-direction:column;gap:16px;}
+
+/* ── Mic section ── */
+.mic-section{background:var(--card);border:1px solid var(--brd);border-radius:var(--radius);
+  padding:36px 24px;text-align:center;position:relative;overflow:hidden;}
+.mic-bg{position:absolute;inset:0;background:radial-gradient(circle at 50% 60%,rgba(249,115,22,.04),transparent 70%);pointer-events:none;}
+
+.mic-ring-wrap{position:relative;width:160px;height:160px;margin:0 auto 24px;}
+.mic-ring{position:absolute;inset:0;border-radius:50%;border:2px solid rgba(249,115,22,.2);
+  animation:ringPulse 2.5s infinite;}
+.mic-ring:nth-child(2){animation-delay:.6s;inset:-16px;}
+.mic-ring:nth-child(3){animation-delay:1.2s;inset:-32px;}
+@keyframes ringPulse{
+  0%{transform:scale(.8);opacity:0;}
+  50%{opacity:1;}
+  100%{transform:scale(1.4);opacity:0;}
+}
+.mic-btn{width:120px;height:120px;border-radius:50%;background:linear-gradient(135deg,var(--acc),#fb923c);
+  border:none;cursor:pointer;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  display:flex;align-items:center;justify-content:center;font-size:44px;
+  box-shadow:0 0 40px rgba(249,115,22,.3);transition:all .2s;z-index:2;}
+.mic-btn:hover{transform:translate(-50%,-50%) scale(1.06);box-shadow:0 0 60px rgba(249,115,22,.5);}
+.mic-btn.recording{background:linear-gradient(135deg,var(--red),#f97316);
+  animation:micPulse 1s infinite;}
+@keyframes micPulse{
+  0%,100%{box-shadow:0 0 40px rgba(239,68,68,.4);}
+  50%{box-shadow:0 0 80px rgba(239,68,68,.8);}
+}
+.mic-btn.recording .mic-ring{border-color:rgba(239,68,68,.3);}
+
+.mic-status{font-size:20px;font-weight:700;margin-bottom:6px;}
+.mic-hint{font-size:13px;color:var(--sub);}
+.mic-shortcut{margin-top:10px;font-size:11px;color:var(--sub);
+  background:var(--card2);display:inline-block;padding:4px 10px;border-radius:6px;}
+
+/* ── Waveform ── */
+.waveform-wrap{background:var(--card2);border-radius:10px;padding:12px;
+  height:72px;display:flex;align-items:center;justify-content:center;}
+canvas#waveCanvas{width:100%;height:48px;}
+
+/* ── Transcript ── */
+.transcript-box{background:var(--card);border:1px solid var(--brd);border-radius:var(--radius);padding:20px;}
+.section-title{font-size:13px;font-weight:600;color:var(--sub);text-transform:uppercase;
+  letter-spacing:.6px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;}
+.transcript-text{font-family:'JetBrains Mono',monospace;font-size:14px;line-height:1.6;
+  min-height:60px;color:var(--txt);}
+.transcript-text .interim{color:var(--sub);font-style:italic;}
+.transcript-text .final{color:var(--txt);}
+.transcript-empty{color:var(--sub);font-size:14px;text-align:center;padding:20px 0;}
+
+/* ── Commands ── */
+.commands-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;}
+.cmd-chip{background:var(--card2);border:1px solid var(--brd);border-radius:8px;
+  padding:8px 12px;font-size:12px;display:flex;flex-direction:column;gap:3px;}
+.cmd-phrase{font-family:'JetBrains Mono',monospace;color:var(--acc);font-weight:600;}
+.cmd-desc{color:var(--sub);}
+
+/* ── Bill panel ── */
+.bill-panel{display:flex;flex-direction:column;gap:14px;}
+.bill-box{background:var(--card);border:1px solid var(--brd);border-radius:var(--radius);
+  padding:20px;flex:1;}
+.bill-items{display:flex;flex-direction:column;gap:8px;max-height:420px;overflow-y:auto;}
+
+.bill-item{background:var(--card2);border:1px solid var(--brd);border-radius:10px;
+  padding:12px 14px;display:flex;align-items:center;gap:12px;transition:.2s;}
+.bill-item:hover{border-color:rgba(249,115,22,.3);}
+.bi-conf{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;}
+.bi-conf.high{background:rgba(34,197,94,.15);color:var(--grn);}
+.bi-conf.med{background:rgba(234,179,8,.15);color:var(--yel);}
+.bi-conf.low{background:rgba(239,68,68,.15);color:var(--red);}
+.bi-info{flex:1;min-width:0;}
+.bi-name{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.bi-cat{font-size:11px;color:var(--sub);}
+.bi-qty-wrap{display:flex;align-items:center;gap:6px;}
+.qty-btn{width:26px;height:26px;border-radius:6px;border:1px solid var(--brd);
+  background:var(--card);color:var(--txt);font-size:16px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;transition:.2s;}
+.qty-btn:hover{border-color:var(--acc);color:var(--acc);}
+.qty-val{width:36px;text-align:center;font-family:'JetBrains Mono',monospace;
+  font-size:14px;font-weight:600;}
+.bi-price{text-align:right;flex-shrink:0;}
+.bi-amount{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;
+  color:var(--acc);}
+.bi-mrp{font-size:11px;color:var(--sub);}
+.bi-del{width:28px;height:28px;border-radius:6px;border:1px solid var(--brd);
+  background:transparent;color:var(--sub);cursor:pointer;transition:.2s;
+  display:flex;align-items:center;justify-content:center;font-size:14px;}
+.bi-del:hover{border-color:var(--red);color:var(--red);}
+
+.bill-empty{text-align:center;padding:40px 20px;color:var(--sub);}
+.bill-empty .empty-icon{font-size:48px;margin-bottom:12px;}
+
+/* ── Bill footer ── */
+.bill-footer{background:var(--card);border:1px solid var(--brd);border-radius:var(--radius);padding:20px;}
+.total-row{display:flex;justify-content:space-between;align-items:center;
+  margin-bottom:8px;font-size:13px;color:var(--sub);}
+.total-row.grand{font-size:20px;font-weight:700;color:var(--txt);margin:12px 0 0;}
+.total-row.grand .val{color:var(--acc);font-family:'JetBrains Mono',monospace;}
+.footer-btns{display:flex;gap:10px;margin-top:16px;}
+.footer-btn{flex:1;padding:12px;border-radius:10px;border:1px solid var(--brd);
+  font-size:14px;font-weight:600;cursor:pointer;transition:.2s;display:flex;
+  align-items:center;justify-content:center;gap:6px;}
+.footer-btn.clear{background:var(--card2);color:var(--sub);}
+.footer-btn.clear:hover{border-color:var(--red);color:var(--red);}
+.footer-btn.open-bill{background:var(--acc);border-color:var(--acc);color:#fff;}
+.footer-btn.open-bill:hover{background:var(--acc2);}
+
+/* ── Install banner ── */
+.install-banner{background:linear-gradient(135deg,rgba(249,115,22,.12),rgba(249,115,22,.05));
+  border:1px solid rgba(249,115,22,.25);border-radius:var(--radius);padding:16px 20px;
+  display:flex;align-items:center;gap:14px;display:none;}
+.install-banner.show{display:flex;}
+.install-icon{font-size:32px;flex-shrink:0;}
+.install-text{flex:1;}
+.install-text strong{display:block;font-size:14px;margin-bottom:3px;}
+.install-text span{font-size:12px;color:var(--sub);}
+.install-btn{background:var(--acc);border:none;border-radius:8px;padding:10px 18px;
+  color:#fff;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;}
+
+/* ── Toast ── */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);
+  background:var(--card2);border:1px solid var(--brd);border-radius:10px;
+  padding:12px 20px;font-size:14px;display:flex;align-items:center;gap:10px;
+  z-index:9999;transition:transform .3s;box-shadow:0 8px 24px rgba(0,0,0,.4);}
+.toast.show{transform:translateX(-50%) translateY(0);}
+.toast.success{border-color:var(--grn);}
+.toast.error{border-color:var(--red);}
+
+/* ── PWA offline badge ── */
+.offline-badge{background:rgba(239,68,68,.15);color:var(--red);border:1px solid rgba(239,68,68,.3);
+  border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;display:none;}
+.offline-badge.show{display:inline-flex;align-items:center;gap:5px;}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-left">
+    <a href="/portal" class="back-btn">← Portal</a>
+    <div>
+      <div class="page-title">🎤 Voice Billing</div>
+      <div class="page-sub">Speak medicine names to add to bill</div>
+    </div>
+  </div>
+  <div class="header-actions">
+    <span class="offline-badge" id="offlineBadge">📡 Offline</span>
+    <button class="hbtn" onclick="clearAll()">🗑 Clear</button>
+    <button class="hbtn primary" onclick="openInBilling()">📋 Open in Billing</button>
+  </div>
+</div>
+
+<!-- Install banner -->
+<div style="padding:12px 20px 0;" id="installWrap">
+  <div class="install-banner" id="installBanner">
+    <div class="install-icon">📲</div>
+    <div class="install-text">
+      <strong>Install MediVision AI</strong>
+      <span>Add to your home screen for offline access, faster launch and push alerts</span>
+    </div>
+    <button class="install-btn" id="installBtn">Install App</button>
+    <button onclick="dismissInstall()" style="background:none;border:none;color:var(--sub);cursor:pointer;padding:4px 8px;">✕</button>
+  </div>
+</div>
+
+<!-- Layout -->
+<div class="layout">
+
+  <!-- LEFT: mic + transcript + commands -->
+  <div class="main-panel">
+
+    <!-- Mic section -->
+    <div class="mic-section">
+      <div class="mic-bg"></div>
+      <div class="mic-ring-wrap">
+        <div class="mic-ring"></div>
+        <div class="mic-ring"></div>
+        <div class="mic-ring"></div>
+        <button class="mic-btn" id="micBtn" onclick="toggleRecording()">🎤</button>
+      </div>
+      <div class="mic-status" id="micStatus">Tap to Speak</div>
+      <div class="mic-hint" id="micHint">Say a medicine name and quantity</div>
+      <div class="mic-shortcut">⌨ Spacebar to start / stop</div>
+    </div>
+
+    <!-- Waveform -->
+    <div class="waveform-wrap">
+      <canvas id="waveCanvas"></canvas>
+    </div>
+
+    <!-- Transcript -->
+    <div class="transcript-box">
+      <div class="section-title">
+        <span>📝 Live Transcript</span>
+        <button onclick="clearTranscript()" style="background:none;border:none;color:var(--sub);font-size:12px;cursor:pointer;">Clear</button>
+      </div>
+      <div class="transcript-text" id="transcriptBox">
+        <div class="transcript-empty" id="transcriptEmpty">Start speaking — your words will appear here...</div>
+      </div>
+    </div>
+
+    <!-- Voice Commands Guide -->
+    <div class="transcript-box">
+      <div class="section-title">🗣 Voice Commands</div>
+      <div class="commands-grid">
+        <div class="cmd-chip">
+          <span class="cmd-phrase">"dolo two"</span>
+          <span class="cmd-desc">Add 2 units of matching medicine</span>
+        </div>
+        <div class="cmd-chip">
+          <span class="cmd-phrase">"crocin three strips"</span>
+          <span class="cmd-desc">Add by brand name + quantity</span>
+        </div>
+        <div class="cmd-chip">
+          <span class="cmd-phrase">"brufen 400 one"</span>
+          <span class="cmd-desc">Include dosage in name</span>
+        </div>
+        <div class="cmd-chip">
+          <span class="cmd-phrase">"pantop twenty"</span>
+          <span class="cmd-desc">Number words supported</span>
+        </div>
+        <div class="cmd-chip">
+          <span class="cmd-phrase">"remove dolo"</span>
+          <span class="cmd-desc">Remove last matched item</span>
+        </div>
+        <div class="cmd-chip">
+          <span class="cmd-phrase">"clear all"</span>
+          <span class="cmd-desc">Clear the entire bill</span>
+        </div>
+        <div class="cmd-chip">
+          <span class="cmd-phrase">"total"</span>
+          <span class="cmd-desc">Read out current total</span>
+        </div>
+        <div class="cmd-chip">
+          <span class="cmd-phrase">"open bill"</span>
+          <span class="cmd-desc">Open in billing screen</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- RIGHT: bill -->
+  <div class="bill-panel">
+
+    <div class="bill-box">
+      <div class="section-title">
+        <span>💊 Recognised Medicines</span>
+        <span id="itemCount" style="color:var(--acc);font-family:'JetBrains Mono',monospace;">0 items</span>
+      </div>
+      <div class="bill-items" id="billItems">
+        <div class="bill-empty" id="billEmpty">
+          <div class="empty-icon">💬</div>
+          <div>Speak a medicine name<br>and it appears here</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bill-footer">
+      <div class="total-row"><span>Subtotal</span><span id="subtotal" class="val">₹0.00</span></div>
+      <div class="total-row"><span>Items</span><span id="totalItems">0</span></div>
+      <div class="total-row grand">
+        <span>Total</span>
+        <span class="val" id="grandTotal">₹0.00</span>
+      </div>
+      <div class="footer-btns">
+        <button class="footer-btn clear" onclick="clearAll()">🗑 Clear</button>
+        <button class="footer-btn open-bill" onclick="openInBilling()">📋 Open in Billing →</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+let billItems    = [];          // [{name, qty, mrp, stock, category, confidence}]
+let recognition  = null;
+let isRecording  = false;
+let audioCtx     = null;
+let analyser     = null;
+let micStream    = null;
+let animFrame    = null;
+let finalTranscript = '';
+let interimTranscript = '';
+let deferredInstall = null;
+
+// ── PWA Install Prompt ─────────────────────────────────────────────────────
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredInstall = e;
+  document.getElementById('installBanner').classList.add('show');
+});
+
+document.getElementById('installBtn').addEventListener('click', async () => {
+  if(!deferredInstall) return;
+  deferredInstall.prompt();
+  const {outcome} = await deferredInstall.userChoice;
+  if(outcome === 'accepted') showToast('App installed!', 'success');
+  deferredInstall = null;
+  document.getElementById('installBanner').classList.remove('show');
+});
+
+function dismissInstall(){
+  document.getElementById('installBanner').classList.remove('show');
+  localStorage.setItem('installDismissed', Date.now());
+}
+
+// ── Offline detection ──────────────────────────────────────────────────────
+function updateOfflineStatus(){
+  document.getElementById('offlineBadge').classList.toggle('show', !navigator.onLine);
+}
+window.addEventListener('online',  updateOfflineStatus);
+window.addEventListener('offline', updateOfflineStatus);
+updateOfflineStatus();
+
+// ── Service Worker Registration ────────────────────────────────────────────
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('/sw.js', {scope: '/'})
+    .then(reg => console.log('SW registered:', reg.scope))
+    .catch(err => console.warn('SW error:', err));
+}
+
+// ── Speech Recognition Setup ───────────────────────────────────────────────
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+let speechSupported = !!SpeechRecognition;
+
+if(!speechSupported){
+  document.getElementById('micHint').textContent = 'Voice not supported — type below';
+  document.getElementById('micBtn').textContent  = '⌨';
+  document.getElementById('micStatus').textContent = 'Type Mode';
+  // Add text input fallback
+  const ta = document.createElement('div');
+  ta.innerHTML = `
+    <div style="margin-top:12px;display:flex;gap:8px;">
+      <input id="typeInput" type="text" placeholder="Type medicine name e.g. dolo 2"
+        style="flex:1;background:var(--card2);border:1px solid var(--brd);border-radius:8px;
+        padding:10px 14px;color:var(--txt);font-size:14px;outline:none;"
+        onkeydown="if(event.key==='Enter') parseTyped()">
+      <button onclick="parseTyped()" class="hbtn primary">Add</button>
+    </div>`;
+  document.querySelector('.mic-section').appendChild(ta);
+}
+
+function setupRecognition(){
+  if(!speechSupported) return;
+  recognition = new SpeechRecognition();
+  recognition.continuous      = true;
+  recognition.interimResults  = true;
+  recognition.lang            = 'en-IN';
+  recognition.maxAlternatives = 1;
+
+  recognition.onstart = () => {
+    isRecording = true;
+    document.getElementById('micBtn').classList.add('recording');
+    document.getElementById('micBtn').textContent  = '⏹';
+    document.getElementById('micStatus').textContent = '● Recording...';
+    document.getElementById('micHint').textContent   = 'Speak now — say medicine name + quantity';
+    startWaveform();
+  };
+
+  recognition.onend = () => {
+    isRecording = false;
+    document.getElementById('micBtn').classList.remove('recording');
+    document.getElementById('micBtn').textContent  = '🎤';
+    document.getElementById('micStatus').textContent = 'Tap to Speak';
+    document.getElementById('micHint').textContent   = 'Say a medicine name and quantity';
+    stopWaveform();
+    // Process any remaining interim
+    if(interimTranscript.trim()){
+      processTranscript(interimTranscript.trim());
+      interimTranscript = '';
+    }
+  };
+
+  recognition.onerror = e => {
+    console.warn('Speech error:', e.error);
+    if(e.error === 'not-allowed'){
+      showToast('Microphone access denied', 'error');
+    } else if(e.error !== 'no-speech'){
+      showToast('Voice error: ' + e.error, 'error');
+    }
+    isRecording = false;
+    document.getElementById('micBtn').classList.remove('recording');
+    document.getElementById('micBtn').textContent = '🎤';
+    document.getElementById('micStatus').textContent = 'Tap to Speak';
+    stopWaveform();
+  };
+
+  recognition.onresult = e => {
+    let interim = '';
+    for(let i = e.resultIndex; i < e.results.length; i++){
+      const t = e.results[i][0].transcript;
+      if(e.results[i].isFinal){
+        finalTranscript += t + ' ';
+        processTranscript(t.trim());
+      } else {
+        interim += t;
+      }
+    }
+    interimTranscript = interim;
+    renderTranscript();
+  };
+}
+setupRecognition();
+
+// ── Toggle Recording ───────────────────────────────────────────────────────
+function toggleRecording(){
+  if(!speechSupported){ return; }
+  if(isRecording){
+    recognition.stop();
+  } else {
+    finalTranscript   = '';
+    interimTranscript = '';
+    renderTranscript();
+    try{ recognition.start(); }
+    catch(e){ setupRecognition(); recognition.start(); }
+  }
+}
+
+// Space bar shortcut
+document.addEventListener('keydown', e => {
+  if(e.code === 'Space' && e.target === document.body){
+    e.preventDefault();
+    toggleRecording();
+  }
+});
+
+// ── Parse Voice Transcript ─────────────────────────────────────────────────
+async function processTranscript(text){
+  if(!text) return;
+  text = text.toLowerCase().trim();
+
+  // Voice commands
+  if(text.includes('clear all') || text === 'clear'){
+    clearAll(); showToast('Bill cleared', 'success'); return;
+  }
+  if(text === 'total' || text === 'show total'){
+    const t = calcTotal();
+    showToast(`Total: ₹${t.toFixed(2)}`, 'success'); return;
+  }
+  if(text.includes('open bill') || text.includes('checkout')){
+    openInBilling(); return;
+  }
+  if(text.startsWith('remove ')){
+    const q = text.replace('remove ', '').trim();
+    removeByQuery(q); return;
+  }
+
+  // Parse medicine + qty
+  try{
+    const res = await fetch('/api/voice/parse', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({text})
+    });
+    const d = await res.json();
+    if(d.matches && d.matches.length > 0){
+      d.matches.forEach(m => addToBill(m));
+      showToast(`Added: ${d.matches[0].name}`, 'success');
+    } else {
+      showToast(`No match for "${text}"`, 'error');
+    }
+  } catch(err){
+    // Offline fallback
+    showToast('Offline — connect to search medicines', 'error');
+  }
+}
+
+// Typed input fallback
+async function parseTyped(){
+  const el = document.getElementById('typeInput');
+  if(!el || !el.value.trim()) return;
+  await processTranscript(el.value.trim());
+  el.value = '';
+}
+
+// ── Bill Management ────────────────────────────────────────────────────────
+function addToBill(med){
+  const existing = billItems.find(b => b.name === med.name);
+  if(existing){
+    existing.qty += (med.qty || 1);
+  } else {
+    billItems.push({...med, qty: med.qty || 1});
+  }
+  renderBill();
+}
+
+function removeByQuery(q){
+  const idx = billItems.findIndex(b => b.name.toLowerCase().includes(q));
+  if(idx !== -1){
+    const name = billItems[idx].name;
+    billItems.splice(idx, 1);
+    renderBill();
+    showToast(`Removed: ${name}`, 'success');
+  }
+}
+
+function removeItem(idx){
+  billItems.splice(idx, 1);
+  renderBill();
+}
+
+function changeQty(idx, delta){
+  billItems[idx].qty = Math.max(1, (billItems[idx].qty || 1) + delta);
+  renderBill();
+}
+
+function clearAll(){
+  billItems = [];
+  finalTranscript = '';
+  interimTranscript = '';
+  renderBill();
+  renderTranscript();
+}
+
+function clearTranscript(){
+  finalTranscript = '';
+  interimTranscript = '';
+  renderTranscript();
+}
+
+// ── Render Bill ────────────────────────────────────────────────────────────
+function renderBill(){
+  const container = document.getElementById('billItems');
+  const empty     = document.getElementById('billEmpty');
+  const cnt       = document.getElementById('itemCount');
+  const subtotal  = document.getElementById('subtotal');
+  const totalItems= document.getElementById('totalItems');
+  const grand     = document.getElementById('grandTotal');
+
+  if(billItems.length === 0){
+    container.innerHTML = '';
+    container.appendChild(empty);
+    empty.style.display = 'block';
+    cnt.textContent  = '0 items';
+    subtotal.textContent  = '₹0.00';
+    totalItems.textContent = '0';
+    grand.textContent = '₹0.00';
+    return;
+  }
+
+  empty.style.display = 'none';
+  const totalAmt = calcTotal();
+  const totalQty = billItems.reduce((s, b) => s + b.qty, 0);
+
+  container.innerHTML = billItems.map((m, i) => {
+    const conf  = m.confidence || 80;
+    const cls   = conf >= 80 ? 'high' : conf >= 55 ? 'med' : 'low';
+    const amt   = (m.mrp || 0) * m.qty;
+    return `
+    <div class="bill-item">
+      <div class="bi-conf ${cls}">${conf}%</div>
+      <div class="bi-info">
+        <div class="bi-name" title="${m.name}">${m.name}</div>
+        <div class="bi-cat">${m.category || ''} · ₹${(m.mrp||0).toFixed(2)} each</div>
+      </div>
+      <div class="bi-qty-wrap">
+        <button class="qty-btn" onclick="changeQty(${i},-1)">−</button>
+        <span class="qty-val">${m.qty}</span>
+        <button class="qty-btn" onclick="changeQty(${i},+1)">+</button>
+      </div>
+      <div class="bi-price">
+        <div class="bi-amount">₹${amt.toFixed(2)}</div>
+      </div>
+      <button class="bi-del" onclick="removeItem(${i})">✕</button>
+    </div>`;
+  }).join('');
+
+  cnt.textContent        = `${billItems.length} items`;
+  subtotal.textContent   = `₹${totalAmt.toFixed(2)}`;
+  totalItems.textContent = totalQty;
+  grand.textContent      = `₹${totalAmt.toFixed(2)}`;
+}
+
+function calcTotal(){
+  return billItems.reduce((s, b) => s + (b.mrp || 0) * b.qty, 0);
+}
+
+// ── Render Transcript ──────────────────────────────────────────────────────
+function renderTranscript(){
+  const box   = document.getElementById('transcriptBox');
+  const empty = document.getElementById('transcriptEmpty');
+  const text  = (finalTranscript + ' ' + interimTranscript).trim();
+
+  if(!text){
+    box.innerHTML = '';
+    box.appendChild(empty);
+    return;
+  }
+
+  box.innerHTML =
+    `<span class="final">${escHtml(finalTranscript)}</span>` +
+    (interimTranscript
+      ? `<span class="interim"> ${escHtml(interimTranscript)}...</span>`
+      : '');
+}
+
+function escHtml(t){
+  return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── Open in Billing ────────────────────────────────────────────────────────
+function openInBilling(){
+  if(billItems.length === 0){
+    showToast('Add medicines first', 'error'); return;
+  }
+  const rxItems = billItems.map(b => ({
+    name: b.name,
+    qty: b.qty,
+    price: b.mrp || 0,
+    total: (b.mrp || 0) * b.qty,
+    source: 'voice'
+  }));
+  sessionStorage.setItem('rxItems', JSON.stringify(rxItems));
+  showToast('Opening billing...', 'success');
+  setTimeout(() => { window.location.href = '/portal/billing'; }, 600);
+}
+
+// ── Waveform Canvas ────────────────────────────────────────────────────────
+const waveCanvas = document.getElementById('waveCanvas');
+const waveCtx    = waveCanvas.getContext('2d');
+
+function resizeCanvas(){
+  waveCanvas.width  = waveCanvas.offsetWidth * devicePixelRatio;
+  waveCanvas.height = waveCanvas.offsetHeight * devicePixelRatio;
+  waveCtx.scale(devicePixelRatio, devicePixelRatio);
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+async function startWaveform(){
+  try{
+    micStream = await navigator.mediaDevices.getUserMedia({audio: true});
+    audioCtx  = new (window.AudioContext || window.webkitAudioContext)();
+    analyser  = audioCtx.createAnalyser();
+    analyser.fftSize = 256;
+    const src = audioCtx.createMediaStreamSource(micStream);
+    src.connect(analyser);
+    drawWave();
+  } catch(e){
+    drawIdleWave();
+  }
+}
+
+function stopWaveform(){
+  if(animFrame) cancelAnimationFrame(animFrame);
+  if(micStream) micStream.getTracks().forEach(t => t.stop());
+  if(audioCtx)  audioCtx.close();
+  micStream = audioCtx = analyser = null;
+  drawIdleWave();
+}
+
+function drawWave(){
+  animFrame = requestAnimationFrame(drawWave);
+  const W = waveCanvas.offsetWidth;
+  const H = waveCanvas.offsetHeight;
+  waveCtx.clearRect(0, 0, W, H);
+
+  if(!analyser){ drawIdleWave(); return; }
+
+  const data = new Uint8Array(analyser.frequencyBinCount);
+  analyser.getByteTimeDomainData(data);
+
+  waveCtx.beginPath();
+  waveCtx.strokeStyle = 'rgba(249,115,22,0.9)';
+  waveCtx.lineWidth   = 2;
+
+  const sliceW = W / data.length;
+  let x = 0;
+  for(let i = 0; i < data.length; i++){
+    const v = data[i] / 128.0;
+    const y = (v * H) / 2;
+    i === 0 ? waveCtx.moveTo(x, y) : waveCtx.lineTo(x, y);
+    x += sliceW;
+  }
+  waveCtx.stroke();
+}
+
+function drawIdleWave(){
+  const W = waveCanvas.offsetWidth;
+  const H = waveCanvas.offsetHeight;
+  if(!W) return;
+  waveCtx.clearRect(0, 0, W, H);
+  waveCtx.beginPath();
+  waveCtx.strokeStyle = 'rgba(249,115,22,0.3)';
+  waveCtx.lineWidth   = 1.5;
+  waveCtx.moveTo(0, H / 2);
+  waveCtx.lineTo(W, H / 2);
+  waveCtx.stroke();
+}
+drawIdleWave();
+
+// ── Toast ──────────────────────────────────────────────────────────────────
+let toastTimer;
+function showToast(msg, type = ''){
+  clearTimeout(toastTimer);
+  const el = document.getElementById('toast');
+  el.innerHTML = (type === 'success' ? '✅ ' : type === 'error' ? '❌ ' : 'ℹ️ ') + msg;
+  el.className = `toast show ${type}`;
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2800);
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────
+renderBill();
+
+// Auto-show install banner if not dismissed recently
+const dismissed = localStorage.getItem('installDismissed');
+if(dismissed && Date.now() - Number(dismissed) < 7 * 86400000){
+  document.getElementById('installBanner').classList.remove('show');
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Join MediVision AI — Choose Your Portal</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#0b0e16;
+  --ora:#f97316;--ora2:#ea580c;
+  --grn:#16a34a;--grn2:#15803d;
+  --tx:#e2e8f0;--mt:#64748b;--brd:rgba(255,255,255,.08);
+}
+html{scroll-behavior:smooth;}
+body{
+  font-family:Inter,system-ui,sans-serif;
+  background:var(--bg);color:var(--tx);
+  min-height:100vh;display:flex;flex-direction:column;overflow-x:hidden;
+}
+/* ambient glow */
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(ellipse 65% 55% at 18% 55%,rgba(249,115,22,.08) 0%,transparent 60%),
+    radial-gradient(ellipse 65% 55% at 82% 55%,rgba(22,163,74,.08) 0%,transparent 60%),
+    radial-gradient(ellipse 50% 40% at 50% 5%,rgba(255,255,255,.03) 0%,transparent 60%);
+}
+a{text-decoration:none;color:inherit;}
+
+/* ── NAV ── */
+nav{
+  position:relative;z-index:10;
+  padding:16px 44px;
+  display:flex;align-items:center;justify-content:space-between;
+  border-bottom:1px solid var(--brd);
+}
+.logo{display:flex;align-items:center;gap:10px;font-size:1.05rem;font-weight:800;}
+.logo-icon{
+  width:36px;height:36px;border-radius:9px;
+  background:linear-gradient(135deg,var(--ora),var(--ora2));
+  display:flex;align-items:center;justify-content:center;
+  font-size:.9rem;color:#fff;
+}
+.logo em{color:var(--grn);font-style:normal;}
+.nav-back{
+  font-size:.82rem;color:var(--mt);
+  display:flex;align-items:center;gap:6px;
+  border:1px solid rgba(255,255,255,.08);
+  padding:7px 14px;border-radius:8px;
+  transition:all .2s;
+}
+.nav-back:hover{color:var(--tx);border-color:rgba(255,255,255,.2);background:rgba(255,255,255,.04);}
+
+/* ── MAIN ── */
+main{
+  flex:1;position:relative;z-index:1;
+  display:flex;flex-direction:column;align-items:center;
+  padding:52px 24px 64px;
+}
+
+/* ── PAGE HEADER ── */
+.page-header{text-align:center;margin-bottom:52px;}
+.page-badge{
+  display:inline-flex;align-items:center;gap:8px;
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
+  color:var(--mt);padding:5px 16px;border-radius:99px;
+  font-size:.74rem;font-weight:600;letter-spacing:.06em;
+  margin-bottom:22px;
+}
+.page-header h1{
+  font-size:clamp(2rem,4.5vw,3rem);font-weight:900;
+  color:#fff;line-height:1.12;margin-bottom:14px;
+}
+.page-header h1 .grad{
+  background:linear-gradient(90deg,var(--ora) 0%,#fbbf24 40%,var(--grn) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.page-header p{color:var(--mt);font-size:.93rem;line-height:1.7;max-width:460px;margin:0 auto;}
+
+/* ── PORTAL GRID ── */
+.portal-grid{
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:22px;max-width:880px;width:100%;
+}
+
+/* ── CARD BASE ── */
+.pcard{
+  border-radius:22px;padding:36px 30px 30px;
+  border:1px solid;position:relative;overflow:hidden;
+  transition:transform .3s ease,box-shadow .3s ease;
+  display:flex;flex-direction:column;
+}
+.pcard:hover{transform:translateY(-6px);}
+
+/* shimmer top edge */
+.pcard::before{
+  content:'';position:absolute;
+  top:0;left:0;right:0;height:2px;
+}
+/* inner glow corner */
+.pcard::after{
+  content:'';position:absolute;
+  top:-60px;right:-60px;
+  width:160px;height:160px;border-radius:50%;
+  pointer-events:none;opacity:.15;
+  filter:blur(40px);
+}
+
+/* ── WHOLESALE ── */
+.pcard-ws{
+  background:linear-gradient(148deg,rgba(249,115,22,.13) 0%,rgba(14,11,8,.95) 100%);
+  border-color:rgba(249,115,22,.28);
+}
+.pcard-ws::before{background:linear-gradient(90deg,transparent,rgba(249,115,22,.8),transparent);}
+.pcard-ws::after{background:var(--ora);}
+.pcard-ws:hover{box-shadow:0 28px 70px rgba(249,115,22,.22);}
+
+/* ── RETAIL ── */
+.pcard-rt{
+  background:linear-gradient(148deg,rgba(22,163,74,.13) 0%,rgba(8,14,10,.95) 100%);
+  border-color:rgba(22,163,74,.28);
+}
+.pcard-rt::before{background:linear-gradient(90deg,transparent,rgba(22,163,74,.8),transparent);}
+.pcard-rt::after{background:var(--grn);}
+.pcard-rt:hover{box-shadow:0 28px 70px rgba(22,163,74,.22);}
+
+/* ── CARD INNER ── */
+.card-top{margin-bottom:20px;}
+.card-emoji{
+  font-size:2.3rem;
+  display:inline-flex;align-items:center;justify-content:center;
+  width:60px;height:60px;border-radius:16px;
+  margin-bottom:14px;
+}
+.ws-emoji{background:rgba(249,115,22,.16);border:1.5px solid rgba(249,115,22,.38);}
+.rt-emoji{background:rgba(22,163,74,.16);border:1.5px solid rgba(22,163,74,.38);}
+
+.card-badge{
+  display:inline-block;font-size:.68rem;font-weight:700;
+  letter-spacing:.07em;text-transform:uppercase;
+  padding:4px 12px;border-radius:99px;margin-bottom:14px;
+}
+.ws-badge{background:rgba(249,115,22,.16);color:#fb923c;border:1px solid rgba(249,115,22,.3);}
+.rt-badge{background:rgba(22,163,74,.16);color:#4ade80;border:1px solid rgba(22,163,74,.3);}
+
+.pcard h2{font-size:1.75rem;font-weight:800;color:#fff;line-height:1.15;margin-bottom:10px;}
+.pcard-sub{font-size:.84rem;color:rgba(255,255,255,.52);line-height:1.68;margin-bottom:20px;}
+
+.card-features{list-style:none;margin-bottom:28px;flex:1;}
+.card-features li{
+  font-size:.82rem;color:rgba(255,255,255,.78);
+  padding:5px 0;display:flex;align-items:center;gap:9px;
+}
+.pcard-ws .card-features li i{color:#fb923c;font-size:.78rem;}
+.pcard-rt .card-features li i{color:#4ade80;font-size:.78rem;}
+
+/* ── CARD ACTIONS ── */
+.card-actions{display:flex;flex-direction:column;gap:10px;margin-top:auto;}
+.divider-or{
+  display:flex;align-items:center;gap:10px;
+  font-size:.71rem;color:var(--mt);
+}
+.divider-or::before,.divider-or::after{content:'';flex:1;height:1px;background:rgba(255,255,255,.07);}
+
+/* buttons */
+.btn{
+  display:flex;align-items:center;justify-content:center;
+  gap:8px;border-radius:11px;font-weight:700;
+  font-size:.88rem;transition:all .2s;cursor:pointer;
+  padding:13px 20px;border:none;
+}
+.btn-ws-solid{background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;}
+.btn-ws-solid:hover{opacity:.88;transform:translateY(-1px);}
+.btn-ws-ghost{
+  border:1.5px solid rgba(249,115,22,.42);
+  color:#fb923c;background:rgba(249,115,22,.07);
+}
+.btn-ws-ghost:hover{background:rgba(249,115,22,.15);}
+.btn-rt-solid{background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;}
+.btn-rt-solid:hover{opacity:.88;transform:translateY(-1px);}
+.btn-rt-ghost{
+  border:1.5px solid rgba(22,163,74,.42);
+  color:#4ade80;background:rgba(22,163,74,.07);
+}
+.btn-rt-ghost:hover{background:rgba(22,163,74,.15);}
+
+.card-stat{
+  font-size:.7rem;color:rgba(255,255,255,.25);
+  text-align:center;margin-top:16px;font-style:italic;
+  letter-spacing:.02em;
+}
+
+/* ── BOTTOM ── */
+.bottom-note{
+  margin-top:40px;text-align:center;
+  font-size:.8rem;color:var(--mt);
+  display:flex;flex-wrap:wrap;gap:8px;justify-content:center;align-items:center;
+}
+.bottom-note a{
+  color:rgba(255,255,255,.42);
+  border-bottom:1px solid rgba(255,255,255,.12);
+  padding-bottom:1px;transition:color .2s;
+}
+.bottom-note a:hover{color:#fff;}
+.dot{color:rgba(255,255,255,.15);}
+
+/* ── RESPONSIVE ── */
+@media(max-width:660px){
+  .portal-grid{grid-template-columns:1fr;}
+  nav{padding:14px 20px;}
+  main{padding:32px 16px 48px;}
+  .page-header{margin-bottom:36px;}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="logo">
+    <div class="logo-icon"><i class="fas fa-heart-pulse"></i></div>
+    MediVision <em>AI</em>
+  </div>
+  <a href="/welcome" class="nav-back">
+    <i class="fas fa-arrow-left"></i> Back to Home
+  </a>
+</nav>
+
+<!-- MAIN -->
+<main>
+
+  <!-- HEADER -->
+  <div class="page-header">
+    <div class="page-badge">
+      <i class="fas fa-lock" style="font-size:.7rem;"></i>&nbsp; Secure Portal Access
+    </div>
+    <h1>Login or Register to<br/><span class="grad">MediVision AI</span></h1>
+    <p>Choose your portal below — wholesale distributor or retail pharmacy. Each has its own dashboard and toolset.</p>
+  </div>
+
+  <!-- PORTAL CARDS -->
+  <div class="portal-grid">
+
+    <!-- ══════ WHOLESALE ══════ -->
+    <div class="pcard pcard-ws">
+      <div class="card-top">
+        <div class="card-emoji ws-emoji">🏭</div>
+        <div class="card-badge ws-badge">Distributor Portal</div>
+        <h2>Wholesale<br/>Distributor</h2>
+        <p class="pcard-sub">For medicine distributors supplying retail shops — manage orders, dispatch, invoicing and collections.</p>
+      </div>
+      <ul class="card-features">
+        <li><i class="fas fa-check-circle"></i> Multi-shop order management</li>
+        <li><i class="fas fa-check-circle"></i> Live dispatch &amp; delivery tracking</li>
+        <li><i class="fas fa-check-circle"></i> GST invoice + per-shop ledger</li>
+        <li><i class="fas fa-check-circle"></i> Schemes &amp; discount engine</li>
+        <li><i class="fas fa-check-circle"></i> Receivables &amp; overdue alerts</li>
+        <li><i class="fas fa-check-circle"></i> Sales rep performance reports</li>
+      </ul>
+      <div class="card-actions">
+        <a href="/wholesale-login" class="btn btn-ws-solid">
+          <i class="fas fa-sign-in-alt"></i> Login to WS Portal
+        </a>
+        <div class="divider-or"><span>or</span></div>
+        <a href="/register/wholesale" class="btn btn-ws-ghost">
+          <i class="fas fa-user-plus"></i> Register as Distributor
+        </a>
+      </div>
+      <div class="card-stat">13 shops connected &nbsp;·&nbsp; Live orders &nbsp;·&nbsp; 278 APIs</div>
+    </div>
+
+    <!-- ══════ RETAIL ══════ -->
+    <div class="pcard pcard-rt">
+      <div class="card-top">
+        <div class="card-emoji rt-emoji">🏪</div>
+        <div class="card-badge rt-badge">Pharmacy Portal</div>
+        <h2>Retail<br/>Pharmacy</h2>
+        <p class="pcard-sub">For retail pharmacies — complete POS billing, AI tools, narcotic compliance, CRM and WhatsApp automation.</p>
+      </div>
+      <ul class="card-features">
+        <li><i class="fas fa-check-circle"></i> AI-powered POS &amp; voice billing</li>
+        <li><i class="fas fa-check-circle"></i> Face recognition customer ID</li>
+        <li><i class="fas fa-check-circle"></i> Narcotic &amp; Schedule X register</li>
+        <li><i class="fas fa-check-circle"></i> WhatsApp AI reminder automation</li>
+        <li><i class="fas fa-check-circle"></i> Loyalty points &amp; patient CRM</li>
+        <li><i class="fas fa-check-circle"></i> GST returns &amp; drug compliance</li>
+      </ul>
+      <div class="card-actions">
+        <a href="/portal" class="btn btn-rt-solid">
+          <i class="fas fa-sign-in-alt"></i> Login to Pharmacy Portal
+        </a>
+        <div class="divider-or"><span>or</span></div>
+        <a href="/register/retail" class="btn btn-rt-ghost">
+          <i class="fas fa-user-plus"></i> Register as Pharmacist
+        </a>
+      </div>
+      <div class="card-stat">7,137 medicines &nbsp;·&nbsp; GST ready &nbsp;·&nbsp; AI tools active</div>
+    </div>
+
+  </div>
+
+  <!-- BOTTOM LINKS -->
+  <div class="bottom-note">
+    <span>Shop ordering from a distributor?</span>
+    <a href="/shop-login">Shop Portal Login →</a>
+    <span class="dot">·</span>
+    <a href="/catalog">Browse Public Catalog →</a>
+    <span class="dot">·</span>
+    <a href="/login">Staff Login</a>
+  </div>
+
+</main>
+
+</body>
+</html>

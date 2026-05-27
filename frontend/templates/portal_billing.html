@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Billing — MediVision AI</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --green: #16a34a; --green-dark: #15803d; --green-light: #dcfce7;
+      --blue: #2563eb; --orange: #ea580c; --err: #dc2626;
+      --gray: #6b7280; --gray-light: #f9fafb; --gray-border: #e5e7eb;
+      --text: #111827; --sidebar-w: 220px;
+    }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--gray-light); color: var(--text); display: flex; min-height: 100vh; }
+
+    /* SIDEBAR (shared) */
+    .sidebar { width: var(--sidebar-w); background: #0f172a; color: white; position: fixed; top: 0; left: 0; height: 100vh; display: flex; flex-direction: column; z-index: 50; }
+    .sb-logo { padding: 20px 18px; border-bottom: 1px solid rgba(255,255,255,.07); }
+    .sb-logo .row { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: .98rem; }
+    .sb-logo .cross { width: 30px; height: 30px; background: var(--green); border-radius: 7px; display: flex; align-items: center; justify-content: center; }
+    .sb-logo .cross svg { fill: white; }
+    .sb-nav { flex: 1; padding: 12px 10px; }
+    .sb-section { font-size: .63rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; color: rgba(255,255,255,.3); padding: 12px 8px 4px; }
+    .nav-item { display: flex; align-items: center; gap: 9px; padding: 9px 10px; border-radius: 7px; font-size: .84rem; color: rgba(255,255,255,.6); transition: all .2s; margin-bottom: 2px; text-decoration: none; }
+    .nav-item:hover { background: rgba(255,255,255,.07); color: white; }
+    .nav-item.active { background: var(--green); color: white; }
+    .nav-item .icon { width: 18px; text-align: center; }
+    .sb-footer { padding: 14px; border-top: 1px solid rgba(255,255,255,.07); }
+    .logout-btn { width: 100%; padding: 7px; background: rgba(255,255,255,.06); color: rgba(255,255,255,.55); border: none; border-radius: 6px; cursor: pointer; font-size: .78rem; }
+
+    /* MAIN */
+    .main { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+    .topbar { background: white; border-bottom: 1px solid var(--gray-border); padding: 0 20px; height: 52px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+    .topbar h1 { font-size: .95rem; font-weight: 700; }
+    .topbar .right { display: flex; align-items: center; gap: 12px; }
+    .btn { padding: 7px 16px; border-radius: 8px; font-weight: 600; font-size: .82rem; cursor: pointer; border: none; transition: all .2s; }
+    .btn-green { background: var(--green); color: white; }
+    .btn-green:hover { background: var(--green-dark); }
+    .btn-outline { background: transparent; border: 1.5px solid var(--gray-border); color: var(--gray); }
+    .btn-outline:hover { border-color: var(--green); color: var(--green); }
+    .btn-err { background: #fee2e2; color: var(--err); border: 1px solid #fecaca; }
+    .btn-err:hover { background: var(--err); color: white; }
+    .btn-blue { background: var(--blue); color: white; }
+
+    .billing-layout { flex: 1; display: flex; overflow: hidden; }
+
+    /* LEFT — item entry */
+    .bill-left { flex: 1; display: flex; flex-direction: column; overflow: hidden; border-right: 1px solid var(--gray-border); }
+    .search-bar-wrap { padding: 14px 16px; background: white; border-bottom: 1px solid var(--gray-border); }
+    .search-bar { width: 100%; padding: 11px 16px; border: 2px solid var(--green); border-radius: 10px; font-size: 1rem; outline: none; font-family: inherit; }
+    .search-bar::placeholder { color: #9ca3af; }
+    .search-results { background: white; border: 1px solid var(--gray-border); border-radius: 8px; margin-top: 6px; max-height: 220px; overflow-y: auto; display: none; position: absolute; width: calc(100% - 32px); z-index: 20; box-shadow: 0 8px 24px rgba(0,0,0,.1); }
+    .search-results.open { display: block; }
+    .search-item { padding: 10px 14px; cursor: pointer; border-bottom: 1px solid #f3f4f6; display: flex; align-items: center; justify-content: space-between; font-size: .88rem; transition: background .15s; }
+    .search-item:last-child { border-bottom: none; }
+    .search-item:hover, .search-item.focused { background: var(--green-light); }
+    .search-item .name { font-weight: 600; }
+    .search-item .meta { font-size: .75rem; color: var(--gray); }
+    .search-item .price-tag { font-weight: 700; color: var(--green); }
+    .search-item .stock-tag { font-size: .72rem; color: var(--gray); }
+
+    /* BILL ITEMS TABLE */
+    .bill-items-wrap { flex: 1; overflow-y: auto; padding: 0; }
+    .bill-table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+    .bill-table thead { position: sticky; top: 0; z-index: 10; }
+    .bill-table th { background: var(--gray-light); padding: 8px 10px; text-align: left; font-size: .72rem; font-weight: 700; color: var(--gray); text-transform: uppercase; }
+    .bill-table td { padding: 8px 10px; border-bottom: 1px solid #f3f4f6; vertical-align: middle; }
+    .bill-table tr:hover td { background: #fafafa; }
+    .qty-input { width: 60px; padding: 5px 8px; border: 1.5px solid var(--gray-border); border-radius: 6px; font-size: .88rem; text-align: center; outline: none; }
+    .qty-input:focus { border-color: var(--green); }
+    .disc-input { width: 60px; padding: 5px 8px; border: 1.5px solid var(--gray-border); border-radius: 6px; font-size: .88rem; text-align: center; outline: none; }
+    .disc-input:focus { border-color: var(--blue); }
+    .remove-btn { background: none; border: none; font-size: 1.1rem; cursor: pointer; color: #9ca3af; padding: 2px 6px; border-radius: 4px; }
+    .remove-btn:hover { background: #fee2e2; color: var(--err); }
+    .empty-bill { text-align: center; padding: 60px 20px; color: var(--gray); }
+    .empty-bill .icon { font-size: 2.5rem; margin-bottom: 12px; }
+
+    /* RIGHT — summary */
+    .bill-right { width: 320px; flex-shrink: 0; display: flex; flex-direction: column; background: white; }
+    .customer-section { padding: 14px 16px; border-bottom: 1px solid var(--gray-border); }
+    .customer-section label { font-size: .75rem; font-weight: 700; color: var(--gray); text-transform: uppercase; letter-spacing: .5px; display: block; margin-bottom: 6px; }
+    .customer-section input { width: 100%; padding: 9px 12px; border: 1.5px solid var(--gray-border); border-radius: 8px; font-size: .88rem; outline: none; margin-bottom: 8px; font-family: inherit; }
+    .customer-section input:focus { border-color: var(--green); }
+    .pay-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+    .pay-btn { flex: 1; padding: 7px; border: 1.5px solid var(--gray-border); border-radius: 7px; font-size: .78rem; font-weight: 600; cursor: pointer; background: white; color: var(--gray); transition: all .15s; min-width: 60px; text-align: center; }
+    .pay-btn.active { border-color: var(--green); background: var(--green-light); color: var(--green-dark); }
+
+    .summary-section { padding: 14px 16px; border-bottom: 1px solid var(--gray-border); flex: 1; }
+    .summary-row { display: flex; justify-content: space-between; font-size: .86rem; padding: 5px 0; }
+    .summary-row.total { font-size: 1.05rem; font-weight: 800; border-top: 1px solid var(--gray-border); margin-top: 8px; padding-top: 10px; color: var(--green); }
+    .summary-disc { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+    .summary-disc input { flex: 1; padding: 7px 10px; border: 1.5px solid var(--gray-border); border-radius: 7px; font-size: .85rem; outline: none; }
+    .summary-disc input:focus { border-color: var(--green); }
+
+    .bill-actions { padding: 14px 16px; }
+    .bill-actions .print-btn { width: 100%; padding: 13px; background: var(--green); color: white; border: none; border-radius: 10px; font-weight: 700; font-size: 1rem; cursor: pointer; transition: all .2s; }
+    .bill-actions .print-btn:hover { background: var(--green-dark); }
+    .bill-actions .print-btn:disabled { opacity: .5; cursor: not-allowed; }
+    .new-bill-btn { width: 100%; margin-top: 8px; padding: 10px; background: var(--gray-light); border: 1.5px solid var(--gray-border); border-radius: 8px; font-weight: 600; font-size: .88rem; cursor: pointer; }
+    .new-bill-btn:hover { border-color: var(--green); }
+
+    /* DOCTOR field */
+    .doc-field { margin-bottom: 8px; }
+    .doc-field input { width: 100%; padding: 8px 12px; border: 1.5px solid var(--gray-border); border-radius: 8px; font-size: .85rem; outline: none; font-family: inherit; }
+    .doc-field input:focus { border-color: var(--blue); }
+
+    /* PRINT RECEIPT */
+    @media print {
+      body * { visibility: hidden; }
+      #printArea, #printArea * { visibility: visible; }
+      #printArea { position: fixed; left: 0; top: 0; width: 100%; }
+    }
+
+    /* TOAST */
+    .toast { position: fixed; bottom: 20px; right: 20px; background: #1e293b; color: white; padding: 10px 18px; border-radius: 10px; font-size: .84rem; z-index: 999; transform: translateY(60px); opacity: 0; transition: all .3s; }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast.green { background: var(--green); }
+    .toast.red { background: var(--err); }
+
+    @media(max-width:768px) { .sidebar{display:none} .main{margin-left:0} .bill-right{width:100%;min-height:280px} .billing-layout{flex-direction:column} }
+  </style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sb-logo">
+    <div class="row">
+      <div class="cross"><svg width="14" height="14" viewBox="0 0 20 20"><rect x="8" y="2" width="4" height="16" rx="1"/><rect x="2" y="8" width="16" height="4" rx="1"/></svg></div>
+      MediVision AI
+    </div>
+  </div>
+  <nav class="sb-nav">
+    <div class="sb-section">Main</div>
+    <a class="nav-item" href="/portal"><span class="icon">🏠</span> Dashboard</a>
+    <a class="nav-item active" href="/portal/billing"><span class="icon">🧾</span> Billing</a>
+    <div class="sb-section">Stock &amp; AI</div>
+    <a class="nav-item" href="/portal/stock"><span class="icon">📊</span> Stock &amp; Import</a>
+    <a class="nav-item" href="/portal/ai-reorder"><span class="icon">🤖</span> AI Reorder</a>
+    <div class="sb-section">Reports</div>
+    <a class="nav-item" href="/reports/daily_sales.html" target="_blank"><span class="icon">📈</span> Daily Sales</a>
+    <a class="nav-item" href="/reports/low_stock.html" target="_blank"><span class="icon">⚠️</span> Low Stock</a>
+  </nav>
+  <div class="sb-footer">
+    <button class="logout-btn" onclick="fetch('/api/portal/logout',{method:'POST'}).then(()=>location.href='/')">Sign Out</button>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="topbar">
+    <h1>⚡ New Bill</h1>
+    <div class="right">
+      <span id="billDateDisplay" style="font-size:.8rem;color:var(--gray)"></span>
+      <button class="btn btn-outline" onclick="window.location.href='/portal'">← Back</button>
+    </div>
+  </div>
+
+  <div class="billing-layout">
+    <!-- LEFT: medicine search + items -->
+    <div class="bill-left">
+      <div class="search-bar-wrap" style="position:relative">
+        <input
+          class="search-bar"
+          id="medSearch"
+          type="text"
+          placeholder="Type medicine name or generic (e.g. Dolo, Paracetamol)..."
+          autocomplete="off"
+          oninput="onSearch(this.value)"
+          onkeydown="onSearchKey(event)"
+        />
+        <div class="search-results" id="searchResults"></div>
+      </div>
+
+      <div class="bill-items-wrap">
+        <div id="emptyBill" class="empty-bill">
+          <div class="icon">💊</div>
+          <p>Search and add medicines above to start billing</p>
+          <p style="margin-top:6px;font-size:.78rem;color:#9ca3af">Press Enter to add the first result</p>
+        </div>
+        <table class="bill-table" id="billTable" style="display:none">
+          <thead>
+            <tr>
+              <th>#</th><th>Medicine</th><th>Batch</th><th>Exp.</th>
+              <th>MRP</th><th>Qty</th><th>Disc%</th><th>GST%</th>
+              <th>Amount</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="billTbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- RIGHT: customer + summary -->
+    <div class="bill-right">
+      <div class="customer-section">
+        <label>Customer Name</label>
+        <input id="custName" type="text" placeholder="Walk-in Customer" />
+        <label>Phone</label>
+        <input id="custPhone" type="tel" placeholder="Mobile number" maxlength="10" />
+        <div class="doc-field">
+          <label style="font-size:.75rem;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px">Doctor (optional)</label>
+          <input id="doctorName" type="text" placeholder="Doctor name" />
+        </div>
+        <label>Payment Mode</label>
+        <div class="pay-btns">
+          <button class="pay-btn active" onclick="setPayment('Cash')">💵 Cash</button>
+          <button class="pay-btn" onclick="setPayment('UPI')">📱 UPI</button>
+          <button class="pay-btn" onclick="setPayment('Card')">💳 Card</button>
+          <button class="pay-btn" onclick="setPayment('Credit')">📒 Credit</button>
+        </div>
+      </div>
+
+      <div class="summary-section">
+        <div class="summary-row"><span>Subtotal</span><span id="subTotal">₹0.00</span></div>
+        <div class="summary-row">
+          <span>Discount</span>
+          <div class="summary-disc">
+            <input type="number" id="globalDisc" min="0" max="100" step="0.5" placeholder="0" value="0" oninput="recalc()" style="width:70px" />
+            <span style="font-size:.8rem;color:var(--gray)">%</span>
+            <span id="discAmount" style="font-size:.84rem;color:var(--err)">-₹0.00</span>
+          </div>
+        </div>
+        <div class="summary-row"><span>GST</span><span id="gstTotal">₹0.00</span></div>
+        <div class="summary-row total"><span>TOTAL</span><span id="grandTotal">₹0.00</span></div>
+        <div style="margin-top:14px;padding:10px;background:var(--gray-light);border-radius:8px;font-size:.78rem;color:var(--gray)">
+          <div style="display:flex;justify-content:space-between"><span>Items</span><span id="itemCount">0</span></div>
+          <div style="display:flex;justify-content:space-between;margin-top:4px"><span>Payment</span><span id="payDisplay">Cash</span></div>
+        </div>
+        <div style="margin-top:10px;padding:10px;background:#f0fdf4;border:1px solid #dcfce7;border-radius:8px;font-size:.8rem;">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;margin-bottom:6px;">
+            <input type="checkbox" id="autoWA" checked style="width:14px;height:14px;"/>
+            <span style="color:#15803d;font-weight:600;">📱 Send bill on WhatsApp</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+            <input type="checkbox" id="isRegular" onchange="markRegular()" style="width:14px;height:14px;"/>
+            <span style="color:#15803d;font-weight:600;">🔁 Regular monthly customer (add to diary)</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="bill-actions">
+        <button class="print-btn" id="saveBtn" onclick="saveBill(false)" disabled style="background:linear-gradient(135deg,#16a34a,#15803d);">💾 Save Bill (Ctrl+S)</button>
+        <button class="print-btn" id="savePrintBtn" onclick="saveBill(true)" disabled style="background:linear-gradient(135deg,#f97316,#ea580c);margin-top:6px;">🖨️ Save + Print</button>
+        <div style="display:flex;gap:6px;margin-top:6px;">
+          <button class="new-bill-btn" onclick="newBill()" style="flex:1;">+ New Bill</button>
+          <a class="new-bill-btn" href="/bills/history" target="_blank" style="flex:1;text-align:center;text-decoration:none;display:flex;align-items:center;justify-content:center;background:rgba(99,102,241,.08);color:#4f46e5;border-color:rgba(99,102,241,.25);">📋 View Bills</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- PRINT RECEIPT -->
+<div id="printArea" style="display:none"></div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let allMeds = [];
+let billItems = [];
+let payMode = 'Cash';
+let searchTimeout = null;
+let focusedSearchIdx = -1;
+
+// Init
+(async () => {
+  const d = new Date();
+  document.getElementById('billDateDisplay').textContent =
+    d.toLocaleDateString('en-IN', {weekday:'short', day:'2-digit', month:'short', year:'numeric'}) +
+    ' ' + d.toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'});
+  const res = await fetch('/api/medicines?limit=2000');
+  allMeds = await res.json();
+})();
+
+function setPayment(mode) {
+  payMode = mode;
+  document.getElementById('payDisplay').textContent = mode;
+  document.querySelectorAll('.pay-btn').forEach(b => b.classList.toggle('active', b.textContent.includes(mode)));
+}
+
+function onSearch(q) {
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(() => doSearch(q), 120);
+}
+
+function doSearch(q) {
+  const container = document.getElementById('searchResults');
+  if (!q || q.length < 2) { container.classList.remove('open'); return; }
+  const lower = q.toLowerCase();
+  const results = allMeds.filter(m =>
+    m.n?.toLowerCase().includes(lower) || m.g?.toLowerCase().includes(lower)
+  ).slice(0, 12);
+  if (!results.length) { container.innerHTML = `<div class="search-item"><span style="color:var(--gray)">No medicines found for "${q}"</span></div>`; container.classList.add('open'); return; }
+  focusedSearchIdx = -1;
+  container.innerHTML = results.map((m, i) => `
+    <div class="search-item" data-idx="${i}" data-id="${m.id}" onclick="addItem('${m.id}')">
+      <div>
+        <div class="name">${m.n}</div>
+        <div class="meta">${m.g || 'Generic'} · ${m.c || 'Tablet'} · Stock: ${m.s}</div>
+      </div>
+      <div style="text-align:right">
+        <div class="price-tag">₹${m.p}</div>
+        <div class="stock-tag">${m.batch ? 'Batch: '+m.batch : ''}</div>
+      </div>
+    </div>
+  `).join('');
+  container._results = results;
+  container.classList.add('open');
+}
+
+function onSearchKey(e) {
+  const container = document.getElementById('searchResults');
+  const items = container.querySelectorAll('.search-item');
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    focusedSearchIdx = Math.min(focusedSearchIdx + 1, items.length - 1);
+    items.forEach((el, i) => el.classList.toggle('focused', i === focusedSearchIdx));
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    focusedSearchIdx = Math.max(focusedSearchIdx - 1, 0);
+    items.forEach((el, i) => el.classList.toggle('focused', i === focusedSearchIdx));
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    if (focusedSearchIdx >= 0 && container._results) {
+      addItem(container._results[focusedSearchIdx].id);
+    } else if (container._results?.length) {
+      addItem(container._results[0].id);
+    }
+  } else if (e.key === 'Escape') {
+    container.classList.remove('open');
+  }
+}
+
+function addItem(medId) {
+  const med = allMeds.find(m => m.id === medId);
+  if (!med) return;
+  const existing = billItems.find(i => i.id === medId);
+  if (existing) {
+    existing.qty++;
+    renderBill();
+  } else {
+    billItems.push({
+      id: med.id, name: med.n, generic: med.g || '', category: med.c || 'Tablet',
+      mrp: parseFloat(med.p) || 0, qty: 1, disc: parseFloat(med.disc) || 0,
+      gst: parseFloat(med.s_gst) || 0, batch: med.batch || '', expiry: med.expiry || '',
+      stock: parseInt(med.s) || 0,
+    });
+  }
+  renderBill();
+  document.getElementById('medSearch').value = '';
+  document.getElementById('searchResults').classList.remove('open');
+  document.getElementById('medSearch').focus();
+  document.getElementById('savePrintBtn').disabled = false;
+}
+
+function removeItem(idx) {
+  billItems.splice(idx, 1);
+  renderBill();
+  if (!billItems.length) document.getElementById('savePrintBtn').disabled = true;
+}
+
+function renderBill() {
+  const empty = document.getElementById('emptyBill');
+  const table = document.getElementById('billTable');
+  if (!billItems.length) { empty.style.display='block'; table.style.display='none'; recalc(); return; }
+  empty.style.display = 'none'; table.style.display = 'table';
+  document.getElementById('billTbody').innerHTML = billItems.map((item, i) => {
+    const lineTotal = (item.mrp * item.qty * (1 - item.disc/100)).toFixed(2);
+    return `<tr>
+      <td style="color:var(--gray)">${i+1}</td>
+      <td>
+        <div style="font-weight:600;font-size:.88rem">${item.name}</div>
+        <div style="font-size:.72rem;color:var(--gray)">${item.generic}</div>
+      </td>
+      <td style="font-size:.78rem;color:var(--gray)">${item.batch||'—'}</td>
+      <td style="font-size:.78rem;color:${item.expiry && item.expiry < new Date().toISOString().slice(0,10) ? 'var(--err)' : 'var(--gray)'}">${item.expiry||'—'}</td>
+      <td>₹${item.mrp.toFixed(2)}</td>
+      <td><input class="qty-input" type="number" min="1" value="${item.qty}" onchange="updateQty(${i}, this.value)" /></td>
+      <td><input class="disc-input" type="number" min="0" max="100" value="${item.disc}" onchange="updateDisc(${i}, this.value)" /></td>
+      <td style="font-size:.78rem">${item.gst}%</td>
+      <td><strong style="color:var(--green)">₹${lineTotal}</strong></td>
+      <td><button class="remove-btn" onclick="removeItem(${i})">✕</button></td>
+    </tr>`;
+  }).join('');
+  recalc();
+}
+
+function updateQty(idx, val) {
+  billItems[idx].qty = Math.max(1, parseInt(val) || 1);
+  renderBill();
+}
+function updateDisc(idx, val) {
+  billItems[idx].disc = Math.min(100, Math.max(0, parseFloat(val) || 0));
+  renderBill();
+}
+
+function recalc() {
+  let sub = 0, gst = 0;
+  const globalDisc = parseFloat(document.getElementById('globalDisc').value) || 0;
+  billItems.forEach(item => {
+    const lineAmt = item.mrp * item.qty * (1 - item.disc/100);
+    sub += lineAmt;
+    gst += lineAmt * (item.gst/100);
+  });
+  const discAmt = sub * (globalDisc/100);
+  const total = sub - discAmt + gst;
+  document.getElementById('subTotal').textContent = '₹' + sub.toFixed(2);
+  document.getElementById('gstTotal').textContent = '₹' + gst.toFixed(2);
+  document.getElementById('discAmount').textContent = '-₹' + discAmt.toFixed(2);
+  document.getElementById('grandTotal').textContent = '₹' + total.toFixed(2);
+  document.getElementById('itemCount').textContent = billItems.reduce((a,b) => a+b.qty, 0);
+}
+
+async function saveBill(doPrint) {
+  if (!billItems.length) return;
+  if(typeof doPrint === 'undefined') doPrint = false;
+  const saveBtn = document.getElementById('saveBtn');
+  const printBtn = document.getElementById('savePrintBtn');
+  if(saveBtn){ saveBtn.disabled = true; }
+  if(printBtn){ printBtn.disabled = true; }
+  const globalDisc = parseFloat(document.getElementById('globalDisc').value) || 0;
+  let sub = 0, gst = 0;
+  billItems.forEach(item => {
+    const lineAmt = item.mrp * item.qty * (1 - item.disc/100);
+    sub += lineAmt; gst += lineAmt * (item.gst/100);
+  });
+  const discAmt = sub * (globalDisc/100);
+  const total = sub - discAmt + gst;
+  const now = new Date();
+  const billId = 'MV' + now.getFullYear().toString().slice(-2) + String(now.getMonth()+1).padStart(2,'0') + String(now.getDate()).padStart(2,'0') + String(now.getTime()).slice(-6);
+  const dateStr = `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  const payload = {
+    id: billId, ts: now.getTime(), date: dateStr,
+    cust: document.getElementById('custName').value || 'Walk-in',
+    phone: document.getElementById('custPhone').value || '0000000000',
+    pay: payMode, sub: parseFloat(sub.toFixed(2)), disc: parseFloat(discAmt.toFixed(2)),
+    tax: parseFloat(gst.toFixed(2)), total: parseFloat(total.toFixed(2)),
+    doctor: document.getElementById('doctorName').value || 'Self',
+    items: billItems.map(i => ({ id: i.id, name: i.name, qty: i.qty, price: i.mrp, disc: i.disc, amount: +(i.mrp * i.qty * (1-i.disc/100)).toFixed(2) })),
+  };
+  try {
+    const res = await fetch('/api/bills', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+    const data = await res.json();
+    if (data.status === 'success') {
+      // Clear persistent cart
+      try { localStorage.removeItem('mv_cart'); } catch(e){}
+      if(doPrint){ printReceipt(payload); }
+      // Auto WhatsApp in background if phone present
+      const phone = payload.phone.replace(/[^0-9]/g,'');
+      if(phone.length === 10 && phone !== '0000000000'){
+        const msg = `🏥 *${(document.querySelector('.sb-logo .row')?.textContent||'MediVision').trim()}*\nBill: ${payload.id}\nDate: ${payload.date}\nTotal: ₹${payload.total.toFixed(2)}\n\nThank you 🙏`;
+        // Open WA in NEW tab silently (user can close immediately)
+        const waBtn = document.createElement('a');
+        waBtn.href = `https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`;
+        waBtn.target = '_blank';
+        waBtn.style.display = 'none';
+        document.body.appendChild(waBtn);
+        // Only open WA tab if user opted in via checkbox (default OFF to avoid popup spam)
+        const autoWA = document.getElementById('autoWA');
+        if(autoWA && autoWA.checked){ waBtn.click(); }
+        setTimeout(() => waBtn.remove(), 1000);
+      }
+      showToast('✓ Bill saved' + (doPrint?' & sent to printer':''), 'green');
+      setTimeout(() => newBill(), 1200);
+    } else {
+      showToast('Failed to save bill: ' + (data.message||''), 'red');
+    }
+  } catch(e) { showToast('Network error. Please retry.', 'red'); }
+  if(saveBtn){ saveBtn.disabled = false; }
+  if(printBtn){ printBtn.disabled = false; }
+}
+
+function printReceipt(bill) {
+  const shopName = document.querySelector('.sb-logo .row')?.textContent?.trim() || 'MediVision AI';
+  const lines = bill.items.map(i => `
+    <tr>
+      <td style="padding:3px 0;font-size:12px">${i.name}</td>
+      <td style="padding:3px 4px;font-size:12px;text-align:center">${i.qty}</td>
+      <td style="padding:3px 0;font-size:12px;text-align:right">₹${i.amount.toFixed(2)}</td>
+    </tr>`).join('');
+  const html = `
+    <div style="max-width:300px;margin:0 auto;font-family:monospace;padding:10px">
+      <h2 style="text-align:center;font-size:14px;margin-bottom:4px">${shopName}</h2>
+      <p style="text-align:center;font-size:11px;color:#666">MediVision AI Platform</p>
+      <hr style="margin:6px 0;border:1px dashed #ccc"/>
+      <p style="font-size:11px">Bill: <strong>${bill.id}</strong></p>
+      <p style="font-size:11px">Date: ${bill.date}</p>
+      <p style="font-size:11px">Customer: ${bill.cust} · ${bill.phone}</p>
+      <p style="font-size:11px">Doctor: ${bill.doctor}</p>
+      <hr style="margin:6px 0;border:1px dashed #ccc"/>
+      <table style="width:100%">
+        <thead><tr>
+          <th style="text-align:left;font-size:11px">Item</th>
+          <th style="font-size:11px;text-align:center">Qty</th>
+          <th style="font-size:11px;text-align:right">Amt</th>
+        </tr></thead>
+        <tbody>${lines}</tbody>
+      </table>
+      <hr style="margin:6px 0;border:1px dashed #ccc"/>
+      <p style="font-size:12px;display:flex;justify-content:space-between"><span>Subtotal</span><span>₹${bill.sub.toFixed(2)}</span></p>
+      <p style="font-size:12px;display:flex;justify-content:space-between"><span>Discount</span><span>-₹${bill.disc.toFixed(2)}</span></p>
+      <p style="font-size:12px;display:flex;justify-content:space-between"><span>GST</span><span>₹${bill.tax.toFixed(2)}</span></p>
+      <p style="font-size:14px;font-weight:bold;display:flex;justify-content:space-between;margin-top:4px"><span>TOTAL</span><span>₹${bill.total.toFixed(2)}</span></p>
+      <p style="font-size:12px;margin-top:4px">Payment: ${bill.pay}</p>
+      <hr style="margin:6px 0;border:1px dashed #ccc"/>
+      <p style="text-align:center;font-size:10px;color:#666">Thank you for your purchase!<br>Powered by MediVision AI</p>
+    </div>`;
+  const w = window.open('','_blank','width=350,height=600');
+  w.document.write(`<html><body>${html}</body></html>`);
+  w.document.close(); w.print();
+}
+
+function newBill() {
+  billItems = [];
+  document.getElementById('custName').value = '';
+  document.getElementById('custPhone').value = '';
+  document.getElementById('doctorName').value = '';
+  document.getElementById('globalDisc').value = '0';
+  setPayment('Cash');
+  renderBill();
+  document.getElementById('savePrintBtn').disabled = true;
+  document.getElementById('medSearch').focus();
+}
+
+function showToast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'toast show ' + type;
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('.search-bar-wrap')) {
+    document.getElementById('searchResults').classList.remove('open');
+  }
+});
+
+document.getElementById('medSearch').focus();
+
+// ═══ UX ENHANCEMENTS (v2) ═══
+
+// 1. CART PERSISTENCE — survives tab switches and refreshes
+function persistCart(){
+  try {
+    const state = {
+      billItems: billItems,
+      cust: document.getElementById('custName').value,
+      phone: document.getElementById('custPhone').value,
+      doctor: document.getElementById('doctorName').value,
+      disc: document.getElementById('globalDisc').value,
+      pay: payMode,
+      ts: Date.now()
+    };
+    localStorage.setItem('mv_cart', JSON.stringify(state));
+  } catch(e){}
+}
+function restoreCart(){
+  try {
+    const raw = localStorage.getItem('mv_cart');
+    if(!raw) return;
+    const s = JSON.parse(raw);
+    if(!s || !s.billItems || !s.billItems.length) return;
+    // Only restore if < 12 hours old
+    if(Date.now() - (s.ts||0) > 12*3600*1000){ localStorage.removeItem('mv_cart'); return; }
+    billItems = s.billItems;
+    if(s.cust) document.getElementById('custName').value = s.cust;
+    if(s.phone) document.getElementById('custPhone').value = s.phone;
+    if(s.doctor) document.getElementById('doctorName').value = s.doctor;
+    if(s.disc) document.getElementById('globalDisc').value = s.disc;
+    if(s.pay) setPayment(s.pay);
+    renderBill();
+    showToast('↩ Restored cart from earlier session', 'green');
+  } catch(e){ console.warn('Restore failed', e); }
+}
+restoreCart();
+
+// Persist on every change
+['custName','custPhone','doctorName','globalDisc'].forEach(id => {
+  const el = document.getElementById(id);
+  if(el) el.addEventListener('input', persistCart);
+});
+// Wrap renderBill to also persist
+const _origRender = window.renderBill;
+if(typeof _origRender === 'function'){
+  window.renderBill = function(){ _origRender.apply(this, arguments); persistCart(); };
+}
+
+// 2. KEYBOARD SHORTCUTS
+document.addEventListener('keydown', e => {
+  // Ctrl+S → Save bill
+  if((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's'){
+    e.preventDefault();
+    if(billItems.length > 0) saveBill(false);
+    return;
+  }
+  // Ctrl+P → Save + Print
+  if((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'p'){
+    e.preventDefault();
+    if(billItems.length > 0) saveBill(true);
+    return;
+  }
+  // Ctrl+N → New Bill
+  if((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'n'){
+    e.preventDefault();
+    if(confirm('Clear current bill and start new?')) newBill();
+    return;
+  }
+  // Ctrl+L → focus search (L = Lookup)
+  if((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'l'){
+    e.preventDefault();
+    document.getElementById('medSearch').focus();
+    return;
+  }
+});
+
+// 3. TAB-FRIENDLY CART INPUTS — Enter goes to next field
+document.addEventListener('keydown', e => {
+  const ae = document.activeElement;
+  if(!ae) return;
+  // In bill table qty/disc inputs, Enter cycles to next
+  if(ae.classList.contains('qty-in') || ae.classList.contains('disc-in')){
+    if(e.key === 'Enter' || e.key === 'Tab'){
+      e.preventDefault();
+      // Find all input cells in current row, move to next
+      const row = ae.closest('tr');
+      if(!row) return;
+      const inputs = Array.from(row.querySelectorAll('input'));
+      const idx = inputs.indexOf(ae);
+      if(idx < inputs.length - 1){
+        inputs[idx + 1].focus();
+        inputs[idx + 1].select();
+      } else {
+        // Last input — jump to next row or search
+        const nextRow = row.nextElementSibling;
+        if(nextRow){
+          const ni = nextRow.querySelector('input');
+          if(ni){ ni.focus(); ni.select(); return; }
+        }
+        document.getElementById('medSearch').focus();
+      }
+    }
+  }
+});
+
+// 4. MARK REGULAR CUSTOMER — adds to diary + creates reminder schedule
+window.markRegular = async function(){
+  const cb = document.getElementById('isRegular');
+  if(!cb || !cb.checked) return;
+  const phone = document.getElementById('custPhone').value.replace(/[^0-9]/g,'');
+  const name = document.getElementById('custName').value || 'Customer';
+  if(!phone || phone.length !== 10){
+    showToast('Enter customer name + 10-digit phone first', 'red');
+    cb.checked = false;
+    return;
+  }
+  try {
+    // Create per-customer reminder rule (3 days before refill)
+    const r = await fetch('/api/reminders/schedules', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        scope: 'customer',
+        customer_phone: phone,
+        category: 'all',
+        days_before: 3,
+        language: 'ta',
+        channel: 'both',
+        greeting: `வணக்கம் ${name}! Selvam Medicals: உங்கள் வழக்கமான மருந்து 3 நாட்களில் முடியும். REORDER என்று பதிலளிக்கவும்.`
+      })
+    });
+    if(r.ok){
+      showToast('🔔 Added to diary — auto-reminder will trigger 3 days before next refill', 'green');
+    } else {
+      showToast('Could not save (still marked in bill)', 'red');
+    }
+  } catch(e){ showToast('Network error', 'red'); }
+};
+
+// 5. Show keyboard help hint
+setTimeout(() => {
+  const help = document.createElement('div');
+  help.innerHTML = 'Shortcuts: <strong>Ctrl+S</strong> Save · <strong>Ctrl+P</strong> Print · <strong>Ctrl+N</strong> New Bill · <strong>Ctrl+L</strong> Search · <strong>Tab/Enter</strong> Next field';
+  help.style.cssText = 'position:fixed;bottom:10px;left:50%;transform:translateX(-50%);background:rgba(15,23,42,.9);color:#cbd5e1;padding:6px 14px;border-radius:99px;font-size:.74rem;z-index:50;backdrop-filter:blur(6px);';
+  document.body.appendChild(help);
+}, 1500);
+
+</script>
+</body>
+</html>

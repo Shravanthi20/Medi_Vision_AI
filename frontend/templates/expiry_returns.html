@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Expiry Return-to-Supplier — Selvam Medicals</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@600&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<style>
+:root{
+  --bg:#0b0e16;--sb:#111827;--card:#151d2b;--card2:#1a2236;--brd:#1f2d40;
+  --tx:#e2e8f0;--mt:#64748b;--acc:#f97316;--grn:#22c55e;--red:#ef4444;
+  --blu:#3b82f6;--yel:#eab308;--pur:#a855f7;--teal:#14b8a6;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html,body{background:var(--bg);color:var(--tx);font-family:Inter,sans-serif;font-size:13px;overflow-y:auto;}
+.topbar{height:54px;background:var(--sb);border-bottom:1px solid var(--brd);display:flex;align-items:center;gap:12px;padding:0 20px;position:sticky;top:0;z-index:50;}
+.topbar a{display:flex;align-items:center;gap:7px;color:var(--mt);font-size:12px;text-decoration:none;padding:5px 10px;border-radius:6px;border:1px solid var(--brd);transition:all .2s;}
+.topbar a:hover{border-color:var(--acc);color:var(--acc);}
+.tab-bar{display:flex;gap:4px;padding:14px 20px 0;background:var(--sb);border-bottom:1px solid var(--brd);}
+.tab{padding:8px 18px;border-radius:8px 8px 0 0;cursor:pointer;font-size:12.5px;font-weight:500;color:var(--mt);border:1px solid transparent;border-bottom:none;transition:all .2s;}
+.tab.active{background:var(--card2);border-color:var(--brd);color:var(--tx);}
+.tab:hover:not(.active){color:var(--acc);}
+.page{padding:20px;max-width:1400px;margin:0 auto;}
+.tab-content{display:none;}.tab-content.active{display:block;}
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:18px;}
+.kpi{background:var(--card2);border:1px solid var(--brd);border-radius:12px;padding:14px 16px;}
+.kpi .kv{font-size:20px;font-weight:700;font-family:'JetBrains Mono',monospace;margin-bottom:3px;}
+.kpi .kl{font-size:10.5px;color:var(--mt);text-transform:uppercase;letter-spacing:.05em;}
+.kpi.orange .kv{color:var(--acc);}.kpi.green .kv{color:var(--grn);}
+.kpi.blue .kv{color:var(--blu);}.kpi.yel .kv{color:var(--yel);}
+.kpi.red .kv{color:var(--red);}
+.card{background:var(--card2);border:1px solid var(--brd);border-radius:14px;overflow:hidden;margin-bottom:16px;}
+.card-header{padding:12px 16px;border-bottom:1px solid var(--brd);display:flex;align-items:center;gap:8px;font-weight:600;font-size:13px;}
+.card-header .actions{margin-left:auto;display:flex;gap:8px;}
+table{width:100%;border-collapse:collapse;}
+th{padding:8px 14px;text-align:left;font-size:10px;font-weight:600;color:var(--mt);text-transform:uppercase;letter-spacing:.05em;background:var(--sb);white-space:nowrap;}
+td{padding:8px 14px;border-top:1px solid var(--brd);font-size:12px;vertical-align:middle;}
+tbody tr:hover{background:rgba(249,115,22,.04);}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:6px 13px;border-radius:8px;border:1px solid var(--brd);background:var(--card2);color:var(--tx);font-size:12px;font-family:Inter,sans-serif;cursor:pointer;transition:all .2s;}
+.btn:hover{border-color:var(--acc);color:var(--acc);}
+.btn.primary{background:var(--acc);border-color:var(--acc);color:#fff;}
+.btn.primary:hover{background:#ea6c0a;}
+.btn.green{background:var(--grn);border-color:var(--grn);color:#fff;}
+.btn.red{background:var(--red);border-color:var(--red);color:#fff;}
+.btn.blue{background:var(--blu);border-color:var(--blu);color:#fff;}
+select,input,textarea{background:var(--card);border:1px solid var(--brd);border-radius:8px;padding:7px 11px;color:var(--tx);font-size:12px;font-family:Inter,sans-serif;outline:none;transition:border .2s;}
+select:focus,input:focus,textarea:focus{border-color:var(--acc);}
+.badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:10.5px;font-weight:600;}
+.b-grn{background:rgba(34,197,94,.12);color:var(--grn);}
+.b-red{background:rgba(239,68,68,.12);color:var(--red);}
+.b-yel{background:rgba(234,179,8,.12);color:var(--yel);}
+.b-blu{background:rgba(59,130,246,.12);color:var(--blu);}
+.b-ora{background:rgba(249,115,22,.12);color:var(--acc);}
+.b-mt{background:rgba(100,116,139,.12);color:var(--mt);}
+.empty{text-align:center;padding:40px;color:var(--mt);}
+/* Modal */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;align-items:center;justify-content:center;}
+.overlay.open{display:flex;}
+.modal{background:var(--card2);border:1px solid var(--brd);border-radius:16px;padding:24px;width:min(860px,96vw);max-height:90vh;overflow-y:auto;position:relative;}
+.modal-title{font-size:15px;font-weight:700;margin-bottom:18px;display:flex;align-items:center;gap:8px;}
+.modal-close{position:absolute;top:16px;right:16px;background:none;border:none;color:var(--mt);font-size:18px;cursor:pointer;}
+.modal-close:hover{color:var(--red);}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;}
+.form-group label{display:block;font-size:11px;font-weight:600;color:var(--mt);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px;}
+.form-group input,.form-group select,.form-group textarea{width:100%;}
+.form-group.full{grid-column:1/-1;}
+/* Status flow */
+.status-flow{display:flex;align-items:center;gap:0;margin-bottom:20px;}
+.sf-step{flex:1;text-align:center;padding:8px 4px;font-size:11px;font-weight:600;color:var(--mt);border-bottom:3px solid var(--brd);transition:all .3s;}
+.sf-step.done{color:var(--grn);border-color:var(--grn);}
+.sf-step.active{color:var(--acc);border-color:var(--acc);}
+/* Stock item selection table */
+.sel-table th{background:var(--card);}
+.sel-table td input[type=number]{width:70px;text-align:center;}
+.days-badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a href="/portal"><i class="fas fa-arrow-left"></i> Portal</a>
+  <i class="fas fa-rotate-left" style="color:var(--acc)"></i>
+  <span style="font-size:15px;font-weight:600">Expiry Return-to-Supplier</span>
+  <span style="margin-left:auto;display:flex;gap:8px;">
+    <button class="btn primary" onclick="openNewReturn()"><i class="fas fa-plus"></i> New Return Request</button>
+  </span>
+</div>
+
+<div class="tab-bar">
+  <div class="tab active" onclick="switchTab('returns',this)"><i class="fas fa-list"></i> All Returns</div>
+  <div class="tab" onclick="switchTab('near-expiry',this)"><i class="fas fa-triangle-exclamation"></i> Near-Expiry Stock</div>
+  <div class="tab" onclick="switchTab('credits',this)"><i class="fas fa-receipt"></i> Pending Credits</div>
+</div>
+
+<div class="page">
+
+  <!-- ════ RETURNS TAB ════ -->
+  <div class="tab-content active" id="tab-returns">
+    <div class="kpi-row" id="returns-kpis">
+      <div class="kpi orange"><div class="kv" id="kk-draft">—</div><div class="kl">Draft</div></div>
+      <div class="kpi yel"><div class="kv" id="kk-dispatched">—</div><div class="kl">Dispatched</div></div>
+      <div class="kpi blue"><div class="kv" id="kk-credit">—</div><div class="kl">Credit Received</div></div>
+      <div class="kpi green"><div class="kv" id="kk-closed">—</div><div class="kl">Closed</div></div>
+      <div class="kpi orange"><div class="kv" id="kk-total-value">—</div><div class="kl">Total Returned Value</div></div>
+      <div class="kpi yel"><div class="kv" id="kk-pending-credit">—</div><div class="kl">Pending Credit</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <i class="fas fa-rotate-left" style="color:var(--acc)"></i> Return Requests
+        <span class="actions">
+          <select id="status-filter" onchange="loadReturns()" style="width:160px">
+            <option value="">All Status</option>
+            <option value="DRAFT">Draft</option>
+            <option value="DISPATCHED">Dispatched</option>
+            <option value="CREDIT_NOTE_RECEIVED">Credit Received</option>
+            <option value="CLOSED">Closed</option>
+          </select>
+        </span>
+      </div>
+      <table>
+        <thead><tr>
+          <th>Return No</th><th>Date</th><th>Supplier</th><th>Status</th>
+          <th style="text-align:right">Qty</th>
+          <th style="text-align:right">Value</th>
+          <th>Credit Note</th>
+          <th>Actions</th>
+        </tr></thead>
+        <tbody id="returns-tbody"><tr><td colspan="8" class="empty">Loading…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ════ NEAR-EXPIRY TAB ════ -->
+  <div class="tab-content" id="tab-near-expiry">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+      <span style="font-size:12px;color:var(--mt)">Show batches expiring within:</span>
+      <select id="days-filter" onchange="loadNearExpiry()" style="width:130px">
+        <option value="30">30 Days</option>
+        <option value="60">60 Days</option>
+        <option value="90" selected>90 Days</option>
+      </select>
+      <button class="btn primary" onclick="raiseFromSelected()"><i class="fas fa-plus"></i> Raise Return for Selected</button>
+      <span style="margin-left:auto;font-size:11.5px;color:var(--mt)">
+        <i class="fas fa-info-circle"></i> Select items and choose supplier to raise a bulk return
+      </span>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <i class="fas fa-triangle-exclamation" style="color:var(--yel)"></i> Near-Expiry Stock Eligible for Return
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="sel-table">
+          <thead><tr>
+            <th><input type="checkbox" id="sel-all" onchange="toggleAll(this)"/></th>
+            <th>Item Name</th><th>Batch No</th><th>Expiry</th><th>Days Left</th>
+            <th style="text-align:right">Current Qty</th>
+            <th style="text-align:right">Return Qty</th>
+            <th style="text-align:right">Purchase Rate</th>
+            <th style="text-align:right">Return Value</th>
+          </tr></thead>
+          <tbody id="expiry-tbody"><tr><td colspan="9" class="empty">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ PENDING CREDITS TAB ════ -->
+  <div class="tab-content" id="tab-credits">
+    <div class="card">
+      <div class="card-header">
+        <i class="fas fa-clock" style="color:var(--yel)"></i> Supplier-wise Pending Credit Notes
+      </div>
+      <table>
+        <thead><tr>
+          <th>Supplier</th><th>Open Returns</th>
+          <th style="text-align:right">Total Dispatched Value</th>
+          <th style="text-align:right">Credit Notes Received</th>
+          <th style="text-align:right">Pending Credit</th>
+          <th>Action</th>
+        </tr></thead>
+        <tbody id="credits-tbody"><tr><td colspan="6" class="empty">Loading…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- ════ NEW RETURN MODAL ════ -->
+<div class="overlay" id="modal-new">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modal-new')"><i class="fas fa-times"></i></button>
+    <div class="modal-title"><i class="fas fa-rotate-left" style="color:var(--acc)"></i> New Expiry Return Request</div>
+
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Supplier *</label>
+        <select id="f-supplier" style="width:100%"></select>
+      </div>
+      <div class="form-group">
+        <label>Return Date</label>
+        <input type="date" id="f-date"/>
+      </div>
+      <div class="form-group full">
+        <label>Remarks</label>
+        <textarea id="f-remarks" rows="2" style="width:100%;resize:none"></textarea>
+      </div>
+    </div>
+
+    <div class="card-header" style="border-radius:8px 8px 0 0;background:var(--card);margin-bottom:0;">
+      <span>Items to Return</span>
+      <button class="btn" style="margin-left:auto" onclick="addItemRow()"><i class="fas fa-plus"></i> Add Item</button>
+    </div>
+    <div style="overflow-x:auto;border:1px solid var(--brd);border-top:none;border-radius:0 0 8px 8px;">
+      <table>
+        <thead><tr>
+          <th>Batch / Item</th><th>Expiry</th><th>Available Qty</th>
+          <th>Return Qty</th><th>Purchase Rate</th><th>Return Value</th><th></th>
+        </tr></thead>
+        <tbody id="items-tbody"></tbody>
+      </table>
+    </div>
+    <div style="margin-top:12px;display:flex;align-items:center;gap:12px;">
+      <span style="font-size:12px;color:var(--mt)">Total Value: <strong id="total-value-display" style="color:var(--acc)">₹0.00</strong></span>
+      <button class="btn primary" style="margin-left:auto" onclick="submitReturn()"><i class="fas fa-paper-plane"></i> Raise Return Request</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ DETAIL / STATUS MODAL ════ -->
+<div class="overlay" id="modal-detail">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modal-detail')"><i class="fas fa-times"></i></button>
+    <div class="modal-title">
+      <i class="fas fa-file-lines" style="color:var(--acc)"></i>
+      Return Detail — <span id="detail-return-no"></span>
+    </div>
+
+    <div class="status-flow" id="status-flow">
+      <div class="sf-step" id="sf-draft">Draft</div>
+      <div class="sf-step" id="sf-dispatched">Dispatched</div>
+      <div class="sf-step" id="sf-credit">Credit Received</div>
+      <div class="sf-step" id="sf-closed">Closed</div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+      <div>
+        <div style="font-size:11px;color:var(--mt);margin-bottom:3px">Supplier</div>
+        <div id="detail-supplier" style="font-weight:600"></div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--mt);margin-bottom:3px">Return Date</div>
+        <div id="detail-date" style="font-weight:600"></div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--mt);margin-bottom:3px">Total Qty</div>
+        <div id="detail-qty" style="font-weight:600;color:var(--acc)"></div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--mt);margin-bottom:3px">Total Value</div>
+        <div id="detail-value" style="font-weight:600;color:var(--acc)"></div>
+      </div>
+    </div>
+
+    <!-- Credit note form (visible when advancing to credit received) -->
+    <div id="credit-form" style="display:none;background:var(--card);border:1px solid var(--brd);border-radius:10px;padding:14px;margin-bottom:16px;">
+      <div style="font-weight:600;margin-bottom:10px;font-size:12.5px"><i class="fas fa-receipt" style="color:var(--grn)"></i> Credit Note Details</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+        <div><label style="font-size:11px;color:var(--mt);display:block;margin-bottom:4px">Credit Note No</label>
+          <input type="text" id="cn-no" placeholder="CN/2026/001" style="width:100%"/></div>
+        <div><label style="font-size:11px;color:var(--mt);display:block;margin-bottom:4px">Credit Note Date</label>
+          <input type="date" id="cn-date" style="width:100%"/></div>
+        <div><label style="font-size:11px;color:var(--mt);display:block;margin-bottom:4px">Credit Amount (₹)</label>
+          <input type="number" id="cn-amount" placeholder="0.00" step="0.01" style="width:100%"/></div>
+      </div>
+    </div>
+
+    <div class="card-header" style="border-radius:8px 8px 0 0;background:var(--card);margin-bottom:0;">
+      <span>Items in this Return</span>
+    </div>
+    <div style="overflow-x:auto;border:1px solid var(--brd);border-top:none;border-radius:0 0 8px 8px;margin-bottom:16px;">
+      <table>
+        <thead><tr>
+          <th>Item</th><th>Batch</th><th>Expiry</th>
+          <th style="text-align:right">Qty</th>
+          <th style="text-align:right">Rate</th>
+          <th style="text-align:right">Value</th>
+        </tr></thead>
+        <tbody id="detail-items-tbody"></tbody>
+      </table>
+    </div>
+
+    <div style="display:flex;gap:8px;flex-wrap:wrap;" id="action-buttons"></div>
+  </div>
+</div>
+
+<script>
+const fmt = n => '₹'+Number(n||0).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+const today = new Date().toISOString().slice(0,10);
+let nearExpiryData=[], allReturns=[], suppliers=[], detailId=null;
+
+// ── Tab switching ──────────────────────────────────────────────
+function switchTab(id, el){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('tab-'+id).classList.add('active');
+  if(id==='near-expiry') loadNearExpiry();
+  if(id==='credits') buildCreditsView();
+}
+
+// ── Modal helpers ──────────────────────────────────────────────
+function openModal(id){ document.getElementById(id).classList.add('open'); }
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+
+// ── Load data ──────────────────────────────────────────────────
+async function init(){
+  const [sups] = await Promise.all([
+    fetch('/api/expiry-returns/suppliers').then(r=>r.json()),
+    loadReturns(),
+  ]);
+  suppliers = sups;
+  const sel = document.getElementById('f-supplier');
+  sel.innerHTML = '<option value="">Select Supplier…</option>' +
+    sups.map(s=>`<option value="${s.supplier_id}">${s.supplier_name}</option>`).join('');
+}
+
+async function loadReturns(){
+  const status = document.getElementById('status-filter').value;
+  const url = '/api/expiry-returns' + (status ? `?status=${status}` : '');
+  allReturns = await fetch(url).then(r=>r.json());
+  renderReturns();
+  buildKPIs();
+}
+
+function buildKPIs(){
+  let draft=0, dispatched=0, credit=0, closed=0, totalVal=0, pendingCredit=0;
+  allReturns.forEach(r=>{
+    if(r.status==='DRAFT') draft++;
+    else if(r.status==='DISPATCHED'){ dispatched++; pendingCredit+=r.total_value; }
+    else if(r.status==='CREDIT_NOTE_RECEIVED') credit++;
+    else if(r.status==='CLOSED') closed++;
+    totalVal += r.total_value;
+  });
+  document.getElementById('kk-draft').textContent = draft;
+  document.getElementById('kk-dispatched').textContent = dispatched;
+  document.getElementById('kk-credit').textContent = credit;
+  document.getElementById('kk-closed').textContent = closed;
+  document.getElementById('kk-total-value').textContent = fmt(totalVal);
+  document.getElementById('kk-pending-credit').textContent = fmt(pendingCredit);
+}
+
+function statusBadge(s){
+  const map = {
+    DRAFT:'b-mt',DISPATCHED:'b-yel',CREDIT_NOTE_RECEIVED:'b-grn',CLOSED:'b-blu'
+  };
+  const labels = {
+    DRAFT:'Draft',DISPATCHED:'Dispatched',CREDIT_NOTE_RECEIVED:'Credit Rcvd',CLOSED:'Closed'
+  };
+  return `<span class="badge ${map[s]||'b-mt'}">${labels[s]||s}</span>`;
+}
+
+function renderReturns(){
+  const tb = document.getElementById('returns-tbody');
+  if(!allReturns.length){
+    tb.innerHTML='<tr><td colspan="8" class="empty">No return requests found. <a href="#" onclick="openNewReturn()" style="color:var(--acc)">Create one →</a></td></tr>';
+    return;
+  }
+  tb.innerHTML = allReturns.map(r=>`<tr>
+    <td style="font-family:'JetBrains Mono',monospace;font-size:11px">${r.return_no}</td>
+    <td>${r.return_date}</td>
+    <td>${r.supplier_name}</td>
+    <td>${statusBadge(r.status)}</td>
+    <td style="text-align:right">${r.total_qty}</td>
+    <td style="text-align:right;font-weight:600;color:var(--acc)">${fmt(r.total_value)}</td>
+    <td>${r.credit_note_no ? `<span style="color:var(--grn);font-size:11px"><i class="fas fa-check"></i> ${r.credit_note_no}</span>` : '<span style="color:var(--mt);font-size:11px">Pending</span>'}</td>
+    <td>
+      <button class="btn" onclick="openDetail(${r.expiry_return_id})" style="padding:4px 10px">
+        <i class="fas fa-eye"></i> View
+      </button>
+    </td>
+  </tr>`).join('');
+}
+
+// ── Near-Expiry Stock ──────────────────────────────────────────
+async function loadNearExpiry(){
+  const days = document.getElementById('days-filter').value;
+  nearExpiryData = await fetch(`/api/expiry-returns/near-expiry-stock?days=${days}`).then(r=>r.json());
+  renderExpiry();
+}
+
+function daysBadge(d){
+  if(d<=30) return `<span class="days-badge" style="background:rgba(239,68,68,.15);color:var(--red)">${d}d</span>`;
+  if(d<=60) return `<span class="days-badge" style="background:rgba(234,179,8,.15);color:var(--yel)">${d}d</span>`;
+  return `<span class="days-badge" style="background:rgba(249,115,22,.1);color:var(--acc)">${d}d</span>`;
+}
+
+function renderExpiry(){
+  const tb = document.getElementById('expiry-tbody');
+  if(!nearExpiryData.length){
+    tb.innerHTML='<tr><td colspan="9" class="empty"><i class="fas fa-check-circle" style="color:var(--grn)"></i> No near-expiry stock found. Good news!</td></tr>';
+    return;
+  }
+  tb.innerHTML = nearExpiryData.map((b,i)=>`<tr>
+    <td><input type="checkbox" class="item-cb" data-idx="${i}" onchange="updateTotal()"/></td>
+    <td>${b.item_name}</td>
+    <td style="font-family:'JetBrains Mono',monospace;font-size:11px">${b.batch_no}</td>
+    <td>${b.expiry_date}</td>
+    <td>${daysBadge(b.days_left)}</td>
+    <td style="text-align:right">${b.current_qty}</td>
+    <td style="text-align:right">
+      <input type="number" class="ret-qty" data-idx="${i}" min="1" max="${b.current_qty}"
+        value="${b.current_qty}" style="width:70px;text-align:center"
+        onchange="updateRowValue(${i})"/>
+    </td>
+    <td style="text-align:right">${fmt(b.purchase_rate)}</td>
+    <td style="text-align:right;font-weight:600;color:var(--acc)" id="ret-val-${i}">${fmt(b.risk_value)}</td>
+  </tr>`).join('');
+}
+
+function toggleAll(cb){
+  document.querySelectorAll('.item-cb').forEach(c=>c.checked=cb.checked);
+}
+
+function updateRowValue(idx){
+  const qty = parseInt(document.querySelector(`.ret-qty[data-idx="${idx}"]`).value)||0;
+  const rate = nearExpiryData[idx].purchase_rate;
+  document.getElementById(`ret-val-${idx}`).textContent = fmt(qty*rate);
+}
+
+// ── Raise return from near-expiry selections ───────────────────
+async function raiseFromSelected(){
+  const selected = [];
+  document.querySelectorAll('.item-cb:checked').forEach(cb=>{
+    const idx = parseInt(cb.dataset.idx);
+    const qty = parseInt(document.querySelector(`.ret-qty[data-idx="${idx}"]`).value)||0;
+    if(qty>0) selected.push({...nearExpiryData[idx], qty});
+  });
+  if(!selected.length){ alert('Please select at least one item.'); return; }
+
+  // Pick supplier from first item (auto-populate modal)
+  openNewReturn();
+  // Pre-fill items
+  setTimeout(()=>{
+    const tbody = document.getElementById('items-tbody');
+    tbody.innerHTML='';
+    selected.forEach(s=>addItemRow(s));
+    recalcTotal();
+  },100);
+}
+
+// ── New Return Modal ───────────────────────────────────────────
+function openNewReturn(){
+  document.getElementById('f-date').value = today;
+  document.getElementById('f-remarks').value='';
+  document.getElementById('items-tbody').innerHTML='';
+  document.getElementById('total-value-display').textContent='₹0.00';
+  addItemRow();
+  openModal('modal-new');
+}
+
+let batchCache = {};
+
+async function fetchBatch(batchId){
+  if(batchCache[batchId]) return batchCache[batchId];
+  const data = await fetch(`/api/expiry-returns/near-expiry-stock?days=3650`).then(r=>r.json());
+  data.forEach(b=>{ batchCache[b.stock_batch_id]=b; });
+  return batchCache[batchId]||null;
+}
+
+function addItemRow(prefill=null){
+  const tbody = document.getElementById('items-tbody');
+  const row = document.createElement('tr');
+  const batch_id = prefill ? prefill.stock_batch_id : '';
+  const batch_no = prefill ? prefill.batch_no : '';
+  const expiry = prefill ? prefill.expiry_date : '';
+  const avail = prefill ? prefill.current_qty : '';
+  const qty = prefill ? prefill.qty : '';
+  const rate = prefill ? prefill.purchase_rate : '';
+  const val = prefill ? (qty*rate) : 0;
+
+  row.innerHTML = `
+    <td>
+      <select class="item-batch-sel" style="width:200px" onchange="onBatchChange(this,event.target.closest('tr'))">
+        <option value="">Search near-expiry batches…</option>
+        ${nearExpiryData.map(b=>`<option value="${b.stock_batch_id}"
+          data-expiry="${b.expiry_date}" data-avail="${b.current_qty}"
+          data-rate="${b.purchase_rate}" ${b.stock_batch_id==batch_id?'selected':''}>
+          ${b.item_name} — ${b.batch_no}
+        </option>`).join('')}
+      </select>
+    </td>
+    <td class="td-expiry">${expiry||'—'}</td>
+    <td class="td-avail">${avail||'—'}</td>
+    <td><input type="number" class="td-qty" min="1" max="${avail||9999}" value="${qty||''}"
+      style="width:70px;text-align:center" oninput="recalcRow(this.closest('tr'))"/></td>
+    <td class="td-rate">${rate?fmt(rate):'—'}</td>
+    <td class="td-val" style="font-weight:600;color:var(--acc)">${val?fmt(val):'—'}</td>
+    <td><button class="btn" onclick="this.closest('tr').remove();recalcTotal()" style="padding:3px 8px;color:var(--red)"><i class="fas fa-trash"></i></button></td>
+  `;
+  tbody.appendChild(row);
+  if(prefill) recalcRow(row);
+}
+
+function onBatchChange(sel, row){
+  const opt = sel.options[sel.selectedIndex];
+  row.querySelector('.td-expiry').textContent = opt.dataset.expiry||'—';
+  row.querySelector('.td-avail').textContent = opt.dataset.avail||'—';
+  row.querySelector('.td-qty').max = opt.dataset.avail||9999;
+  row.querySelector('.td-qty').value = opt.dataset.avail||'';
+  row.querySelector('.td-rate').textContent = opt.dataset.rate ? fmt(parseFloat(opt.dataset.rate)) : '—';
+  recalcRow(row);
+}
+
+function recalcRow(row){
+  const qty = parseFloat(row.querySelector('.td-qty').value)||0;
+  const rateText = row.querySelector('.td-rate').textContent.replace(/[₹,]/g,'');
+  const rate = parseFloat(rateText)||0;
+  row.querySelector('.td-val').textContent = qty&&rate ? fmt(qty*rate) : '—';
+  recalcTotal();
+}
+
+function recalcTotal(){
+  let total = 0;
+  document.querySelectorAll('#items-tbody tr').forEach(row=>{
+    const val = row.querySelector('.td-val').textContent.replace(/[₹,]/g,'');
+    total += parseFloat(val)||0;
+  });
+  document.getElementById('total-value-display').textContent = fmt(total);
+}
+
+async function submitReturn(){
+  const supplier_id = document.getElementById('f-supplier').value;
+  const return_date = document.getElementById('f-date').value;
+  const remarks = document.getElementById('f-remarks').value;
+  if(!supplier_id){ alert('Please select a supplier.'); return; }
+
+  const items = [];
+  let valid = true;
+  document.querySelectorAll('#items-tbody tr').forEach(row=>{
+    const sel = row.querySelector('.item-batch-sel');
+    const qty = parseInt(row.querySelector('.td-qty').value)||0;
+    if(!sel.value || qty<=0){ valid=false; return; }
+    items.push({ stock_batch_id: parseInt(sel.value), qty_returned: qty });
+  });
+
+  if(!valid || !items.length){ alert('Please fill all items with valid quantities.'); return; }
+
+  try{
+    const resp = await fetch('/api/expiry-returns',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({supplier_id:parseInt(supplier_id),return_date,remarks,items})
+    }).then(r=>r.json());
+
+    if(resp.status==='success'){
+      closeModal('modal-new');
+      alert(`Return ${resp.return_no} created successfully!`);
+      await loadReturns();
+      switchTab('returns', document.querySelector('.tab'));
+    } else {
+      alert('Error: '+(resp.message||'Unknown error'));
+    }
+  } catch(e){ alert('Network error: '+e.message); }
+}
+
+// ── Detail Modal ───────────────────────────────────────────────
+const STATUS_ORDER = ['DRAFT','DISPATCHED','CREDIT_NOTE_RECEIVED','CLOSED'];
+
+async function openDetail(id){
+  detailId = id;
+  const data = await fetch(`/api/expiry-returns/${id}`).then(r=>r.json());
+  document.getElementById('detail-return-no').textContent = data.return_no;
+  document.getElementById('detail-supplier').textContent = data.supplier_name;
+  document.getElementById('detail-date').textContent = data.return_date;
+  document.getElementById('detail-qty').textContent = data.total_qty + ' units';
+  document.getElementById('detail-value').textContent = fmt(data.total_value);
+
+  // Status flow
+  const idx = STATUS_ORDER.indexOf(data.status);
+  ['draft','dispatched','credit','closed'].forEach((k,i)=>{
+    const el=document.getElementById('sf-'+k);
+    el.className='sf-step';
+    if(i<idx) el.classList.add('done');
+    else if(i===idx) el.classList.add('active');
+  });
+
+  // Items
+  document.getElementById('detail-items-tbody').innerHTML = data.items.map(it=>`<tr>
+    <td>${it.item_name}</td>
+    <td style="font-family:'JetBrains Mono',monospace;font-size:11px">${it.batch_no}</td>
+    <td>${it.expiry_date}</td>
+    <td style="text-align:right">${it.qty_returned}</td>
+    <td style="text-align:right">${fmt(it.purchase_rate)}</td>
+    <td style="text-align:right;font-weight:600;color:var(--acc)">${fmt(it.return_value)}</td>
+  </tr>`).join('');
+
+  // Action buttons
+  const btns = document.getElementById('action-buttons');
+  btns.innerHTML='';
+  const creditForm = document.getElementById('credit-form');
+  creditForm.style.display='none';
+
+  if(data.status==='DRAFT'){
+    btns.innerHTML=`<button class="btn green" onclick="advanceStatus('DISPATCHED')"><i class="fas fa-truck"></i> Mark as Dispatched</button>`;
+  } else if(data.status==='DISPATCHED'){
+    creditForm.style.display='block';
+    document.getElementById('cn-no').value='';
+    document.getElementById('cn-date').value=today;
+    document.getElementById('cn-amount').value=data.total_value;
+    btns.innerHTML=`<button class="btn blue" onclick="advanceStatus('CREDIT_NOTE_RECEIVED')"><i class="fas fa-receipt"></i> Record Credit Note</button>`;
+  } else if(data.status==='CREDIT_NOTE_RECEIVED'){
+    btns.innerHTML=`
+      <div style="background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);border-radius:8px;padding:10px 14px;font-size:12px;">
+        <i class="fas fa-check-circle" style="color:var(--grn)"></i>
+        Credit Note: <strong>${data.credit_note_no}</strong> — ${fmt(data.credit_note_amount)}
+      </div>
+      <button class="btn" onclick="advanceStatus('CLOSED')" style="margin-left:auto"><i class="fas fa-lock"></i> Close Return</button>
+    `;
+  } else {
+    btns.innerHTML=`<span class="badge b-mt" style="padding:6px 14px"><i class="fas fa-check"></i> Return Closed</span>`;
+  }
+
+  openModal('modal-detail');
+}
+
+async function advanceStatus(newStatus){
+  const payload = {status: newStatus};
+  if(newStatus==='CREDIT_NOTE_RECEIVED'){
+    payload.credit_note_no = document.getElementById('cn-no').value;
+    payload.credit_note_date = document.getElementById('cn-date').value;
+    payload.credit_note_amount = parseFloat(document.getElementById('cn-amount').value)||0;
+    if(!payload.credit_note_no){ alert('Please enter credit note number.'); return; }
+  }
+  try{
+    const resp = await fetch(`/api/expiry-returns/${detailId}/status`,{
+      method:'PUT', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    }).then(r=>r.json());
+    if(resp.status==='success'){
+      closeModal('modal-detail');
+      await loadReturns();
+      if(newStatus==='DISPATCHED') alert('Stock has been reduced. Return dispatched to supplier.');
+    } else { alert('Error: '+resp.message); }
+  } catch(e){ alert('Network error: '+e.message); }
+}
+
+// ── Credits view ───────────────────────────────────────────────
+function buildCreditsView(){
+  const supplierMap={};
+  allReturns.forEach(r=>{
+    if(!supplierMap[r.supplier_id]) supplierMap[r.supplier_id]={
+      name:r.supplier_name, open:0, dispatched:0, creditAmt:0
+    };
+    const s=supplierMap[r.supplier_id];
+    if(r.status==='DISPATCHED'){ s.open++; s.dispatched+=r.total_value; }
+    if(r.status==='CREDIT_NOTE_RECEIVED'){ s.creditAmt+=r.credit_note_amount||r.total_value; }
+  });
+
+  const tb=document.getElementById('credits-tbody');
+  const rows=Object.values(supplierMap).filter(s=>s.dispatched>0||s.creditAmt>0);
+  if(!rows.length){
+    tb.innerHTML='<tr><td colspan="6" class="empty"><i class="fas fa-check-circle" style="color:var(--grn)"></i> No pending credits. All cleared!</td></tr>';
+    return;
+  }
+  tb.innerHTML=rows.map(s=>{
+    const pending=Math.max(0,s.dispatched-s.creditAmt);
+    return `<tr>
+      <td style="font-weight:600">${s.name}</td>
+      <td>${s.open} <span class="badge b-yel">Open</span></td>
+      <td style="text-align:right">${fmt(s.dispatched)}</td>
+      <td style="text-align:right;color:var(--grn)">${fmt(s.creditAmt)}</td>
+      <td style="text-align:right;font-weight:700;color:${pending>0?'var(--red)':'var(--grn)'}">
+        ${pending>0?fmt(pending):'<i class="fas fa-check"></i> Cleared'}
+      </td>
+      <td><button class="btn" style="padding:4px 10px" onclick="document.getElementById('status-filter').value='DISPATCHED';loadReturns();switchTab('returns',document.querySelectorAll('.tab')[0])">View Returns</button></td>
+    </tr>`;
+  }).join('');
+}
+
+init();
+</script>
+</body>
+</html>

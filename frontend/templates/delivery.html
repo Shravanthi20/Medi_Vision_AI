@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Delivery Tracking — Selvam Medicals</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@600&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<style>
+:root{--bg:#0b0e16;--sb:#111827;--card:#151d2b;--card2:#1a2236;--brd:#1f2d40;--tx:#e2e8f0;--mt:#64748b;--acc:#f97316;--grn:#22c55e;--red:#ef4444;--blu:#3b82f6;--yel:#eab308;--pur:#a855f7;}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;background:var(--bg);color:var(--tx);font-family:Inter,sans-serif;font-size:13px;overflow-y:auto;}
+.topbar{height:54px;background:var(--sb);border-bottom:1px solid var(--brd);display:flex;align-items:center;gap:12px;padding:0 20px;position:sticky;top:0;z-index:50;}
+.topbar a{display:flex;align-items:center;gap:7px;color:var(--mt);font-size:12px;text-decoration:none;padding:5px 10px;border-radius:6px;border:1px solid var(--brd);}
+.topbar a:hover{border-color:var(--acc);color:var(--acc);}
+.layout{display:grid;grid-template-columns:340px 1fr;height:calc(100vh - 54px);overflow:hidden;}
+.sidebar{background:var(--sb);border-right:1px solid var(--brd);display:flex;flex-direction:column;overflow:hidden;}
+.sb-header{padding:14px 16px;border-bottom:1px solid var(--brd);display:flex;align-items:center;justify-content:space-between;}
+.sb-header span{font-weight:600;font-size:14px;}
+.route-list{flex:1;overflow-y:auto;padding:10px;}
+.route-card{background:var(--card2);border:1px solid var(--brd);border-radius:12px;padding:14px;margin-bottom:10px;cursor:pointer;transition:all .2s;}
+.route-card:hover{border-color:var(--acc);}
+.route-card.selected{border-color:var(--acc);background:rgba(249,115,22,.08);}
+.rc-name{font-size:13.5px;font-weight:600;margin-bottom:4px;}
+.rc-meta{font-size:11px;color:var(--mt);display:flex;gap:12px;flex-wrap:wrap;}
+.main{overflow-y:auto;padding:20px;}
+.badge{display:inline-block;padding:2px 10px;border-radius:20px;font-size:10.5px;font-weight:600;}
+.b-pending{background:rgba(234,179,8,.12);color:var(--yel);}
+.b-started{background:rgba(59,130,246,.12);color:var(--blu);}
+.b-completed{background:rgba(34,197,94,.12);color:var(--grn);}
+.b-cancelled{background:rgba(239,68,68,.12);color:var(--red);}
+.card{background:var(--card2);border:1px solid var(--brd);border-radius:14px;overflow:hidden;margin-bottom:16px;}
+.card-header{padding:13px 16px;border-bottom:1px solid var(--brd);display:flex;align-items:center;gap:8px;font-weight:600;}
+.card-body{padding:16px;}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;border:1px solid var(--brd);background:var(--card2);color:var(--tx);font-size:12px;font-family:Inter,sans-serif;cursor:pointer;transition:all .2s;}
+.btn:hover{border-color:var(--acc);color:var(--acc);}
+.btn.primary{background:var(--acc);border-color:var(--acc);color:#fff;}
+.btn.primary:hover{background:#ea6c0a;}
+.btn.green{background:var(--grn);border-color:var(--grn);color:#fff;}
+.btn.danger{border-color:var(--red);color:var(--red);}
+input,select,textarea{background:var(--card);border:1px solid var(--brd);border-radius:8px;padding:7px 11px;color:var(--tx);font-size:12px;font-family:Inter,sans-serif;outline:none;transition:border .2s;width:100%;}
+input:focus,select:focus{border-color:var(--acc);}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;margin-bottom:12px;}
+.form-field{display:flex;flex-direction:column;gap:5px;}
+.form-field label{font-size:11px;color:var(--mt);font-weight:500;}
+.stop-row{background:var(--card);border:1px solid var(--brd);border-radius:10px;padding:12px;margin-bottom:8px;display:flex;gap:10px;align-items:flex-start;}
+.stop-num{width:28px;height:28px;border-radius:50%;background:var(--acc);color:#fff;font-weight:700;font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.stop-num.done{background:var(--grn);}
+.stop-num.fail{background:var(--red);}
+.stop-info{flex:1;}
+.stop-name{font-weight:600;font-size:13px;margin-bottom:2px;}
+.stop-addr{font-size:11px;color:var(--mt);}
+.stop-actions{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;}
+.progress-bar{height:6px;border-radius:99px;background:var(--brd);margin:8px 0;}
+.progress-fill{height:100%;border-radius:99px;background:var(--grn);transition:width .4s;}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--card);border:1px solid var(--brd);border-radius:16px;padding:24px;width:620px;max-width:95vw;max-height:90vh;overflow-y:auto;}
+.modal h3{font-size:15px;margin-bottom:18px;}
+.modal-footer{display:flex;gap:8px;margin-top:18px;justify-content:flex-end;}
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px;}
+.kpi{background:var(--card2);border:1px solid var(--brd);border-radius:12px;padding:14px;}
+.kpi .kv{font-size:22px;font-weight:700;font-family:'JetBrains Mono',monospace;margin-bottom:3px;}
+.kpi .kl{font-size:11px;color:var(--mt);}
+.kpi.orange .kv{color:var(--acc);} .kpi.green .kv{color:var(--grn);} .kpi.blue .kv{color:var(--blu);} .kpi.yel .kv{color:var(--yel);}
+.empty{text-align:center;padding:40px;color:var(--mt);}
+.wa-btn{background:rgba(37,211,102,.15);border:1px solid rgba(37,211,102,.3);color:#25d366;border-radius:7px;padding:4px 10px;font-size:11px;cursor:pointer;}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <a href="/internal"><i class="fas fa-arrow-left"></i> POS</a>
+  <i class="fas fa-motorcycle" style="color:var(--acc)"></i>
+  <span style="font-size:15px;font-weight:600">Delivery Tracking</span>
+  <span style="margin-left:auto;display:flex;gap:8px;align-items:center">
+    <input type="date" id="filter-date" onchange="loadRoutes()" style="width:140px"/>
+    <button class="btn primary" onclick="openNewRoute()"><i class="fas fa-plus"></i> New Route</button>
+  </span>
+</div>
+
+<div class="layout">
+  <!-- SIDEBAR: Route List -->
+  <div class="sidebar">
+    <div class="sb-header">
+      <span><i class="fas fa-list-check" style="color:var(--acc)"></i> Routes</span>
+      <span id="route-count" style="font-size:11px;color:var(--mt)"></span>
+    </div>
+    <div class="route-list" id="route-list">
+      <div class="empty"><i class="fas fa-spinner fa-spin"></i> Loading…</div>
+    </div>
+  </div>
+
+  <!-- MAIN: Route Detail -->
+  <div class="main">
+    <div id="no-selection" style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:60vh;color:var(--mt);">
+      <i class="fas fa-motorcycle" style="font-size:48px;margin-bottom:16px;opacity:.3"></i>
+      <div style="font-size:15px">Select a route to view details</div>
+      <div style="font-size:12px;margin-top:6px">or create a new delivery route</div>
+    </div>
+
+    <div id="route-detail" style="display:none">
+      <!-- KPI -->
+      <div class="kpi-row">
+        <div class="kpi orange"><div class="kv" id="d-total">—</div><div class="kl">Total Stops</div></div>
+        <div class="kpi green"><div class="kv" id="d-done">—</div><div class="kl">Delivered</div></div>
+        <div class="kpi blue"><div class="kv" id="d-pending">—</div><div class="kl">Pending</div></div>
+        <div class="kpi yel"><div class="kv" id="d-failed">—</div><div class="kl">Failed</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <i class="fas fa-route" style="color:var(--acc)"></i>
+          <span id="d-name">Route Detail</span>
+          <span id="d-status-badge" style="margin-left:8px"></span>
+          <span style="margin-left:auto;display:flex;gap:8px;">
+            <button class="btn" id="btn-start" onclick="startRoute()"><i class="fas fa-play"></i> Start</button>
+            <button class="btn green" id="btn-complete" onclick="completeRoute()" style="display:none"><i class="fas fa-check"></i> Complete</button>
+            <button class="btn danger" onclick="deleteRoute()"><i class="fas fa-trash"></i></button>
+          </span>
+        </div>
+        <div class="card-body">
+          <div style="display:flex;gap:24px;margin-bottom:14px;font-size:12px;color:var(--mt);">
+            <span><i class="fas fa-person-biking"></i> <strong id="d-boy" style="color:var(--tx)">—</strong></span>
+            <span><i class="fas fa-phone"></i> <span id="d-phone">—</span></span>
+            <span><i class="fas fa-calendar"></i> <span id="d-date">—</span></span>
+          </div>
+          <div class="progress-bar"><div class="progress-fill" id="d-progress" style="width:0%"></div></div>
+          <div style="font-size:11px;color:var(--mt);margin-bottom:16px"><span id="d-progress-text">0% complete</span></div>
+
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+            <div style="font-weight:600"><i class="fas fa-map-marker-alt" style="color:var(--acc)"></i> Delivery Stops</div>
+            <button class="btn" onclick="addStop()" style="padding:5px 10px;font-size:11px"><i class="fas fa-plus"></i> Add Stop</button>
+          </div>
+          <div id="stops-container"></div>
+          <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--brd);">
+            <div style="font-size:11.5px;color:var(--mt)"><i class="fas fa-sticky-note"></i> Notes: <span id="d-notes">—</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Share -->
+      <div class="card">
+        <div class="card-header"><i class="fas fa-share-nodes" style="color:var(--grn)"></i> Share & Notify</div>
+        <div class="card-body" style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button class="wa-btn" onclick="shareWhatsApp()"><i class="fab fa-whatsapp"></i> Share Route on WhatsApp</button>
+          <button class="btn" onclick="printRoute()"><i class="fas fa-print"></i> Print Route Sheet</button>
+          <button class="btn" onclick="copyRoute()"><i class="fas fa-copy"></i> Copy Summary</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- NEW ROUTE MODAL -->
+<div class="modal-overlay" id="route-modal">
+  <div class="modal">
+    <h3><i class="fas fa-route" style="color:var(--acc)"></i> New Delivery Route</h3>
+    <div class="form-grid">
+      <div class="form-field"><label>Route Name *</label><input type="text" id="nr-name" placeholder="e.g. Morning Route A"/></div>
+      <div class="form-field"><label>Delivery Boy *</label><input type="text" id="nr-boy" placeholder="Name"/></div>
+      <div class="form-field"><label>Phone</label><input type="text" id="nr-phone" placeholder="10-digit mobile"/></div>
+      <div class="form-field"><label>Delivery Date *</label><input type="date" id="nr-date"/></div>
+    </div>
+    <div class="form-field" style="margin-bottom:14px"><label>Notes</label><input type="text" id="nr-notes" placeholder="Any special instructions"/></div>
+    <div style="font-weight:600;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">
+      <span>Stops / Shops</span>
+      <button class="btn" onclick="addStopRow()" style="padding:4px 10px;font-size:11px"><i class="fas fa-plus"></i> Add Stop</button>
+    </div>
+    <div id="stops-builder">
+      <!-- dynamic rows -->
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('route-modal')">Cancel</button>
+      <button class="btn primary" onclick="createRoute()"><i class="fas fa-save"></i> Create Route</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const today = new Date().toISOString().split('T')[0];
+let routes=[], selRoute=null, stopRows=0;
+
+document.getElementById('filter-date').value = today;
+
+async function loadRoutes(){
+  const date=document.getElementById('filter-date').value;
+  routes = await fetch('/api/open/delivery/routes'+(date?'?date='+date:'')).then(r=>r.json());
+  const container=document.getElementById('route-list');
+  document.getElementById('route-count').textContent=routes.length+' routes';
+  if(!routes.length){container.innerHTML='<div class="empty">No routes for this date.<br>Create a new one!</div>';return;}
+  container.innerHTML=routes.map(r=>{
+    const shops=Array.isArray(r.shops)?r.shops:[];
+    const done=shops.filter(s=>s.status==='delivered').length;
+    const pct=shops.length?Math.round(done/shops.length*100):0;
+    return `<div class="route-card ${selRoute&&selRoute.id===r.id?'selected':''}" onclick="selectRoute(${r.id})">
+      <div class="rc-name">${r.route_name}</div>
+      <div style="margin:6px 0"><div class="progress-bar" style="margin:0"><div class="progress-fill" style="width:${pct}%"></div></div></div>
+      <div class="rc-meta">
+        <span><i class="fas fa-person-biking"></i> ${r.delivery_boy||'—'}</span>
+        <span><i class="fas fa-map-pin"></i> ${shops.length} stops (${done} done)</span>
+        <span><span class="badge b-${r.status}">${r.status}</span></span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function selectRoute(id){
+  selRoute=routes.find(r=>r.id===id);
+  if(!selRoute) return;
+  loadRoutes();
+  document.getElementById('no-selection').style.display='none';
+  document.getElementById('route-detail').style.display='block';
+  renderDetail();
+}
+
+function renderDetail(){
+  const r=selRoute;
+  const shops=Array.isArray(r.shops)?r.shops:[];
+  const done=shops.filter(s=>s.status==='delivered').length;
+  const failed=shops.filter(s=>s.status==='failed').length;
+  const pct=shops.length?Math.round(done/shops.length*100):0;
+  document.getElementById('d-name').textContent=r.route_name;
+  document.getElementById('d-status-badge').innerHTML=`<span class="badge b-${r.status}">${r.status}</span>`;
+  document.getElementById('d-boy').textContent=r.delivery_boy||'—';
+  document.getElementById('d-phone').textContent=r.delivery_phone||'—';
+  document.getElementById('d-date').textContent=r.delivery_date||'—';
+  document.getElementById('d-notes').textContent=r.notes||'None';
+  document.getElementById('d-total').textContent=shops.length;
+  document.getElementById('d-done').textContent=done;
+  document.getElementById('d-pending').textContent=shops.length-done-failed;
+  document.getElementById('d-failed').textContent=failed;
+  document.getElementById('d-progress').style.width=pct+'%';
+  document.getElementById('d-progress-text').textContent=pct+'% complete ('+done+'/'+shops.length+')';
+  document.getElementById('btn-start').style.display=r.status==='pending'?'':'none';
+  document.getElementById('btn-complete').style.display=r.status==='started'?'':'none';
+  renderStops(shops);
+}
+
+function renderStops(shops){
+  const container=document.getElementById('stops-container');
+  if(!shops.length){container.innerHTML='<div class="empty">No stops added yet.</div>';return;}
+  container.innerHTML=shops.map((s,i)=>{
+    const cls=s.status==='delivered'?'done':s.status==='failed'?'fail':'';
+    const icon=s.status==='delivered'?'<i class="fas fa-check"></i>':s.status==='failed'?'<i class="fas fa-xmark"></i>':(i+1);
+    return `<div class="stop-row" id="stop-${i}">
+      <div class="stop-num ${cls}">${icon}</div>
+      <div class="stop-info">
+        <div class="stop-name">${s.name||'Stop '+(i+1)}</div>
+        <div class="stop-addr">${s.address||''} ${s.phone?'| '+s.phone:''}</div>
+        ${s.items?`<div style="font-size:11px;color:var(--mt);margin-top:3px"><i class="fas fa-pills"></i> ${s.items}</div>`:''}
+        ${s.amount?`<div style="font-size:12px;font-weight:600;margin-top:3px;color:var(--acc)">₹${s.amount}</div>`:''}
+        <div class="stop-actions">
+          ${s.status!=='delivered'?`<button class="btn green" style="padding:4px 10px;font-size:11px" onclick="updateStop(${i},'delivered')"><i class="fas fa-check"></i> Delivered</button>`:''}
+          ${s.status!=='failed'&&s.status!=='delivered'?`<button class="btn danger" style="padding:4px 10px;font-size:11px" onclick="updateStop(${i},'failed')"><i class="fas fa-xmark"></i> Failed</button>`:''}
+          ${s.status!=='pending'?`<button class="btn" style="padding:4px 10px;font-size:11px" onclick="updateStop(${i},'pending')"><i class="fas fa-rotate-left"></i> Reset</button>`:''}
+          ${s.phone?`<button class="wa-btn" onclick="callWA('${s.phone}','${s.name}')"><i class="fab fa-whatsapp"></i> Notify</button>`:''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function updateStop(idx, status){
+  const shops=Array.isArray(selRoute.shops)?[...selRoute.shops]:[];
+  shops[idx]={...shops[idx],status};
+  const r=await fetch('/api/open/delivery/routes/'+selRoute.id,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({shops})});
+  const j=await r.json();
+  if(j.status==='success'){selRoute.shops=shops;renderDetail();}
+}
+
+async function startRoute(){
+  const r=await fetch('/api/open/delivery/routes/'+selRoute.id,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'started'})});
+  const j=await r.json();
+  if(j.status==='success'){selRoute.status='started';renderDetail();loadRoutes();}
+}
+
+async function completeRoute(){
+  if(!confirm('Mark route as completed?')) return;
+  const r=await fetch('/api/open/delivery/routes/'+selRoute.id,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'completed'})});
+  const j=await r.json();
+  if(j.status==='success'){selRoute.status='completed';renderDetail();loadRoutes();}
+}
+
+async function deleteRoute(){
+  if(!confirm('Delete this route?')) return;
+  await fetch('/api/open/delivery/routes/'+selRoute.id,{method:'DELETE'});
+  selRoute=null;
+  document.getElementById('no-selection').style.display='flex';
+  document.getElementById('route-detail').style.display='none';
+  loadRoutes();
+}
+
+function openNewRoute(){
+  document.getElementById('nr-name').value='';
+  document.getElementById('nr-boy').value='';
+  document.getElementById('nr-phone').value='';
+  document.getElementById('nr-date').value=document.getElementById('filter-date').value||today;
+  document.getElementById('nr-notes').value='';
+  document.getElementById('stops-builder').innerHTML='';
+  stopRows=0; addStopRow(); addStopRow();
+  document.getElementById('route-modal').classList.add('open');
+}
+
+function addStopRow(){
+  stopRows++;
+  const div=document.createElement('div');
+  div.id='sr-'+stopRows;
+  div.style.cssText='background:var(--card);border:1px solid var(--brd);border-radius:10px;padding:12px;margin-bottom:8px;';
+  div.innerHTML=`
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+      <span style="font-weight:600;font-size:12px;color:var(--acc)">Stop ${stopRows}</span>
+      <button onclick="document.getElementById('sr-${stopRows}').remove();stopRows--" style="margin-left:auto;background:none;border:none;color:var(--red);cursor:pointer;font-size:12px"><i class="fas fa-trash"></i></button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <input type="text" placeholder="Shop / Customer Name *" class="sr-name"/>
+      <input type="text" placeholder="Phone" class="sr-phone"/>
+      <input type="text" placeholder="Address" class="sr-addr" style="grid-column:span 2"/>
+      <input type="text" placeholder="Medicines / Items" class="sr-items"/>
+      <input type="number" placeholder="Amount (₹)" class="sr-amount" step="0.01"/>
+    </div>`;
+  document.getElementById('stops-builder').appendChild(div);
+}
+
+async function createRoute(){
+  const name=document.getElementById('nr-name').value.trim();
+  const boy=document.getElementById('nr-boy').value.trim();
+  if(!name||!boy) return alert('Route name and delivery boy required');
+  const stopEls=document.querySelectorAll('#stops-builder>div');
+  const shops=[];
+  stopEls.forEach(el=>{
+    const n=el.querySelector('.sr-name')?.value.trim();
+    if(n) shops.push({
+      name:n,
+      phone:el.querySelector('.sr-phone')?.value.trim()||'',
+      address:el.querySelector('.sr-addr')?.value.trim()||'',
+      items:el.querySelector('.sr-items')?.value.trim()||'',
+      amount:parseFloat(el.querySelector('.sr-amount')?.value)||0,
+      status:'pending'
+    });
+  });
+  const body={
+    route_name:name, delivery_boy:boy,
+    delivery_phone:document.getElementById('nr-phone').value.trim(),
+    delivery_date:document.getElementById('nr-date').value,
+    notes:document.getElementById('nr-notes').value.trim(),
+    shops
+  };
+  const r=await fetch('/api/open/delivery/routes',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const j=await r.json();
+  if(j.status==='success'){
+    closeModal('route-modal');
+    await loadRoutes();
+    const created=routes.find(x=>x.id===j.route_id);
+    if(created) selectRoute(j.route_id);
+  } else alert(j.error||'Failed');
+}
+
+function addStop(){
+  if(!selRoute) return;
+  const name=prompt('Shop / Customer name:'); if(!name) return;
+  const phone=prompt('Phone (optional):');
+  const address=prompt('Address (optional):');
+  const items=prompt('Medicines / items:');
+  const amount=parseFloat(prompt('Amount ₹:')||0);
+  const shops=Array.isArray(selRoute.shops)?[...selRoute.shops]:[];
+  shops.push({name,phone:phone||'',address:address||'',items:items||'',amount,status:'pending'});
+  fetch('/api/open/delivery/routes/'+selRoute.id,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({shops})})
+    .then(r=>r.json()).then(j=>{if(j.status==='success'){selRoute.shops=shops;renderDetail();}});
+}
+
+function callWA(phone, name){
+  const msg=`Hi, this is Selvam Medicals delivery update for ${name}. Your medicines are on the way!`;
+  window.open('https://wa.me/91'+phone.replace(/\D/g,'')+'?text='+encodeURIComponent(msg));
+}
+
+function shareWhatsApp(){
+  if(!selRoute) return;
+  const shops=Array.isArray(selRoute.shops)?selRoute.shops:[];
+  let msg=`*Selvam Medicals — Delivery Route*\n`;
+  msg+=`Route: ${selRoute.route_name}\n`;
+  msg+=`Boy: ${selRoute.delivery_boy} | Date: ${selRoute.delivery_date}\n\n`;
+  shops.forEach((s,i)=>{msg+=`${i+1}. ${s.name} | ${s.phone} | ₹${s.amount||0}\n`;});
+  if(selRoute.delivery_phone)
+    window.open('https://wa.me/91'+selRoute.delivery_phone.replace(/\D/g,'')+'?text='+encodeURIComponent(msg));
+  else window.open('https://wa.me/?text='+encodeURIComponent(msg));
+}
+
+function printRoute(){
+  if(!selRoute) return;
+  const shops=Array.isArray(selRoute.shops)?selRoute.shops:[];
+  let html=`<html><head><title>Route Sheet</title><style>body{font-family:Arial,sans-serif;padding:20px;}table{width:100%;border-collapse:collapse;}th,td{border:1px solid #ccc;padding:8px;font-size:12px;}th{background:#f5f5f5;}</style></head><body>`;
+  html+=`<h2>Selvam Medicals — Route Sheet</h2>`;
+  html+=`<p><b>Route:</b> ${selRoute.route_name} &nbsp; <b>Boy:</b> ${selRoute.delivery_boy} &nbsp; <b>Date:</b> ${selRoute.delivery_date}</p>`;
+  html+=`<table><tr><th>#</th><th>Shop/Customer</th><th>Phone</th><th>Address</th><th>Items</th><th>Amount</th><th>Sign</th></tr>`;
+  shops.forEach((s,i)=>{html+=`<tr><td>${i+1}</td><td>${s.name}</td><td>${s.phone}</td><td>${s.address}</td><td>${s.items}</td><td>₹${s.amount||0}</td><td></td></tr>`;});
+  html+=`</table></body></html>`;
+  const w=window.open('','_blank'); w.document.write(html); w.document.close(); w.print();
+}
+
+function copyRoute(){
+  if(!selRoute) return;
+  const shops=Array.isArray(selRoute.shops)?selRoute.shops:[];
+  let txt=`Route: ${selRoute.route_name} | ${selRoute.delivery_boy} | ${selRoute.delivery_date}\n`;
+  shops.forEach((s,i)=>{txt+=`${i+1}. ${s.name} (${s.phone}) — ₹${s.amount||0}\n`;});
+  navigator.clipboard.writeText(txt).then(()=>alert('Copied to clipboard!'));
+}
+
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+
+loadRoutes();
+setInterval(loadRoutes, 30000); // auto-refresh every 30s
+</script>
+</body>
+</html>

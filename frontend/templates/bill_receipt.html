@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Bill {{ bill.id if bill else '' }} — Selvam Medicals</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:Inter,sans-serif;background:#f1f5f9;color:#0f172a;min-height:100vh;padding:20px 10px;}
+.mono{font-family:'JetBrains Mono',monospace;}
+.no-print{display:block;}
+.no-print .toolbar{max-width:380px;margin:0 auto 14px;display:flex;gap:8px;flex-wrap:wrap;justify-content:center;}
+.no-print .toolbar a,.no-print .toolbar button{
+  flex:1;min-width:80px;background:#fff;border:1.5px solid #cbd5e1;color:#475569;
+  padding:10px 14px;border-radius:10px;font-weight:700;font-size:.85rem;cursor:pointer;
+  text-align:center;text-decoration:none;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px;
+}
+.no-print .toolbar .wa{background:#16a34a;color:#fff;border-color:#16a34a;}
+.no-print .toolbar .wa:hover{background:#15803d;}
+.no-print .toolbar .print{background:#f97316;color:#fff;border-color:#f97316;}
+.no-print .toolbar .print:hover{background:#ea580c;}
+
+/* RECEIPT */
+.bill{
+  max-width:380px;margin:0 auto;background:#fff;
+  padding:20px 22px;border:1px solid #cbd5e1;border-radius:6px;
+  font-size:13px;line-height:1.5;color:#0f172a;
+  box-shadow:0 8px 24px rgba(0,0,0,.06);
+}
+.bill .shop-name{font-size:22px;font-weight:900;text-align:center;letter-spacing:.5px;color:#0f172a;}
+.bill .shop-sub{font-size:11px;text-align:center;color:#64748b;margin-top:2px;line-height:1.5;}
+.bill .shop-license{font-size:10px;text-align:center;color:#94a3b8;margin-top:4px;}
+.bill .div-dotted{border-top:1.5px dashed #94a3b8;margin:10px 0;}
+.bill .div-solid{border-top:1.5px solid #0f172a;margin:8px 0;}
+
+.bill-head{display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:11px;}
+.bill-head .label{color:#64748b;}
+.bill-head .value{font-weight:600;}
+
+.cust-row{font-size:12px;margin:6px 0;}
+.cust-row strong{font-weight:700;}
+
+.items{margin:8px 0;}
+.items table{width:100%;border-collapse:collapse;font-size:11.5px;}
+.items th{text-align:left;padding:4px 2px;font-weight:700;border-bottom:1px solid #0f172a;font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;}
+.items th.r,.items td.r{text-align:right;}
+.items th.c,.items td.c{text-align:center;}
+.items td{padding:4px 2px;border-bottom:1px dashed #cbd5e1;vertical-align:top;}
+.items tr:last-child td{border-bottom:none;}
+.items .name{font-weight:600;font-size:11.5px;}
+
+.totals{font-size:12.5px;margin-top:6px;}
+.totals .row{display:flex;justify-content:space-between;padding:3px 0;}
+.totals .row.grand{font-weight:900;font-size:16px;border-top:2px solid #0f172a;border-bottom:2px solid #0f172a;padding:6px 0;margin-top:4px;}
+
+.payment{background:#f8fafc;border:1px dashed #cbd5e1;border-radius:5px;padding:7px 10px;margin-top:8px;font-size:11.5px;}
+.payment .row{display:flex;justify-content:space-between;}
+
+.footer{text-align:center;font-size:10.5px;color:#64748b;margin-top:12px;line-height:1.6;}
+.footer strong{color:#0f172a;}
+.qr-area{text-align:center;margin-top:10px;font-size:9px;color:#94a3b8;}
+
+/* DOSAGE STRIP */
+.dosage{background:#fef3c7;border-left:3px solid #f59e0b;padding:4px 6px;margin-top:2px;font-size:10.5px;color:#78350f;line-height:1.4;}
+.dosage strong{color:#92400e;}
+.dosage-ta{color:#7c2d12;margin-top:1px;font-size:10px;}
+
+/* PRINT — 80mm DEFAULT */
+@media print {
+  body{background:#fff;padding:0;}
+  .no-print{display:none !important;}
+  .bill{box-shadow:none;border:none;padding:8px 10px;max-width:100%;}
+  @page{margin:5mm;size:80mm auto;}
+}
+/* PRINT — 58mm THERMAL (Niyama BT-58) */
+@media print {
+  body.print-58 .bill{padding:4px 6px;font-size:11px;max-width:58mm;}
+  body.print-58 .bill .shop-name{font-size:14px;}
+  body.print-58 .bill .shop-sub,body.print-58 .bill .shop-license{font-size:8.5px;}
+  body.print-58 .items table{font-size:9px;}
+  body.print-58 .items th{font-size:8px;padding:2px 1px;}
+  body.print-58 .items td{padding:2px 1px;}
+  body.print-58 .totals{font-size:10px;}
+  body.print-58 .totals .row.grand{font-size:12px;}
+  body.print-58 .dosage{font-size:8.5px;padding:2px 4px;}
+  body.print-58 .dosage-ta{font-size:8px;}
+  body.print-58 .footer{font-size:8px;}
+  body.print-58 .bill-head{font-size:9px;}
+  body.print-58 @page{size:58mm auto;margin:2mm;}
+}
+</style>
+</head>
+<body>
+
+<!-- TOOLBAR (hidden in print) -->
+<div class="no-print">
+  <div class="toolbar">
+    {% if bill %}
+      <button class="wa" onclick="sendWA()"><i class="fab fa-whatsapp"></i> WhatsApp</button>
+      <button class="print" onclick="printBill('80')"><i class="fas fa-print"></i> Print 80mm</button>
+      <button class="print" onclick="printBill('58')" style="background:#0ea5e9;border-color:#0ea5e9;"><i class="fas fa-mobile-alt"></i> Print 58mm</button>
+      <button onclick="toggleDosage()" id="doseBtn" style="background:#fef3c7;color:#92400e;border-color:#fbbf24;"><i class="fas fa-pills"></i> + Dosage</button>
+      <a href="/internal"><i class="fas fa-arrow-left"></i> New Bill</a>
+    {% endif %}
+  </div>
+</div>
+
+{% if bill %}
+<div class="bill" id="billDOM">
+
+  <div class="shop-name">SELVAM MEDICALS</div>
+  <div class="shop-sub">
+    SS &amp; Co · 1266, MTP Road<br/>
+    Saibaba Kovil, Tirunelveli-43<br/>
+    📞 9876543210 · GSTIN: 33ABCDE1234F1Z5
+  </div>
+  <div class="shop-license">DL: TN/DL/2024/000123 · NDPS: TN/NDPS/2024/045</div>
+
+  <div class="div-solid"></div>
+
+  <div style="text-align:center;font-weight:800;font-size:13px;letter-spacing:1.2px;">
+    {% if bill.bill_type == 'wholesale' %}TAX INVOICE{% else %}CASH MEMO / BILL{% endif %}
+  </div>
+
+  <div class="div-dotted"></div>
+
+  <div class="bill-head">
+    <div><span class="label">Bill #:</span> <span class="value mono">{{ bill.id }}</span></div>
+    <div><span class="label">Date:</span> <span class="value mono">{{ bill.date }}</span></div>
+    {% if bill.staff_name %}<div><span class="label">By:</span> <span class="value">{{ bill.staff_name }}</span></div>{% endif %}
+    <div><span class="label">Pay:</span> <span class="value">{{ bill.pay or 'Cash' }}</span></div>
+  </div>
+
+  <div class="div-dotted"></div>
+
+  {% if bill.cust and bill.cust != 'Walk-in' %}
+  <div class="cust-row"><strong>Customer:</strong> {{ bill.cust }}{% if bill.phone %} ({{ bill.phone }}){% endif %}</div>
+  {% endif %}
+  {% if bill.doctor %}
+  <div class="cust-row"><strong>Doctor:</strong> {{ bill.doctor }}</div>
+  {% endif %}
+
+  <div class="items">
+    <table>
+      <thead>
+        <tr><th>#</th><th>Item</th><th class="c">Qty</th><th class="r">Rate</th><th class="r">Amt</th></tr>
+      </thead>
+      <tbody>
+        {% for it in items %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td class="name">{{ it.name }}</td>
+          <td class="c mono">{{ it.qty }}</td>
+          <td class="r mono">{{ '%.2f'|format(it.price) }}</td>
+          <td class="r mono">{{ '%.2f'|format(it.amount) }}</td>
+        </tr>
+        <tr class="dosage-row" data-medname="{{ it.name }}" style="display:none;">
+          <td colspan="5" style="padding:0 0 4px 16px;">
+            <div class="dosage">
+              <strong>📋 How to take:</strong> <span class="dose-en">Loading...</span>
+              <div class="dosage-ta"><span class="dose-ta"></span></div>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="div-dotted"></div>
+
+  <div class="totals">
+    <div class="row"><span>Subtotal</span><span class="mono">₹{{ '%.2f'|format(bill.sub or 0) }}</span></div>
+    {% if bill.disc and bill.disc > 0 %}
+    <div class="row"><span>Discount</span><span class="mono" style="color:#dc2626;">-₹{{ '%.2f'|format(bill.disc) }}</span></div>
+    {% endif %}
+    <div class="row"><span>GST (12%)</span><span class="mono">₹{{ '%.2f'|format(bill.tax or 0) }}</span></div>
+    <div class="row grand"><span>TOTAL</span><span class="mono">₹{{ '%.2f'|format(bill.total or 0) }}</span></div>
+  </div>
+
+  <div class="payment">
+    <div class="row"><span>Items / Qty</span><span class="mono">{{ items|length }} / {{ items|sum(attribute='qty') }}</span></div>
+    <div class="row"><span>Paid via</span><span><strong>{{ bill.pay or 'Cash' }}</strong></span></div>
+  </div>
+
+  <div class="div-dotted"></div>
+
+  <div class="footer">
+    <strong>Thank you for shopping with us!</strong><br/>
+    Get well soon · For refills, WhatsApp us<br/>
+    📱 WhatsApp: 9876543210<br/>
+    <span style="font-size:9px;">*Goods once sold will not be taken back · Save this bill for warranty</span>
+  </div>
+
+</div>
+
+<script>
+const billPhone = "{{ bill.phone or '' }}";
+const billId = "{{ bill.id }}";
+const billTotal = "{{ '%.2f'|format(bill.total or 0) }}";
+const billItemNames = [{% for it in items %}"{{ it.name|replace('"','') }}"{% if not loop.last %},{% endif %}{% endfor %}];
+
+// Dosage cache
+let dosageData = {};  // {medName: {dosage_en, dosage_ta}}
+let dosageVisible = false;
+
+async function loadAllDosages(){
+  for(const nm of billItemNames){
+    if(dosageData[nm]) continue;
+    try {
+      const r = await fetch('/api/dosage/lookup?name=' + encodeURIComponent(nm));
+      const d = await r.json();
+      dosageData[nm] = d;
+    } catch(e){ dosageData[nm] = {dosage_en:'', dosage_ta:''}; }
+  }
+}
+
+async function toggleDosage(){
+  if(!Object.keys(dosageData).length){
+    document.getElementById('doseBtn').innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+    await loadAllDosages();
+  }
+  dosageVisible = !dosageVisible;
+  document.querySelectorAll('.dosage-row').forEach(row => {
+    const name = row.dataset.medname;
+    const d = dosageData[name] || {};
+    if(dosageVisible && (d.dosage_en || d.dosage_ta)){
+      row.style.display = '';
+      row.querySelector('.dose-en').textContent = d.dosage_en || '(not in database)';
+      row.querySelector('.dose-ta').textContent = d.dosage_ta || '';
+    } else {
+      row.style.display = 'none';
+    }
+  });
+  const btn = document.getElementById('doseBtn');
+  btn.innerHTML = dosageVisible ? '<i class="fas fa-pills"></i> Hide Dosage' : '<i class="fas fa-pills"></i> + Dosage';
+  btn.style.background = dosageVisible ? '#fbbf24' : '#fef3c7';
+}
+
+function printBill(width){
+  document.body.classList.toggle('print-58', width === '58');
+  setTimeout(() => window.print(), 100);
+  setTimeout(() => document.body.classList.remove('print-58'), 2000);
+}
+
+async function sendWA(){
+  let phone = (billPhone || '').replace(/[^0-9]/g, '');
+  if(!phone){
+    phone = prompt('Customer WhatsApp number (10 digits or with +91)?');
+    if(!phone) return;
+    phone = phone.replace(/[^0-9]/g, '');
+  }
+  if(phone.length === 10) phone = '91' + phone;
+
+  // Make sure dosages are loaded
+  if(!Object.keys(dosageData).length) await loadAllDosages();
+
+  const wantDose = confirm('Include dosage instructions ("How to eat the tablet") in the message?');
+
+  const lines = [];
+  lines.push('🏥 *SELVAM MEDICALS*');
+  lines.push('SS & Co, Tirunelveli');
+  lines.push('━━━━━━━━━━━━━');
+  lines.push('Bill: ' + billId);
+  lines.push('Date: ' + "{{ bill.date }}");
+  if("{{ bill.cust or '' }}") lines.push('Customer: {{ bill.cust }}');
+  lines.push('━━━━━━━━━━━━━');
+  {% for it in items %}{
+    lines.push('{{ loop.index }}. *{{ it.name }}*');
+    lines.push('   ' + "{{ it.qty }}" + ' × ₹' + "{{ '%.2f'|format(it.price) }}" + ' = ₹' + "{{ '%.2f'|format(it.amount) }}");
+    if(wantDose){
+      const dd = dosageData["{{ it.name|replace('"','') }}"];
+      if(dd && (dd.dosage_en || dd.dosage_ta)){
+        lines.push('   📋 ' + (dd.dosage_en || ''));
+        if(dd.dosage_ta) lines.push('   ' + dd.dosage_ta);
+      }
+    }
+  }
+  {% endfor %}
+  lines.push('━━━━━━━━━━━━━');
+  lines.push('Subtotal: ₹{{ "%.2f"|format(bill.sub or 0) }}');
+  {% if bill.disc and bill.disc > 0 %}lines.push('Discount: -₹{{ "%.2f"|format(bill.disc) }}');{% endif %}
+  lines.push('GST: ₹{{ "%.2f"|format(bill.tax or 0) }}');
+  lines.push('*TOTAL: ₹' + billTotal + '*');
+  lines.push('━━━━━━━━━━━━━');
+  lines.push('🙏 Thank you! Get well soon 💚');
+  lines.push('');
+  lines.push('Need refill? Reply REORDER');
+  lines.push('View bill: ' + window.location.href);
+
+  const text = encodeURIComponent(lines.join('\n'));
+  window.open(`https://wa.me/${phone}?text=${text}`, '_blank');
+}
+</script>
+
+{% else %}
+<div style="text-align:center;padding:60px 20px;color:#64748b;">
+  <h1 style="color:#dc2626;font-size:1.4rem;">Bill not found</h1>
+  <p style="margin-top:8px;">This bill ID does not exist.</p>
+  <a href="/internal" style="display:inline-block;margin-top:18px;background:#f97316;color:#fff;padding:10px 22px;border-radius:8px;text-decoration:none;font-weight:600;">← Back to POS</a>
+</div>
+{% endif %}
+
+</body>
+</html>

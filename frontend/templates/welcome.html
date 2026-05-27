@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>MediVision AI — Complete Pharmacy Management Platform</title>
+<!-- PWA -->
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#f97316">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="MediVision AI">
+<meta name="description" content="India's most advanced AI-powered pharmacy management system. POS billing, drug register, narcotic alerts, WhatsApp reminders, face recognition, delivery tracking and more."/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --grn:#16a34a;--grn2:#15803d;--grn-lt:#dcfce7;
+  --acc:#f97316;--blu:#2563eb;--pur:#7c3aed;
+  --tx:#0f172a;--mt:#64748b;--brd:#e2e8f0;--bg:#f8fafc;
+  --card:#ffffff;--dark:#0b0e16;--dark2:#111827;
+}
+html{scroll-behavior:smooth;}
+body{font-family:Inter,system-ui,sans-serif;color:var(--tx);background:#fff;overflow-x:hidden;}
+a{text-decoration:none;color:inherit;}
+
+/* ── NAV ── */
+nav{position:fixed;top:0;width:100%;background:rgba(255,255,255,.95);backdrop-filter:blur(16px);border-bottom:1px solid var(--brd);z-index:1000;padding:0 5%;}
+.nav-inner{max-width:1200px;margin:0 auto;height:66px;display:flex;align-items:center;justify-content:space-between;}
+.logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:1.2rem;}
+.logo-icon{width:38px;height:38px;background:linear-gradient(135deg,var(--grn),#22c55e);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.1rem;}
+.nav-links{display:flex;align-items:center;gap:28px;}
+.nav-links a{font-size:.88rem;color:var(--mt);font-weight:500;transition:color .2s;}
+.nav-links a:hover{color:var(--grn);}
+.nav-cta{display:flex;gap:10px;}
+.btn{display:inline-flex;align-items:center;gap:7px;padding:9px 20px;border-radius:8px;font-size:.88rem;font-weight:600;cursor:pointer;transition:all .2s;border:none;}
+.btn-outline{background:transparent;border:1.5px solid var(--brd);color:var(--tx);}
+.btn-outline:hover{border-color:var(--grn);color:var(--grn);}
+.btn-primary{background:var(--grn);color:#fff;}
+.btn-primary:hover{background:var(--grn2);transform:translateY(-1px);}
+.btn-accent{background:var(--acc);color:#fff;}
+.btn-accent:hover{background:#ea6c0a;transform:translateY(-1px);}
+.btn-lg{padding:14px 32px;font-size:1rem;border-radius:10px;}
+.btn-sm{padding:8px 18px;font-size:.82rem;border-radius:8px;}
+.btn-dark{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.8);}
+.btn-dark:hover{background:rgba(255,255,255,.14);}
+
+/* ── HERO ── */
+.hero{min-height:100vh;background:linear-gradient(135deg,#0b0e16 0%,#111827 50%,#0f2a1a 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 5% 60px;text-align:center;position:relative;overflow:hidden;}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 50% 0%,rgba(22,163,74,.15) 0%,transparent 70%);pointer-events:none;}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(22,163,74,.12);border:1px solid rgba(22,163,74,.25);color:#4ade80;padding:6px 16px;border-radius:99px;font-size:.8rem;font-weight:600;letter-spacing:.04em;margin-bottom:28px;}
+.hero h1{font-size:clamp(2.4rem,6vw,4.5rem);font-weight:900;color:#fff;line-height:1.08;margin-bottom:22px;max-width:900px;}
+.hero h1 span{background:linear-gradient(90deg,#4ade80,#22c55e,#f97316);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.hero p{font-size:clamp(1rem,2vw,1.18rem);color:#94a3b8;max-width:640px;line-height:1.7;margin-bottom:38px;}
+.hero-btns{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-bottom:60px;}
+.hero-stats{display:flex;gap:48px;justify-content:center;flex-wrap:wrap;}
+.hs{text-align:center;}
+.hs .val{font-size:2rem;font-weight:800;color:#fff;}
+.hs .lbl{font-size:.82rem;color:#64748b;margin-top:2px;}
+
+/* ── FLOATING CARDS ── */
+.hero-ui{margin-top:60px;position:relative;width:100%;max-width:1000px;}
+.mockup-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;max-width:900px;margin:0 auto;}
+.mk-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:20px;text-align:left;backdrop-filter:blur(10px);}
+.mk-card .mk-icon{font-size:1.5rem;margin-bottom:12px;}
+.mk-card h4{color:#e2e8f0;font-size:.95rem;font-weight:600;margin-bottom:6px;}
+.mk-card p{color:#64748b;font-size:.8rem;line-height:1.5;}
+.mk-stat{display:inline-block;background:rgba(22,163,74,.15);color:#4ade80;padding:2px 10px;border-radius:99px;font-size:.75rem;font-weight:700;margin-top:8px;}
+
+/* ── SECTION BASE ── */
+section{padding:90px 5%;}
+.container{max-width:1200px;margin:0 auto;}
+.sec-label{font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--grn);margin-bottom:12px;}
+.sec-title{font-size:clamp(1.8rem,3.5vw,2.8rem);font-weight:800;line-height:1.15;margin-bottom:16px;}
+.sec-sub{color:var(--mt);font-size:1rem;line-height:1.7;max-width:580px;}
+.sec-sub.center{margin:0 auto;}
+.text-center{text-align:center;}
+
+/* ── FEATURES GRID ── */
+.features-bg{background:var(--bg);}
+.feat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px;margin-top:52px;}
+.feat-card{background:var(--card);border:1.5px solid var(--brd);border-radius:16px;padding:28px;transition:all .25s;position:relative;overflow:hidden;}
+.feat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--grn),#22c55e);opacity:0;transition:opacity .25s;}
+.feat-card:hover{border-color:var(--grn);transform:translateY(-4px);box-shadow:0 12px 40px rgba(22,163,74,.1);}
+.feat-card:hover::before{opacity:1;}
+.feat-icon{width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;margin-bottom:18px;}
+.fi-grn{background:var(--grn-lt);color:var(--grn);}
+.fi-ora{background:#fff7ed;color:var(--acc);}
+.fi-blu{background:#dbeafe;color:var(--blu);}
+.fi-pur{background:#f3e8ff;color:var(--pur);}
+.fi-red{background:#fee2e2;color:#dc2626;}
+.fi-yel{background:#fef9c3;color:#a16207;}
+.feat-card h4{font-size:1.02rem;font-weight:700;margin-bottom:8px;}
+.feat-card p{color:var(--mt);font-size:.88rem;line-height:1.6;}
+.feat-badge{display:inline-block;padding:3px 10px;border-radius:99px;font-size:.72rem;font-weight:700;margin-top:10px;}
+.fb-ai{background:#fef3c7;color:#92400e;}
+.fb-new{background:var(--grn-lt);color:#166534;}
+.fb-hot{background:#fee2e2;color:#991b1b;}
+
+/* ── MODULE SHOWCASE ── */
+.modules-layout{display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center;margin-top:20px;}
+.modules-layout.rev{direction:rtl;}
+.modules-layout.rev>*{direction:ltr;}
+.module-visual{background:linear-gradient(135deg,#0b0e16,#111827);border-radius:20px;padding:28px;border:1px solid rgba(255,255,255,.06);}
+.module-visual .mv-header{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;gap:8px;font-size:.8rem;color:#94a3b8;}
+.mv-row{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.05);}
+.mv-row:last-child{border-bottom:none;}
+.mv-row .lbl{font-size:.82rem;color:#94a3b8;}
+.mv-row .val{font-size:.82rem;font-weight:600;color:#e2e8f0;}
+.mv-row .pill{padding:2px 8px;border-radius:99px;font-size:.7rem;font-weight:700;}
+.pgreen{background:rgba(34,197,94,.15);color:#4ade80;}
+.pred{background:rgba(239,68,68,.15);color:#f87171;}
+.pyel{background:rgba(234,179,8,.15);color:#fbbf24;}
+.pblue{background:rgba(59,130,246,.15);color:#60a5fa;}
+.module-info .mi-list{margin-top:20px;display:flex;flex-direction:column;gap:10px;}
+.mi-item{display:flex;align-items:flex-start;gap:12px;}
+.mi-dot{width:22px;height:22px;border-radius:50%;background:var(--grn-lt);color:var(--grn);display:flex;align-items:center;justify-content:center;font-size:.7rem;flex-shrink:0;margin-top:1px;}
+.mi-item p{font-size:.88rem;color:var(--mt);line-height:1.6;}
+
+/* ── STATS BAR ── */
+.stats-bar{background:linear-gradient(135deg,var(--dark),#0f2a1a);padding:60px 5%;}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:32px;max-width:1100px;margin:0 auto;text-align:center;}
+.stat-item .sv{font-size:2.6rem;font-weight:900;color:#fff;}
+.stat-item .sl{font-size:.85rem;color:#64748b;margin-top:4px;}
+.stat-item .sv span{color:#4ade80;}
+
+/* ── DRUG MODULE ── */
+.drug-showcase{background:var(--bg);}
+.drug-tabs{display:flex;gap:8px;margin-bottom:32px;flex-wrap:wrap;}
+.dtab{padding:8px 18px;border-radius:99px;font-size:.85rem;font-weight:600;cursor:pointer;border:1.5px solid var(--brd);color:var(--mt);transition:all .2s;}
+.dtab.active,.dtab:hover{background:var(--grn);border-color:var(--grn);color:#fff;}
+.drug-feature-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px;}
+.df-card{background:var(--card);border:1px solid var(--brd);border-radius:14px;padding:20px;}
+.df-card .dfc-tag{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--acc);margin-bottom:10px;}
+.df-card h4{font-size:.95rem;font-weight:700;margin-bottom:6px;}
+.df-card p{font-size:.83rem;color:var(--mt);line-height:1.55;}
+
+/* ── PRICING ── */
+.pricing-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px;margin-top:52px;}
+.price-card{background:var(--card);border:2px solid var(--brd);border-radius:20px;padding:36px;transition:all .25s;position:relative;}
+.price-card.popular{border-color:var(--grn);box-shadow:0 0 0 4px rgba(22,163,74,.08);}
+.popular-badge{position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--grn);color:#fff;padding:4px 18px;border-radius:99px;font-size:.78rem;font-weight:700;white-space:nowrap;}
+.price-name{font-size:1rem;font-weight:700;margin-bottom:8px;}
+.price-val{font-size:2.8rem;font-weight:900;margin:12px 0 4px;}
+.price-val sup{font-size:1.2rem;vertical-align:top;margin-top:10px;font-weight:600;}
+.price-val sub{font-size:.9rem;font-weight:400;color:var(--mt);}
+.price-desc{font-size:.85rem;color:var(--mt);margin-bottom:24px;}
+.price-features{list-style:none;margin-bottom:28px;}
+.price-features li{padding:7px 0;font-size:.88rem;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--bg);}
+.price-features li:last-child{border-bottom:none;}
+.check{color:var(--grn);font-size:.8rem;}
+.cross{color:#cbd5e1;font-size:.8rem;}
+
+/* ── HOW IT WORKS ── */
+.steps-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:24px;margin-top:52px;}
+.step-card{background:var(--card);border:1px solid var(--brd);border-radius:16px;padding:28px;text-align:center;}
+.step-num{width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--grn),#22c55e);color:#fff;font-size:1.3rem;font-weight:800;display:flex;align-items:center;justify-content:center;margin:0 auto 18px;}
+.step-card h4{font-weight:700;margin-bottom:8px;}
+.step-card p{font-size:.88rem;color:var(--mt);line-height:1.6;}
+
+/* ── TESTIMONIALS ── */
+.testi-bg{background:var(--bg);}
+.testi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;margin-top:48px;}
+.testi-card{background:var(--card);border:1px solid var(--brd);border-radius:16px;padding:26px;}
+.stars{color:#f59e0b;font-size:.9rem;margin-bottom:12px;}
+.testi-text{font-size:.9rem;color:var(--mt);line-height:1.7;margin-bottom:18px;font-style:italic;}
+.testi-author{display:flex;align-items:center;gap:12px;}
+.testi-avatar{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--grn),#22c55e);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:1rem;}
+.testi-name{font-weight:700;font-size:.9rem;}
+.testi-role{font-size:.78rem;color:var(--mt);}
+
+/* ── CTA BANNER ── */
+.cta-banner{background:linear-gradient(135deg,var(--dark),#0f2a1a);padding:80px 5%;text-align:center;}
+.cta-banner h2{font-size:clamp(1.8rem,4vw,3rem);font-weight:900;color:#fff;margin-bottom:16px;}
+.cta-banner p{color:#94a3b8;font-size:1rem;max-width:500px;margin:0 auto 36px;}
+
+/* ── FOOTER ── */
+footer{background:var(--dark);color:#64748b;padding:48px 5% 28px;}
+.footer-grid{max-width:1200px;margin:0 auto;display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:40px;margin-bottom:40px;}
+.footer-brand{font-size:.88rem;line-height:1.7;}
+.footer-brand strong{font-size:1.1rem;color:#fff;display:block;margin-bottom:10px;}
+.footer-col h5{color:#fff;font-weight:600;margin-bottom:14px;font-size:.9rem;}
+.footer-col a{display:block;font-size:.85rem;margin-bottom:8px;transition:color .2s;}
+.footer-col a:hover{color:#4ade80;}
+.footer-bottom{border-top:1px solid rgba(255,255,255,.07);padding-top:20px;max-width:1200px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;font-size:.82rem;flex-wrap:wrap;gap:10px;}
+.footer-bottom span{color:#4ade80;}
+
+/* ── PORTAL ENTRY CARDS ── */
+.portal-cards{display:grid;grid-template-columns:1fr 1fr;gap:28px;max-width:900px;margin:0 auto;padding:0 20px;}
+.portal-card{position:relative;border-radius:24px;padding:36px 32px 32px;text-align:left;overflow:hidden;backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.12);transition:transform .3s,box-shadow .3s;}
+.portal-card:hover{transform:translateY(-6px);}
+.portal-ws{background:linear-gradient(145deg,rgba(249,115,22,.15) 0%,rgba(30,20,10,.85) 100%);border-color:rgba(249,115,22,.3);}
+.portal-ws:hover{box-shadow:0 24px 60px rgba(249,115,22,.25);}
+.portal-rt{background:linear-gradient(145deg,rgba(22,163,74,.15) 0%,rgba(10,20,15,.85) 100%);border-color:rgba(22,163,74,.3);}
+.portal-rt:hover{box-shadow:0 24px 60px rgba(22,163,74,.25);}
+.portal-icon-ring{font-size:2.8rem;margin-bottom:16px;display:inline-flex;align-items:center;justify-content:center;width:68px;height:68px;border-radius:20px;}
+.ws-ring{background:rgba(249,115,22,.18);border:2px solid rgba(249,115,22,.4);}
+.rt-ring{background:rgba(22,163,74,.18);border:2px solid rgba(22,163,74,.4);}
+.portal-badge{display:inline-block;font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:4px 12px;border-radius:20px;margin-bottom:14px;}
+.ws-badge{background:rgba(249,115,22,.2);color:#fb923c;border:1px solid rgba(249,115,22,.35);}
+.rt-badge{background:rgba(22,163,74,.2);color:#4ade80;border:1px solid rgba(22,163,74,.35);}
+.portal-card h2{font-size:1.9rem;font-weight:800;color:#fff;line-height:1.15;margin-bottom:12px;}
+.portal-sub{font-size:.88rem;color:rgba(255,255,255,.65);line-height:1.65;margin-bottom:20px;}
+.portal-features{list-style:none;margin-bottom:28px;}
+.portal-features li{font-size:.84rem;color:rgba(255,255,255,.8);padding:5px 0;display:flex;align-items:center;gap:9px;}
+.portal-ws .portal-features li i{color:#fb923c;}
+.portal-rt .portal-features li i{color:#4ade80;}
+.portal-btns{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;}
+.btn-ws-primary{background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;font-weight:700;padding:11px 22px;border-radius:10px;font-size:.88rem;transition:opacity .2s;display:flex;align-items:center;gap:7px;}
+.btn-ws-primary:hover{opacity:.88;}
+.btn-ws-outline{border:1.5px solid rgba(249,115,22,.5);color:#fb923c;background:rgba(249,115,22,.08);font-weight:600;padding:11px 18px;border-radius:10px;font-size:.88rem;transition:background .2s;display:flex;align-items:center;gap:7px;}
+.btn-ws-outline:hover{background:rgba(249,115,22,.18);}
+.btn-rt-primary{background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;font-weight:700;padding:11px 22px;border-radius:10px;font-size:.88rem;transition:opacity .2s;display:flex;align-items:center;gap:7px;}
+.btn-rt-primary:hover{opacity:.88;}
+.btn-rt-outline{border:1.5px solid rgba(22,163,74,.5);color:#4ade80;background:rgba(22,163,74,.08);font-weight:600;padding:11px 18px;border-radius:10px;font-size:.88rem;transition:background .2s;display:flex;align-items:center;gap:7px;}
+.btn-rt-outline:hover{background:rgba(22,163,74,.18);}
+.portal-pill{font-size:.75rem;color:rgba(255,255,255,.4);font-style:italic;}
+@keyframes cardGlow{0%,100%{opacity:.5;}50%{opacity:1;}}
+.portal-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;border-radius:24px 24px 0 0;}
+.portal-ws::before{background:linear-gradient(90deg,transparent,rgba(249,115,22,.6),transparent);}
+.portal-rt::before{background:linear-gradient(90deg,transparent,rgba(22,163,74,.6),transparent);}
+@media(max-width:640px){.portal-cards{grid-template-columns:1fr;}}
+
+/* ── ANIMATIONS ── */
+@keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-10px);}}
+.float-anim{animation:float 4s ease-in-out infinite;}
+@keyframes pulse-ring{0%{box-shadow:0 0 0 0 rgba(22,163,74,.3);}70%{box-shadow:0 0 0 14px rgba(22,163,74,0);}100%{box-shadow:0 0 0 0 rgba(22,163,74,0);}}
+.pulse{animation:pulse-ring 2s infinite;}
+
+/* ── RESPONSIVE ── */
+@media(max-width:768px){
+  .nav-links{display:none;}
+  .modules-layout{grid-template-columns:1fr;}
+  .modules-layout.rev{direction:ltr;}
+  .footer-grid{grid-template-columns:1fr 1fr;}
+  .mockup-strip{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-inner">
+    <div class="logo">
+      <div class="logo-icon"><i class="fas fa-heart-pulse"></i></div>
+      MediVision <span style="color:var(--grn)">AI</span>
+    </div>
+    <div class="nav-links">
+      <a href="#features">Features</a>
+      <a href="#modules">Modules</a>
+      <a href="#drug">Drug Register</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#testimonials">Reviews</a>
+    </div>
+    <div class="nav-cta">
+      <a href="/wholesale-login" class="btn btn-outline" style="border-color:#f97316;color:#f97316;"><i class="fas fa-truck"></i> Wholesale</a>
+      <a href="/portal-login" class="btn btn-primary pulse"><i class="fas fa-store"></i> Retail POS &nbsp;<i class="fas fa-arrow-right"></i></a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-badge"><i class="fas fa-star"></i> India's #1 AI Pharmacy Platform</div>
+  <h1>Run Your Pharmacy Like a<br/><span>MediVision Universe</span></h1>
+  <p>Complete pharmacy management with AI billing, face recognition, WhatsApp reminders, narcotic register, drug inspector tools, delivery tracking and 50+ more features — all in one platform.</p>
+  <div class="hero-btns">
+    <a href="/internal" class="btn btn-primary btn-lg float-anim"><i class="fas fa-play"></i> Open POS Dashboard</a>
+    <a href="/insights" class="btn btn-dark btn-lg"><i class="fas fa-chart-line"></i> View Analytics</a>
+  </div>
+  <div class="hero-stats">
+    <div class="hs"><div class="val">7,137+</div><div class="lbl">Medicines in Stock</div></div>
+    <div class="hs"><div class="val">50+</div><div class="lbl">Platform Modules</div></div>
+    <div class="hs"><div class="val">100%</div><div class="lbl">GST Compliant</div></div>
+    <div class="hs"><div class="val">AI</div><div class="lbl">Powered Reminders</div></div>
+  </div>
+
+  <!-- Floating UI mockup -->
+  <div class="hero-ui">
+    <div class="mockup-strip">
+      <div class="mk-card">
+        <div class="mk-icon">🧾</div>
+        <h4>Smart POS Billing</h4>
+        <p>Auto GST, FIFO stock, WhatsApp receipts, face recognition — all in one screen.</p>
+        <span class="mk-stat">Face ID Ready</span>
+      </div>
+      <div class="mk-card">
+        <div class="mk-icon">🤖</div>
+        <h4>AI Reminders</h4>
+        <p>2 days before medicine runs out, auto WhatsApp + AI voice call to chronic patients.</p>
+        <span class="mk-stat">Auto WhatsApp</span>
+      </div>
+      <div class="mk-card">
+        <div class="mk-icon">🛡️</div>
+        <h4>Drug Inspector Tools</h4>
+        <p>Schedule X/H/H1 narcotic register, inspector visit log, expiry alerts, audit trail.</p>
+        <span class="mk-stat">Compliance Ready</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="features-bg" id="features">
+  <div class="container">
+    <div class="text-center">
+      <div class="sec-label">Platform Features</div>
+      <div class="sec-title">Everything a Modern Pharmacy Needs</div>
+      <div class="sec-sub center">50+ integrated modules — from billing to narcotics, tally to delivery tracking.</div>
+    </div>
+    <div class="feat-grid">
+      <div class="feat-card">
+        <div class="feat-icon fi-grn"><i class="fas fa-cash-register"></i></div>
+        <h4>AI-Powered POS Billing</h4>
+        <p>Lightning-fast billing with barcode scan, auto-complete medicine search, FIFO stock deduction, GST auto-calc, WhatsApp receipt send.</p>
+        <span class="feat-badge fb-ai">AI</span>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon fi-ora"><i class="fas fa-face-smile"></i></div>
+        <h4>Face Recognition</h4>
+        <p>Camera identifies returning customers automatically. No manual typing — face appears, customer name fills in, history loads instantly.</p>
+        <span class="feat-badge fb-new">Live</span>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon fi-blu"><i class="fab fa-whatsapp"></i></div>
+        <h4>WhatsApp AI Reminders</h4>
+        <p>Scans all bills, calculates medicine finish dates, sends WhatsApp 2 days before medicines run out for chronic patients.</p>
+        <span class="feat-badge fb-ai">AI</span>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon fi-red"><i class="fas fa-shield-halved"></i></div>
+        <h4>Narcotic Drug Register</h4>
+        <p>Schedule X, H1, H classification. Auto narcotic register with opening/closing balance. Drug inspector visit log and compliance audit trail.</p>
+        <span class="feat-badge fb-hot">Mandatory</span>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon fi-pur"><i class="fas fa-pills"></i></div>
+        <h4>1mg-Style Drug Database</h4>
+        <p>Generic names, brand alternatives, uses, contraindications, drug combinations — just like 1mg. Helps staff give correct recommendations.</p>
+        <span class="feat-badge fb-new">New</span>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon fi-grn"><i class="fas fa-chart-line"></i></div>
+        <h4>Data Insights Dashboard</h4>
+        <p>Revenue trends, top medicines by revenue/qty, payment breakdown, hourly heatmap, customer retention, stock health — all in one view.</p>
+        <span class="feat-badge fb-ai">Analytics</span>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon fi-yel"><i class="fas fa-book-open"></i></div>
+        <h4>Tally & Accounts</h4>
+        <p>Full ledger with journal entries, cheque register, bank statement upload, P&L summary. Works like Tally without the complexity.</p>
+        <span class="feat-badge fb-new">New</span>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon fi-blu"><i class="fas fa-motorcycle"></i></div>
+        <h4>Delivery Tracking</h4>
+        <p>Create delivery routes, assign boys, track stop-by-stop status, send WhatsApp notifications to customers, print route sheets.</p>
+        <span class="feat-badge fb-new">New</span>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon fi-ora"><i class="fas fa-indian-rupee-sign"></i></div>
+        <h4>Razorpay Payments</h4>
+        <p>Integrated Razorpay checkout — customers pay online directly at billing. QR code, UPI, card, netbanking all supported.</p>
+        <span class="feat-badge fb-new">Sprint 1</span>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon fi-grn"><i class="fas fa-boxes-stacked"></i></div>
+        <h4>Smart Stock Receiving</h4>
+        <p>Daily code-based receiving, item-wise checklist, batch/expiry/MRP verification, auto stock import on completion.</p>
+        <span class="feat-badge fb-new">Sprint 3</span>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon fi-pur"><i class="fas fa-user-clock"></i></div>
+        <h4>Staff Attendance</h4>
+        <p>4-digit PIN punch in/out, auto worked-hours calculation, monthly salary summary, staff management with role-based access.</p>
+        <span class="feat-badge fb-new">New</span>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon fi-red"><i class="fas fa-triangle-exclamation"></i></div>
+        <h4>Expiry & Stock Alerts</h4>
+        <p>Auto alerts for medicines expiring in 30/60/90 days. Low stock warnings. Zero-stock reports. Dead stock identification.</p>
+        <span class="feat-badge fb-hot">Critical</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- MODULE SHOWCASE -->
+<section id="modules">
+  <div class="container">
+    <div class="text-center" style="margin-bottom:60px">
+      <div class="sec-label">Deep Dive</div>
+      <div class="sec-title">Each Module Built for Pharmacies</div>
+    </div>
+
+    <!-- POS -->
+    <div class="modules-layout" style="margin-bottom:80px">
+      <div class="module-visual">
+        <div class="mv-header"><i class="fas fa-cash-register" style="color:#4ade80"></i> POS Billing — Selvam Medicals</div>
+        <div class="mv-row"><span class="lbl">Dolo 650 × 10</span><span class="val">₹85.00</span><span class="pill pgreen">In Stock</span></div>
+        <div class="mv-row"><span class="lbl">Metformin 500 × 30</span><span class="val">₹42.00</span><span class="pill pgreen">In Stock</span></div>
+        <div class="mv-row"><span class="lbl">Atorvastatin 10 × 30</span><span class="val">₹95.00</span><span class="pill pyel">Low Stock</span></div>
+        <div class="mv-row"><span class="lbl">Augmentin 625 × 6</span><span class="val">₹138.00</span><span class="pill pblue">Schedule H1</span></div>
+        <div style="border-top:1px solid rgba(255,255,255,.08);margin-top:14px;padding-top:14px">
+          <div class="mv-row"><span class="lbl">Subtotal</span><span class="val">₹360.00</span></div>
+          <div class="mv-row"><span class="lbl">GST 5%</span><span class="val">₹18.00</span></div>
+          <div class="mv-row"><span class="lbl" style="color:#4ade80;font-weight:700">TOTAL</span><span class="val" style="color:#4ade80;font-size:1.1rem">₹378.00</span></div>
+        </div>
+      </div>
+      <div class="module-info">
+        <div class="sec-label">Sprint-Ready POS</div>
+        <div class="sec-title" style="font-size:1.8rem">Fastest Billing in Tamil Nadu</div>
+        <div class="sec-sub">Designed for Selvam Medicals — handles retail and wholesale billing with auto GST, FIFO stock deduction, and WhatsApp receipts in one tap.</div>
+        <div class="mi-list">
+          <div class="mi-item"><div class="mi-dot"><i class="fas fa-check"></i></div><p><strong>Auto medicine search</strong> with batch number, expiry, MRP auto-fill from stock</p></div>
+          <div class="mi-item"><div class="mi-dot"><i class="fas fa-check"></i></div><p><strong>Face recognition</strong> auto-identifies returning customers — no name typing needed</p></div>
+          <div class="mi-item"><div class="mi-dot"><i class="fas fa-check"></i></div><p><strong>WhatsApp receipt</strong> sent automatically after bill save via Twilio</p></div>
+          <div class="mi-item"><div class="mi-dot"><i class="fas fa-check"></i></div><p><strong>Razorpay checkout</strong> for UPI/card payments right at the counter</p></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Drug Register -->
+    <div class="modules-layout rev" style="margin-bottom:80px">
+      <div class="module-visual">
+        <div class="mv-header"><i class="fas fa-shield-halved" style="color:#f87171"></i> Narcotic Register — Today</div>
+        <div class="mv-row"><span class="lbl">Tramadol 50mg</span><span class="pill pred">Schedule X</span></div>
+        <div class="mv-row"><span class="lbl">Opening Balance</span><span class="val">45 tabs</span></div>
+        <div class="mv-row"><span class="lbl">Qty Sold Today</span><span class="val" style="color:#f87171">-10 tabs</span></div>
+        <div class="mv-row"><span class="lbl">Closing Balance</span><span class="val" style="color:#4ade80">35 tabs</span></div>
+        <div class="mv-row"><span class="lbl">Inspector Visit</span><span class="val">Last: 12-Jan-2026</span><span class="pill pgreen">Compliant</span></div>
+        <div class="mv-row"><span class="lbl">Augmentin 625</span><span class="pill pblue">Schedule H1</span></div>
+        <div class="mv-row"><span class="lbl">Prescription Required</span><span class="val" style="color:#fbbf24">YES — Rx verified</span></div>
+      </div>
+      <div class="module-info">
+        <div class="sec-label">Compliance Module</div>
+        <div class="sec-title" style="font-size:1.8rem">Drug Inspector Ready. Always.</div>
+        <div class="sec-sub">Full narcotic and psychotropic drug register with daily auto closing balance. Inspector visit log, compliance history, expiry monitoring.</div>
+        <div class="mi-list">
+          <div class="mi-item"><div class="mi-dot"><i class="fas fa-check"></i></div><p><strong>Schedule X, H1, H, OTC</strong> classification for all 7,137 medicines</p></div>
+          <div class="mi-item"><div class="mi-dot"><i class="fas fa-check"></i></div><p><strong>Auto narcotic register</strong> — opening balance carried from previous entry</p></div>
+          <div class="mi-item"><div class="mi-dot"><i class="fas fa-check"></i></div><p><strong>Alert tab</strong> shows today's Schedule X/H1 bills not yet registered</p></div>
+          <div class="mi-item"><div class="mi-dot"><i class="fas fa-check"></i></div><p><strong>Inspector visit log</strong> with date, findings, next visit reminder</p></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI Reminders -->
+    <div class="modules-layout">
+      <div class="module-visual">
+        <div class="mv-header"><i class="fas fa-robot" style="color:#a78bfa"></i> AI Reminder Engine</div>
+        <div class="mv-row"><span class="lbl">Ravi Kumar — Metformin</span><span class="pill pred">2 days left</span></div>
+        <div class="mv-row"><span class="lbl" style="font-size:.75rem;color:#64748b">WhatsApp sent · AI Call pending</span></div>
+        <div class="mv-row"><span class="lbl">Meena — Atorvastatin</span><span class="pill pyel">5 days left</span></div>
+        <div class="mv-row"><span class="lbl">Suresh — Amlodipine</span><span class="pill pgreen">12 days left</span></div>
+        <div class="mv-row"><span class="lbl">AI Scanned Bills</span><span class="val">248 chronic patients</span></div>
+        <div class="mv-row"><span class="lbl">WhatsApp Sent Today</span><span class="val" style="color:#4ade80">14 messages</span></div>
+      </div>
+      <div class="module-info">
+        <div class="sec-label">AI Reminders — Sprint 5</div>
+        <div class="sec-title" style="font-size:1.8rem">Never Let a Patient Miss Medicines</div>
+        <div class="sec-sub">AI scans all bills, identifies medicines ≥14 qty (chronic), calculates finish date, sends WhatsApp 2 days before — automatically.</div>
+        <div class="mi-list">
+          <div class="mi-item"><div class="mi-dot"><i class="fas fa-check"></i></div><p><strong>Auto-scan</strong> all bills to detect chronic patients by medicine quantity</p></div>
+          <div class="mi-item"><div class="mi-dot"><i class="fas fa-check"></i></div><p><strong>WhatsApp message</strong> sent via Twilio 2 days before medicines finish</p></div>
+          <div class="mi-item"><div class="mi-dot"><i class="fas fa-check"></i></div><p><strong>AI Call</strong> log for patients who don't respond to WhatsApp</p></div>
+          <div class="mi-item"><div class="mi-dot"><i class="fas fa-check"></i></div><p><strong>Bulk send</strong> all pending reminders with one button click</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STATS BAR -->
+<div class="stats-bar">
+  <div class="stats-grid">
+    <div class="stat-item"><div class="sv"><span>7,137</span>+</div><div class="sl">Medicines in Database</div></div>
+    <div class="stat-item"><div class="sv"><span>50</span>+</div><div class="sl">Platform Modules</div></div>
+    <div class="stat-item"><div class="sv"><span>45</span>+</div><div class="sl">Drug Schedules Mapped</div></div>
+    <div class="stat-item"><div class="sv"><span>30</span>+</div><div class="sl">Drug Combinations</div></div>
+    <div class="stat-item"><div class="sv"><span>100%</span></div><div class="sl">GST & Drug Law Compliant</div></div>
+    <div class="stat-item"><div class="sv"><span>∞</span></div><div class="sl">Bills — No Limit</div></div>
+  </div>
+</div>
+
+<!-- DRUG FEATURES -->
+<section class="drug-showcase" id="drug">
+  <div class="container">
+    <div class="text-center">
+      <div class="sec-label">Drug Intelligence</div>
+      <div class="sec-title">Built for Indian Drug Laws</div>
+      <div class="sec-sub center">From Schedule X narcotic register to 1mg-style alternatives database — complete drug compliance in one platform.</div>
+    </div>
+    <div class="drug-tabs" style="margin-top:36px">
+      <div class="dtab active">All Features</div>
+      <div class="dtab">Narcotic Register</div>
+      <div class="dtab">Drug Schedules</div>
+      <div class="dtab">1mg Alternatives</div>
+      <div class="dtab">Inspector Tools</div>
+    </div>
+    <div class="drug-feature-grid">
+      <div class="df-card">
+        <div class="dfc-tag">Schedule X</div>
+        <h4>Narcotic & Psychotropic Register</h4>
+        <p>Daily opening/closing balance, quantity dispensed log, prescription number, patient name — exactly as required by the Narcotic Drugs and Psychotropic Substances Act.</p>
+      </div>
+      <div class="df-card">
+        <div class="dfc-tag">Schedule H1</div>
+        <h4>Antibiotic Prescription Tracking</h4>
+        <p>Auto-flag Augmentin, Azithromycin, Ciprofloxacin and other Schedule H1 drugs. Require prescription scan before billing. Log in narcotic register.</p>
+      </div>
+      <div class="df-card">
+        <div class="dfc-tag">1mg Style</div>
+        <h4>Generic Alternatives Database</h4>
+        <p>30+ common drugs with generic names, brand alternatives, uses, contraindications, side effects — help staff give correct patient guidance at the counter.</p>
+      </div>
+      <div class="df-card">
+        <div class="dfc-tag">Inspector</div>
+        <h4>Drug Inspector Visit Log</h4>
+        <p>Record every inspector visit with date, inspector name, items checked, findings, and compliance status. Show history during inspections instantly.</p>
+      </div>
+      <div class="df-card">
+        <div class="dfc-tag">Alerts</div>
+        <h4>Today's Unregistered Drug Alert</h4>
+        <p>Scans today's bills for Schedule X/H1 dispensing not yet entered in narcotic register. "Log Now" quick action to fix compliance immediately.</p>
+      </div>
+      <div class="df-card">
+        <div class="dfc-tag">Expiry</div>
+        <h4>Expiry & Near-Expiry Monitoring</h4>
+        <p>Medicines expiring in 30, 60, 90 days — color-coded alerts. Auto-flag expired medicines to prevent accidental dispensing. Print expiry report.</p>
+      </div>
+      <div class="df-card">
+        <div class="dfc-tag">GST</div>
+        <h4>GST-Ready Invoicing</h4>
+        <p>Auto-apply correct GST slab (0%, 5%, 12%) per medicine. CGST/SGST split for intra-state. IGST for inter-state. GST summary report for returns.</p>
+      </div>
+      <div class="df-card">
+        <div class="dfc-tag">Classification</div>
+        <h4>Complete Drug Schedule Library</h4>
+        <p>All 7,137 medicines classified as Schedule X, H1, H, or OTC with narcotic/psychotropic/Rx flags. Searchable by name, schedule, or brand.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section>
+  <div class="container">
+    <div class="text-center">
+      <div class="sec-label">Getting Started</div>
+      <div class="sec-title">Up and Running in Minutes</div>
+      <div class="sec-sub center">No complex setup. Your 7,137 medicines are already imported. Open the POS and start billing.</div>
+    </div>
+    <div class="steps-grid">
+      <div class="step-card">
+        <div class="step-num">1</div>
+        <h4>Login to POS</h4>
+        <p>Open <code>/login</code>, enter credentials. Your medicines, customers, and history are ready.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-num">2</div>
+        <h4>Open Camera</h4>
+        <p>Face scan identifies returning customers automatically. Or type name/phone manually.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-num">3</div>
+        <h4>Add Medicines</h4>
+        <p>Search by name or scan barcode. Stock, batch, expiry auto-fills. Qty deducted from FIFO.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-num">4</div>
+        <h4>Print & WhatsApp</h4>
+        <p>Bill saved. Print invoice + send WhatsApp receipt in one click. Narcotic register auto-logged.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-num">5</div>
+        <h4>AI Reminder</h4>
+        <p>2 days before medicines finish, AI sends WhatsApp reminder to bring patient back.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-num">6</div>
+        <h4>Insights & Reports</h4>
+        <p>Check Data Insights for revenue, top medicines, customer analytics, and stock health.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section id="pricing" style="background:var(--bg)">
+  <div class="container">
+    <div class="text-center">
+      <div class="sec-label">Pricing Plans</div>
+      <div class="sec-title">Simple, Transparent Pricing</div>
+      <div class="sec-sub center">All plans include unlimited bills, medicines, and customers. No per-bill fees.</div>
+    </div>
+    <div class="pricing-grid">
+      <div class="price-card">
+        <div class="price-name">Starter</div>
+        <div class="price-val"><sup>₹</sup>499<sub>/month</sub></div>
+        <div class="price-desc">Perfect for small retail pharmacies</div>
+        <ul class="price-features">
+          <li><span class="check"><i class="fas fa-check"></i></span> POS Billing (unlimited)</li>
+          <li><span class="check"><i class="fas fa-check"></i></span> 1 User Login</li>
+          <li><span class="check"><i class="fas fa-check"></i></span> Medicine Database (7,137)</li>
+          <li><span class="check"><i class="fas fa-check"></i></span> Bill History & Reports</li>
+          <li><span class="check"><i class="fas fa-check"></i></span> Expiry Alerts</li>
+          <li><span class="cross"><i class="fas fa-xmark"></i></span> WhatsApp Reminders</li>
+          <li><span class="cross"><i class="fas fa-xmark"></i></span> Face Recognition</li>
+          <li><span class="cross"><i class="fas fa-xmark"></i></span> Narcotic Register</li>
+        </ul>
+        <a href="/portal" class="btn btn-outline" style="width:100%;justify-content:center">Get Started</a>
+      </div>
+      <div class="price-card popular">
+        <div class="popular-badge">Most Popular</div>
+        <div class="price-name">Professional</div>
+        <div class="price-val"><sup>₹</sup>1,299<sub>/month</sub></div>
+        <div class="price-desc">Full-featured for growing pharmacies</div>
+        <ul class="price-features">
+          <li><span class="check"><i class="fas fa-check"></i></span> Everything in Starter</li>
+          <li><span class="check"><i class="fas fa-check"></i></span> 5 User Logins</li>
+          <li><span class="check"><i class="fas fa-check"></i></span> WhatsApp AI Reminders</li>
+          <li><span class="check"><i class="fas fa-check"></i></span> Face Recognition</li>
+          <li><span class="check"><i class="fas fa-check"></i></span> Narcotic Drug Register</li>
+          <li><span class="check"><i class="fas fa-check"></i></span> Tally & Accounts</li>
+          <li><span class="check"><i class="fas fa-check"></i></span> Delivery Tracking</li>
+          <li><span class="check"><i class="fas fa-check"></i></span> Data Insights Dashboard</li>
+        </ul>
+        <a href="/portal" class="btn btn-primary" style="width:100%;justify-content:center">Start Free Trial</a>
+      </div>
+      <div class="price-card">
+        <div class="price-name">Enterprise</div>
+        <div class="price-val"><sup>₹</sup>2,999<sub>/month</sub></div>
+        <div class="price-desc">For chains and wholesale operations</div>
+        <ul class="price-features">
+          <li><span class="check"><i class="fas fa-check"></i></span> Everything in Professional</li>
+          <li><span class="check"><i class="fas fa-check"></i></span> Unlimited Users</li>
+          <li><span class="check"><i class="fas fa-check"></i></span> Multi-Branch Support</li>
+          <li><span class="check"><i class="fas fa-check"></i></span> Wholesale Billing Portal</li>
+          <li><span class="check"><i class="fas fa-check"></i></span> Razorpay Integration</li>
+          <li><span class="check"><i class="fas fa-check"></i></span> Stock Import (Excel/CSV)</li>
+          <li><span class="check"><i class="fas fa-check"></i></span> Priority Support</li>
+          <li><span class="check"><i class="fas fa-check"></i></span> Custom Reports</li>
+        </ul>
+        <a href="/portal" class="btn btn-accent" style="width:100%;justify-content:center">Contact Sales</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TESTIMONIALS -->
+<section class="testi-bg" id="testimonials">
+  <div class="container">
+    <div class="text-center">
+      <div class="sec-label">Testimonials</div>
+      <div class="sec-title">Trusted by Pharmacists</div>
+    </div>
+    <div class="testi-grid">
+      <div class="testi-card">
+        <div class="stars"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
+        <p class="testi-text">"The narcotic register auto-balance feature alone saved me 30 minutes every day. Drug inspector visited last month — everything was perfect!"</p>
+        <div class="testi-author">
+          <div class="testi-avatar">S</div>
+          <div><div class="testi-name">Selvam Medical</div><div class="testi-role">SS & Co, Tirunelveli</div></div>
+        </div>
+      </div>
+      <div class="testi-card">
+        <div class="stars"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
+        <p class="testi-text">"WhatsApp reminders brought back 40+ chronic patients who had stopped buying regularly. The AI reminder feature is incredible ROI."</p>
+        <div class="testi-author">
+          <div class="testi-avatar">R</div>
+          <div><div class="testi-name">Ravi Pharmacy</div><div class="testi-role">Tamil Nadu</div></div>
+        </div>
+      </div>
+      <div class="testi-card">
+        <div class="stars"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
+        <p class="testi-text">"Face recognition surprised me. Customer walks in, camera sees them, their history is ready before they even reach the counter. Magic!"</p>
+        <div class="testi-author">
+          <div class="testi-avatar">M</div>
+          <div><div class="testi-name">Meena Drug House</div><div class="testi-role">Madurai, Tamil Nadu</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA BANNER -->
+<div class="cta-banner">
+  <h2>Your Pharmacy is Ready.<br/>Open the POS Now.</h2>
+  <p>All 7,137 medicines imported. Face recognition ready. Drug register set up. Just login and start billing.</p>
+  <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap">
+    <a href="/internal" class="btn btn-primary btn-lg pulse"><i class="fas fa-cash-register"></i> Open POS Dashboard</a>
+    <a href="/insights" class="btn btn-dark btn-lg"><i class="fas fa-chart-line"></i> View Insights</a>
+    <a href="/drug-register" class="btn btn-dark btn-lg"><i class="fas fa-shield-halved"></i> Drug Register</a>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-grid">
+    <div class="footer-brand">
+      <strong><i class="fas fa-heart-pulse" style="color:var(--grn)"></i> MediVision AI</strong>
+      India's most comprehensive AI-powered pharmacy management platform. Built specifically for Tamil Nadu pharmacies with full drug law compliance.
+      <div style="margin-top:16px;font-size:.82rem">SS &amp; Co — Selvam Medicals<br/>Tirunelveli, Tamil Nadu 627001</div>
+    </div>
+    <div class="footer-col">
+      <h5>Platform</h5>
+      <a href="/internal">POS Billing</a>
+      <a href="/insights">Data Insights</a>
+      <a href="/drug-register">Drug Register</a>
+      <a href="/ai/reminders">AI Reminders</a>
+      <a href="/tally">Accounts</a>
+      <a href="/delivery">Delivery</a>
+    </div>
+    <div class="footer-col">
+      <h5>Compliance</h5>
+      <a href="/drug-register">Narcotic Register</a>
+      <a href="/drug-register">Schedule X/H/H1</a>
+      <a href="/drug-register">Inspector Log</a>
+      <a href="/drug-register">Expiry Alerts</a>
+      <a href="/drug-register">GST Reports</a>
+    </div>
+    <div class="footer-col">
+      <h5>Quick Links</h5>
+      <a href="/internal">Staff Login</a>
+      <a href="/wholesale-login">Wholesale Login</a>
+      <a href="/portal">Admin Portal</a>
+      <a href="/bills/history">Bills History</a>
+      <a href="/attendance">Attendance</a>
+      <a href="/stock/receiving">Stock Receiving</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <div>&copy; 2026 Selvam Medicals — SS &amp; Co. Built with <span>MediVision AI</span></div>
+    <div>Made with <span>❤️</span> for Tamil Nadu Pharmacies</div>
+  </div>
+</footer>
+
+<script>
+// Animate stats on scroll
+const obs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if(e.isIntersecting) e.target.classList.add('visible');
+  });
+}, {threshold: 0.1});
+document.querySelectorAll('.feat-card,.step-card,.testi-card').forEach(el => obs.observe(el));
+
+// Drug tab filter (demo)
+document.querySelectorAll('.dtab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.dtab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+  });
+});
+
+// Smooth nav highlight
+window.addEventListener('scroll', () => {
+  const nav = document.querySelector('nav');
+  if(window.scrollY > 50) nav.style.background = 'rgba(255,255,255,0.98)';
+  else nav.style.background = 'rgba(255,255,255,0.95)';
+});
+</script>
+<script>
+// PWA Service Worker registration
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js', {scope: '/'})
+      .then(reg => {
+        console.log('MediVision PWA ready:', reg.scope);
+        reg.addEventListener('updatefound', () => {
+          const nw = reg.installing;
+          nw.addEventListener('statechange', () => {
+            if(nw.state === 'installed' && navigator.serviceWorker.controller){
+              console.log('New version available — refresh to update');
+            }
+          });
+        });
+      })
+      .catch(err => console.warn('SW registration failed:', err));
+  });
+}
+// PWA install prompt
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  // Show a subtle install chip if not already installed
+  const chip = document.createElement('div');
+  chip.innerHTML = `
+    <div id="pwaChip" style="position:fixed;bottom:20px;right:20px;background:#f97316;color:#fff;
+      border-radius:50px;padding:10px 18px;font-size:13px;font-weight:600;cursor:pointer;
+      box-shadow:0 4px 20px rgba(249,115,22,.4);z-index:9999;display:flex;gap:8px;align-items:center;">
+      📲 Install App
+      <button onclick="document.getElementById('pwaChip').remove()" style="background:rgba(255,255,255,.2);
+        border:none;border-radius:50%;width:20px;height:20px;color:#fff;cursor:pointer;font-size:12px;">✕</button>
+    </div>`;
+  document.body.appendChild(chip);
+  document.getElementById('pwaChip').addEventListener('click', async function(ev){
+    if(ev.target.tagName === 'BUTTON') return;
+    deferredPrompt.prompt();
+    const {outcome} = await deferredPrompt.userChoice;
+    this.remove();
+  });
+});
+</script>
+</body>
+</html>

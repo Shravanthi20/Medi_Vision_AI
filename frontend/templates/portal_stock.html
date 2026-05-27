@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Stock & Import — MediVision AI</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --green: #16a34a; --green-dark: #15803d; --green-light: #dcfce7;
+      --blue: #2563eb; --orange: #ea580c; --err: #dc2626;
+      --gray: #6b7280; --gray-light: #f9fafb; --gray-border: #e5e7eb;
+      --text: #111827; --sidebar-w: 220px;
+    }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--gray-light); color: var(--text); display: flex; min-height: 100vh; }
+    .sidebar { width: var(--sidebar-w); background: #0f172a; color: white; position: fixed; top: 0; left: 0; height: 100vh; display: flex; flex-direction: column; z-index: 50; }
+    .sb-logo { padding: 20px 18px; border-bottom: 1px solid rgba(255,255,255,.07); }
+    .sb-logo .row { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: .98rem; }
+    .sb-logo .cross { width: 30px; height: 30px; background: var(--green); border-radius: 7px; display: flex; align-items: center; justify-content: center; }
+    .sb-logo .cross svg { fill: white; }
+    .sb-nav { flex: 1; padding: 12px 10px; }
+    .sb-section { font-size: .63rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; color: rgba(255,255,255,.3); padding: 12px 8px 4px; }
+    .nav-item { display: flex; align-items: center; gap: 9px; padding: 9px 10px; border-radius: 7px; font-size: .84rem; color: rgba(255,255,255,.6); transition: all .2s; margin-bottom: 2px; text-decoration: none; }
+    .nav-item:hover { background: rgba(255,255,255,.07); color: white; }
+    .nav-item.active { background: var(--green); color: white; }
+    .nav-item .icon { width: 18px; text-align: center; }
+    .sb-footer { padding: 14px; border-top: 1px solid rgba(255,255,255,.07); }
+    .logout-btn { width: 100%; padding: 7px; background: rgba(255,255,255,.06); color: rgba(255,255,255,.55); border: none; border-radius: 6px; cursor: pointer; font-size: .78rem; }
+    .main { margin-left: var(--sidebar-w); flex: 1; }
+    .topbar { background: white; border-bottom: 1px solid var(--gray-border); padding: 0 24px; height: 56px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 40; }
+    .topbar h1 { font-size: 1rem; font-weight: 700; }
+    .content { padding: 24px; max-width: 1100px; }
+    .btn { padding: 9px 18px; border-radius: 8px; font-weight: 600; font-size: .84rem; cursor: pointer; border: none; transition: all .2s; }
+    .btn-green { background: var(--green); color: white; }
+    .btn-green:hover { background: var(--green-dark); }
+    .btn-outline { background: transparent; border: 1.5px solid var(--gray-border); color: var(--gray); }
+    .btn-outline:hover { border-color: var(--green); color: var(--green); }
+    .btn-blue { background: var(--blue); color: white; }
+    .btn-sm { padding: 5px 12px; font-size: .78rem; border-radius: 6px; }
+    .card { background: white; border-radius: 12px; border: 1px solid var(--gray-border); overflow: hidden; margin-bottom: 20px; }
+    .card-header { padding: 14px 20px; border-bottom: 1px solid var(--gray-border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+    .card-header h3 { font-size: .95rem; font-weight: 700; }
+    .card-body { padding: 20px; }
+
+    /* HOW-TO banner */
+    .howto { background: linear-gradient(135deg, #eff6ff, #f0fdf4); border: 1px solid #bfdbfe; border-radius: 12px; padding: 18px 22px; margin-bottom: 20px; }
+    .howto h4 { font-size: .9rem; font-weight: 700; color: var(--blue); margin-bottom: 10px; }
+    .howto ol { padding-left: 18px; font-size: .84rem; color: var(--gray); line-height: 1.9; }
+    .howto ol li strong { color: var(--text); }
+
+    /* PASTE AREA */
+    .paste-area { width: 100%; min-height: 180px; padding: 14px; border: 2px dashed var(--gray-border); border-radius: 10px; font-family: monospace; font-size: .83rem; line-height: 1.6; resize: vertical; outline: none; transition: border .2s; color: var(--text); }
+    .paste-area:focus { border-color: var(--green); }
+    .paste-area.has-data { border-color: var(--green); background: #fafff8; }
+    .col-mapping { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin: 16px 0; }
+    .col-map-item { }
+    .col-map-item label { font-size: .75rem; font-weight: 700; color: var(--gray); text-transform: uppercase; letter-spacing: .5px; display: block; margin-bottom: 5px; }
+    .col-map-item select { width: 100%; padding: 8px 10px; border: 1.5px solid var(--gray-border); border-radius: 8px; font-size: .84rem; outline: none; background: white; }
+    .col-map-item select:focus { border-color: var(--green); }
+
+    /* PARSED PREVIEW */
+    .preview-table-wrap { overflow-x: auto; max-height: 320px; overflow-y: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: .83rem; }
+    th { background: var(--gray-light); padding: 8px 12px; text-align: left; font-size: .72rem; font-weight: 700; color: var(--gray); text-transform: uppercase; position: sticky; top: 0; }
+    td { padding: 8px 12px; border-bottom: 1px solid #f3f4f6; }
+    tr:hover td { background: #fafafa; }
+    .pill { display: inline-flex; padding: 2px 8px; border-radius: 10px; font-size: .7rem; font-weight: 700; }
+    .pill-green { background: var(--green-light); color: var(--green-dark); }
+    .pill-blue { background: #dbeafe; color: #1e40af; }
+    .pill-orange { background: #ffedd5; color: #9a3412; }
+
+    /* RESULT BANNER */
+    .result-banner { border-radius: 10px; padding: 16px 20px; margin-bottom: 16px; font-size: .88rem; }
+    .result-banner.success { background: var(--green-light); color: var(--green-dark); }
+    .result-banner.error { background: #fee2e2; color: var(--err); }
+
+    /* IMPORT HISTORY */
+    .history-table { width: 100%; border-collapse: collapse; font-size: .84rem; }
+    .history-table th { background: var(--gray-light); padding: 8px 14px; text-align: left; font-size: .72rem; font-weight: 700; color: var(--gray); text-transform: uppercase; }
+    .history-table td { padding: 10px 14px; border-bottom: 1px solid #f3f4f6; }
+
+    /* STOCK TABLE */
+    .filter-row { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+    .search-input { padding: 9px 14px; border: 1.5px solid var(--gray-border); border-radius: 8px; font-size: .84rem; outline: none; min-width: 200px; }
+    .search-input:focus { border-color: var(--green); }
+    .filter-sel { padding: 8px 12px; border: 1.5px solid var(--gray-border); border-radius: 8px; font-size: .84rem; outline: none; }
+    .edit-input { width: 70px; padding: 4px 8px; border: 1.5px solid var(--gray-border); border-radius: 6px; font-size: .82rem; text-align: center; }
+    .edit-input:focus { border-color: var(--green); outline: none; }
+
+    .toast { position: fixed; bottom: 20px; right: 20px; background: #1e293b; color: white; padding: 10px 18px; border-radius: 10px; font-size: .84rem; z-index: 999; transform: translateY(60px); opacity: 0; transition: all .3s; }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast.green { background: var(--green); }
+    .toast.red { background: var(--err); }
+
+    @media(max-width:768px) { .sidebar{display:none} .main{margin-left:0} }
+  </style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sb-logo">
+    <div class="row">
+      <div class="cross"><svg width="14" height="14" viewBox="0 0 20 20"><rect x="8" y="2" width="4" height="16" rx="1"/><rect x="2" y="8" width="16" height="4" rx="1"/></svg></div>
+      MediVision AI
+    </div>
+  </div>
+  <nav class="sb-nav">
+    <div class="sb-section">Main</div>
+    <a class="nav-item" href="/portal"><span class="icon">🏠</span> Dashboard</a>
+    <a class="nav-item" href="/portal/billing"><span class="icon">🧾</span> Billing</a>
+    <div class="sb-section">Stock &amp; AI</div>
+    <a class="nav-item active" href="/portal/stock"><span class="icon">📊</span> Stock &amp; Import</a>
+    <a class="nav-item" href="/portal/ai-reorder"><span class="icon">🤖</span> AI Reorder</a>
+    <div class="sb-section">Reports</div>
+    <a class="nav-item" href="/reports/daily_sales.html" target="_blank"><span class="icon">📈</span> Daily Sales</a>
+    <a class="nav-item" href="/reports/low_stock.html" target="_blank"><span class="icon">⚠️</span> Low Stock</a>
+    <a class="nav-item" href="/reports/expiry_stock.html" target="_blank"><span class="icon">📅</span> Expiry Report</a>
+  </nav>
+  <div class="sb-footer">
+    <button class="logout-btn" onclick="fetch('/api/portal/logout',{method:'POST'}).then(()=>location.href='/')">Sign Out</button>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="topbar">
+    <h1>📊 Stock Management &amp; Daily Import</h1>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-outline" onclick="loadCurrentStock()">↻ Refresh Stock</button>
+      <button class="btn btn-green" onclick="document.getElementById('importSection').scrollIntoView({behavior:'smooth'})">📥 Import Stock</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- CURRENT STOCK -->
+    <div class="card">
+      <div class="card-header">
+        <h3>📦 Current Stock</h3>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span id="stockCountBadge" style="font-size:.78rem;color:var(--gray)"></span>
+          <button class="btn btn-sm btn-green" onclick="saveAllEdits()">💾 Save Changes</button>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="filter-row">
+          <input class="search-input" type="text" placeholder="Search medicine name or generic..." id="stockSearch" oninput="filterStock(this.value)" />
+          <select class="filter-sel" id="stockFilter" onchange="filterStock(document.getElementById('stockSearch').value)">
+            <option value="all">All Items</option>
+            <option value="low">Low Stock</option>
+            <option value="expiring">Expiring Soon</option>
+            <option value="out">Out of Stock</option>
+          </select>
+        </div>
+        <div class="preview-table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Medicine Name</th><th>Generic</th><th>Category</th>
+                <th>MRP (₹)</th><th>Stock</th><th>Min (Reorder)</th>
+                <th>Max</th><th>Batch</th><th>Expiry</th><th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="stockTbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- IMPORT SECTION -->
+    <div class="card" id="importSection">
+      <div class="card-header">
+        <h3>📥 Daily Stock Report Import</h3>
+        <span style="font-size:.78rem;color:var(--gray)">Paste Excel data or type manually</span>
+      </div>
+      <div class="card-body">
+        <div class="howto">
+          <h4>📋 How to import your daily stock report</h4>
+          <ol>
+            <li>Open your stock report Excel file (e.g. <strong>SS &amp; CO ITEM STOCK REPORT.xls</strong>)</li>
+            <li>Select the data rows (medicine name, stock quantity, price columns)</li>
+            <li><strong>Copy (Ctrl+C)</strong> and paste below — Tab-separated Excel data is automatically detected</li>
+            <li>Map your columns (Name, Stock, Price) using the dropdowns</li>
+            <li>Review the preview and click <strong>Import to Stock</strong></li>
+          </ol>
+        </div>
+
+        <div style="margin-bottom:14px">
+          <label style="font-size:.8rem;font-weight:700;color:#374151;display:block;margin-bottom:8px">Import Date</label>
+          <input type="date" id="importDate" style="padding:9px 12px;border:1.5px solid var(--gray-border);border-radius:8px;font-size:.88rem;outline:none;" />
+        </div>
+
+        <label style="font-size:.8rem;font-weight:700;color:#374151;display:block;margin-bottom:8px">
+          Paste Excel Data Here <span style="font-weight:400;color:var(--gray)">(Tab-separated rows from spreadsheet)</span>
+        </label>
+        <textarea
+          class="paste-area"
+          id="pasteArea"
+          placeholder="Paste your Excel stock data here...&#10;&#10;Example format:&#10;Medicine Name&#9;Stock&#9;Price&#10;Dolo 650mg&#9;150&#9;28.00&#10;Augmentin 625&#9;48&#9;142.00&#10;..."
+          oninput="parsePaste(this.value)"
+        ></textarea>
+
+        <div id="colMappingSection" style="display:none">
+          <h4 style="font-size:.85rem;font-weight:700;margin:16px 0 10px">Column Mapping</h4>
+          <p style="font-size:.78rem;color:var(--gray);margin-bottom:12px">Tell us which column contains each field in your Excel data:</p>
+          <div class="col-mapping" id="colMappingGrid"></div>
+        </div>
+
+        <div id="parseResult" style="margin-top:16px;display:none">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+            <span id="parseCount" style="font-size:.84rem;font-weight:700;color:var(--green)"></span>
+            <button class="btn btn-sm btn-outline" onclick="clearPaste()">Clear</button>
+          </div>
+          <div class="preview-table-wrap" style="max-height:240px">
+            <table>
+              <thead><tr><th>#</th><th>Medicine Name</th><th>Stock</th><th>Price</th><th>Status</th></tr></thead>
+              <tbody id="parsedTbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="importResult" style="display:none"></div>
+
+        <div style="display:flex;gap:10px;margin-top:18px">
+          <button class="btn btn-green" id="importBtn" onclick="doImport()" disabled>📥 Import to Stock</button>
+          <button class="btn btn-outline" onclick="clearPaste()">Clear</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- IMPORT HISTORY -->
+    <div class="card">
+      <div class="card-header"><h3>📜 Import History</h3></div>
+      <div style="overflow-x:auto">
+        <table class="history-table">
+          <thead><tr><th>#</th><th>Date</th><th>Items</th><th>Imported At</th></tr></thead>
+          <tbody id="historyTbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let allMeds = [];
+let parsedRows = [];
+let detectedHeaders = [];
+let colMap = { name: 0, stock: 1, price: 2 };
+let pendingEdits = {};
+
+// Init
+document.getElementById('importDate').value = new Date().toISOString().slice(0,10);
+loadCurrentStock();
+loadImportHistory();
+
+async function loadCurrentStock() {
+  const res = await fetch('/api/medicines?limit=2000');
+  allMeds = await res.json();
+  document.getElementById('stockCountBadge').textContent = allMeds.length + ' items';
+  renderStockTable(allMeds);
+}
+
+function renderStockTable(meds) {
+  const today = new Date().toISOString().slice(0,10);
+  const cutoff90 = new Date(Date.now() + 90*24*3600*1000).toISOString().slice(0,10);
+  const tbody = document.getElementById('stockTbody');
+  if (!meds.length) {
+    tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:32px;color:var(--gray)">No stock data. Import your first report below.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = meds.map(m => {
+    const stock = parseInt(m.s) || 0;
+    const reorder = parseInt(m.reorder) || 10;
+    const expiry = m.expiry || '';
+    let status = 'ok', statusLabel = 'OK', statusClass = 'pill-green';
+    if (stock === 0) { status='out'; statusLabel='OUT'; statusClass='pill pill-orange'; }
+    else if (stock <= reorder) { status='low'; statusLabel='LOW'; statusClass='pill pill-red'; }
+    else if (expiry && expiry <= cutoff90 && expiry >= today) { status='expiring'; statusLabel='EXPIRING'; statusClass='pill pill-orange'; }
+    const expColor = expiry && expiry < today ? 'color:var(--err);font-weight:700' : expiry && expiry <= cutoff90 ? 'color:var(--orange)' : '';
+    return `<tr data-status="${status}" data-name="${m.n?.toLowerCase()}">
+      <td><strong>${m.n}</strong></td>
+      <td style="color:var(--gray);font-size:.78rem">${m.g||'—'}</td>
+      <td style="font-size:.78rem">${m.c||'Tablet'}</td>
+      <td>₹${parseFloat(m.p||0).toFixed(2)}</td>
+      <td>
+        <input class="edit-input" type="number" min="0" value="${stock}"
+          style="border-color:${stock<=reorder?'var(--err)':'var(--gray-border)'}"
+          onchange="pendingEdits['${m.id}'] = {...(pendingEdits['${m.id}']||{id:'${m.id}',n:'${m.n}',p:${m.p},g:'${m.g||''}',c:'${m.c||'Tablet'}'}), s:parseInt(this.value)||0}" />
+      </td>
+      <td>
+        <input class="edit-input" type="number" min="0" value="${m.reorder||0}"
+          onchange="pendingEdits['${m.id}'] = {...(pendingEdits['${m.id}']||{id:'${m.id}',n:'${m.n}',p:${m.p},g:'${m.g||''}',c:'${m.c||'Tablet'}'}), reorder:parseInt(this.value)||0}" />
+      </td>
+      <td>
+        <input class="edit-input" type="number" min="0" value="${m.max_qty||0}"
+          onchange="pendingEdits['${m.id}'] = {...(pendingEdits['${m.id}']||{id:'${m.id}',n:'${m.n}',p:${m.p},g:'${m.g||''}',c:'${m.c||'Tablet'}'}), max_qty:parseInt(this.value)||0}" />
+      </td>
+      <td style="font-size:.78rem">${m.batch||'—'}</td>
+      <td style="font-size:.78rem;${expColor}">${expiry||'—'}</td>
+      <td><span class="pill ${statusClass}">${statusLabel}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+// CSS pill fix
+document.head.insertAdjacentHTML('beforeend', `<style>
+  .pill-red{background:#fee2e2;color:var(--err)}
+  .pill-orange{background:#ffedd5;color:#9a3412}
+</style>`);
+
+function filterStock(q) {
+  const filter = document.getElementById('stockFilter').value;
+  const lower = q.toLowerCase();
+  document.querySelectorAll('#stockTbody tr').forEach(row => {
+    const name = row.dataset.name || '';
+    const status = row.dataset.status || '';
+    const matchQ = !q || name.includes(lower) || row.textContent.toLowerCase().includes(lower);
+    const matchFilter = filter === 'all' || status === filter;
+    row.style.display = matchQ && matchFilter ? '' : 'none';
+  });
+}
+
+async function saveAllEdits() {
+  const edits = Object.values(pendingEdits);
+  if (!edits.length) { showToast('No changes to save.'); return; }
+  let saved = 0;
+  for (const med of edits) {
+    const original = allMeds.find(m => m.id === med.id) || {};
+    const payload = { ...original, ...med };
+    await fetch('/api/medicines', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+    saved++;
+  }
+  pendingEdits = {};
+  showToast(`Saved ${saved} changes ✓`, 'green');
+  loadCurrentStock();
+}
+
+// PASTE PARSING
+function parsePaste(raw) {
+  const textarea = document.getElementById('pasteArea');
+  const resultDiv = document.getElementById('parseResult');
+  const importBtn = document.getElementById('importBtn');
+  const colSection = document.getElementById('colMappingSection');
+
+  if (!raw.trim()) {
+    resultDiv.style.display = 'none';
+    colSection.style.display = 'none';
+    importBtn.disabled = true;
+    textarea.classList.remove('has-data');
+    parsedRows = [];
+    return;
+  }
+  textarea.classList.add('has-data');
+
+  const lines = raw.trim().split('\n').filter(l => l.trim());
+  if (!lines.length) return;
+
+  // Detect separator
+  const sep = lines[0].includes('\t') ? '\t' : ',';
+  const allRows = lines.map(l => l.split(sep).map(c => c.trim()));
+  detectedHeaders = allRows[0];
+
+  // Try to auto-detect header row
+  const isHeader = detectedHeaders.some(h => /name|item|medicine|drug|product|stock|qty|price|mrp/i.test(h));
+  const dataRows = isHeader ? allRows.slice(1) : allRows;
+
+  // Build column mapping UI
+  if (detectedHeaders.length > 1) {
+    colSection.style.display = 'block';
+    const opts = detectedHeaders.map((h,i) => `<option value="${i}" ${i===colMap.name&&'name'||i===colMap.stock&&'stock'||i===colMap.price&&'price'?'selected':''}>${i}: ${h}</option>`).join('');
+    document.getElementById('colMappingGrid').innerHTML = `
+      <div class="col-map-item"><label>Medicine Name Column</label>
+        <select onchange="colMap.name=parseInt(this.value);parsePaste(document.getElementById('pasteArea').value)">${opts.replace(/selected/,'')}<option value="0" selected>0: ${detectedHeaders[0]}</option></select>
+      </div>
+      <div class="col-map-item"><label>Stock / Quantity Column</label>
+        <select onchange="colMap.stock=parseInt(this.value);parsePaste(document.getElementById('pasteArea').value)">
+          ${detectedHeaders.map((h,i)=>`<option value="${i}" ${i===(isHeader?detectedHeaders.findIndex(h=>/stock|qty|quantity/i.test(h)):-1)||i===1?'selected':''}>${i}: ${h}</option>`).join('')}
+        </select>
+      </div>
+      <div class="col-map-item"><label>Price / MRP Column</label>
+        <select onchange="colMap.price=parseInt(this.value);parsePaste(document.getElementById('pasteArea').value)">
+          ${detectedHeaders.map((h,i)=>`<option value="${i}" ${i===(isHeader?detectedHeaders.findIndex(h=>/price|mrp|rate/i.test(h)):-1)||i===2?'selected':''}>${i}: ${h}</option>`).join('')}
+        </select>
+      </div>
+    `;
+  }
+
+  parsedRows = dataRows.map(row => ({
+    name: row[colMap.name] || '',
+    stock: parseFloat(row[colMap.stock]) || 0,
+    price: parseFloat(row[colMap.price]) || 0,
+  })).filter(r => r.name && r.name.length > 1);
+
+  document.getElementById('parseCount').textContent = `✓ Detected ${parsedRows.length} medicine rows`;
+  document.getElementById('parsedTbody').innerHTML = parsedRows.slice(0, 50).map((r, i) => {
+    const exists = allMeds.find(m => m.n?.toLowerCase() === r.name.toLowerCase());
+    return `<tr>
+      <td style="color:var(--gray)">${i+1}</td>
+      <td><strong>${r.name}</strong></td>
+      <td>${r.stock}</td>
+      <td>${r.price > 0 ? '₹'+r.price.toFixed(2) : '—'}</td>
+      <td>${exists ? '<span class="pill pill-green">Update</span>' : '<span class="pill pill-blue">New</span>'}</td>
+    </tr>`;
+  }).join('');
+  if (parsedRows.length > 50) {
+    document.getElementById('parsedTbody').innerHTML += `<tr><td colspan="5" style="text-align:center;color:var(--gray);font-size:.78rem">...and ${parsedRows.length-50} more rows</td></tr>`;
+  }
+
+  resultDiv.style.display = 'block';
+  importBtn.disabled = parsedRows.length === 0;
+}
+
+function clearPaste() {
+  document.getElementById('pasteArea').value = '';
+  document.getElementById('pasteArea').classList.remove('has-data');
+  document.getElementById('parseResult').style.display = 'none';
+  document.getElementById('colMappingSection').style.display = 'none';
+  document.getElementById('importResult').style.display = 'none';
+  document.getElementById('importBtn').disabled = true;
+  parsedRows = [];
+}
+
+async function doImport() {
+  if (!parsedRows.length) return;
+  const btn = document.getElementById('importBtn');
+  btn.disabled = true; btn.textContent = 'Importing...';
+  const importDate = document.getElementById('importDate').value;
+  try {
+    const res = await fetch('/api/stock/import', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ items: parsedRows, date: importDate, shop_id: 0, shop_type: 'retail' })
+    });
+    const data = await res.json();
+    if (data.status === 'success') {
+      const resultDiv = document.getElementById('importResult');
+      resultDiv.style.display = 'block';
+      resultDiv.innerHTML = `<div class="result-banner success">
+        ✓ Import complete!
+        <strong>${data.updated}</strong> items updated,
+        <strong>${data.created}</strong> new items added
+        (${data.total} total rows processed).
+      </div>`;
+      showToast('Stock imported successfully ✓', 'green');
+      clearPaste();
+      loadCurrentStock();
+      loadImportHistory();
+    } else {
+      showToast('Import failed: ' + (data.message||''), 'red');
+    }
+  } catch(e) { showToast('Network error. Please retry.', 'red'); }
+  btn.disabled = false; btn.textContent = '📥 Import to Stock';
+}
+
+async function loadImportHistory() {
+  const res = await fetch('/api/stock/imports');
+  const rows = await res.json();
+  const tbody = document.getElementById('historyTbody');
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--gray)">No imports yet</td></tr>';
+    return;
+  }
+  tbody.innerHTML = rows.map((r,i) => `<tr>
+    <td>${i+1}</td>
+    <td>${r.import_date||'—'}</td>
+    <td><strong>${r.item_count}</strong> items</td>
+    <td style="font-size:.78rem;color:var(--gray)">${fmtDate(r.imported_at)}</td>
+  </tr>`).join('');
+}
+
+function fmtDate(iso) {
+  if (!iso) return '—';
+  try { return new Date(iso).toLocaleString('en-IN', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }); }
+  catch { return iso.slice(0,16); }
+}
+
+function showToast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'toast show ' + type;
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+</script>
+</body>
+</html>

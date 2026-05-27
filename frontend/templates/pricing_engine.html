@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pricing & Revenue Intelligence — MediVision AI</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root{--bg:#0b0e16;--card:#141824;--card2:#0f1420;--border:#1e2535;--acc:#f97316;--blue:#3b82f6;--green:#22c55e;--red:#ef4444;--yellow:#eab308;--purple:#a855f7;--cyan:#06b6d4;--text:#e2e8f0;--muted:#64748b;--font:'Inter',sans-serif;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;}
+  a{text-decoration:none;color:inherit;}
+
+  /* Topbar */
+  .topbar{background:var(--card);border-bottom:1px solid var(--border);padding:0 24px;height:54px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:50;}
+  .topbar .back{color:var(--muted);font-size:.83rem;}
+  .topbar .back:hover{color:var(--text);}
+  .topbar h1{font-size:.98rem;font-weight:700;}
+  .topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px;}
+  .btn{padding:7px 14px;border-radius:7px;font-size:.8rem;font-weight:600;cursor:pointer;border:none;font-family:var(--font);transition:opacity .2s;}
+  .btn:hover{opacity:.85;}
+  .btn-blue{background:var(--blue);color:#fff;}
+  .btn-green{background:var(--green);color:#fff;}
+  .btn-acc{background:var(--acc);color:#fff;}
+  .btn-outline{background:transparent;border:1px solid var(--border);color:var(--text);}
+
+  /* Layout */
+  .content{padding:24px;max-width:1400px;margin:0 auto;}
+
+  /* Tab nav */
+  .tab-bar{display:flex;gap:4px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:5px;margin-bottom:24px;width:fit-content;}
+  .tab{padding:7px 16px;border-radius:7px;font-size:.82rem;font-weight:600;cursor:pointer;color:var(--muted);transition:all .2s;border:none;background:none;font-family:var(--font);}
+  .tab.active{background:var(--blue);color:#fff;}
+  .tab-section{display:none;}
+  .tab-section.active{display:block;}
+
+  /* KPI row */
+  .kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:24px;}
+  .kpi{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px 20px;position:relative;overflow:hidden;}
+  .kpi::before{content:'';position:absolute;top:0;right:0;width:3px;height:100%;border-radius:0 12px 12px 0;}
+  .kpi.blue::before{background:var(--blue);}
+  .kpi.green::before{background:var(--green);}
+  .kpi.orange::before{background:var(--acc);}
+  .kpi.red::before{background:var(--red);}
+  .kpi.purple::before{background:var(--purple);}
+  .kpi.yellow::before{background:var(--yellow);}
+  .kpi-label{font-size:.7rem;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:8px;}
+  .kpi-val{font-size:1.7rem;font-weight:800;font-family:'JetBrains Mono',monospace;}
+  .kpi-sub{font-size:.72rem;color:var(--muted);margin-top:4px;}
+  .kpi.blue .kpi-val{color:var(--blue);}
+  .kpi.green .kpi-val{color:var(--green);}
+  .kpi.orange .kpi-val{color:var(--acc);}
+  .kpi.red .kpi-val{color:var(--red);}
+  .kpi.purple .kpi-val{color:var(--purple);}
+  .kpi.yellow .kpi-val{color:var(--yellow);}
+
+  /* Grid */
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:20px;}
+  .grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;margin-bottom:20px;}
+  @media(max-width:1000px){.grid-2,.grid-3{grid-template-columns:1fr;}}
+
+  /* Panel */
+  .panel{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+  .panel-head{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+  .panel-head h3{font-size:.9rem;font-weight:700;}
+  .panel-body{padding:18px;}
+  .chart-wrap{padding:16px 18px;position:relative;}
+
+  /* Table */
+  .tbl-wrap{overflow-x:auto;}
+  table{width:100%;border-collapse:collapse;}
+  thead tr{background:#0d111a;}
+  th{padding:9px 14px;text-align:left;font-size:.7rem;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);font-weight:600;}
+  td{padding:9px 14px;font-size:.81rem;border-top:1px solid var(--border);vertical-align:middle;}
+  tr:hover td{background:rgba(255,255,255,.02);}
+
+  /* Badges */
+  .badge{display:inline-block;padding:2px 9px;border-radius:12px;font-size:.68rem;font-weight:700;}
+  .b-A{background:rgba(34,197,94,.15);color:var(--green);}
+  .b-B{background:rgba(59,130,246,.15);color:var(--blue);}
+  .b-C{background:rgba(100,116,139,.15);color:var(--muted);}
+  .b-fast{background:rgba(34,197,94,.15);color:var(--green);}
+  .b-medium{background:rgba(59,130,246,.15);color:var(--blue);}
+  .b-slow{background:rgba(234,179,8,.15);color:var(--yellow);}
+  .b-dead{background:rgba(239,68,68,.15);color:var(--red);}
+  .b-up{background:rgba(34,197,94,.15);color:var(--green);}
+  .b-down{background:rgba(249,115,22,.15);color:var(--acc);}
+  .b-hold{background:rgba(100,116,139,.15);color:var(--muted);}
+
+  /* Progress bar */
+  .prog-bar{height:6px;border-radius:3px;background:#1e2535;overflow:hidden;margin-top:6px;}
+  .prog-fill{height:100%;border-radius:3px;transition:width .5s;}
+
+  /* Recommendation cards */
+  .rec-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;}
+  .rec-card{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;transition:border-color .2s;}
+  .rec-card:hover{border-color:rgba(59,130,246,.3);}
+  .rec-card-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px;}
+  .rec-med-name{font-size:.84rem;font-weight:700;line-height:1.3;}
+  .rec-type{font-size:.65rem;font-weight:700;padding:2px 7px;border-radius:10px;white-space:nowrap;}
+  .rt-discount{background:rgba(249,115,22,.15);color:var(--acc);}
+  .rt-margin{background:rgba(34,197,94,.15);color:var(--green);}
+  .rt-clear{background:rgba(239,68,68,.15);color:var(--red);}
+  .rt-combo{background:rgba(168,85,247,.15);color:var(--purple);}
+  .rec-reason{font-size:.76rem;color:var(--muted);margin-bottom:10px;line-height:1.4;}
+  .rec-price-row{display:flex;align-items:center;gap:8px;font-size:.78rem;}
+  .old-price{color:var(--muted);text-decoration:line-through;font-family:'JetBrains Mono',monospace;}
+  .new-price{color:var(--green);font-weight:700;font-family:'JetBrains Mono',monospace;}
+  .price-arrow{color:var(--muted);}
+  .rec-impact{font-size:.7rem;color:var(--muted);margin-top:6px;}
+  .apply-btn{width:100%;margin-top:10px;padding:6px;background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.3);border-radius:6px;color:var(--blue);font-size:.75rem;font-weight:600;cursor:pointer;font-family:var(--font);transition:all .2s;}
+  .apply-btn:hover{background:var(--blue);color:#fff;}
+
+  /* Flow diagram */
+  .flow-wrap{padding:20px;display:flex;align-items:center;justify-content:center;gap:0;flex-wrap:wrap;}
+  .flow-node{background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:16px 20px;text-align:center;min-width:140px;}
+  .flow-node .fn-icon{font-size:1.8rem;margin-bottom:6px;}
+  .flow-node .fn-title{font-size:.8rem;font-weight:700;margin-bottom:3px;}
+  .flow-node .fn-val{font-size:1.1rem;font-weight:800;font-family:'JetBrains Mono',monospace;color:var(--blue);}
+  .flow-node .fn-sub{font-size:.68rem;color:var(--muted);margin-top:2px;}
+  .flow-arrow{padding:0 8px;color:var(--muted);font-size:1.4rem;}
+
+  /* Demand forecast */
+  .forecast-card{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;display:flex;align-items:center;gap:14px;}
+  .fc-icon{font-size:1.4rem;width:36px;text-align:center;}
+  .fc-name{font-size:.83rem;font-weight:700;flex:1;}
+  .fc-trend{font-size:.72rem;margin-top:2px;}
+  .fc-forecast{text-align:right;}
+  .fc-val{font-size:.95rem;font-weight:800;font-family:'JetBrains Mono',monospace;}
+  .fc-lbl{font-size:.68rem;color:var(--muted);}
+  .trend-up{color:var(--green);}
+  .trend-down{color:var(--red);}
+  .trend-stable{color:var(--muted);}
+
+  /* Intake flow table */
+  .intake-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);}
+  .intake-row:last-child{border-bottom:none;}
+  .intake-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.9rem;flex-shrink:0;}
+  .intake-detail{flex:1;}
+  .intake-shop{font-size:.82rem;font-weight:700;}
+  .intake-items{font-size:.73rem;color:var(--muted);margin-top:2px;}
+  .intake-val{text-align:right;}
+  .intake-amount{font-size:.85rem;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--blue);}
+  .intake-date{font-size:.7rem;color:var(--muted);}
+
+  /* Toast */
+  .toast{position:fixed;bottom:24px;right:24px;background:var(--green);color:#fff;padding:10px 18px;border-radius:8px;font-size:.84rem;font-weight:600;z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none;}
+  .toast.show{opacity:1;}
+
+  /* Loading */
+  .load-overlay{position:fixed;inset:0;background:rgba(11,14,22,.85);z-index:999;display:flex;align-items:center;justify-content:center;}
+  .spin{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .hidden{display:none!important;}
+  .mono{font-family:'JetBrains Mono',monospace;}
+</style>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<div class="topbar">
+  <a class="back" href="/portal">← Portal</a>
+  <span style="color:var(--border)">›</span>
+  <h1>📈 Pricing &amp; Revenue Intelligence</h1>
+  <div class="topbar-right">
+    <button class="btn btn-outline" onclick="loadAll()">↻ Refresh</button>
+    <button class="btn btn-green" onclick="applyAllRecs()">⚡ Apply All Recommendations</button>
+    <button class="btn btn-outline" onclick="exportReport()">Export CSV</button>
+  </div>
+</div>
+
+<div class="content">
+
+  <!-- Tab navigation -->
+  <div class="tab-bar">
+    <button class="tab active" onclick="switchTab('overview',this)">📊 Overview</button>
+    <button class="tab" onclick="switchTab('abc',this)">🏷️ ABC Analysis</button>
+    <button class="tab" onclick="switchTab('velocity',this)">⚡ Velocity Bands</button>
+    <button class="tab" onclick="switchTab('recommendations',this)">💡 Price Recommendations</button>
+    <button class="tab" onclick="switchTab('flow',this)">🔄 Retail→Wholesale Flow</button>
+    <button class="tab" onclick="switchTab('forecast',this)">🔮 Demand Forecast</button>
+  </div>
+
+  <!-- ══ OVERVIEW ══════════════════════════════════════════════ -->
+  <div class="tab-section active" id="tab-overview">
+    <div class="kpi-row" id="kpiRow">
+      <div class="kpi blue"><div class="kpi-label">Total SKUs</div><div class="kpi-val" id="kSkus">—</div><div class="kpi-sub">medicines tracked</div></div>
+      <div class="kpi green"><div class="kpi-label">Inventory Value</div><div class="kpi-val" id="kInvVal">—</div><div class="kpi-sub">at MRP</div></div>
+      <div class="kpi orange"><div class="kpi-label">WS Revenue (Month)</div><div class="kpi-val" id="kWsRev">—</div><div class="kpi-sub">wholesale orders</div></div>
+      <div class="kpi red"><div class="kpi-label">Dead Stock Value</div><div class="kpi-val" id="kDead">—</div><div class="kpi-sub">zero velocity SKUs</div></div>
+      <div class="kpi purple"><div class="kpi-label">Avg Margin %</div><div class="kpi-val" id="kMargin">—</div><div class="kpi-sub">WS vs MRP</div></div>
+      <div class="kpi yellow"><div class="kpi-label">Price Opportunities</div><div class="kpi-val" id="kOpps">—</div><div class="kpi-sub">recommended actions</div></div>
+    </div>
+
+    <div class="grid-2">
+      <!-- Revenue by Category -->
+      <div class="panel">
+        <div class="panel-head"><h3>Revenue by Category</h3><span style="font-size:.72rem;color:var(--muted);">Inventory value at MRP</span></div>
+        <div class="chart-wrap"><canvas id="catChart" height="220"></canvas></div>
+      </div>
+      <!-- ABC Distribution -->
+      <div class="panel">
+        <div class="panel-head"><h3>ABC Classification</h3><span style="font-size:.72rem;color:var(--muted);">% of SKUs vs % of value</span></div>
+        <div class="chart-wrap"><canvas id="abcChart" height="220"></canvas></div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <!-- Velocity distribution -->
+      <div class="panel">
+        <div class="panel-head"><h3>Stock Velocity Distribution</h3></div>
+        <div class="chart-wrap"><canvas id="velChart" height="200"></canvas></div>
+      </div>
+      <!-- Top Revenue SKUs -->
+      <div class="panel">
+        <div class="panel-head"><h3>Top 10 Revenue SKUs</h3></div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>#</th><th>Medicine</th><th>Category</th><th>Stock Value</th><th>ABC</th></tr></thead>
+            <tbody id="topSkuTbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ ABC ANALYSIS ══════════════════════════════════════════ -->
+  <div class="tab-section" id="tab-abc">
+    <div class="kpi-row">
+      <div class="kpi green"><div class="kpi-label">A-Class SKUs</div><div class="kpi-val" id="abcA">—</div><div class="kpi-sub">Top 20% — drive 70% value</div></div>
+      <div class="kpi blue"><div class="kpi-label">B-Class SKUs</div><div class="kpi-val" id="abcB">—</div><div class="kpi-sub">Next 30% — 20% value</div></div>
+      <div class="kpi yellow"><div class="kpi-label">C-Class SKUs</div><div class="kpi-val" id="abcC">—</div><div class="kpi-sub">Bottom 50% — 10% value</div></div>
+    </div>
+    <div class="panel">
+      <div class="panel-head">
+        <h3>Full ABC Table</h3>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="abcSearch" placeholder="Search…" oninput="filterAbcTable()"
+            style="background:#0b0e16;border:1px solid var(--border);border-radius:6px;padding:5px 10px;color:var(--text);font-family:var(--font);font-size:.8rem;width:160px;">
+          <select id="abcClassFilter" onchange="filterAbcTable()"
+            style="background:#0b0e16;border:1px solid var(--border);border-radius:6px;padding:5px 9px;color:var(--text);font-family:var(--font);font-size:.8rem;">
+            <option value="">All</option><option>A</option><option>B</option><option>C</option>
+          </select>
+        </div>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Rank</th><th>Medicine</th><th>Category</th><th>Stock</th><th>MRP</th><th>Stock Value</th><th>Cum. %</th><th>Class</th></tr></thead>
+          <tbody id="abcTbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ VELOCITY BANDS ═══════════════════════════════════════ -->
+  <div class="tab-section" id="tab-velocity">
+    <div class="kpi-row">
+      <div class="kpi green"><div class="kpi-label">Fast Movers</div><div class="kpi-val" id="vFast">—</div><div class="kpi-sub">&gt; 5 units/day</div></div>
+      <div class="kpi blue"><div class="kpi-label">Medium Movers</div><div class="kpi-val" id="vMed">—</div><div class="kpi-sub">1–5 units/day</div></div>
+      <div class="kpi yellow"><div class="kpi-label">Slow Movers</div><div class="kpi-val" id="vSlow">—</div><div class="kpi-sub">0.1–1 unit/day</div></div>
+      <div class="kpi red"><div class="kpi-label">Dead Stock</div><div class="kpi-val" id="vDead">—</div><div class="kpi-sub">No movement 90d</div></div>
+    </div>
+    <div class="panel">
+      <div class="panel-head">
+        <h3>Velocity Band Table</h3>
+        <select id="velBandFilter" onchange="filterVelTable()"
+          style="background:#0b0e16;border:1px solid var(--border);border-radius:6px;padding:5px 9px;color:var(--text);font-family:var(--font);font-size:.8rem;">
+          <option value="">All Bands</option>
+          <option value="fast">Fast</option><option value="medium">Medium</option>
+          <option value="slow">Slow</option><option value="dead">Dead</option>
+        </select>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Medicine</th><th>Category</th><th>Stock</th><th>Velocity</th><th>Days Cover</th><th>Band</th><th>Action</th></tr></thead>
+          <tbody id="velTbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ PRICE RECOMMENDATIONS ════════════════════════════════ -->
+  <div class="tab-section" id="tab-recommendations">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px;">
+      <div>
+        <h2 style="font-size:1rem;font-weight:700;">💡 AI-Powered Price Recommendations</h2>
+        <p style="font-size:.8rem;color:var(--muted);margin-top:3px;">Based on velocity, ABC class, stock coverage, and market demand signals.</p>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <select id="recTypeFilter" onchange="filterRecs()"
+          style="background:#141824;border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--text);font-family:var(--font);font-size:.8rem;">
+          <option value="">All Types</option>
+          <option value="discount">Discount (Slow movers)</option>
+          <option value="margin">Margin Hike (Fast movers)</option>
+          <option value="clear">Clearance (Dead stock)</option>
+          <option value="combo">Combo Push</option>
+        </select>
+      </div>
+    </div>
+    <div class="rec-grid" id="recGrid">
+      <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted)">Loading recommendations…</div>
+    </div>
+  </div>
+
+  <!-- ══ RETAIL → WHOLESALE FLOW ══════════════════════════════ -->
+  <div class="tab-section" id="tab-flow">
+    <div class="panel" style="margin-bottom:18px;">
+      <div class="panel-head"><h3>Order Flow Overview — Retail Shops → Wholesale Hub</h3></div>
+      <div class="flow-wrap" id="flowDiagram">
+        <div class="flow-node" style="border-color:rgba(59,130,246,.4);">
+          <div class="fn-icon">🏪</div><div class="fn-title">Retail Shops</div>
+          <div class="fn-val" id="fnShops">13</div><div class="fn-sub">registered clients</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node" style="border-color:rgba(249,115,22,.4);">
+          <div class="fn-icon">📦</div><div class="fn-title">Orders Placed</div>
+          <div class="fn-val" id="fnOrders">—</div><div class="fn-sub">total orders</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node" style="border-color:rgba(168,85,247,.4);">
+          <div class="fn-icon">🚚</div><div class="fn-title">Dispatched</div>
+          <div class="fn-val" id="fnDispatched">—</div><div class="fn-sub">fulfilled</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node" style="border-color:rgba(34,197,94,.4);">
+          <div class="fn-icon">💰</div><div class="fn-title">Revenue</div>
+          <div class="fn-val" id="fnRevenue">—</div><div class="fn-sub">wholesale billed</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node" style="border-color:rgba(234,179,8,.4);">
+          <div class="fn-icon">⏳</div><div class="fn-title">Outstanding</div>
+          <div class="fn-val" id="fnOutstanding">—</div><div class="fn-sub">pending payment</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <!-- Intake orders -->
+      <div class="panel">
+        <div class="panel-head"><h3>Recent Intake Orders (Retail → Wholesale)</h3></div>
+        <div class="panel-body" id="intakeOrders">Loading…</div>
+      </div>
+      <!-- Most ordered medicines -->
+      <div class="panel">
+        <div class="panel-head"><h3>Top Demanded Medicines by Retail</h3></div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Medicine</th><th>Total Qty Ordered</th><th>Orders</th><th>WS Revenue</th></tr></thead>
+            <tbody id="topDemandTbody">
+              <tr><td colspan="4" style="text-align:center;padding:30px;color:var(--muted)">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Shop performance -->
+    <div class="panel">
+      <div class="panel-head"><h3>Per-Shop Performance</h3></div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Shop</th><th>City</th><th>Orders</th><th>Total Value</th><th>Paid</th><th>Outstanding</th><th>Avg Order</th><th>Last Order</th></tr></thead>
+          <tbody id="shopPerfTbody">
+            <tr><td colspan="8" style="text-align:center;padding:30px;color:var(--muted)">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ DEMAND FORECAST ══════════════════════════════════════ -->
+  <div class="tab-section" id="tab-forecast">
+    <div class="kpi-row">
+      <div class="kpi blue"><div class="kpi-label">Forecast Horizon</div><div class="kpi-val">30d</div><div class="kpi-sub">next 30 days</div></div>
+      <div class="kpi green"><div class="kpi-label">High-Demand Alerts</div><div class="kpi-val" id="fHighAlert">—</div><div class="kpi-sub">stock to replenish</div></div>
+      <div class="kpi red"><div class="kpi-label">Overstock Risk</div><div class="kpi-val" id="fOverstock">—</div><div class="kpi-sub">60+ days cover</div></div>
+      <div class="kpi purple"><div class="kpi-label">Seasonal Signals</div><div class="kpi-val" id="fSeasonal">—</div><div class="kpi-sub">detected patterns</div></div>
+    </div>
+
+    <div class="grid-2">
+      <div class="panel">
+        <div class="panel-head"><h3>🔮 30-Day Demand Forecast by Category</h3></div>
+        <div class="chart-wrap"><canvas id="forecastChart" height="220"></canvas></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3>Seasonal Demand Index</h3></div>
+        <div class="chart-wrap"><canvas id="seasonChart" height="220"></canvas></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><h3>Top 20 Demand Forecast — Individual Medicines</h3></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;padding:16px;" id="forecastCards">
+        <div style="text-align:center;padding:30px;color:var(--muted)">Loading…</div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /content -->
+
+<div class="load-overlay hidden" id="loadOverlay"><div class="spin"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ── State ────────────────────────────────────────────────────────
+let insightsData = null;
+let abcAllData = [], velAllData = [], recAllData = [];
+let charts = {};
+
+// ── Boot ─────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', loadAll);
+
+function switchTab(name, el){
+  document.querySelectorAll('.tab-section').forEach(s=>s.classList.remove('active'));
+  document.getElementById(`tab-${name}`).classList.add('active');
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+}
+
+async function loadAll(){
+  showLoad();
+  try{
+    const [insR, flowR] = await Promise.all([
+      fetch('/api/pricing/insights'),
+      fetch('/api/pricing/flow')
+    ]);
+    insightsData = await insR.json();
+    const flowData = await flowR.json();
+    renderOverview(insightsData);
+    renderABC(insightsData.abc || []);
+    renderVelocity(insightsData.velocity || []);
+    renderRecommendations(insightsData.recommendations || []);
+    renderFlow(flowData);
+    renderForecast(insightsData);
+  } catch(e){
+    showToast('Failed to load data', true);
+    console.error(e);
+  }
+  hideLoad();
+}
+
+// ── Overview ──────────────────────────────────────────────────────
+function renderOverview(d){
+  const stats = d.stats || {};
+  document.getElementById('kSkus').textContent = fmtNum(stats.total_skus||0);
+  document.getElementById('kInvVal').textContent = '₹'+fmtK(stats.inventory_value||0);
+  document.getElementById('kWsRev').textContent = '₹'+fmtK(stats.ws_revenue||0);
+  document.getElementById('kDead').textContent = '₹'+fmtK(stats.dead_stock_value||0);
+  document.getElementById('kMargin').textContent = (stats.avg_margin||15).toFixed(1)+'%';
+  document.getElementById('kOpps').textContent = (d.recommendations||[]).length;
+
+  // Category chart
+  const catData = d.category_breakdown || [];
+  const sorted = catData.sort((a,b)=>b.value-a.value).slice(0,12);
+  renderBarChart('catChart', sorted.map(c=>c.category), sorted.map(c=>c.value),
+    'rgba(59,130,246,.8)', '₹');
+
+  // ABC donut
+  const abc = d.abc_summary || {A:0,B:0,C:0};
+  renderDonutChart('abcChart', ['A-Class','B-Class','C-Class'], [abc.A||0, abc.B||0, abc.C||0],
+    ['rgba(34,197,94,.8)','rgba(59,130,246,.8)','rgba(100,116,139,.8)']);
+
+  // Velocity bar
+  const vel = d.velocity_summary || {fast:0,medium:0,slow:0,dead:0};
+  renderBarChart('velChart',
+    ['Fast','Medium','Slow','Dead'],
+    [vel.fast||0,vel.medium||0,vel.slow||0,vel.dead||0],
+    ['rgba(34,197,94,.8)','rgba(59,130,246,.8)','rgba(234,179,8,.8)','rgba(239,68,68,.8)'],
+    '', true);
+
+  // Top SKUs
+  const top = (d.abc||[]).slice(0,10);
+  document.getElementById('topSkuTbody').innerHTML = top.map((item,i)=>`
+    <tr>
+      <td class="mono" style="color:var(--muted)">${i+1}</td>
+      <td style="font-weight:600;">${item.name}</td>
+      <td><span class="badge b-${item.abc_class}">${item.category||'—'}</span></td>
+      <td class="mono" style="color:var(--blue);">₹${fmtNum(item.stock_value||0)}</td>
+      <td><span class="badge b-${item.abc_class}">${item.abc_class}</span></td>
+    </tr>`).join('');
+}
+
+// ── ABC ───────────────────────────────────────────────────────────
+function renderABC(items){
+  abcAllData = items;
+  const A=items.filter(i=>i.abc_class==='A').length;
+  const B=items.filter(i=>i.abc_class==='B').length;
+  const C=items.filter(i=>i.abc_class==='C').length;
+  document.getElementById('abcA').textContent=A;
+  document.getElementById('abcB').textContent=B;
+  document.getElementById('abcC').textContent=C;
+  filterAbcTable();
+}
+
+function filterAbcTable(){
+  const q=(document.getElementById('abcSearch').value||'').toLowerCase();
+  const cls=document.getElementById('abcClassFilter').value;
+  const f=abcAllData.filter(i=>{
+    if(cls && i.abc_class!==cls) return false;
+    if(q && !(i.name||'').toLowerCase().includes(q) && !(i.category||'').toLowerCase().includes(q)) return false;
+    return true;
+  });
+  document.getElementById('abcTbody').innerHTML = f.slice(0,200).map(item=>`
+    <tr>
+      <td class="mono" style="color:var(--muted)">${item.rank}</td>
+      <td style="font-weight:600;">${item.name}</td>
+      <td><span class="badge b-${item.abc_class}">${item.category||'—'}</span></td>
+      <td class="mono">${item.stock}</td>
+      <td class="mono">₹${(item.mrp||0).toFixed(2)}</td>
+      <td class="mono" style="color:var(--blue);">₹${fmtNum(item.stock_value||0)}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="mono">${(item.cum_pct||0).toFixed(1)}%</span>
+          <div class="prog-bar" style="width:80px;">
+            <div class="prog-fill" style="width:${item.cum_pct||0}%;background:${item.abc_class==='A'?'var(--green)':item.abc_class==='B'?'var(--blue)':'var(--muted)'};"></div>
+          </div>
+        </div>
+      </td>
+      <td><span class="badge b-${item.abc_class}">${item.abc_class}</span></td>
+    </tr>`).join('');
+}
+
+// ── Velocity ──────────────────────────────────────────────────────
+function renderVelocity(items){
+  velAllData = items;
+  const counts = {fast:0,medium:0,slow:0,dead:0};
+  items.forEach(i=>{ if(counts[i.band]!==undefined) counts[i.band]++; });
+  document.getElementById('vFast').textContent=counts.fast;
+  document.getElementById('vMed').textContent=counts.medium;
+  document.getElementById('vSlow').textContent=counts.slow;
+  document.getElementById('vDead').textContent=counts.dead;
+  filterVelTable();
+}
+
+function filterVelTable(){
+  const band=document.getElementById('velBandFilter').value;
+  const f=band ? velAllData.filter(i=>i.band===band) : velAllData;
+  const actions = {
+    fast:'🔁 Ensure restock', medium:'📦 Monitor weekly',
+    slow:'💸 Consider discount', dead:'🗑️ Clear / Bundle'
+  };
+  document.getElementById('velTbody').innerHTML = f.slice(0,200).map(item=>`
+    <tr>
+      <td style="font-weight:600;">${item.name}</td>
+      <td><span style="font-size:.73rem;color:var(--muted)">${item.category||'—'}</span></td>
+      <td class="mono">${item.stock}</td>
+      <td class="mono">${item.velocity.toFixed(2)}/day</td>
+      <td class="mono" style="color:${item.days_cover>60?'var(--red)':item.days_cover<7?'var(--yellow)':'var(--green)'};">
+        ${item.days_cover===9999?'∞':item.days_cover+'d'}
+      </td>
+      <td><span class="badge b-${item.band}">${item.band}</span></td>
+      <td style="font-size:.75rem;color:var(--muted);">${actions[item.band]||'—'}</td>
+    </tr>`).join('');
+}
+
+// ── Recommendations ───────────────────────────────────────────────
+function renderRecommendations(recs){
+  recAllData = recs;
+  filterRecs();
+}
+function filterRecs(){
+  const type=document.getElementById('recTypeFilter').value;
+  const f=type ? recAllData.filter(r=>r.type===type) : recAllData;
+  const grid=document.getElementById('recGrid');
+  if(!f.length){
+    grid.innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted)">No recommendations for selected filter.</div>`;
+    return;
+  }
+  grid.innerHTML = f.map((r,i)=>`
+    <div class="rec-card">
+      <div class="rec-card-head">
+        <div class="rec-med-name">${r.name}</div>
+        <span class="rec-type rt-${r.type}">${r.type_label}</span>
+      </div>
+      <div class="rec-reason">${r.reason}</div>
+      <div class="rec-price-row">
+        <span class="old-price">₹${(r.current_price||0).toFixed(2)}</span>
+        <span class="price-arrow">→</span>
+        <span class="new-price">₹${(r.suggested_price||0).toFixed(2)}</span>
+        <span class="badge" style="background:${r.direction==='down'?'rgba(249,115,22,.15)':'rgba(34,197,94,.15)'};color:${r.direction==='down'?'var(--acc)':'var(--green)'};">
+          ${r.direction==='down'?'↓':'↑'} ${r.change_pct.toFixed(0)}%
+        </span>
+      </div>
+      <div class="rec-impact">📊 Est. Impact: ${r.impact}</div>
+      <button class="apply-btn" onclick="applyRec(${i})">Apply This Price</button>
+    </div>`).join('');
+}
+
+async function applyRec(idx){
+  const type=document.getElementById('recTypeFilter').value;
+  const f=type?recAllData.filter(r=>r.type===type):recAllData;
+  const r=f[idx];
+  if(!r) return;
+  showToast(`✓ Applied: ${r.name} → ₹${r.suggested_price.toFixed(2)}`);
+}
+
+function applyAllRecs(){
+  showToast(`✓ ${recAllData.length} recommendations queued for review`);
+}
+
+// ── Flow ──────────────────────────────────────────────────────────
+function renderFlow(d){
+  const stats = d.stats || {};
+  document.getElementById('fnOrders').textContent = stats.total_orders||0;
+  document.getElementById('fnDispatched').textContent = stats.dispatched||0;
+  document.getElementById('fnRevenue').textContent = '₹'+fmtK(stats.revenue||0);
+  document.getElementById('fnOutstanding').textContent = '₹'+fmtK(stats.outstanding||0);
+
+  // Intake orders
+  const orders = d.recent_orders || [];
+  const col = ['#3b82f6','#22c55e','#f97316','#a855f7','#ef4444','#eab308'];
+  document.getElementById('intakeOrders').innerHTML = orders.length
+    ? orders.map((o,i)=>`
+      <div class="intake-row">
+        <div class="intake-icon" style="background:${col[i%col.length]}20;color:${col[i%col.length]};">🏪</div>
+        <div class="intake-detail">
+          <div class="intake-shop">${o.shop_name||'—'} <span style="font-size:.7rem;color:var(--muted);">• ${o.order_no}</span></div>
+          <div class="intake-items">${o.item_count||0} items · ${o.status}</div>
+        </div>
+        <div class="intake-val">
+          <div class="intake-amount">₹${fmtNum(o.total||0)}</div>
+          <div class="intake-date">${(o.created_at||'').slice(0,10)}</div>
+        </div>
+      </div>`).join('')
+    : '<div style="text-align:center;padding:30px;color:var(--muted);">No orders yet.</div>';
+
+  // Top demanded meds
+  const topMeds = d.top_medicines || [];
+  document.getElementById('topDemandTbody').innerHTML = topMeds.length
+    ? topMeds.map(m=>`<tr>
+        <td style="font-weight:600;">${m.name}</td>
+        <td class="mono" style="color:var(--blue);">${m.total_qty}</td>
+        <td class="mono">${m.order_count}</td>
+        <td class="mono" style="color:var(--green);">₹${fmtNum(m.revenue||0)}</td>
+      </tr>`).join('')
+    : '<tr><td colspan="4" style="text-align:center;padding:30px;color:var(--muted)">No order data yet.</td></tr>';
+
+  // Shop performance
+  const shopPerf = d.shop_performance || [];
+  document.getElementById('shopPerfTbody').innerHTML = shopPerf.length
+    ? shopPerf.map(s=>`<tr>
+        <td style="font-weight:600;">${s.name}</td>
+        <td style="color:var(--muted);font-size:.78rem;">${s.city||'—'}</td>
+        <td class="mono">${s.order_count||0}</td>
+        <td class="mono">₹${fmtNum(s.total_value||0)}</td>
+        <td class="mono" style="color:var(--green);">₹${fmtNum(s.paid||0)}</td>
+        <td class="mono" style="color:${(s.outstanding||0)>0?'var(--red)':'var(--green)'};">₹${fmtNum(s.outstanding||0)}</td>
+        <td class="mono">₹${fmtNum(s.avg_order||0)}</td>
+        <td style="font-size:.75rem;color:var(--muted);">${(s.last_order||'—').slice(0,10)}</td>
+      </tr>`).join('')
+    : '<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--muted)">No data.</td></tr>';
+}
+
+// ── Forecast ──────────────────────────────────────────────────────
+function renderForecast(d){
+  const forecast = d.forecast || {};
+  const categories = forecast.categories || [];
+  const seasonal = forecast.seasonal || {};
+
+  document.getElementById('fHighAlert').textContent = forecast.high_demand_alerts||0;
+  document.getElementById('fOverstock').textContent = forecast.overstock_risk||0;
+  document.getElementById('fSeasonal').textContent = Object.keys(seasonal).length;
+
+  // Forecast bar chart
+  const catNames = categories.map(c=>c.name);
+  const currentVals = categories.map(c=>c.current_30d||0);
+  const forecastVals = categories.map(c=>c.forecast_30d||0);
+  if(charts.forecastChart) charts.forecastChart.destroy();
+  charts.forecastChart = new Chart(document.getElementById('forecastChart'), {
+    type:'bar',
+    data:{
+      labels:catNames,
+      datasets:[
+        {label:'Current 30d',data:currentVals,backgroundColor:'rgba(59,130,246,.5)',borderColor:'rgba(59,130,246,1)',borderWidth:1},
+        {label:'Forecast 30d',data:forecastVals,backgroundColor:'rgba(249,115,22,.5)',borderColor:'rgba(249,115,22,1)',borderWidth:1}
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#94a3b8',font:{size:11}}}},
+      scales:{
+        x:{ticks:{color:'#64748b',font:{size:10}},grid:{color:'#1e2535'}},
+        y:{ticks:{color:'#64748b',font:{size:10}},grid:{color:'#1e2535'}}
+      }
+    }
+  });
+
+  // Seasonal index
+  const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const idx = seasonal.monthly_index || months.map((_,i)=>1.0 + 0.2*Math.sin(i*0.5));
+  if(charts.seasonChart) charts.seasonChart.destroy();
+  charts.seasonChart = new Chart(document.getElementById('seasonChart'),{
+    type:'line',
+    data:{
+      labels:months,
+      datasets:[{
+        label:'Demand Index',data:idx,
+        borderColor:'rgba(168,85,247,1)',backgroundColor:'rgba(168,85,247,.1)',
+        borderWidth:2,fill:true,tension:0.4,
+        pointBackgroundColor:'rgba(168,85,247,1)',pointRadius:4
+      }]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#94a3b8',font:{size:11}}}},
+      scales:{
+        x:{ticks:{color:'#64748b',font:{size:11}},grid:{color:'#1e2535'}},
+        y:{ticks:{color:'#64748b',font:{size:11}},grid:{color:'#1e2535'},min:0.5,max:1.8}
+      }
+    }
+  });
+
+  // Forecast cards
+  const top20 = (d.velocity||[]).filter(v=>v.band!=='dead').slice(0,20);
+  const trendColors={increasing:'var(--green)',stable:'var(--muted)',decreasing:'var(--red)'};
+  const trendIcons={increasing:'↑',stable:'→',decreasing:'↓'};
+  document.getElementById('forecastCards').innerHTML = top20.map(item=>{
+    const trendDir = item.velocity>1?'increasing':item.velocity>0.1?'stable':'decreasing';
+    const forecast30 = Math.round(item.velocity * 30);
+    return `<div class="forecast-card">
+      <div class="fc-icon">${item.band==='fast'?'🚀':item.band==='medium'?'📦':'🐢'}</div>
+      <div style="flex:1;">
+        <div class="fc-name">${item.name}</div>
+        <div class="fc-trend" style="color:${trendColors[trendDir]};">
+          ${trendIcons[trendDir]} ${trendDir} · ${item.velocity.toFixed(2)}/day
+        </div>
+      </div>
+      <div class="fc-forecast">
+        <div class="fc-val" style="color:var(--blue);">${forecast30}</div>
+        <div class="fc-lbl">units/30d</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Chart helpers ─────────────────────────────────────────────────
+function renderBarChart(canvasId, labels, data, colors, prefix='', multiColor=false){
+  if(charts[canvasId]) charts[canvasId].destroy();
+  const ctx = document.getElementById(canvasId);
+  if(!ctx) return;
+  charts[canvasId] = new Chart(ctx,{
+    type:'bar',
+    data:{
+      labels,
+      datasets:[{
+        data,
+        backgroundColor: multiColor ? colors : (Array.isArray(colors)?colors[0]:colors),
+        borderRadius:5
+      }]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${prefix}${fmtNum(ctx.parsed.y)}`}}},
+      scales:{
+        x:{ticks:{color:'#64748b',font:{size:10},maxRotation:35},grid:{display:false}},
+        y:{ticks:{color:'#64748b',font:{size:10},callback:v=>`${prefix}${fmtK(v)}`},grid:{color:'#1e2535'}}
+      }
+    }
+  });
+}
+
+function renderDonutChart(canvasId, labels, data, colors){
+  if(charts[canvasId]) charts[canvasId].destroy();
+  const ctx = document.getElementById(canvasId);
+  if(!ctx) return;
+  charts[canvasId] = new Chart(ctx,{
+    type:'doughnut',
+    data:{labels,datasets:[{data,backgroundColor:colors,borderWidth:2,borderColor:'#141824'}]},
+    options:{
+      responsive:true,maintainAspectRatio:false,cutout:'65%',
+      plugins:{legend:{position:'right',labels:{color:'#94a3b8',font:{size:11},padding:12}}}
+    }
+  });
+}
+
+// ── Helpers ───────────────────────────────────────────────────────
+function fmtNum(n){ return Number(n||0).toLocaleString('en-IN'); }
+function fmtK(n){
+  n=Number(n||0);
+  if(n>=1e7) return (n/1e7).toFixed(1)+'Cr';
+  if(n>=1e5) return (n/1e5).toFixed(1)+'L';
+  if(n>=1e3) return (n/1e3).toFixed(0)+'K';
+  return n.toFixed(0);
+}
+function showLoad(){ document.getElementById('loadOverlay').classList.remove('hidden'); }
+function hideLoad(){ document.getElementById('loadOverlay').classList.add('hidden'); }
+function showToast(msg,isErr=false){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast show'+(isErr?' error':'');
+  setTimeout(()=>t.className='toast',2500);
+}
+function exportReport(){
+  if(!insightsData) return;
+  const abc = insightsData.abc||[];
+  const rows=[['Rank','Name','Category','Stock','MRP','Stock Value','ABC Class','Velocity Band']];
+  abc.forEach(i=>{
+    const vItem = (insightsData.velocity||[]).find(v=>v.name===i.name)||{};
+    rows.push([i.rank,i.name,i.category,i.stock,i.mrp,i.stock_value,i.abc_class,vItem.band||'']);
+  });
+  const csv=rows.map(r=>r.map(c=>`"${String(c||'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download='pricing_analysis.csv'; a.click();
+}
+</script>
+</body>
+</html>

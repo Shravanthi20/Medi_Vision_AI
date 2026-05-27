@@ -1,0 +1,1176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Symptom Advisor — MediVision AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<style>
+:root{
+  --bg:#0b0e16;--sb:#0f1420;--card:#141824;--card2:#0d1117;--brd:#1e2535;
+  --tx:#e2e8f0;--mt:#64748b;--acc:#f97316;--grn:#22c55e;--red:#ef4444;
+  --blu:#3b82f6;--yel:#eab308;--pur:#a855f7;--teal:#06b6d4;--pink:#ec4899;
+  --fn:'Inter',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{background:var(--bg);color:var(--tx);font-family:var(--fn);min-height:100vh;overflow-x:hidden;}
+
+/* ── TOPBAR ── */
+.topbar{height:52px;background:var(--sb);border-bottom:1px solid var(--brd);
+  display:flex;align-items:center;gap:10px;padding:0 18px;position:sticky;top:0;z-index:100;}
+.topbar a{display:flex;align-items:center;gap:6px;color:var(--mt);font-size:12px;
+  text-decoration:none;padding:5px 10px;border-radius:6px;border:1px solid var(--brd);transition:all .2s;}
+.topbar a:hover{border-color:var(--acc);color:var(--acc);}
+.topbar-title{font-size:14px;font-weight:700;color:var(--tx);}
+.topbar-sub{font-size:11px;color:var(--mt);margin-left:4px;}
+
+/* ── SYMPTOM STRIP (horizontal top) ── */
+.symptom-strip-wrap{
+  background:var(--sb);border-bottom:2px solid var(--brd);
+  padding:10px 18px;position:sticky;top:52px;z-index:90;
+}
+.symptom-strip-label{font-size:10px;font-weight:700;color:var(--mt);
+  text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;
+  display:flex;align-items:center;gap:6px;}
+.symptom-strip{
+  display:flex;gap:7px;overflow-x:auto;padding-bottom:4px;
+  scrollbar-width:thin;scrollbar-color:var(--brd) transparent;
+}
+.symptom-strip::-webkit-scrollbar{height:3px;}
+.symptom-strip::-webkit-scrollbar-thumb{background:var(--brd);border-radius:3px;}
+.sym-pill{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:6px 12px;border-radius:20px;white-space:nowrap;
+  border:1.5px solid var(--brd);background:var(--card2);
+  cursor:pointer;transition:all .18s;user-select:none;flex-shrink:0;
+  font-size:11.5px;font-weight:600;color:var(--mt);
+}
+.sym-pill:hover{border-color:var(--acc);color:var(--tx);}
+.sym-pill.active{border-color:var(--acc);background:rgba(249,115,22,.14);color:var(--acc);}
+.sym-pill .sp-emoji{font-size:13px;}
+.sym-count-badge{
+  background:var(--acc);color:#fff;border-radius:10px;
+  font-size:10px;font-weight:700;padding:0 7px;height:18px;
+  display:inline-flex;align-items:center;
+}
+
+/* ── PURPOSE TABS ── */
+.purpose-tabs-wrap{
+  background:var(--card);border-bottom:1px solid var(--brd);
+  padding:0 18px;display:flex;gap:4px;overflow-x:auto;
+  scrollbar-width:none;position:sticky;top:118px;z-index:80;
+}
+.purpose-tabs-wrap::-webkit-scrollbar{display:none;}
+.ptab{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:10px 16px;border-bottom:2px solid transparent;
+  font-size:12px;font-weight:600;color:var(--mt);
+  cursor:pointer;white-space:nowrap;transition:all .2s;flex-shrink:0;
+}
+.ptab:hover{color:var(--tx);}
+.ptab.active{color:var(--tx);border-bottom-color:var(--acc);}
+.ptab .pt-emoji{font-size:14px;}
+.ptab .pt-count{font-size:10px;color:var(--mt);margin-left:2px;}
+.ptab.active .pt-count{color:var(--acc);}
+
+/* ── MAIN LAYOUT ── */
+.main-wrap{display:grid;grid-template-columns:300px 1fr;gap:0;min-height:calc(100vh - 165px);}
+@media(max-width:860px){.main-wrap{grid-template-columns:1fr;}}
+
+/* ── LEFT SIDEBAR ── */
+.sidebar{
+  background:var(--sb);border-right:1px solid var(--brd);
+  padding:16px 14px;overflow-y:auto;
+  height:calc(100vh - 165px);position:sticky;top:165px;
+}
+.sidebar-section{margin-bottom:18px;}
+.s-label{font-size:10px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.7px;color:var(--mt);margin-bottom:8px;
+  display:flex;align-items:center;gap:5px;}
+.chip-row{display:flex;flex-wrap:wrap;gap:6px;}
+.chip{padding:5px 11px;border-radius:14px;font-size:11px;font-weight:600;
+  cursor:pointer;border:1.5px solid var(--brd);background:var(--card2);
+  color:var(--mt);transition:all .18s;user-select:none;}
+.chip:hover{border-color:var(--blu);color:var(--tx);}
+.chip.sel{border-color:var(--blu);background:rgba(59,130,246,.14);color:var(--blu);}
+.chip.sel-grn{border-color:var(--grn);background:rgba(34,197,94,.12);color:var(--grn);}
+.chip.sel-red{border-color:var(--red);background:rgba(239,68,68,.12);color:var(--red);}
+.chip.sel-yel{border-color:var(--yel);background:rgba(234,179,8,.12);color:var(--yel);}
+
+/* Condition toggle */
+.cond-row{display:flex;align-items:center;gap:8px;padding:7px 10px;
+  border-radius:8px;border:1.5px solid var(--brd);background:var(--card2);
+  cursor:pointer;transition:all .18s;margin-bottom:5px;user-select:none;}
+.cond-row:hover{border-color:rgba(239,68,68,.35);}
+.cond-row.sel{border-color:var(--red);background:rgba(239,68,68,.07);}
+.cond-emoji{font-size:13px;width:20px;text-align:center;}
+.cond-info{flex:1;}
+.cond-name{font-size:11.5px;font-weight:600;color:var(--tx);}
+.cond-warn{font-size:10px;color:var(--red);}
+.cond-chk{width:16px;height:16px;border:2px solid var(--brd);border-radius:3px;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+
+/* Search input */
+.search-input{
+  width:100%;background:var(--card2);border:1.5px solid var(--brd);
+  border-radius:8px;padding:8px 12px;color:var(--tx);font-size:12px;
+  font-family:var(--fn);outline:none;transition:border .18s;
+}
+.search-input:focus{border-color:var(--acc);}
+
+/* Find button */
+.find-btn{
+  width:100%;padding:11px;border-radius:9px;border:none;
+  background:var(--grn);color:#fff;font-size:13px;font-weight:700;
+  cursor:pointer;font-family:var(--fn);transition:all .2s;
+  display:flex;align-items:center;justify-content:center;gap:7px;
+}
+.find-btn:hover{background:#16a34a;}
+.find-btn:disabled{background:var(--brd);color:var(--mt);cursor:not-allowed;}
+
+/* Reset btn */
+.reset-btn{
+  width:100%;padding:8px;border-radius:8px;border:1px solid rgba(239,68,68,.25);
+  background:rgba(239,68,68,.07);color:var(--red);font-size:11.5px;font-weight:600;
+  cursor:pointer;font-family:var(--fn);margin-top:6px;
+}
+.reset-btn:hover{border-color:var(--red);}
+
+/* Selected symptoms summary */
+.sel-summary{background:rgba(249,115,22,.06);border:1px solid rgba(249,115,22,.2);
+  border-radius:8px;padding:8px 10px;margin-bottom:10px;font-size:11px;color:var(--acc);}
+.sel-summary b{color:var(--acc);}
+
+/* ── RIGHT PANEL ── */
+.right-panel{padding:16px 18px;overflow-y:auto;}
+
+/* ── TOOL ROW ── */
+.tool-row{display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+.ftab{padding:5px 13px;border-radius:14px;font-size:11.5px;font-weight:600;
+  cursor:pointer;border:1px solid var(--brd);background:transparent;
+  color:var(--mt);font-family:var(--fn);transition:all .2s;}
+.ftab.active{background:var(--acc);border-color:var(--acc);color:#fff;}
+.ftab:hover:not(.active){border-color:var(--acc);color:var(--acc);}
+.create-btn{
+  margin-left:auto;display:flex;align-items:center;gap:6px;
+  padding:7px 14px;border-radius:8px;border:1.5px solid var(--pur);
+  background:rgba(168,85,247,.1);color:var(--pur);font-size:12px;
+  font-weight:700;cursor:pointer;font-family:var(--fn);transition:all .2s;
+}
+.create-btn:hover{background:rgba(168,85,247,.2);}
+
+/* ── KPI ROW ── */
+.kpi-row{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+.kpi{background:var(--card);border:1px solid var(--brd);border-radius:10px;
+  padding:10px 14px;flex:1;min-width:90px;text-align:center;}
+.kpi-val{font-size:20px;font-weight:800;font-family:'JetBrains Mono',monospace;}
+.kpi-lbl{font-size:9.5px;color:var(--mt);text-transform:uppercase;letter-spacing:.4px;margin-top:2px;}
+.kpi.blue .kpi-val{color:var(--blu);}
+.kpi.grn .kpi-val{color:var(--grn);}
+.kpi.red .kpi-val{color:var(--red);}
+.kpi.yel .kpi-val{color:var(--yel);}
+
+/* ── MEDICINE CARDS ── */
+.med-grid{display:flex;flex-direction:column;gap:10px;}
+
+.med-card{
+  background:var(--card);border:1px solid var(--brd);border-radius:12px;
+  padding:14px 16px;transition:border-color .18s;position:relative;
+}
+.med-card:hover{border-color:rgba(59,130,246,.3);}
+.med-card.high{border-color:rgba(34,197,94,.25);}
+.med-card.warn-card{border-color:rgba(239,68,68,.25);}
+
+.mc-top{display:flex;align-items:flex-start;gap:10px;margin-bottom:8px;}
+.mc-icon{
+  width:38px;height:38px;border-radius:9px;display:flex;
+  align-items:center;justify-content:center;font-size:17px;flex-shrink:0;
+}
+.mc-info{flex:1;min-width:0;}
+.mc-name{font-size:13px;font-weight:700;color:var(--tx);white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis;}
+.mc-generic{font-size:11px;color:var(--mt);margin-top:1px;}
+.mc-right{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;}
+.conf-ring{position:relative;width:44px;height:44px;}
+.conf-ring svg{transform:rotate(-90deg);}
+.conf-txt{position:absolute;inset:0;display:flex;align-items:center;
+  justify-content:center;font-size:10px;font-weight:800;font-family:'JetBrains Mono',monospace;}
+
+.mc-tags{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px;}
+.mtag{padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;}
+.mt-cat{background:rgba(59,130,246,.12);color:var(--blu);}
+.mt-match{background:rgba(34,197,94,.12);color:var(--grn);}
+.mt-warn{background:rgba(239,68,68,.12);color:var(--red);}
+.mt-stock{background:rgba(34,197,94,.1);color:var(--grn);}
+.mt-out{background:rgba(239,68,68,.08);color:var(--red);}
+.mt-purpose{background:rgba(168,85,247,.12);color:var(--pur);}
+
+.mc-reason{font-size:11px;color:var(--mt);line-height:1.5;
+  padding:6px 10px;background:rgba(255,255,255,.03);border-radius:7px;
+  border-left:2px solid var(--blu);margin-bottom:8px;}
+.warn-box{background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.2);
+  border-radius:7px;padding:6px 10px;font-size:11px;color:var(--red);margin-bottom:6px;}
+.caution-box{background:rgba(234,179,8,.06);border:1px solid rgba(234,179,8,.18);
+  border-radius:7px;padding:6px 10px;font-size:11px;color:var(--yel);margin-bottom:6px;}
+
+.mc-foot{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;}
+.mc-price{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:var(--acc);}
+.mc-stock{font-size:10.5px;color:var(--mt);}
+.add-btn{
+  padding:5px 12px;border-radius:7px;border:1px solid rgba(34,197,94,.3);
+  background:rgba(34,197,94,.1);color:var(--grn);font-size:11px;
+  font-weight:700;cursor:pointer;font-family:var(--fn);transition:all .18s;
+}
+.add-btn:hover{background:rgba(34,197,94,.2);}
+
+/* ── STATES ── */
+.state-box{background:var(--card);border:1px solid var(--brd);border-radius:14px;
+  padding:48px 20px;text-align:center;}
+.state-emoji{font-size:52px;margin-bottom:14px;display:block;
+  animation:pulse 2s ease-in-out infinite;}
+@keyframes pulse{0%,100%{transform:scale(1);}50%{transform:scale(1.06);}}
+.state-title{font-size:15px;font-weight:700;margin-bottom:6px;}
+.state-sub{font-size:12px;color:var(--mt);}
+.spin{width:34px;height:34px;border:3px solid var(--brd);border-top-color:var(--blu);
+  border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 16px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* ── PROTOCOL LIST ── */
+.protocol-card{
+  background:var(--card);border:1px solid var(--brd);border-radius:10px;
+  padding:12px 14px;display:flex;align-items:flex-start;gap:10px;margin-bottom:8px;
+  transition:border-color .18s;
+}
+.protocol-card:hover{border-color:rgba(168,85,247,.3);}
+.protocol-purpose-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:5px;}
+.protocol-name{font-size:12.5px;font-weight:700;}
+.protocol-meta{font-size:10.5px;color:var(--mt);margin-top:2px;}
+.protocol-meds{font-size:11px;color:var(--teal);margin-top:4px;}
+.del-btn{margin-left:auto;padding:3px 8px;border-radius:5px;border:1px solid rgba(239,68,68,.2);
+  background:transparent;color:var(--red);font-size:10px;cursor:pointer;flex-shrink:0;}
+
+/* ── DISCLAIMER ── */
+.disclaimer{
+  background:rgba(234,179,8,.05);border:1px solid rgba(234,179,8,.12);
+  border-radius:9px;padding:10px 14px;font-size:11px;color:var(--yel);
+  margin-top:14px;line-height:1.6;
+}
+
+/* ── CREATE MODAL ── */
+.modal-overlay{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);
+  z-index:200;align-items:center;justify-content:center;padding:16px;
+}
+.modal-overlay.open{display:flex;}
+.modal{
+  background:var(--card);border:1px solid var(--brd);border-radius:16px;
+  width:100%;max-width:560px;max-height:90vh;overflow-y:auto;
+}
+.modal-head{
+  padding:16px 20px;border-bottom:1px solid var(--brd);
+  display:flex;align-items:center;gap:8px;
+}
+.modal-head h3{font-size:14px;font-weight:700;flex:1;}
+.modal-close{background:transparent;border:none;color:var(--mt);
+  font-size:18px;cursor:pointer;padding:4px 8px;border-radius:5px;}
+.modal-close:hover{color:var(--tx);}
+.modal-body{padding:18px 20px;}
+.form-group{margin-bottom:14px;}
+.form-label{font-size:11px;font-weight:700;color:var(--mt);
+  text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;display:block;}
+.form-input,.form-select,.form-textarea{
+  width:100%;background:var(--card2);border:1.5px solid var(--brd);
+  border-radius:8px;padding:8px 11px;color:var(--tx);font-size:12px;
+  font-family:var(--fn);outline:none;transition:border .18s;
+}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--acc);}
+.form-textarea{min-height:70px;resize:vertical;}
+.form-select option{background:var(--card);}
+.purpose-picker{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;}
+.pp-chip{
+  padding:6px 12px;border-radius:14px;font-size:11.5px;font-weight:600;
+  cursor:pointer;border:1.5px solid var(--brd);background:var(--card2);
+  color:var(--mt);transition:all .18s;
+}
+.pp-chip.sel{border-color:var(--acc);background:rgba(249,115,22,.12);color:var(--acc);}
+.sym-picker-grid{
+  display:flex;flex-wrap:wrap;gap:5px;max-height:130px;
+  overflow-y:auto;padding:6px;background:var(--card2);border-radius:8px;
+}
+.sp-pick{
+  padding:4px 10px;border-radius:12px;font-size:11px;font-weight:600;
+  cursor:pointer;border:1.5px solid var(--brd);color:var(--mt);transition:all .15s;
+}
+.sp-pick.sel{border-color:var(--acc);background:rgba(249,115,22,.12);color:var(--acc);}
+.med-search-results{
+  max-height:150px;overflow-y:auto;border:1px solid var(--brd);
+  border-radius:8px;margin-top:6px;
+}
+.med-search-item{
+  padding:8px 10px;cursor:pointer;font-size:12px;
+  border-bottom:1px solid var(--brd);display:flex;justify-content:space-between;
+  align-items:center;transition:background .15s;
+}
+.med-search-item:last-child{border-bottom:none;}
+.med-search-item:hover{background:rgba(255,255,255,.04);}
+.med-search-item.selected{background:rgba(34,197,94,.07);}
+.selected-meds{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px;}
+.sel-med-tag{
+  display:flex;align-items:center;gap:5px;padding:3px 9px;
+  border-radius:10px;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.2);
+  font-size:11px;color:var(--grn);
+}
+.sel-med-tag button{
+  background:transparent;border:none;color:var(--red);
+  font-size:12px;cursor:pointer;padding:0;line-height:1;
+}
+.save-btn{
+  width:100%;padding:11px;border-radius:9px;border:none;
+  background:var(--pur);color:#fff;font-size:13px;font-weight:700;
+  cursor:pointer;font-family:var(--fn);margin-top:4px;transition:background .2s;
+}
+.save-btn:hover{background:#9333ea;}
+
+.hidden{display:none!important;}
+</style>
+</head>
+<body>
+
+<!-- ════ TOPBAR ════ -->
+<div class="topbar">
+  <a href="/portal/billing"><i class="fas fa-arrow-left"></i> POS</a>
+  <i class="fas fa-stethoscope" style="color:var(--blu);font-size:15px;"></i>
+  <span class="topbar-title">Symptom Advisor</span>
+  <span class="topbar-sub">— Medicine Suggestions by Symptom</span>
+  <span style="margin-left:auto;display:flex;gap:8px;">
+    <button class="create-btn" onclick="openCreateModal()">
+      <i class="fas fa-plus"></i> Create Protocol
+    </button>
+    <button style="padding:6px 12px;border-radius:7px;border:1px solid var(--brd);background:transparent;color:var(--mt);font-size:11.5px;cursor:pointer;font-family:var(--fn);" onclick="openProtocolsView()">
+      <i class="fas fa-list-ul"></i> My Protocols
+    </button>
+  </span>
+</div>
+
+<!-- ════ SYMPTOM HORIZONTAL STRIP ════ -->
+<div class="symptom-strip-wrap">
+  <div class="symptom-strip-label">
+    <i class="fas fa-grip-horizontal" style="color:var(--acc);"></i>
+    SELECT SYMPTOMS
+    <span id="selSympCount" class="sym-count-badge hidden">0</span>
+    <span style="margin-left:auto;font-size:10px;color:var(--mt);">← scroll →</span>
+  </div>
+  <div class="symptom-strip" id="symptomStrip">
+    <!-- rendered by JS -->
+  </div>
+</div>
+
+<!-- ════ PURPOSE TABS ════ -->
+<div class="purpose-tabs-wrap" id="purposeTabsWrap">
+  <!-- rendered by JS -->
+</div>
+
+<!-- ════ MAIN LAYOUT ════ -->
+<div class="main-wrap">
+
+  <!-- ── LEFT SIDEBAR ── -->
+  <div class="sidebar">
+
+    <!-- Selected symptoms summary -->
+    <div id="selSummaryBox" class="sel-summary hidden">
+      <b id="selSummaryText">0 symptoms selected</b>
+    </div>
+
+    <!-- Age -->
+    <div class="sidebar-section">
+      <div class="s-label"><i class="fas fa-user"></i> Age Group</div>
+      <div class="chip-row" id="ageGroup">
+        <div class="chip" data-val="infant"  onclick="pickChip(this,'ageGroup','selAge')">👶 0–2</div>
+        <div class="chip" data-val="child"   onclick="pickChip(this,'ageGroup','selAge')">🧒 3–12</div>
+        <div class="chip" data-val="teen"    onclick="pickChip(this,'ageGroup','selAge')">🧑 13–18</div>
+        <div class="chip" data-val="adult"   onclick="pickChip(this,'ageGroup','selAge')">👨 19–40</div>
+        <div class="chip" data-val="middle"  onclick="pickChip(this,'ageGroup','selAge')">🧔 41–60</div>
+        <div class="chip" data-val="senior"  onclick="pickChip(this,'ageGroup','selAge')">👴 60+</div>
+      </div>
+    </div>
+
+    <!-- Gender -->
+    <div class="sidebar-section">
+      <div class="s-label"><i class="fas fa-venus-mars"></i> Gender</div>
+      <div class="chip-row" id="genderGroup">
+        <div class="chip" data-val="male"   onclick="pickChip(this,'genderGroup','selGender')">♂ Male</div>
+        <div class="chip" data-val="female" onclick="pickChip(this,'genderGroup','selGender')">♀ Female</div>
+        <div class="chip" data-val="other"  onclick="pickChip(this,'genderGroup','selGender')">Other</div>
+      </div>
+    </div>
+
+    <!-- Severity -->
+    <div class="sidebar-section">
+      <div class="s-label"><i class="fas fa-circle-exclamation"></i> Severity</div>
+      <div class="chip-row" id="severityGroup">
+        <div class="chip sel-grn" data-val="mild"     onclick="pickChip(this,'severityGroup','selSeverity')">🟢 Mild</div>
+        <div class="chip sel-yel" data-val="moderate" onclick="pickChip(this,'severityGroup','selSeverity')">🟡 Moderate</div>
+        <div class="chip sel-red" data-val="severe"   onclick="pickChip(this,'severityGroup','selSeverity')">🔴 Severe</div>
+      </div>
+    </div>
+
+    <!-- Duration -->
+    <div class="sidebar-section">
+      <div class="s-label"><i class="fas fa-clock"></i> Duration</div>
+      <div class="chip-row" id="durationGroup">
+        <div class="chip" data-val="today"  onclick="pickChip(this,'durationGroup','selDuration')">Today</div>
+        <div class="chip" data-val="1-2days" onclick="pickChip(this,'durationGroup','selDuration')">1–2 days</div>
+        <div class="chip" data-val="3-5days" onclick="pickChip(this,'durationGroup','selDuration')">3–5 days</div>
+        <div class="chip" data-val="week+"  onclick="pickChip(this,'durationGroup','selDuration')">1 week+</div>
+      </div>
+    </div>
+
+    <!-- Special Conditions -->
+    <div class="sidebar-section">
+      <div class="s-label"><i class="fas fa-triangle-exclamation" style="color:var(--red);"></i> Special Conditions</div>
+      <div id="condList"><!-- rendered by JS --></div>
+    </div>
+
+    <!-- Medicine search filter -->
+    <div class="sidebar-section">
+      <div class="s-label"><i class="fas fa-magnifying-glass"></i> Search Medicine</div>
+      <input class="search-input" id="medSearchInput" type="text"
+        placeholder="Type medicine name…" oninput="filterMedSearch(this.value)"/>
+    </div>
+
+    <!-- Actions -->
+    <button class="find-btn" id="findBtn" onclick="findMedicines()">
+      <i class="fas fa-magnifying-glass-plus"></i> Find Medicines
+    </button>
+    <button class="reset-btn" onclick="resetAll()">
+      <i class="fas fa-rotate-left"></i> Reset All
+    </button>
+
+  </div>
+
+  <!-- ── RIGHT PANEL ── -->
+  <div class="right-panel" id="rightPanel">
+
+    <!-- WAITING STATE -->
+    <div id="stateWaiting" class="state-box">
+      <span class="state-emoji">💊</span>
+      <div class="state-title">Select symptoms above</div>
+      <div class="state-sub">Click symptoms in the horizontal strip, choose patient details on the left,<br>then press <b>Find Medicines</b>.</div>
+    </div>
+
+    <!-- LOADING STATE -->
+    <div id="stateLoading" class="state-box hidden">
+      <div class="spin"></div>
+      <div class="state-sub">Analysing symptoms &amp; matching medicines…</div>
+    </div>
+
+    <!-- RESULTS STATE -->
+    <div id="stateResults" class="hidden">
+
+      <!-- KPI row -->
+      <div class="kpi-row" id="kpiRow">
+        <div class="kpi blue"><div class="kpi-val" id="rkTotal">0</div><div class="kpi-lbl">Matches</div></div>
+        <div class="kpi grn"> <div class="kpi-val" id="rkStock">0</div><div class="kpi-lbl">In Stock</div></div>
+        <div class="kpi yel"> <div class="kpi-val" id="rkHigh">0</div><div class="kpi-lbl">High Conf.</div></div>
+        <div class="kpi red"> <div class="kpi-val" id="rkWarn">0</div><div class="kpi-lbl">Warnings</div></div>
+      </div>
+
+      <!-- Filter tabs + create button -->
+      <div class="tool-row">
+        <button class="ftab active" data-f="all"      onclick="applyFilter('all',this)">All</button>
+        <button class="ftab"        data-f="high"     onclick="applyFilter('high',this)">≥80% Match</button>
+        <button class="ftab"        data-f="in_stock" onclick="applyFilter('in_stock',this)">In Stock</button>
+        <button class="ftab"        data-f="no_warn"  onclick="applyFilter('no_warn',this)">No Warnings</button>
+      </div>
+
+      <div class="med-grid" id="medGrid"></div>
+
+      <div class="disclaimer">
+        <i class="fas fa-triangle-exclamation"></i>
+        <strong>Pharmacist guidance only.</strong> Suggestions are based on symptom-keyword matching with your inventory.
+        Always verify with a qualified pharmacist or doctor before dispensing. Not a substitute for clinical advice.
+      </div>
+    </div>
+
+    <!-- BROWSE BY PURPOSE STATE -->
+    <div id="statePurpose" class="hidden">
+      <div class="tool-row">
+        <span style="font-size:12px;font-weight:600;color:var(--tx);" id="purposeTitle">Medicines</span>
+        <span id="purposeStats" style="font-size:11px;color:var(--mt);"></span>
+        <div style="margin-left:auto;">
+          <input class="search-input" id="purposeMedSearch" type="text"
+            placeholder="Search…" oninput="filterPurposeMeds(this.value)" style="width:180px;"/>
+        </div>
+      </div>
+      <div class="kpi-row" id="purposeKpi"></div>
+      <div class="med-grid" id="purposeMedGrid"></div>
+    </div>
+
+    <!-- PROTOCOLS STATE -->
+    <div id="stateProtocols" class="hidden">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+        <span style="font-size:13px;font-weight:700;"><i class="fas fa-list-ul" style="color:var(--pur);margin-right:6px;"></i>My Protocols</span>
+        <button class="create-btn" onclick="openCreateModal()"><i class="fas fa-plus"></i> New</button>
+      </div>
+      <div id="protocolsList"></div>
+      <div id="protocolsEmpty" class="state-box hidden">
+        <span class="state-emoji" style="animation:none;">📋</span>
+        <div class="state-title">No protocols yet</div>
+        <div class="state-sub">Create a protocol to save medicine suggestions for specific conditions<br>like chronic BP, Diabetes, Immediate Relief, or Life-Saving drugs.</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ════ CREATE PROTOCOL MODAL ════ -->
+<div class="modal-overlay" id="createModal">
+  <div class="modal">
+    <div class="modal-head">
+      <i class="fas fa-plus-circle" style="color:var(--pur);font-size:16px;"></i>
+      <h3>Create Medicine Protocol</h3>
+      <button class="modal-close" onclick="closeCreateModal()">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <div class="form-group">
+        <label class="form-label">Protocol Name *</label>
+        <input class="form-input" id="p-name" type="text" placeholder="e.g. Chronic BP Management, Diabetes Daily"/>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Purpose / Category *</label>
+        <div class="purpose-picker" id="purposePicker">
+          <div class="pp-chip" data-val="bp"          onclick="pickPurpose(this)">💓 BP / Hypertension</div>
+          <div class="pp-chip" data-val="diabetes"    onclick="pickPurpose(this)">🩸 Diabetes / Sugar</div>
+          <div class="pp-chip" data-val="immediate"   onclick="pickPurpose(this)">⚡ Immediate Relief</div>
+          <div class="pp-chip" data-val="life_saving" onclick="pickPurpose(this)">🚨 Life-Saving</div>
+          <div class="pp-chip" data-val="doctor_rx"   onclick="pickPurpose(this)">📋 Doctor / Rx Only</div>
+          <div class="pp-chip" data-val="otc"         onclick="pickPurpose(this)">🌿 OTC / No Rx</div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Associated Symptoms</label>
+        <div class="sym-picker-grid" id="symPickerGrid"><!-- rendered by JS --></div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Age Group</label>
+        <select class="form-select" id="p-age">
+          <option value="all">All Ages</option>
+          <option value="infant">Infant (0–2)</option>
+          <option value="child">Child (3–12)</option>
+          <option value="teen">Teen (13–18)</option>
+          <option value="adult">Adult (19–40)</option>
+          <option value="middle">Middle-aged (41–60)</option>
+          <option value="senior">Senior (60+)</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Add Medicines to Protocol</label>
+        <input class="form-input" id="p-med-search" type="text"
+          placeholder="Search medicine name…" oninput="searchMedsForProtocol(this.value)"/>
+        <div id="p-med-results" class="med-search-results hidden"></div>
+        <div class="selected-meds" id="selectedMedTags"></div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Notes / Instructions</label>
+        <textarea class="form-textarea" id="p-notes"
+          placeholder="e.g. Take with food, monitor BP daily, avoid in pregnancy…"></textarea>
+      </div>
+
+      <button class="save-btn" onclick="saveProtocol()">
+        <i class="fas fa-floppy-disk"></i> &nbsp;Save Protocol
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────
+// SYMPTOM DEFINITIONS
+// ─────────────────────────────────────────────
+const SYMPTOMS = [
+  {id:'fever',        emoji:'🌡️', label:'Fever',              sub:'High temperature'},
+  {id:'cough_dry',    emoji:'😮',  label:'Dry Cough',          sub:'Tickling / scratchy'},
+  {id:'cough_wet',    emoji:'😮‍💨', label:'Wet Cough',           sub:'With phlegm'},
+  {id:'cold',         emoji:'🤧',  label:'Cold / Runny Nose',  sub:'Blocked or runny'},
+  {id:'headache',     emoji:'🤕',  label:'Headache',           sub:'Mild to severe'},
+  {id:'body_pain',    emoji:'😣',  label:'Body / Muscle Pain', sub:'Aches & soreness'},
+  {id:'sore_throat',  emoji:'🗣️',  label:'Sore Throat',        sub:'Pain on swallowing'},
+  {id:'stomach_pain', emoji:'🤢',  label:'Stomach Ache',       sub:'Cramps / spasms'},
+  {id:'acidity',      emoji:'🔥',  label:'Acidity / Heartburn',sub:'Burning sensation'},
+  {id:'nausea',       emoji:'🤮',  label:'Nausea / Vomiting',  sub:'Upset stomach'},
+  {id:'diarrhea',     emoji:'💧',  label:'Diarrhoea',          sub:'Loose stools'},
+  {id:'constipation', emoji:'⏸️',  label:'Constipation',       sub:'Difficulty passing'},
+  {id:'skin_rash',    emoji:'🔴',  label:'Skin Rash / Allergy',sub:'Itching / redness'},
+  {id:'eye_irr',      emoji:'👁️',  label:'Eye Irritation',     sub:'Redness / watering'},
+  {id:'ear_pain',     emoji:'👂',  label:'Ear Pain',           sub:'Earache'},
+  {id:'toothache',    emoji:'🦷',  label:'Toothache',          sub:'Dental pain'},
+  {id:'uti',          emoji:'🚽',  label:'Urinary Issues',     sub:'Burning / frequent'},
+  {id:'allergy',      emoji:'🌸',  label:'Allergy Reaction',   sub:'Sneezing / hives'},
+  {id:'back_pain',    emoji:'🦴',  label:'Back Pain',          sub:'Lower back / spine'},
+  {id:'joint_pain',   emoji:'🦵',  label:'Joint Pain',         sub:'Knees / hips / hands'},
+  {id:'insomnia',     emoji:'🌙',  label:'Sleeplessness',      sub:'Insomnia / rest'},
+  {id:'anxiety',      emoji:'😰',  label:'Anxiety / Stress',   sub:'Nervous tension'},
+  {id:'wound',        emoji:'🩹',  label:'Wound / Cut',        sub:'First aid needed'},
+  {id:'fungal',       emoji:'🦠',  label:'Fungal Infection',   sub:'Skin / nail / oral'},
+  {id:'vitamin_def',  emoji:'🍊',  label:'Vitamin Deficiency', sub:'Weakness / fatigue'},
+  {id:'menstrual',    emoji:'🌸',  label:'Menstrual Pain',     sub:'Cramps / dysmenorrhea'},
+  {id:'bp_high',      emoji:'💓',  label:'High BP Symptoms',   sub:'Hypertension'},
+  {id:'diabetes',     emoji:'🩸',  label:'Diabetes Symptoms',  sub:'Blood sugar'},
+  {id:'insect_bite',  emoji:'🦟',  label:'Insect Bite',        sub:'Sting / bite reaction'},
+  {id:'migraine',     emoji:'🤯',  label:'Migraine',           sub:'Severe head pain'},
+  {id:'chest_pain',   emoji:'💔',  label:'Chest Pain',         sub:'Pressure / tightness'},
+  {id:'breathless',   emoji:'🌬️',  label:'Breathlessness',     sub:'Short of breath'},
+  {id:'dizziness',    emoji:'💫',  label:'Dizziness',          sub:'Vertigo / lightheaded'},
+];
+
+const CONDITIONS = [
+  {id:'pregnant',      icon:'🤰', name:'Pregnant',             warn:'Several medicines contraindicated'},
+  {id:'diabetic',      icon:'🩸', name:'Known Diabetic',       warn:'Avoid sugar-based syrups'},
+  {id:'hypertensive',  icon:'💓', name:'Hypertension',         warn:'Avoid decongestants with ephedrine'},
+  {id:'child_under5',  icon:'👶', name:'Child under 5',        warn:'Paediatric dosing only'},
+  {id:'renal',         icon:'🫘', name:'Kidney Issues',        warn:'Avoid NSAIDs'},
+  {id:'liver',         icon:'🫀', name:'Liver Issues',         warn:'Paracetamol dose care'},
+  {id:'allergic_pcm',  icon:'⚠️', name:'Allergic to Paracetamol', warn:'Show alternate antipyretics'},
+  {id:'allergic_nsaid',icon:'⚠️', name:'Allergic to NSAIDs',  warn:'Avoid Ibuprofen / Diclofenac'},
+  {id:'breastfeeding', icon:'🤱', name:'Breastfeeding',        warn:'Avoid Aspirin / Codeine'},
+];
+
+const PURPOSE_META = {
+  all:        {label:'All Medicines',       emoji:'💊', color:'#64748b'},
+  bp:         {label:'BP / Hypertension',   emoji:'💓', color:'#ef4444'},
+  diabetes:   {label:'Diabetes / Sugar',    emoji:'🩸', color:'#06b6d4'},
+  immediate:  {label:'Immediate Relief',    emoji:'⚡', color:'#f97316'},
+  life_saving:{label:'Life-Saving Drugs',   emoji:'🚨', color:'#a855f7'},
+  doctor_rx:  {label:'Doctor / Rx Only',    emoji:'📋', color:'#3b82f6'},
+  otc:        {label:'OTC / No Rx',         emoji:'🌿', color:'#22c55e'},
+};
+
+// ─────────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────────
+let selSymptoms   = new Set();
+let selAge        = '';
+let selGender     = '';
+let selSeverity   = '';
+let selDuration   = '';
+let selConditions = new Set();
+let allResults    = [];
+let activeFilter  = 'all';
+let activePurpose = null;         // null = symptom-search mode
+let purposeData   = {};           // cached from API
+let protocolMeds  = [];           // meds being added to new protocol
+let selProtocolPurpose = '';
+let selProtocolSymptoms= new Set();
+
+// ─────────────────────────────────────────────
+// BOOT
+// ─────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async ()=>{
+  renderSymptomStrip();
+  renderCondList();
+  renderSymPickerGrid();
+  await loadPurposeData();
+  buildPurposeTabs();
+});
+
+// ─────────────────────────────────────────────
+// SYMPTOM STRIP
+// ─────────────────────────────────────────────
+function renderSymptomStrip(){
+  const strip = document.getElementById('symptomStrip');
+  strip.innerHTML = SYMPTOMS.map(s=>`
+    <div class="sym-pill" id="sp-${s.id}" onclick="toggleSymptom('${s.id}',this)" title="${s.sub}">
+      <span class="sp-emoji">${s.emoji}</span>${s.label}
+    </div>`).join('');
+}
+
+function toggleSymptom(id, el){
+  if(selSymptoms.has(id)){ selSymptoms.delete(id); el.classList.remove('active'); }
+  else { selSymptoms.add(id); el.classList.add('active'); }
+  updateSelSympCount();
+}
+
+function updateSelSympCount(){
+  const cnt = selSymptoms.size;
+  const badge = document.getElementById('selSympCount');
+  const box   = document.getElementById('selSummaryBox');
+  const txt   = document.getElementById('selSummaryText');
+  badge.textContent = cnt;
+  badge.classList.toggle('hidden', cnt===0);
+  box.classList.toggle('hidden', cnt===0);
+  if(cnt>0){
+    const names = [...selSymptoms].map(id=>SYMPTOMS.find(s=>s.id===id)?.emoji+' '+SYMPTOMS.find(s=>s.id===id)?.label).join(', ');
+    txt.innerHTML = `<b>${cnt} symptom${cnt>1?'s':''} selected:</b> ${names}`;
+  }
+}
+
+// ─────────────────────────────────────────────
+// PURPOSE TABS
+// ─────────────────────────────────────────────
+async function loadPurposeData(){
+  try{
+    const r = await fetch('/api/symptom/medicines-by-purpose');
+    purposeData = await r.json();
+  }catch(e){ purposeData={}; }
+}
+
+function buildPurposeTabs(){
+  const wrap = document.getElementById('purposeTabsWrap');
+  const order= ['all','bp','diabetes','immediate','life_saving','doctor_rx','otc'];
+  wrap.innerHTML = order.map(key=>{
+    const meta = PURPOSE_META[key]||{};
+    const data = purposeData[key]||{};
+    const cnt  = data.count||0;
+    return `<div class="ptab" data-key="${key}" onclick="switchPurpose('${key}',this)">
+      <span class="pt-emoji">${meta.emoji}</span>
+      ${meta.label}
+      <span class="pt-count">(${cnt})</span>
+    </div>`;
+  }).join('');
+}
+
+function switchPurpose(key, el){
+  document.querySelectorAll('.ptab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  activePurpose = key;
+  showPurposeView(key);
+}
+
+function showPurposeView(key){
+  setState('purpose');
+  const meta = PURPOSE_META[key]||{};
+  const data = purposeData[key]||{};
+  const meds = data.medicines||[];
+
+  document.getElementById('purposeTitle').innerHTML =
+    `${meta.emoji} <span style="color:${meta.color}">${meta.label}</span>`;
+  document.getElementById('purposeStats').textContent =
+    `${data.count||0} medicines · ${data.in_stock||0} in stock`;
+
+  // KPI
+  document.getElementById('purposeKpi').innerHTML = `
+    <div class="kpi blue"><div class="kpi-val">${data.count||0}</div><div class="kpi-lbl">Total</div></div>
+    <div class="kpi grn"> <div class="kpi-val">${data.in_stock||0}</div><div class="kpi-lbl">In Stock</div></div>
+    <div class="kpi yel"> <div class="kpi-val">${meds.filter(m=>m.stock>10).length}</div><div class="kpi-lbl">Good Stock</div></div>
+    <div class="kpi red"> <div class="kpi-val">${meds.filter(m=>m.stock===0).length}</div><div class="kpi-lbl">Out of Stock</div></div>
+  `;
+
+  renderPurposeMedGrid(meds, meta);
+}
+
+function renderPurposeMedGrid(meds, meta){
+  const grid = document.getElementById('purposeMedGrid');
+  if(!meds.length){
+    grid.innerHTML=`<div class="state-box"><span class="state-emoji" style="animation:none;">📦</span>
+      <div class="state-title">No medicines found</div>
+      <div class="state-sub">Add medicines to your stock to see them here.</div></div>`;
+    return;
+  }
+  grid.innerHTML = meds.map(m=>{
+    const ic  = m.in_stock ? 'rgba(34,197,94,.15)':'rgba(239,68,68,.1)';
+    const brd = m.in_stock ? 'rgba(34,197,94,.25)':'rgba(239,68,68,.2)';
+    return `<div class="med-card" style="border-color:${brd};background:${ic};">
+      <div class="mc-top">
+        <div class="mc-icon" style="background:rgba(255,255,255,.05);">${meta.emoji||'💊'}</div>
+        <div class="mc-info">
+          <div class="mc-name">${m.name}</div>
+          <div class="mc-generic">${m.generic||'—'}</div>
+        </div>
+        <div class="mc-right">
+          <span class="mtag ${m.in_stock?'mt-stock':'mt-out'}">${m.in_stock?'✅ '+m.stock+' in stock':'❌ Out'}</span>
+        </div>
+      </div>
+      <div class="mc-tags">
+        <span class="mtag mt-cat">${m.category||'—'}</span>
+        <span class="mtag mt-purpose" style="background:rgba(255,255,255,.06);color:${meta.color||'var(--mt)'}">${meta.emoji} ${meta.label||''}</span>
+      </div>
+      <div class="mc-foot">
+        <div>
+          <div class="mc-price">₹${(m.mrp||0).toFixed(2)}</div>
+          <div class="mc-stock">Stock: ${m.stock} units</div>
+        </div>
+        ${m.in_stock?`<button class="add-btn" onclick="addToBill('${esc(m.name)}',${m.mrp||0})">+ Add to Bill</button>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function filterPurposeMeds(q){
+  if(!activePurpose) return;
+  const data = purposeData[activePurpose]||{};
+  const meds = data.medicines||[];
+  const meta = PURPOSE_META[activePurpose]||{};
+  const ql = q.toLowerCase();
+  const filtered = q ? meds.filter(m=>
+    (m.name||'').toLowerCase().includes(ql)||
+    (m.generic||'').toLowerCase().includes(ql)||
+    (m.category||'').toLowerCase().includes(ql)
+  ) : meds;
+  renderPurposeMedGrid(filtered, meta);
+}
+
+// ─────────────────────────────────────────────
+// SIDEBAR PICKERS
+// ─────────────────────────────────────────────
+function pickChip(el, groupId, varName){
+  document.getElementById(groupId).querySelectorAll('.chip').forEach(c=>{
+    c.classList.remove('sel','sel-grn','sel-red','sel-yel');
+  });
+  el.classList.add('sel');
+  if(varName==='selAge')      selAge=el.dataset.val;
+  else if(varName==='selGender')   selGender=el.dataset.val;
+  else if(varName==='selSeverity') selSeverity=el.dataset.val;
+  else if(varName==='selDuration') selDuration=el.dataset.val;
+}
+
+function renderCondList(){
+  document.getElementById('condList').innerHTML = CONDITIONS.map(c=>`
+    <div class="cond-row" id="cond-${c.id}" onclick="toggleCond('${c.id}',this)">
+      <span class="cond-emoji">${c.icon}</span>
+      <div class="cond-info">
+        <div class="cond-name">${c.name}</div>
+        <div class="cond-warn">${c.warn}</div>
+      </div>
+      <div class="cond-chk" id="chk-${c.id}"></div>
+    </div>`).join('');
+}
+
+function toggleCond(id, el){
+  const chk = document.getElementById('chk-'+id);
+  if(selConditions.has(id)){
+    selConditions.delete(id); el.classList.remove('sel'); chk.innerHTML='';
+  } else {
+    selConditions.add(id); el.classList.add('sel');
+    chk.innerHTML='<svg width="10" height="10" viewBox="0 0 10 10"><path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="var(--grn)" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>';
+  }
+}
+
+// ─────────────────────────────────────────────
+// FIND MEDICINES (symptom-based)
+// ─────────────────────────────────────────────
+async function findMedicines(){
+  if(selSymptoms.size===0){
+    showToast('Select at least one symptom from the strip above','red'); return;
+  }
+  // Switch out of purpose view
+  document.querySelectorAll('.ptab').forEach(t=>t.classList.remove('active'));
+  activePurpose=null;
+  setState('loading');
+  try{
+    const payload={
+      age_group:  selAge||'adult',
+      gender:     selGender||'other',
+      symptoms:   [...selSymptoms],
+      duration:   selDuration||'1-2days',
+      severity:   selSeverity||'mild',
+      conditions: [...selConditions]
+    };
+    const d = await fetch('/api/symptom/suggest',{
+      method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)
+    }).then(r=>r.json());
+    allResults = d.medicines||[];
+    renderResults(allResults, payload);
+  }catch(e){
+    setState('waiting');
+    showToast('Error fetching medicines — check server','red');
+  }
+}
+
+function renderResults(results, query){
+  setState('results');
+  const inStock= results.filter(m=>m.stock>0).length;
+  const high   = results.filter(m=>m.confidence>=80).length;
+  const warns  = results.filter(m=>(m.warnings||[]).length>0).length;
+  document.getElementById('rkTotal').textContent = results.length;
+  document.getElementById('rkStock').textContent = inStock;
+  document.getElementById('rkHigh').textContent  = high;
+  document.getElementById('rkWarn').textContent  = warns;
+  activeFilter='all';
+  document.querySelectorAll('.ftab').forEach(t=>t.classList.remove('active'));
+  document.querySelector('.ftab[data-f="all"]').classList.add('active');
+  renderMedCards(results);
+}
+
+function applyFilter(f, el){
+  document.querySelectorAll('.ftab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active'); activeFilter=f;
+  let list=[...allResults];
+  if(f==='high')     list=list.filter(m=>m.confidence>=80);
+  if(f==='in_stock') list=list.filter(m=>m.stock>0);
+  if(f==='no_warn')  list=list.filter(m=>!(m.warnings||[]).length);
+  renderMedCards(list);
+}
+
+function filterMedSearch(q){
+  if(!allResults.length) return;
+  const ql=q.toLowerCase();
+  let list=[...allResults];
+  if(activeFilter==='high')     list=list.filter(m=>m.confidence>=80);
+  if(activeFilter==='in_stock') list=list.filter(m=>m.stock>0);
+  if(activeFilter==='no_warn')  list=list.filter(m=>!(m.warnings||[]).length);
+  if(q) list=list.filter(m=>(m.name||'').toLowerCase().includes(ql)||(m.generic||'').toLowerCase().includes(ql));
+  renderMedCards(list);
+}
+
+function renderMedCards(meds){
+  const el=document.getElementById('medGrid');
+  if(!meds.length){
+    el.innerHTML=`<div class="state-box"><span class="state-emoji" style="animation:none;">🔍</span>
+      <div class="state-title">No matches found</div>
+      <div class="state-sub">Try adjusting filters or adding more symptoms.</div></div>`;
+    return;
+  }
+  el.innerHTML=meds.map(m=>{
+    const conf=m.confidence||0;
+    const cc=conf>=80?'#22c55e':conf>=60?'#f97316':'#64748b';
+    const r=19, circ=2*Math.PI*r;
+    const dash=(circ*conf/100).toFixed(1);
+    const brd=conf>=80?'rgba(34,197,94,.2)':conf>=60?'rgba(249,115,22,.2)':'var(--brd)';
+    const warns=(m.warnings||[]).map(w=>`<div class="warn-box">⚠️ ${w}</div>`).join('');
+    const cauts=(m.cautions||[]).map(c=>`<div class="caution-box">⚡ ${c}</div>`).join('');
+    const matchTags=(m.matched_symptoms||[]).map(s=>`<span class="mtag mt-match">✓ ${s}</span>`).join('');
+    return `<div class="med-card ${conf>=80?'high':''}" style="border-color:${brd};">
+      ${warns}${cauts}
+      <div class="mc-top">
+        <div class="mc-icon" style="background:rgba(255,255,255,.04);">💊</div>
+        <div class="mc-info">
+          <div class="mc-name">${m.name}</div>
+          <div class="mc-generic">${m.generic||'—'} · ${m.category||''}</div>
+        </div>
+        <div class="mc-right">
+          <div class="conf-ring">
+            <svg width="44" height="44" viewBox="0 0 44 44">
+              <circle cx="22" cy="22" r="${r}" fill="none" stroke="#1e2535" stroke-width="4"/>
+              <circle cx="22" cy="22" r="${r}" fill="none" stroke="${cc}" stroke-width="4"
+                stroke-dasharray="${dash} ${circ.toFixed(1)}" stroke-linecap="round"/>
+            </svg>
+            <div class="conf-txt" style="color:${cc};">${conf}%</div>
+          </div>
+        </div>
+      </div>
+      <div class="mc-tags">
+        ${m.category?`<span class="mtag mt-cat">${m.category}</span>`:''}
+        ${matchTags}
+        ${m.stock>0?`<span class="mtag mt-stock">✅ ${m.stock}</span>`:`<span class="mtag mt-out">❌ Out</span>`}
+      </div>
+      ${m.reason?`<div class="mc-reason">${m.reason}</div>`:''}
+      <div class="mc-foot">
+        <div>
+          <div class="mc-price">₹${(m.mrp||0).toFixed(2)}</div>
+          <div class="mc-stock">Stock: ${m.stock} units</div>
+        </div>
+        ${m.stock>0?`<button class="add-btn" onclick="addToBill('${esc(m.name)}',${m.mrp||0})">+ Add to Bill</button>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ─────────────────────────────────────────────
+// PROTOCOLS VIEW
+// ─────────────────────────────────────────────
+async function openProtocolsView(){
+  document.querySelectorAll('.ptab').forEach(t=>t.classList.remove('active'));
+  activePurpose=null;
+  setState('protocols');
+  const list = await fetch('/api/symptom/protocols').then(r=>r.json()).catch(()=>[]);
+  renderProtocolsList(list);
+}
+
+function renderProtocolsList(list){
+  const el=document.getElementById('protocolsList');
+  const empty=document.getElementById('protocolsEmpty');
+  if(!list.length){ el.innerHTML=''; empty.classList.remove('hidden'); return; }
+  empty.classList.add('hidden');
+  el.innerHTML=list.map(p=>{
+    const meta=PURPOSE_META[p.purpose]||{emoji:'💊',color:'var(--mt)',label:p.purpose};
+    const meds=safeJsonParse(p.medicines,[]);
+    const syms=safeJsonParse(p.symptoms,[]);
+    return `<div class="protocol-card">
+      <div class="protocol-purpose-dot" style="background:${meta.color};"></div>
+      <div style="flex:1;">
+        <div class="protocol-name">${meta.emoji} ${p.name}</div>
+        <div class="protocol-meta">${meta.label} · Age: ${p.age_group||'all'} · ${new Date(p.created_at).toLocaleDateString('en-IN')}</div>
+        ${syms.length?`<div class="protocol-meta" style="color:var(--acc);">Symptoms: ${syms.join(', ')}</div>`:''}
+        ${meds.length?`<div class="protocol-meds">💊 ${meds.join(' · ')}</div>`:''}
+        ${p.notes?`<div style="font-size:11px;color:var(--mt);margin-top:3px;">📝 ${p.notes}</div>`:''}
+      </div>
+      <button class="del-btn" onclick="deleteProtocol(${p.id},this)">🗑</button>
+    </div>`;
+  }).join('');
+}
+
+async function deleteProtocol(id, btn){
+  btn.disabled=true;
+  await fetch('/api/symptom/protocols/'+id,{method:'DELETE'}).catch(()=>{});
+  await openProtocolsView();
+}
+
+// ─────────────────────────────────────────────
+// CREATE PROTOCOL MODAL
+// ─────────────────────────────────────────────
+function openCreateModal(){
+  protocolMeds=[];
+  selProtocolPurpose='';
+  selProtocolSymptoms=new Set();
+  document.getElementById('p-name').value='';
+  document.getElementById('p-notes').value='';
+  document.getElementById('p-age').value='all';
+  document.getElementById('p-med-search').value='';
+  document.getElementById('p-med-results').classList.add('hidden');
+  document.getElementById('selectedMedTags').innerHTML='';
+  document.querySelectorAll('#purposePicker .pp-chip').forEach(c=>c.classList.remove('sel'));
+  document.querySelectorAll('#symPickerGrid .sp-pick').forEach(c=>c.classList.remove('sel'));
+  document.getElementById('createModal').classList.add('open');
+}
+
+function closeCreateModal(){ document.getElementById('createModal').classList.remove('open'); }
+
+function pickPurpose(el){
+  document.querySelectorAll('#purposePicker .pp-chip').forEach(c=>c.classList.remove('sel'));
+  el.classList.add('sel');
+  selProtocolPurpose=el.dataset.val;
+}
+
+function renderSymPickerGrid(){
+  document.getElementById('symPickerGrid').innerHTML = SYMPTOMS.map(s=>
+    `<div class="sp-pick" data-id="${s.id}" onclick="toggleSymPick(this,'${s.id}')">${s.emoji} ${s.label}</div>`
+  ).join('');
+}
+
+function toggleSymPick(el,id){
+  if(selProtocolSymptoms.has(id)){ selProtocolSymptoms.delete(id); el.classList.remove('sel'); }
+  else { selProtocolSymptoms.add(id); el.classList.add('sel'); }
+}
+
+async function searchMedsForProtocol(q){
+  const resEl=document.getElementById('p-med-results');
+  if(!q||q.length<2){ resEl.classList.add('hidden'); return; }
+  try{
+    const r=await fetch('/api/medicines?q='+encodeURIComponent(q)+'&limit=10').then(x=>x.json());
+    const meds=(r.medicines||r||[]).slice(0,10);
+    if(!meds.length){ resEl.classList.add('hidden'); return; }
+    resEl.classList.remove('hidden');
+    resEl.innerHTML=meds.map(m=>{
+      const name=m.n||m.name||'';
+      const alreadySel=protocolMeds.some(pm=>pm.name===name);
+      return `<div class="med-search-item ${alreadySel?'selected':''}"
+        onclick="addMedToProtocol('${esc(name)}',${m.p||m.mrp||0},this)">
+        <span>${name} <span style="color:var(--mt);font-size:10px;">${m.g||m.generic||''}</span></span>
+        <span style="color:var(--acc);font-size:11px;font-family:'JetBrains Mono',monospace;">₹${(m.p||m.mrp||0).toFixed(2)}</span>
+      </div>`;
+    }).join('');
+  }catch(e){ resEl.classList.add('hidden'); }
+}
+
+function addMedToProtocol(name, mrp, el){
+  if(protocolMeds.some(m=>m.name===name)){ return; }
+  protocolMeds.push({name,mrp});
+  el.classList.add('selected');
+  renderSelectedMedTags();
+}
+
+function removeMedFromProtocol(name){
+  protocolMeds=protocolMeds.filter(m=>m.name!==name);
+  renderSelectedMedTags();
+}
+
+function renderSelectedMedTags(){
+  document.getElementById('selectedMedTags').innerHTML=protocolMeds.map(m=>`
+    <div class="sel-med-tag">
+      💊 ${m.name}
+      <button onclick="removeMedFromProtocol('${esc(m.name)}')">×</button>
+    </div>`).join('');
+}
+
+async function saveProtocol(){
+  const name=document.getElementById('p-name').value.trim();
+  if(!name){ showToast('Enter a protocol name','red'); return; }
+  if(!selProtocolPurpose){ showToast('Select a purpose/category','red'); return; }
+  const payload={
+    name,
+    purpose:    selProtocolPurpose,
+    symptoms:   [...selProtocolSymptoms],
+    medicines:  protocolMeds.map(m=>m.name),
+    age_group:  document.getElementById('p-age').value,
+    notes:      document.getElementById('p-notes').value.trim(),
+  };
+  try{
+    const r=await fetch('/api/symptom/protocols',{
+      method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)
+    }).then(x=>x.json());
+    if(r.status==='saved'){
+      closeCreateModal();
+      showToast(`Protocol "${name}" saved ✓`,'grn');
+      // Refresh protocols view if visible
+      if(document.getElementById('stateProtocols') && !document.getElementById('stateProtocols').classList.contains('hidden')){
+        openProtocolsView();
+      }
+    }
+  }catch(e){ showToast('Save failed — try again','red'); }
+}
+
+// ─────────────────────────────────────────────
+// STATE MANAGER
+// ─────────────────────────────────────────────
+function setState(s){
+  const ids=['stateWaiting','stateLoading','stateResults','statePurpose','stateProtocols'];
+  ids.forEach(id=>document.getElementById(id).classList.toggle('hidden', id!=='state'+cap(s)));
+}
+
+function cap(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
+
+// ─────────────────────────────────────────────
+// RESET
+// ─────────────────────────────────────────────
+function resetAll(){
+  selSymptoms.clear(); selAge=''; selGender=''; selSeverity=''; selDuration=''; selConditions.clear();
+  document.querySelectorAll('.sym-pill').forEach(e=>e.classList.remove('active'));
+  document.querySelectorAll('.chip').forEach(e=>e.classList.remove('sel','sel-grn','sel-red','sel-yel'));
+  document.querySelectorAll('.cond-row').forEach(e=>e.classList.remove('sel'));
+  document.querySelectorAll('[id^="chk-"]').forEach(e=>e.innerHTML='');
+  document.getElementById('medSearchInput').value='';
+  updateSelSympCount();
+  document.querySelectorAll('.ptab').forEach(t=>t.classList.remove('active'));
+  activePurpose=null;
+  setState('waiting');
+}
+
+// ─────────────────────────────────────────────
+// UTILS
+// ─────────────────────────────────────────────
+function addToBill(name, price){
+  const items=JSON.parse(sessionStorage.getItem('rxItems')||'[]');
+  items.push({name,price,qty:1});
+  sessionStorage.setItem('rxItems',JSON.stringify(items));
+  showToast(`${name.slice(0,26)} → Bill ✓`,'grn');
+}
+
+function showToast(msg, type='grn'){
+  const colors={grn:'var(--grn)',red:'var(--red)',blu:'var(--blu)',yel:'var(--yel)'};
+  let t=document.getElementById('toast');
+  if(!t){
+    t=document.createElement('div');
+    t.id='toast';
+    t.style.cssText='position:fixed;bottom:22px;left:50%;transform:translateX(-50%);padding:9px 20px;border-radius:8px;font-size:12.5px;font-weight:700;z-index:9999;opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap;color:#fff;';
+    document.body.appendChild(t);
+  }
+  t.style.background=colors[type]||colors.grn;
+  t.textContent=msg; t.style.opacity='1';
+  setTimeout(()=>t.style.opacity='0',2200);
+}
+
+function safeJsonParse(s, fallback){
+  try{ return JSON.parse(s); }catch(e){ return fallback; }
+}
+
+function esc(s){ return (s||'').replace(/'/g,"\\'").replace(/"/g,'&quot;'); }
+</script>
+</body>
+</html>

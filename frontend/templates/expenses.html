@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Expenses — MediVision AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:Inter,sans-serif;background:#0b0e16;color:#e2e8f0;min-height:100vh;}
+.mono{font-family:'JetBrains Mono',monospace;}
+.topbar{background:#111827;border-bottom:1px solid rgba(255,255,255,.08);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;}
+.brand{font-weight:800;color:#f97316;font-size:1.05rem;}
+.brand i{margin-right:8px;}
+.nav-links{display:flex;gap:14px;}
+.nav-links a{color:#94a3b8;font-size:.85rem;text-decoration:none;}
+.nav-links a:hover{color:#fff;}
+.wrap{max-width:1300px;margin:0 auto;padding:24px;}
+h1{font-size:1.6rem;font-weight:800;color:#fff;}
+.sub{color:#94a3b8;font-size:.9rem;margin-bottom:24px;}
+
+/* KPI ROW */
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:22px;}
+.kpi{background:linear-gradient(145deg,#141824,#0f1320);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:16px 18px;}
+.kpi .lbl{color:#94a3b8;font-size:.74rem;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;}
+.kpi .val{color:#fff;font-size:1.45rem;font-weight:800;font-family:'JetBrains Mono',monospace;}
+.kpi .val.red{color:#fca5a5;}
+.kpi .val.orange{color:#fb923c;}
+
+.row2{display:grid;grid-template-columns:1.2fr 1fr;gap:18px;margin-bottom:20px;}
+@media(max-width:1000px){.row2{grid-template-columns:1fr;}}
+
+.panel{background:#141824;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:20px;}
+.panel h3{color:#f97316;font-size:.95rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+
+/* FORM */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.field{margin-bottom:12px;}
+.field.full{grid-column:1/-1;}
+.field label{display:block;font-size:.74rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px;}
+.field label .req{color:#f97316;}
+.input,select{width:100%;background:#0b0e16;border:1.5px solid rgba(255,255,255,.1);border-radius:9px;padding:10px 14px;color:#e2e8f0;font-family:inherit;font-size:.9rem;}
+.input:focus,select:focus{outline:none;border-color:#f97316;}
+.input.error{border-color:#ef4444;background:rgba(239,68,68,.05);}
+
+.type-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;}
+.type-chip{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:#cbd5e1;padding:6px 12px;border-radius:99px;font-size:.78rem;cursor:pointer;transition:all .15s;}
+.type-chip:hover{background:rgba(249,115,22,.1);}
+.type-chip.active{background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;border-color:#f97316;}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:11px 18px;border-radius:9px;font-weight:700;font-size:.88rem;border:none;cursor:pointer;font-family:inherit;}
+.btn-primary{background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;}
+.btn-green{background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;}
+.btn-ghost{background:rgba(255,255,255,.05);color:#94a3b8;border:1px solid rgba(255,255,255,.1);}
+.btn-red{background:rgba(239,68,68,.15);color:#fca5a5;border:1px solid rgba(239,68,68,.3);}
+
+/* TABLE */
+.tbl-wrap{overflow-x:auto;background:#141824;border:1px solid rgba(255,255,255,.08);border-radius:14px;}
+.tbl{width:100%;border-collapse:collapse;}
+.tbl th{background:#0d111a;color:#94a3b8;font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;text-align:left;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.06);}
+.tbl td{padding:10px 14px;font-size:.85rem;border-bottom:1px solid rgba(255,255,255,.04);}
+.tbl tr:hover td{background:rgba(255,255,255,.02);}
+.pill{padding:2px 10px;border-radius:99px;font-size:.7rem;font-weight:700;display:inline-block;}
+.pill-staff{background:rgba(168,85,247,.18);color:#c084fc;}
+.pill-tea,.pill-milk{background:rgba(234,179,8,.18);color:#fcd34d;}
+.pill-supplier{background:rgba(59,130,246,.18);color:#60a5fa;}
+.pill-credit{background:rgba(239,68,68,.18);color:#fca5a5;}
+.pill-fuel{background:rgba(249,115,22,.18);color:#fb923c;}
+.pill-other{background:rgba(100,116,139,.18);color:#cbd5e1;}
+
+.filter-bar{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+.filter-bar input,.filter-bar select{flex:1;min-width:140px;}
+
+/* DENOMINATION INPUT */
+.denom-row{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:6px;}
+.denom-row div{display:flex;flex-direction:column;align-items:center;gap:3px;}
+.denom-row span{font-family:monospace;font-size:.7rem;color:#94a3b8;}
+.denom-row input{padding:5px 8px;font-size:.82rem;text-align:center;}
+.cash-totals{display:flex;justify-content:space-between;background:#0b0e16;padding:8px 12px;border-radius:8px;margin-top:8px;font-size:.85rem;font-family:monospace;}
+
+@media(max-width:640px){
+  .form-grid{grid-template-columns:1fr;}
+  .denom-row{grid-template-columns:repeat(2,1fr);}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand"><i class="fas fa-receipt"></i> Expenses</div>
+  <div class="nav-links">
+    <a href="/portal">Portal</a>
+    <a href="/cash-drawer">Cash Drawer</a>
+    <a href="/internal">POS</a>
+  </div>
+</div>
+
+<div class="wrap">
+  <h1>📋 Daily Expenses</h1>
+  <p class="sub">Track staff advances, tea/milk, supplier payments, credits & operating costs</p>
+
+  <!-- KPI -->
+  <div class="kpi-row">
+    <div class="kpi"><div class="lbl">Today's Expenses</div><div class="val red" id="kpiToday">₹0</div></div>
+    <div class="kpi"><div class="lbl">This Month</div><div class="val orange" id="kpiMonth">₹0</div></div>
+    <div class="kpi"><div class="lbl">Avg/Day</div><div class="val mono" id="kpiAvg">₹0</div></div>
+    <div class="kpi"><div class="lbl">Records</div><div class="val mono" id="kpiCount">0</div></div>
+  </div>
+
+  <div class="row2">
+
+    <!-- LIST -->
+    <div>
+      <div class="filter-bar">
+        <input type="date" id="filterFrom" class="input" />
+        <input type="date" id="filterTo" class="input" />
+        <select id="filterType" class="input">
+          <option value="">All types</option>
+        </select>
+        <button class="btn btn-ghost" onclick="loadExpenses()">Filter</button>
+      </div>
+      <div class="tbl-wrap">
+        <table class="tbl" id="expTable">
+          <thead><tr><th>Date</th><th>Type</th><th>Payee</th><th>Amount</th><th>Mode</th><th>Notes</th><th></th></tr></thead>
+          <tbody><tr><td colspan="7" style="text-align:center;padding:30px;color:#64748b;">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ADD FORM -->
+    <div class="panel">
+      <h3><i class="fas fa-plus-circle"></i> Add Expense</h3>
+
+      <div class="field">
+        <label>Type <span class="req">★ MANDATORY</span></label>
+        <div class="type-chips" id="typeChips"></div>
+        <input type="hidden" id="expType" value=""/>
+      </div>
+
+      <div class="form-grid">
+        <div class="field">
+          <label>Amount (₹) <span class="req">★</span></label>
+          <input type="number" id="expAmount" class="input" placeholder="0.00" step="0.01"/>
+        </div>
+        <div class="field">
+          <label>Date</label>
+          <input type="date" id="expDate" class="input"/>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Payee / Description</label>
+        <input type="text" id="expPayee" class="input" placeholder="Staff name / Supplier / etc."/>
+      </div>
+
+      <div class="form-grid">
+        <div class="field">
+          <label>Payment Mode</label>
+          <select id="expMode" class="input" onchange="toggleDenom()">
+            <option value="Cash">Cash (deduct from drawer)</option>
+            <option value="UPI">UPI</option>
+            <option value="Card">Card</option>
+            <option value="Bank Transfer">Bank Transfer</option>
+            <option value="Cheque">Cheque</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Bill / Ref No.</label>
+          <input type="text" id="expBillNo" class="input" placeholder="Optional"/>
+        </div>
+      </div>
+
+      <div class="field" id="denomBox" style="display:block;">
+        <label>Denomination breakdown (cash)</label>
+        <div class="denom-row" id="denomInputs"></div>
+        <div class="cash-totals">
+          <span style="color:#94a3b8;">Total of notes: <span id="denomTotal" style="color:#4ade80;font-weight:700;">₹0</span></span>
+          <span style="color:#94a3b8;">Expense: <span id="denomCompare" style="color:#fb923c;font-weight:700;">₹0</span></span>
+        </div>
+      </div>
+
+      <div class="field full">
+        <label>Notes</label>
+        <input type="text" id="expNotes" class="input" placeholder="Optional details..."/>
+      </div>
+
+      <button class="btn btn-primary" onclick="saveExpense()" style="width:100%;margin-top:8px;"><i class="fas fa-save"></i> Save Expense</button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const DENOMS = [500, 200, 100, 50, 20, 10, 5, 2, 1];
+const TYPE_LABELS = {
+  staff_advance: '👤 Staff Advance',
+  tea: '☕ Tea',
+  milk: '🥛 Milk',
+  supplier: '🏭 Supplier',
+  credit: '💳 Credit',
+  fuel: '⛽ Fuel',
+  utility: '💡 Utility',
+  rent: '🏠 Rent',
+  stationery: '📝 Stationery',
+  maintenance: '🔧 Maintenance',
+  other: '📦 Other'
+};
+
+document.getElementById('expDate').value = new Date().toISOString().slice(0,10);
+
+// Build type chips
+function renderTypeChips(types){
+  const tc = document.getElementById('typeChips');
+  const ft = document.getElementById('filterType');
+  tc.innerHTML = types.map(t => `<div class="type-chip" data-t="${t}" onclick="selectType('${t}')">${TYPE_LABELS[t]||t}</div>`).join('');
+  ft.innerHTML = '<option value="">All types</option>' + types.map(t => `<option value="${t}">${TYPE_LABELS[t]||t}</option>`).join('');
+}
+
+function selectType(t){
+  document.querySelectorAll('.type-chip').forEach(c => c.classList.remove('active'));
+  document.querySelector(`.type-chip[data-t="${t}"]`).classList.add('active');
+  document.getElementById('expType').value = t;
+}
+
+function toggleDenom(){
+  const mode = document.getElementById('expMode').value;
+  document.getElementById('denomBox').style.display = mode === 'Cash' ? 'block' : 'none';
+}
+
+// Build denomination inputs
+function renderDenomInputs(){
+  document.getElementById('denomInputs').innerHTML = DENOMS.map(d =>
+    `<div><span>₹${d}</span><input type="number" min="0" data-d="${d}" placeholder="0" onchange="recalcDenom()" /></div>`).join('');
+}
+renderDenomInputs();
+
+function recalcDenom(){
+  let total = 0;
+  document.querySelectorAll('#denomInputs input').forEach(i => {
+    total += parseInt(i.value || 0) * parseInt(i.dataset.d);
+  });
+  document.getElementById('denomTotal').textContent = '₹' + total;
+}
+
+document.getElementById('expAmount').addEventListener('input', () => {
+  document.getElementById('denomCompare').textContent = '₹' + (document.getElementById('expAmount').value || 0);
+});
+
+async function saveExpense(){
+  const expense_type = document.getElementById('expType').value;
+  const amount = parseFloat(document.getElementById('expAmount').value || 0);
+
+  if(!expense_type){
+    alert('⚠ Type is MANDATORY — please choose a type chip above');
+    return;
+  }
+  if(amount <= 0){
+    alert('Enter a valid amount');
+    return;
+  }
+  // Build breakdown if cash
+  const breakdown = {};
+  if(document.getElementById('expMode').value === 'Cash'){
+    document.querySelectorAll('#denomInputs input').forEach(i => {
+      const v = parseInt(i.value || 0);
+      if(v > 0) breakdown[i.dataset.d] = v;
+    });
+  }
+  const body = {
+    expense_type,
+    amount,
+    date: document.getElementById('expDate').value,
+    payee: document.getElementById('expPayee').value,
+    payment_mode: document.getElementById('expMode').value,
+    bill_no: document.getElementById('expBillNo').value,
+    notes: document.getElementById('expNotes').value,
+    breakdown
+  };
+  const r = await fetch('/api/expenses', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const d = await r.json();
+  if(d.status === 'ok'){
+    // Clear form
+    document.getElementById('expAmount').value = '';
+    document.getElementById('expPayee').value = '';
+    document.getElementById('expBillNo').value = '';
+    document.getElementById('expNotes').value = '';
+    document.querySelectorAll('#denomInputs input').forEach(i => i.value = '');
+    document.querySelectorAll('.type-chip').forEach(c => c.classList.remove('active'));
+    document.getElementById('expType').value = '';
+    recalcDenom();
+    loadExpenses();
+    loadSummary();
+    showToast('✓ Expense saved');
+  } else {
+    alert('Error: ' + (d.error || 'unknown'));
+  }
+}
+
+function showToast(msg){
+  const t = document.createElement('div');
+  t.style.cssText='position:fixed;bottom:30px;right:30px;background:#16a34a;color:#fff;padding:12px 20px;border-radius:8px;font-weight:600;z-index:1000;box-shadow:0 12px 32px rgba(0,0,0,.4);';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(), 2500);
+}
+
+async function loadExpenses(){
+  const params = new URLSearchParams();
+  const f = document.getElementById('filterFrom').value;
+  const t = document.getElementById('filterTo').value;
+  const ty = document.getElementById('filterType').value;
+  if(f) params.set('from', f);
+  if(t) params.set('to', t);
+  if(ty) params.set('type', ty);
+
+  const r = await fetch('/api/expenses?' + params);
+  const d = await r.json();
+  // Populate types if first load
+  if(!document.querySelectorAll('.type-chip').length){
+    renderTypeChips(d.types);
+  }
+  const tb = document.querySelector('#expTable tbody');
+  if(!d.expenses.length){
+    tb.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:30px;color:#64748b;">No expenses yet</td></tr>';
+  } else {
+    tb.innerHTML = d.expenses.map(e => `
+      <tr>
+        <td class="mono" style="font-size:.78rem;">${e.date}</td>
+        <td><span class="pill pill-${e.expense_type}">${TYPE_LABELS[e.expense_type]||e.expense_type}</span></td>
+        <td>${e.payee||'-'}</td>
+        <td class="mono" style="color:#fca5a5;">₹${e.amount.toLocaleString('en-IN')}</td>
+        <td>${e.payment_mode}</td>
+        <td style="color:#94a3b8;font-size:.82rem;">${e.notes||''}</td>
+        <td><button class="btn btn-red" style="padding:5px 10px;font-size:.75rem;" onclick="del(${e.id})">×</button></td>
+      </tr>`).join('');
+  }
+  document.getElementById('kpiCount').textContent = d.expenses.length;
+}
+
+async function loadSummary(){
+  const r = await fetch('/api/expenses/summary');
+  const d = await r.json();
+  document.getElementById('kpiToday').textContent = '₹' + d.today.toLocaleString('en-IN');
+  document.getElementById('kpiMonth').textContent = '₹' + d.month.toLocaleString('en-IN');
+  const days = (new Date().getDate()) || 1;
+  document.getElementById('kpiAvg').textContent = '₹' + Math.round(d.month/days).toLocaleString('en-IN');
+}
+
+async function del(id){
+  if(!confirm('Delete this expense?')) return;
+  await fetch('/api/expenses/' + id, {method:'DELETE'});
+  loadExpenses();
+  loadSummary();
+}
+
+loadExpenses();
+loadSummary();
+</script>
+</body>
+</html>

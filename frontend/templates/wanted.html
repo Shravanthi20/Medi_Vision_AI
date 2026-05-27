@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Wanted List — MediVision AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:Inter,sans-serif;background:#0b0e16;color:#e2e8f0;min-height:100vh;}
+.topbar{background:#111827;border-bottom:1px solid rgba(255,255,255,.08);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;}
+.brand{font-weight:800;color:#f97316;}
+.back{color:#94a3b8;font-size:.9rem;}
+.back:hover{color:#fff;}
+.wrap{max-width:1200px;margin:0 auto;padding:36px 24px;}
+.head{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:28px;flex-wrap:wrap;gap:16px;}
+h1{font-size:1.8rem;font-weight:800;color:#fff;}
+.sub{color:#94a3b8;font-size:.92rem;margin-top:4px;}
+.add-btn{background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;padding:10px 20px;border-radius:9px;text-decoration:none;font-weight:600;font-size:.88rem;}
+.toolbar{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;}
+.search{flex:1;min-width:220px;background:#141824;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:10px 14px;color:#e2e8f0;font-family:inherit;}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:24px;}
+.kpi{background:#141824;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:18px;}
+.kpi .lbl{color:#94a3b8;font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;}
+.kpi .val{color:#fff;font-size:1.6rem;font-weight:800;margin-top:6px;}
+table{width:100%;background:#141824;border:1px solid rgba(255,255,255,.08);border-radius:12px;overflow:hidden;border-collapse:collapse;}
+th{background:#0d111a;color:#94a3b8;font-size:.78rem;text-transform:uppercase;letter-spacing:.04em;text-align:left;padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.06);}
+td{padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.05);font-size:.88rem;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:rgba(249,115,22,.04);}
+.empty{text-align:center;padding:60px 20px;color:#64748b;}
+.empty .icon{font-size:3rem;margin-bottom:12px;}
+.priority{padding:3px 10px;border-radius:99px;font-size:.72rem;font-weight:700;}
+.pri-high{background:rgba(239,68,68,.18);color:#fca5a5;}
+.pri-med{background:rgba(234,179,8,.18);color:#fde68a;}
+.pri-low{background:rgba(34,197,94,.18);color:#86efac;}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="brand">📋 Wanted List</div>
+  <a href="/portal" class="back"><i class="fas fa-arrow-left"></i> Back to Portal</a>
+</div>
+
+<div class="wrap">
+  <div class="head">
+    <div>
+      <h1>Customer Wanted List</h1>
+      <div class="sub">Track requested medicines that are out of stock — auto-notify when received.</div>
+    </div>
+    <a href="#" class="add-btn" onclick="addWanted();return false;"><i class="fas fa-plus"></i> Add Wanted Item</a>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi"><div class="lbl">Active Requests</div><div class="val" id="kpiActive">0</div></div>
+    <div class="kpi"><div class="lbl">Fulfilled</div><div class="val" id="kpiFulfilled">0</div></div>
+    <div class="kpi"><div class="lbl">High Priority</div><div class="val" id="kpiHigh">0</div></div>
+    <div class="kpi"><div class="lbl">Unique Customers</div><div class="val" id="kpiCust">0</div></div>
+  </div>
+
+  <div class="toolbar">
+    <input class="search" placeholder="🔍 Search medicine name, customer, phone..."/>
+  </div>
+
+  <table id="wantedTable">
+    <thead><tr>
+      <th>Medicine</th><th>Customer</th><th>Phone</th><th>Qty</th><th>Priority</th><th>Date</th><th>Status</th><th></th>
+    </tr></thead>
+    <tbody><tr><td colspan="8"><div class="empty"><div class="icon">📋</div><div>No wanted-list items yet.</div><div style="margin-top:8px;font-size:.85rem">Click "Add Wanted Item" to record an out-of-stock request from a customer.</div></div></td></tr></tbody>
+  </table>
+</div>
+
+<script>
+function addWanted(){
+  const name = prompt('Medicine name?');
+  if(!name) return;
+  const cust = prompt('Customer name?') || 'Anonymous';
+  const phone = prompt('Customer phone?') || '';
+  const qty = prompt('Quantity?', '1') || '1';
+  alert('Saved (in browser). Backend wiring pending.');
+}
+</script>
+</body>
+</html>

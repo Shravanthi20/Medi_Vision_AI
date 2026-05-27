@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Audit Log — MediVision AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:Inter,sans-serif;background:#0b0e16;color:#e2e8f0;min-height:100vh;}
+.mono{font-family:'JetBrains Mono',monospace;}
+.topbar{background:#111827;border-bottom:1px solid rgba(255,255,255,.08);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;}
+.brand{font-weight:800;color:#f97316;}.brand i{margin-right:8px;}
+.nav-links a{color:#94a3b8;font-size:.85rem;text-decoration:none;margin-left:14px;}
+.wrap{max-width:1400px;margin:0 auto;padding:24px;}
+h1{font-size:1.5rem;font-weight:800;color:#fff;}
+.sub{color:#94a3b8;font-size:.9rem;margin-bottom:18px;}
+
+.filter-bar{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;}
+.input,select{background:#0b0e16;border:1.5px solid rgba(255,255,255,.1);border-radius:9px;padding:9px 14px;color:#e2e8f0;font-family:inherit;font-size:.86rem;}
+.input{flex:1;min-width:160px;}
+.btn{background:#f97316;color:#fff;border:none;padding:9px 18px;border-radius:9px;font-weight:700;cursor:pointer;font-family:inherit;}
+
+.tbl-wrap{background:#141824;border:1px solid rgba(255,255,255,.08);border-radius:14px;overflow:hidden;}
+.tbl{width:100%;border-collapse:collapse;}
+.tbl th{background:#0d111a;color:#94a3b8;font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;text-align:left;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.06);}
+.tbl td{padding:9px 14px;font-size:.83rem;border-bottom:1px solid rgba(255,255,255,.04);}
+.tbl tr:hover td{background:rgba(255,255,255,.02);}
+.sev{padding:2px 10px;border-radius:99px;font-size:.7rem;font-weight:800;}
+.sev-info{background:rgba(148,163,184,.18);color:#cbd5e1;}
+.sev-warn{background:rgba(251,191,36,.18);color:#fbbf24;}
+.sev-critical{background:rgba(239,68,68,.2);color:#fca5a5;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand"><i class="fas fa-shield-halved"></i> Audit Log</div>
+  <div>
+    <a href="/portal" class="nav-links">Portal</a>
+    <a href="/security-dashboard" class="nav-links">Security</a>
+  </div>
+</div>
+
+<div class="wrap">
+  <h1>📋 Sensitive Action Audit Trail</h1>
+  <p class="sub">Every change tracked: who, when, from where, before/after values · forever record · cannot be deleted</p>
+
+  <div class="filter-bar">
+    <select id="fSev"><option value="">All severities</option><option value="info">Info</option><option value="warn">Warn</option><option value="critical">Critical</option></select>
+    <input class="input" id="fAct" placeholder="Filter action (e.g. bill_delete, discount, login)"/>
+    <input class="input" id="fStaff" placeholder="Staff ID" type="number" style="max-width:120px;"/>
+    <button class="btn" onclick="load()">Apply</button>
+  </div>
+
+  <div class="tbl-wrap">
+    <table class="tbl" id="tbl">
+      <thead><tr>
+        <th>Time</th><th>Action</th><th>Severity</th><th>Staff</th><th>Target</th><th>Old → New</th><th>IP / Notes</th>
+      </tr></thead>
+      <tbody><tr><td colspan="7" style="text-align:center;padding:30px;color:#64748b;">Loading…</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+async function load(){
+  const params = new URLSearchParams();
+  const sev = document.getElementById('fSev').value;
+  const act = document.getElementById('fAct').value;
+  const st = document.getElementById('fStaff').value;
+  if(sev) params.set('severity', sev);
+  if(act) params.set('action', act);
+  if(st) params.set('staff_id', st);
+  const r = await fetch('/api/audit-log?' + params);
+  const d = await r.json();
+  const tb = document.querySelector('#tbl tbody');
+  if(!d.events.length){
+    tb.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:30px;color:#64748b;">No events</td></tr>';
+    return;
+  }
+  tb.innerHTML = d.events.map(e => `<tr>
+    <td class="mono" style="font-size:.76rem;color:#64748b;">${e.ts || '-'}</td>
+    <td><strong>${e.action}</strong></td>
+    <td><span class="sev sev-${e.severity}">${(e.severity||'info').toUpperCase()}</span></td>
+    <td>${e.staff_name || '-'}<div style="color:#64748b;font-size:.72rem;">#${e.staff_id||0}</div></td>
+    <td class="mono" style="font-size:.78rem;">${e.target_type||'-'}/${e.target_id||''}</td>
+    <td style="font-family:monospace;font-size:.76rem;">
+      ${e.old_value ? `<span style="color:#fca5a5;">- ${e.old_value.slice(0,40)}</span><br/>` : ''}
+      ${e.new_value ? `<span style="color:#4ade80;">+ ${e.new_value.slice(0,40)}</span>` : ''}
+    </td>
+    <td style="font-family:monospace;font-size:.72rem;color:#64748b;">${e.ip_address || '-'}${e.notes?'<br/>'+e.notes:''}</td>
+  </tr>`).join('');
+}
+load();
+setInterval(load, 30000);
+</script>
+</body>
+</html>

@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>License Renewal Tracker — Selvam Medicals</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@600&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<style>
+:root{
+  --bg:#0b0e16;--sb:#111827;--card:#151d2b;--card2:#1a2236;--brd:#1f2d40;
+  --tx:#e2e8f0;--mt:#64748b;--acc:#f97316;--grn:#22c55e;--red:#ef4444;
+  --blu:#3b82f6;--yel:#eab308;--pur:#a855f7;--teal:#14b8a6;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html,body{background:var(--bg);color:var(--tx);font-family:Inter,sans-serif;font-size:13px;overflow-y:auto;}
+.topbar{height:54px;background:var(--sb);border-bottom:1px solid var(--brd);display:flex;align-items:center;gap:12px;padding:0 20px;position:sticky;top:0;z-index:50;}
+.topbar a{display:flex;align-items:center;gap:7px;color:var(--mt);font-size:12px;text-decoration:none;padding:5px 10px;border-radius:6px;border:1px solid var(--brd);transition:all .2s;}
+.topbar a:hover{border-color:var(--acc);color:var(--acc);}
+.page{padding:20px;max-width:1200px;margin:0 auto;}
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:18px;}
+.kpi{background:var(--card2);border:1px solid var(--brd);border-radius:12px;padding:14px 16px;}
+.kpi .kv{font-size:22px;font-weight:700;font-family:'JetBrains Mono',monospace;margin-bottom:3px;}
+.kpi .kl{font-size:10.5px;color:var(--mt);text-transform:uppercase;letter-spacing:.05em;}
+.kpi.orange .kv{color:var(--acc);}.kpi.green .kv{color:var(--grn);}
+.kpi.red .kv{color:var(--red);}.kpi.yel .kv{color:var(--yel);}
+.kpi.blue .kv{color:var(--blu);}
+.card{background:var(--card2);border:1px solid var(--brd);border-radius:14px;overflow:hidden;margin-bottom:16px;}
+.card-header{padding:12px 16px;border-bottom:1px solid var(--brd);display:flex;align-items:center;gap:8px;font-weight:600;font-size:13px;}
+table{width:100%;border-collapse:collapse;}
+th{padding:8px 14px;text-align:left;font-size:10px;font-weight:600;color:var(--mt);text-transform:uppercase;letter-spacing:.05em;background:var(--sb);white-space:nowrap;}
+td{padding:10px 14px;border-top:1px solid var(--brd);font-size:12px;vertical-align:middle;}
+tbody tr:hover{background:rgba(249,115,22,.04);}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:6px 13px;border-radius:8px;border:1px solid var(--brd);background:var(--card2);color:var(--tx);font-size:12px;font-family:Inter,sans-serif;cursor:pointer;transition:all .2s;}
+.btn:hover{border-color:var(--acc);color:var(--acc);}
+.btn.primary{background:var(--acc);border-color:var(--acc);color:#fff;}
+.btn.primary:hover{background:#ea6c0a;}
+.btn.green{background:var(--grn);border-color:var(--grn);color:#fff;}
+.btn.red{background:var(--red);border-color:var(--red);color:#fff;}
+select,input,textarea{background:var(--card);border:1px solid var(--brd);border-radius:8px;padding:7px 11px;color:var(--tx);font-size:12px;font-family:Inter,sans-serif;outline:none;transition:border .2s;}
+select:focus,input:focus,textarea:focus{border-color:var(--acc);}
+.badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:10.5px;font-weight:600;}
+.b-grn{background:rgba(34,197,94,.12);color:var(--grn);}
+.b-red{background:rgba(239,68,68,.12);color:var(--red);}
+.b-yel{background:rgba(234,179,8,.12);color:var(--yel);}
+.b-ora{background:rgba(249,115,22,.12);color:var(--acc);}
+.b-blu{background:rgba(59,130,246,.12);color:var(--blu);}
+.b-mt{background:rgba(100,116,139,.12);color:var(--mt);}
+.empty{text-align:center;padding:40px;color:var(--mt);}
+/* Countdown ring */
+.count-ring{display:inline-flex;align-items:center;justify-content:center;width:52px;height:52px;border-radius:50%;font-size:14px;font-weight:700;font-family:'JetBrains Mono',monospace;flex-shrink:0;}
+.ring-ok   {background:rgba(34,197,94,.12); border:2px solid var(--grn); color:var(--grn);}
+.ring-attn {background:rgba(249,115,22,.12); border:2px solid var(--acc); color:var(--acc);}
+.ring-warn {background:rgba(234,179,8,.12);  border:2px solid var(--yel); color:var(--yel);}
+.ring-crit {background:rgba(239,68,68,.12);  border:2px solid var(--red); color:var(--red);}
+.ring-exp  {background:rgba(239,68,68,.2);   border:2px solid var(--red); color:var(--red);}
+/* License cards grid */
+.lic-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px;margin-bottom:20px;}
+.lic-card{background:var(--card2);border:1px solid var(--brd);border-radius:14px;padding:16px;position:relative;transition:border-color .2s;}
+.lic-card:hover{border-color:var(--acc);}
+.lic-card.expired{border-color:rgba(239,68,68,.4);}
+.lic-card.critical{border-color:rgba(239,68,68,.3);}
+.lic-card.warning{border-color:rgba(234,179,8,.3);}
+.lic-card .type-tag{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--mt);margin-bottom:6px;}
+.lic-card .lic-name{font-size:14px;font-weight:700;margin-bottom:4px;}
+.lic-card .lic-no{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--mt);margin-bottom:10px;}
+.lic-card .meta-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-top:1px solid var(--brd);font-size:11.5px;}
+.lic-card .meta-row .lbl{color:var(--mt);}
+.lic-card .lic-actions{position:absolute;top:12px;right:12px;display:flex;gap:6px;}
+/* Modal */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;align-items:center;justify-content:center;}
+.overlay.open{display:flex;}
+.modal{background:var(--card2);border:1px solid var(--brd);border-radius:16px;padding:24px;width:min(680px,96vw);max-height:90vh;overflow-y:auto;position:relative;}
+.modal-title{font-size:15px;font-weight:700;margin-bottom:18px;display:flex;align-items:center;gap:8px;}
+.modal-close{position:absolute;top:16px;right:16px;background:none;border:none;color:var(--mt);font-size:18px;cursor:pointer;}
+.modal-close:hover{color:var(--red);}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.form-group label{display:block;font-size:11px;font-weight:600;color:var(--mt);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px;}
+.form-group input,.form-group select,.form-group textarea{width:100%;}
+.form-group.full{grid-column:1/-1;}
+/* Alert banner */
+.alert-banner{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.3);border-radius:12px;padding:14px 18px;margin-bottom:16px;display:flex;gap:12px;align-items:flex-start;}
+.alert-banner .icon{color:var(--red);font-size:18px;margin-top:1px;}
+.alert-banner .content strong{color:var(--tx);font-size:13px;}
+.alert-banner .content p{color:var(--mt);font-size:11.5px;margin-top:3px;}
+/* Progress bar */
+.prog-bar{height:5px;background:var(--brd);border-radius:3px;margin-top:8px;overflow:hidden;}
+.prog-fill{height:100%;border-radius:3px;transition:width .4s;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a href="/portal"><i class="fas fa-arrow-left"></i> Portal</a>
+  <i class="fas fa-id-card" style="color:var(--acc)"></i>
+  <span style="font-size:15px;font-weight:600">License &amp; Compliance Tracker</span>
+  <span style="margin-left:auto;display:flex;gap:8px;">
+    <button class="btn" onclick="switchView('grid')" id="btn-grid"><i class="fas fa-grip"></i> Cards</button>
+    <button class="btn" onclick="switchView('table')" id="btn-table"><i class="fas fa-table"></i> Table</button>
+    <button class="btn primary" onclick="openAdd()"><i class="fas fa-plus"></i> Add License</button>
+  </span>
+</div>
+
+<div class="page">
+
+  <!-- KPI strip -->
+  <div class="kpi-row" id="kpi-strip">
+    <div class="kpi red"><div class="kv" id="kk-expired">—</div><div class="kl">Expired</div></div>
+    <div class="kpi red"><div class="kv" id="kk-critical">—</div><div class="kl">≤30 Days</div></div>
+    <div class="kpi yel"><div class="kv" id="kk-warning">—</div><div class="kl">≤60 Days</div></div>
+    <div class="kpi orange"><div class="kv" id="kk-attention">—</div><div class="kl">≤90 Days</div></div>
+    <div class="kpi green"><div class="kv" id="kk-ok">—</div><div class="kl">Active / OK</div></div>
+    <div class="kpi blue"><div class="kv" id="kk-total">—</div><div class="kl">Total Licenses</div></div>
+  </div>
+
+  <!-- Alert banners for urgent items -->
+  <div id="alert-section"></div>
+
+  <!-- Compliance checklist header -->
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+    <span style="font-size:13px;font-weight:600">License Portfolio</span>
+    <select id="type-filter" onchange="renderAll()" style="width:200px">
+      <option value="">All Types</option>
+      <option value="DRUG_LICENSE_RETAIL">Drug License — Retail</option>
+      <option value="DRUG_LICENSE_WHOLESALE">Drug License — Wholesale</option>
+      <option value="FSSAI">FSSAI</option>
+      <option value="GST">GST Certificate</option>
+      <option value="SHOP_ACT">Shop &amp; Establishment Act</option>
+      <option value="OTHER">Other</option>
+    </select>
+    <select id="status-filter" onchange="renderAll()" style="width:160px">
+      <option value="">All Status</option>
+      <option value="EXPIRED">Expired</option>
+      <option value="CRITICAL">≤30 Days</option>
+      <option value="WARNING">≤60 Days</option>
+      <option value="OK">Active / OK</option>
+    </select>
+  </div>
+
+  <!-- Card grid view -->
+  <div id="view-grid" class="lic-grid"></div>
+
+  <!-- Table view -->
+  <div id="view-table" class="card" style="display:none;">
+    <div class="card-header">
+      <i class="fas fa-id-card" style="color:var(--acc)"></i> All Licenses
+    </div>
+    <table>
+      <thead><tr>
+        <th>License Name</th><th>Type</th><th>License No</th>
+        <th>Issued By</th><th>Expiry</th><th>Days Left</th>
+        <th>Status</th><th>Actions</th>
+      </tr></thead>
+      <tbody id="table-tbody"></tbody>
+    </table>
+  </div>
+
+  <!-- Pharmacy compliance checklist -->
+  <div class="card">
+    <div class="card-header"><i class="fas fa-clipboard-check" style="color:var(--grn)"></i> Pharmacy Compliance Checklist</div>
+    <div style="padding:16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;">
+      <div style="background:var(--card);border:1px solid var(--brd);border-radius:10px;padding:14px;">
+        <div style="font-weight:700;margin-bottom:8px;font-size:12px"><i class="fas fa-pills" style="color:var(--acc)"></i> Drug Licenses</div>
+        <div id="checklist-drug" style="font-size:11.5px;color:var(--mt);line-height:1.8"></div>
+      </div>
+      <div style="background:var(--card);border:1px solid var(--brd);border-radius:10px;padding:14px;">
+        <div style="font-weight:700;margin-bottom:8px;font-size:12px"><i class="fas fa-utensils" style="color:var(--blu)"></i> FSSAI &amp; Food Safety</div>
+        <div id="checklist-fssai" style="font-size:11.5px;color:var(--mt);line-height:1.8"></div>
+      </div>
+      <div style="background:var(--card);border:1px solid var(--brd);border-radius:10px;padding:14px;">
+        <div style="font-weight:700;margin-bottom:8px;font-size:12px"><i class="fas fa-file-invoice" style="color:var(--grn)"></i> GST &amp; Tax Compliance</div>
+        <div id="checklist-gst" style="font-size:11.5px;color:var(--mt);line-height:1.8"></div>
+      </div>
+      <div style="background:var(--card);border:1px solid var(--brd);border-radius:10px;padding:14px;">
+        <div style="font-weight:700;margin-bottom:8px;font-size:12px"><i class="fas fa-building" style="color:var(--pur)"></i> Establishment &amp; Other</div>
+        <div id="checklist-other" style="font-size:11.5px;color:var(--mt);line-height:1.8"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ════ ADD / EDIT MODAL ════ -->
+<div class="overlay" id="modal-form">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()"><i class="fas fa-times"></i></button>
+    <div class="modal-title">
+      <i class="fas fa-id-card" style="color:var(--acc)"></i>
+      <span id="modal-title-text">Add New License</span>
+    </div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>License Type *</label>
+        <select id="f-type" style="width:100%">
+          <option value="DRUG_LICENSE_RETAIL">Drug License — Retail (Form 20)</option>
+          <option value="DRUG_LICENSE_WHOLESALE">Drug License — Wholesale (Form 21)</option>
+          <option value="FSSAI">FSSAI License</option>
+          <option value="GST">GST Registration Certificate</option>
+          <option value="SHOP_ACT">Shop &amp; Establishment Act</option>
+          <option value="OTHER">Other</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>License Name *</label>
+        <input type="text" id="f-name" placeholder="e.g., Retail Drug License"/>
+      </div>
+      <div class="form-group full">
+        <label>License / Registration Number *</label>
+        <input type="text" id="f-no" placeholder="e.g., TN-33/DL/2024/12345"/>
+      </div>
+      <div class="form-group">
+        <label>Issuing Authority</label>
+        <input type="text" id="f-authority" placeholder="e.g., State Drug Controller"/>
+      </div>
+      <div class="form-group">
+        <label>Issued Date</label>
+        <input type="date" id="f-issued"/>
+      </div>
+      <div class="form-group">
+        <label>Expiry Date *</label>
+        <input type="date" id="f-expiry"/>
+      </div>
+      <div class="form-group">
+        <label>Renewal Cost (₹)</label>
+        <input type="number" id="f-cost" placeholder="0.00" step="0.01"/>
+      </div>
+      <div class="form-group">
+        <label>Renewal Contact / Office</label>
+        <input type="text" id="f-contact" placeholder="e.g., Drug Inspector, Tirunelveli"/>
+      </div>
+      <div class="form-group full">
+        <label>Notes / Remarks</label>
+        <textarea id="f-notes" rows="2" style="width:100%;resize:none" placeholder="Any renewal instructions or notes…"></textarea>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:4px;">
+      <button class="btn" onclick="closeModal()">Cancel</button>
+      <button class="btn primary" style="margin-left:auto" onclick="saveForm()">
+        <i class="fas fa-save"></i> <span id="save-btn-text">Save License</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+const fmt = n => '₹'+Number(n||0).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+const today = new Date().toISOString().slice(0,10);
+let allLicenses=[], currentView='grid', editId=null;
+
+const TYPE_LABELS = {
+  DRUG_LICENSE_RETAIL:'Drug License (Retail)',
+  DRUG_LICENSE_WHOLESALE:'Drug License (Wholesale)',
+  FSSAI:'FSSAI',
+  GST:'GST Certificate',
+  SHOP_ACT:'Shop Act',
+  OTHER:'Other'
+};
+const TYPE_ICONS = {
+  DRUG_LICENSE_RETAIL:'fa-pills',DRUG_LICENSE_WHOLESALE:'fa-pills',
+  FSSAI:'fa-utensils',GST:'fa-file-invoice',SHOP_ACT:'fa-building',OTHER:'fa-file'
+};
+
+// ── Init ──────────────────────────────────────────────────────
+async function init(){
+  await loadLicenses();
+  document.getElementById('f-expiry').value = today;
+}
+
+async function loadLicenses(){
+  allLicenses = await fetch('/api/licenses').then(r=>r.json());
+  renderAll();
+  buildKPIs();
+  buildAlerts();
+  buildChecklists();
+}
+
+function buildKPIs(){
+  let expired=0,critical=0,warning=0,attention=0,ok=0;
+  allLicenses.forEach(l=>{
+    if(l.alert_level==='EXPIRED') expired++;
+    else if(l.alert_level==='CRITICAL') critical++;
+    else if(l.alert_level==='WARNING') warning++;
+    else if(l.alert_level==='ATTENTION') attention++;
+    else ok++;
+  });
+  document.getElementById('kk-expired').textContent=expired;
+  document.getElementById('kk-critical').textContent=critical;
+  document.getElementById('kk-warning').textContent=warning;
+  document.getElementById('kk-attention').textContent=attention;
+  document.getElementById('kk-ok').textContent=ok;
+  document.getElementById('kk-total').textContent=allLicenses.length;
+}
+
+function buildAlerts(){
+  const urgent = allLicenses.filter(l=>['EXPIRED','CRITICAL','WARNING'].includes(l.alert_level));
+  const sec = document.getElementById('alert-section');
+  if(!urgent.length){ sec.innerHTML=''; return; }
+  sec.innerHTML = urgent.map(l=>{
+    const icon = l.alert_level==='EXPIRED' ? 'fa-ban' : 'fa-triangle-exclamation';
+    const color = l.alert_level==='EXPIRED' ? 'var(--red)' : l.alert_level==='CRITICAL' ? 'var(--red)' : 'var(--yel)';
+    const msg = l.alert_level==='EXPIRED'
+      ? `<strong>${l.license_name}</strong> has <strong>EXPIRED</strong> ${Math.abs(l.days_left)} days ago!`
+      : `<strong>${l.license_name}</strong> expires in <strong>${l.days_left} days</strong> on ${l.expiry_date}`;
+    return `<div class="alert-banner" style="border-color:${color}33;background:${color}0d;margin-bottom:8px;">
+      <i class="fas ${icon} icon" style="color:${color}"></i>
+      <div class="content">
+        <strong style="color:${color}">${l.alert_level === 'EXPIRED' ? '🚨 Expired' : l.alert_level === 'CRITICAL' ? '🔴 Critical' : '⚠️ Warning'}</strong>
+        <p>${msg} — <em>${TYPE_LABELS[l.license_type]||l.license_type}</em></p>
+      </div>
+      <button class="btn" onclick="openEdit(${l.license_id})" style="margin-left:auto;flex-shrink:0">
+        <i class="fas fa-edit"></i> Update
+      </button>
+    </div>`;
+  }).join('');
+}
+
+// ── View toggle ────────────────────────────────────────────────
+function switchView(v){
+  currentView=v;
+  document.getElementById('view-grid').style.display = v==='grid'?'grid':'none';
+  document.getElementById('view-table').style.display = v==='table'?'block':'none';
+  document.getElementById('btn-grid').style.borderColor = v==='grid'?'var(--acc)':'var(--brd)';
+  document.getElementById('btn-table').style.borderColor = v==='table'?'var(--acc)':'var(--brd)';
+}
+
+function getFiltered(){
+  const typeF = document.getElementById('type-filter').value;
+  const statusF = document.getElementById('status-filter').value;
+  return allLicenses.filter(l=>{
+    if(typeF && l.license_type!==typeF) return false;
+    if(statusF && l.alert_level!==statusF) return false;
+    return true;
+  });
+}
+
+function renderAll(){ renderGrid(); renderTable(); }
+
+// ── Cards ──────────────────────────────────────────────────────
+function alertClass(level){
+  return {EXPIRED:'expired',CRITICAL:'critical',WARNING:'warning',ATTENTION:'attn',OK:''}[level]||'';
+}
+function ringClass(level){
+  return {EXPIRED:'ring-exp',CRITICAL:'ring-crit',WARNING:'ring-warn',ATTENTION:'ring-attn',OK:'ring-ok'}[level]||'ring-ok';
+}
+function badgeClass(level){
+  return {EXPIRED:'b-red',CRITICAL:'b-red',WARNING:'b-yel',ATTENTION:'b-ora',OK:'b-grn'}[level]||'b-mt';
+}
+
+function renderGrid(){
+  const data = getFiltered();
+  const container = document.getElementById('view-grid');
+  if(!data.length){
+    container.innerHTML=`<div style="grid-column:1/-1" class="card"><div class="empty">
+      <i class="fas fa-id-card" style="font-size:32px;margin-bottom:10px;display:block"></i>
+      No licenses yet. <a href="#" onclick="openAdd()" style="color:var(--acc)">Add your first license →</a>
+    </div></div>`;
+    return;
+  }
+  container.innerHTML = data.map(l=>{
+    const daysText = l.days_left<0 ? `${Math.abs(l.days_left)}d ago` : `${l.days_left}d`;
+    const icon = TYPE_ICONS[l.license_type]||'fa-file';
+    // Progress bar: max valid period assumed 2 years = 730 days
+    const totalDays = 730;
+    const remaining = Math.max(0, l.days_left);
+    const pct = Math.min(100, Math.round(remaining / totalDays * 100));
+    const progColor = l.alert_level==='EXPIRED'||l.alert_level==='CRITICAL'?'var(--red)':
+      l.alert_level==='WARNING'?'var(--yel)':l.alert_level==='ATTENTION'?'var(--acc)':'var(--grn)';
+    return `<div class="lic-card ${alertClass(l.alert_level)}">
+      <div class="lic-actions">
+        <button class="btn" onclick="openEdit(${l.license_id})" style="padding:3px 8px"><i class="fas fa-edit"></i></button>
+        <button class="btn" onclick="deleteLicense(${l.license_id})" style="padding:3px 8px;color:var(--red)"><i class="fas fa-trash"></i></button>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:10px;">
+        <div class="count-ring ${ringClass(l.alert_level)}">${l.days_left<0?'EXP':daysText}</div>
+        <div style="flex:1;min-width:0;">
+          <div class="type-tag"><i class="fas ${icon}"></i> ${TYPE_LABELS[l.license_type]||l.license_type}</div>
+          <div class="lic-name">${l.license_name}</div>
+          <div class="lic-no">${l.license_no}</div>
+        </div>
+      </div>
+      <div class="prog-bar"><div class="prog-fill" style="width:${pct}%;background:${progColor}"></div></div>
+      <div class="meta-row">
+        <span class="lbl">Expiry Date</span>
+        <span style="font-weight:600">${l.expiry_date}</span>
+      </div>
+      <div class="meta-row">
+        <span class="lbl">Issued By</span>
+        <span>${l.issuing_authority||'—'}</span>
+      </div>
+      ${l.renewal_cost>0?`<div class="meta-row">
+        <span class="lbl">Renewal Cost</span>
+        <span style="color:var(--acc);font-weight:600">${fmt(l.renewal_cost)}</span>
+      </div>`:''}
+      <div class="meta-row">
+        <span class="lbl">Status</span>
+        <span class="badge ${badgeClass(l.alert_level)}">${l.alert_level}</span>
+      </div>
+      ${l.notes?`<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--brd);font-size:11px;color:var(--mt)">${l.notes}</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+function renderTable(){
+  const data = getFiltered();
+  const tb = document.getElementById('table-tbody');
+  if(!data.length){
+    tb.innerHTML='<tr><td colspan="8" class="empty">No licenses found.</td></tr>';
+    return;
+  }
+  tb.innerHTML = data.map(l=>`<tr>
+    <td style="font-weight:600">${l.license_name}</td>
+    <td><span class="badge ${badgeClass(l.alert_level)}" style="font-size:9.5px">${TYPE_LABELS[l.license_type]||l.license_type}</span></td>
+    <td style="font-family:'JetBrains Mono',monospace;font-size:11px">${l.license_no}</td>
+    <td style="color:var(--mt)">${l.issuing_authority||'—'}</td>
+    <td>${l.expiry_date}</td>
+    <td>
+      <span class="${ringClass(l.alert_level)}" style="display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;border:1px solid currentColor">
+        ${l.days_left<0?'EXPIRED':l.days_left+'d'}
+      </span>
+    </td>
+    <td><span class="badge ${badgeClass(l.alert_level)}">${l.alert_level}</span></td>
+    <td style="display:flex;gap:6px;">
+      <button class="btn" onclick="openEdit(${l.license_id})" style="padding:4px 8px"><i class="fas fa-edit"></i></button>
+      <button class="btn" onclick="deleteLicense(${l.license_id})" style="padding:4px 8px;color:var(--red)"><i class="fas fa-trash"></i></button>
+    </td>
+  </tr>`).join('');
+}
+
+// ── Checklists ─────────────────────────────────────────────────
+function buildChecklists(){
+  const required = {
+    DRUG_LICENSE_RETAIL: ['DRUG_LICENSE_RETAIL'],
+    DRUG_LICENSE_WHOLESALE: ['DRUG_LICENSE_WHOLESALE'],
+    FSSAI: ['FSSAI'],
+    GST: ['GST'],
+    SHOP_ACT: ['SHOP_ACT'],
+  };
+  const present = new Set(allLicenses.map(l=>l.license_type));
+  const check = t => present.has(t)
+    ? `<span style="color:var(--grn)"><i class="fas fa-check-circle"></i> ${TYPE_LABELS[t]}</span>`
+    : `<span style="color:var(--red)"><i class="fas fa-times-circle"></i> ${TYPE_LABELS[t]} — <a href="#" onclick="openAdd()" style="color:var(--acc)">Add</a></span>`;
+
+  document.getElementById('checklist-drug').innerHTML = [
+    check('DRUG_LICENSE_RETAIL'), check('DRUG_LICENSE_WHOLESALE')
+  ].join('<br/>');
+  document.getElementById('checklist-fssai').innerHTML = check('FSSAI');
+  document.getElementById('checklist-gst').innerHTML = check('GST');
+  document.getElementById('checklist-other').innerHTML = check('SHOP_ACT');
+}
+
+// ── Modal ──────────────────────────────────────────────────────
+function openAdd(){
+  editId=null;
+  document.getElementById('modal-title-text').textContent='Add New License';
+  document.getElementById('save-btn-text').textContent='Save License';
+  ['f-type','f-name','f-no','f-authority','f-issued','f-cost','f-contact','f-notes'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el.tagName==='SELECT') el.value=el.options[0].value;
+    else el.value='';
+  });
+  document.getElementById('f-expiry').value=today;
+  document.getElementById('modal-form').classList.add('open');
+}
+
+function openEdit(id){
+  const l = allLicenses.find(x=>x.license_id===id);
+  if(!l) return;
+  editId=id;
+  document.getElementById('modal-title-text').textContent='Edit License';
+  document.getElementById('save-btn-text').textContent='Update License';
+  document.getElementById('f-type').value = l.license_type;
+  document.getElementById('f-name').value = l.license_name;
+  document.getElementById('f-no').value = l.license_no;
+  document.getElementById('f-authority').value = l.issuing_authority||'';
+  document.getElementById('f-issued').value = l.issued_date ? l.issued_date.split('/').reverse().join('-') : '';
+  document.getElementById('f-expiry').value = l.expiry_date_iso||today;
+  document.getElementById('f-cost').value = l.renewal_cost||'';
+  document.getElementById('f-contact').value = l.renewal_contact||'';
+  document.getElementById('f-notes').value = l.notes||'';
+  document.getElementById('modal-form').classList.add('open');
+}
+
+function closeModal(){ document.getElementById('modal-form').classList.remove('open'); }
+
+async function saveForm(){
+  const license_type = document.getElementById('f-type').value;
+  const license_name = document.getElementById('f-name').value.trim();
+  const license_no = document.getElementById('f-no').value.trim();
+  const expiry_date = document.getElementById('f-expiry').value;
+  if(!license_name||!license_no||!expiry_date){
+    alert('License Name, Number and Expiry Date are required.');
+    return;
+  }
+  const payload = {
+    license_type,license_name,license_no,expiry_date,
+    issuing_authority: document.getElementById('f-authority').value.trim()||null,
+    issued_date: document.getElementById('f-issued').value||null,
+    renewal_cost: parseFloat(document.getElementById('f-cost').value)||null,
+    renewal_contact: document.getElementById('f-contact').value.trim()||null,
+    notes: document.getElementById('f-notes').value.trim()||null,
+  };
+  try{
+    const url = editId ? `/api/licenses/${editId}` : '/api/licenses';
+    const method = editId ? 'PUT' : 'POST';
+    const resp = await fetch(url,{method,headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}).then(r=>r.json());
+    if(resp.status==='success'){
+      closeModal();
+      await loadLicenses();
+    } else { alert('Error: '+(resp.message||'Unknown error')); }
+  } catch(e){ alert('Network error: '+e.message); }
+}
+
+async function deleteLicense(id){
+  const l = allLicenses.find(x=>x.license_id===id);
+  if(!confirm(`Delete "${l?.license_name}"? This cannot be undone.`)) return;
+  try{
+    const resp = await fetch(`/api/licenses/${id}`,{method:'DELETE'}).then(r=>r.json());
+    if(resp.status==='success') await loadLicenses();
+    else alert('Error: '+(resp.message||'Unknown'));
+  } catch(e){ alert('Network error: '+e.message); }
+}
+
+init();
+</script>
+</body>
+</html>

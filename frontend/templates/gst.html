@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>GST Returns — Selvam Medicals</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@600&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#0b0e16;--sb:#111827;--card:#151d2b;--card2:#1a2236;--brd:#1f2d40;
+  --tx:#e2e8f0;--mt:#64748b;--acc:#f97316;--grn:#22c55e;--red:#ef4444;
+  --blu:#3b82f6;--yel:#eab308;--pur:#a855f7;--teal:#14b8a6;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html,body{background:var(--bg);color:var(--tx);font-family:Inter,sans-serif;font-size:13px;overflow-y:auto;}
+/* ── TOP BAR ── */
+.topbar{height:54px;background:var(--sb);border-bottom:1px solid var(--brd);display:flex;align-items:center;gap:12px;padding:0 20px;position:sticky;top:0;z-index:50;}
+.topbar a{display:flex;align-items:center;gap:7px;color:var(--mt);font-size:12px;text-decoration:none;padding:5px 10px;border-radius:6px;border:1px solid var(--brd);transition:all .2s;}
+.topbar a:hover{border-color:var(--acc);color:var(--acc);}
+.tab-bar{display:flex;gap:4px;padding:14px 20px 0;background:var(--sb);border-bottom:1px solid var(--brd);}
+.tab{padding:8px 18px;border-radius:8px 8px 0 0;cursor:pointer;font-size:12.5px;font-weight:500;color:var(--mt);border:1px solid transparent;border-bottom:none;transition:all .2s;}
+.tab.active{background:var(--card2);border-color:var(--brd);color:var(--tx);}
+.tab:hover:not(.active){color:var(--acc);}
+/* ── LAYOUT ── */
+.page{padding:20px;max-width:1400px;margin:0 auto;}
+.tab-content{display:none;}.tab-content.active{display:block;}
+/* ── CARDS ── */
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:18px;}
+.kpi{background:var(--card2);border:1px solid var(--brd);border-radius:12px;padding:14px 16px;}
+.kpi .kv{font-size:20px;font-weight:700;font-family:'JetBrains Mono',monospace;margin-bottom:3px;}
+.kpi .kl{font-size:10.5px;color:var(--mt);text-transform:uppercase;letter-spacing:.05em;}
+.kpi.orange .kv{color:var(--acc);}.kpi.green .kv{color:var(--grn);}
+.kpi.blue .kv{color:var(--blu);}.kpi.yel .kv{color:var(--yel);}
+.kpi.red .kv{color:var(--red);}.kpi.teal .kv{color:var(--teal);}
+.card{background:var(--card2);border:1px solid var(--brd);border-radius:14px;overflow:hidden;margin-bottom:16px;}
+.card-header{padding:12px 16px;border-bottom:1px solid var(--brd);display:flex;align-items:center;gap:8px;font-weight:600;font-size:13px;}
+.card-header .actions{margin-left:auto;display:flex;gap:8px;}
+/* ── TABLE ── */
+table{width:100%;border-collapse:collapse;}
+th{padding:8px 14px;text-align:left;font-size:10px;font-weight:600;color:var(--mt);text-transform:uppercase;letter-spacing:.05em;background:var(--sb);white-space:nowrap;}
+td{padding:8px 14px;border-top:1px solid var(--brd);font-size:12px;vertical-align:middle;}
+tbody tr:hover{background:rgba(249,115,22,.04);}
+tfoot td{background:rgba(249,115,22,.06);font-weight:700;border-top:2px solid var(--acc);}
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:6px 13px;border-radius:8px;border:1px solid var(--brd);background:var(--card2);color:var(--tx);font-size:12px;font-family:Inter,sans-serif;cursor:pointer;transition:all .2s;}
+.btn:hover{border-color:var(--acc);color:var(--acc);}
+.btn.primary{background:var(--acc);border-color:var(--acc);color:#fff;}
+.btn.primary:hover{background:#ea6c0a;}
+.btn.green{background:var(--grn);border-color:var(--grn);color:#fff;}
+.btn.blue{background:var(--blu);border-color:var(--blu);color:#fff;}
+/* ── FORM ── */
+select,input{background:var(--card);border:1px solid var(--brd);border-radius:8px;padding:7px 11px;color:var(--tx);font-size:12px;font-family:Inter,sans-serif;outline:none;transition:border .2s;}
+select:focus,input:focus{border-color:var(--acc);}
+/* ── BADGES ── */
+.badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:10.5px;font-weight:600;}
+.b-grn{background:rgba(34,197,94,.12);color:var(--grn);}
+.b-red{background:rgba(239,68,68,.12);color:var(--red);}
+.b-yel{background:rgba(234,179,8,.12);color:var(--yel);}
+.b-blu{background:rgba(59,130,246,.12);color:var(--blu);}
+.b-ora{background:rgba(249,115,22,.12);color:var(--acc);}
+.b-teal{background:rgba(20,184,166,.12);color:var(--teal);}
+/* ── CHART ── */
+.chart-grid{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:16px;}
+.chart-card{background:var(--card2);border:1px solid var(--brd);border-radius:14px;padding:16px;}
+.chart-card .ch{font-size:13px;font-weight:600;margin-bottom:12px;}
+canvas{max-height:220px;}
+/* ── GSTR SUMMARY BOX ── */
+.gstr-box{background:var(--card2);border:1px solid var(--brd);border-radius:14px;padding:20px;margin-bottom:16px;}
+.gstr-box h3{font-size:14px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+.gstr-row{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--brd);font-size:12.5px;}
+.gstr-row:last-child{border-bottom:none;}
+.gstr-row .lbl{color:var(--mt);}
+.gstr-row .val{font-weight:600;font-family:'JetBrains Mono',monospace;}
+.gstr-row.total .lbl{color:var(--tx);font-weight:700;font-size:13.5px;}
+.gstr-row.total .val{color:var(--acc);font-size:15px;}
+/* ── PAGINATION ── */
+.pagination{display:flex;align-items:center;gap:8px;padding:12px 14px;border-top:1px solid var(--brd);font-size:12px;color:var(--mt);}
+.pg-btn{padding:4px 10px;border-radius:6px;border:1px solid var(--brd);background:var(--card2);color:var(--tx);cursor:pointer;}
+.pg-btn:hover:not(:disabled){border-color:var(--acc);color:var(--acc);}
+.pg-btn:disabled{opacity:.4;cursor:not-allowed;}
+/* ── GSTIN HEADER ── */
+.firm-header{background:var(--card2);border:1px solid var(--brd);border-radius:12px;padding:16px 20px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;}
+.firm-info h2{font-size:15px;font-weight:700;margin-bottom:3px;}
+.firm-info p{font-size:11.5px;color:var(--mt);}
+.gstin-chip{background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);border-radius:8px;padding:8px 16px;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--grn);letter-spacing:.06em;}
+.empty{text-align:center;padding:40px;color:var(--mt);}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a href="/portal/billing"><i class="fas fa-arrow-left"></i> POS</a>
+  <i class="fas fa-file-invoice" style="color:var(--acc)"></i>
+  <span style="font-size:15px;font-weight:600">GST Returns</span>
+
+  <!-- Month Selector -->
+  <div style="display:flex;align-items:center;gap:8px;margin-left:16px;">
+    <span style="font-size:11.5px;color:var(--mt)">Period:</span>
+    <select id="month-select" onchange="onMonthChange()" style="width:150px">
+      <option value="">All Time</option>
+    </select>
+  </div>
+
+  <span style="margin-left:auto;display:flex;gap:8px;">
+    <button class="btn" onclick="exportGSTR1CSV()"><i class="fas fa-file-csv"></i> GSTR-1 CSV</button>
+    <button class="btn" onclick="exportGSTR1JSON()"><i class="fas fa-file-code"></i> GSTR-1 JSON</button>
+    <button class="btn primary" onclick="printReport()"><i class="fas fa-print"></i> Print</button>
+  </span>
+</div>
+
+<!-- TAB BAR -->
+<div class="tab-bar">
+  <div class="tab active" onclick="switchTab('summary',this)"><i class="fas fa-chart-pie"></i> Summary</div>
+  <div class="tab" onclick="switchTab('gstr1',this)"><i class="fas fa-table"></i> GSTR-1</div>
+  <div class="tab" onclick="switchTab('bills',this)"><i class="fas fa-list"></i> Bill-wise Ledger</div>
+  <div class="tab" onclick="switchTab('hsn',this)"><i class="fas fa-barcode"></i> HSN Summary</div>
+  <div class="tab" onclick="switchTab('filing',this)"><i class="fas fa-calendar-check"></i> Filing Tracker</div>
+</div>
+
+<div class="page" id="main-page">
+
+  <!-- ── FIRM HEADER ── -->
+  <div class="firm-header">
+    <div class="firm-info">
+      <h2>SS &amp; Co — Selvam Medicals</h2>
+      <p><i class="fas fa-map-marker-alt"></i> Tirunelveli, Tamil Nadu &nbsp;|&nbsp;
+         <i class="fas fa-phone"></i> Retail + Wholesale Pharmacy &nbsp;|&nbsp;
+         HSN: 3004 (Pharma)</p>
+    </div>
+    <div>
+      <div class="gstin-chip" id="gstin-display" title="Click to edit GSTIN" onclick="editGSTIN()">
+        <i class="fas fa-shield-halved"></i> &nbsp;GSTIN: <span id="gstin-val">33XXXXX0000X1ZX</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════ SUMMARY TAB ════════ -->
+  <div class="tab-content active" id="tab-summary">
+
+    <!-- KPI Strip -->
+    <div class="kpi-row" id="kpi-strip">
+      <div class="kpi orange"><div class="kv" id="kk-gross">—</div><div class="kl">Gross Sales</div></div>
+      <div class="kpi yel">  <div class="kv" id="kk-disc">—</div><div class="kl">Total Discount</div></div>
+      <div class="kpi blue"> <div class="kv" id="kk-taxable">—</div><div class="kl">Taxable Value</div></div>
+      <div class="kpi green"><div class="kv" id="kk-gst">—</div><div class="kl">Total GST</div></div>
+      <div class="kpi teal"><div class="kv" id="kk-cgst">—</div><div class="kl">CGST</div></div>
+      <div class="kpi teal"><div class="kv" id="kk-sgst">—</div><div class="kl">SGST</div></div>
+      <div class="kpi orange"><div class="kv" id="kk-grand">—</div><div class="kl">Grand Total</div></div>
+      <div class="kpi blue"> <div class="kv" id="kk-bills">—</div><div class="kl">Total Bills</div></div>
+    </div>
+
+    <!-- Charts -->
+    <div class="chart-grid">
+      <div class="chart-card">
+        <div class="ch"><i class="fas fa-chart-bar" style="color:var(--acc)"></i> Monthly Revenue &amp; GST Trend</div>
+        <canvas id="chart-trend"></canvas>
+      </div>
+      <div class="chart-card">
+        <div class="ch"><i class="fas fa-chart-pie" style="color:var(--grn)"></i> Payment Mode Split</div>
+        <canvas id="chart-pay"></canvas>
+      </div>
+    </div>
+
+    <!-- B2C vs B2B Split -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+      <div class="gstr-box">
+        <h3><span class="badge b-grn">B2C</span> Retail Customers</h3>
+        <div class="gstr-row"><span class="lbl">Number of Bills</span><span class="val" id="b2c-bills">—</span></div>
+        <div class="gstr-row"><span class="lbl">Taxable Value</span><span class="val" id="b2c-taxable">—</span></div>
+        <div class="gstr-row"><span class="lbl">CGST Collected</span><span class="val" id="b2c-cgst">—</span></div>
+        <div class="gstr-row"><span class="lbl">SGST Collected</span><span class="val" id="b2c-sgst">—</span></div>
+        <div class="gstr-row total"><span class="lbl">Total GST (B2C)</span><span class="val" id="b2c-gst">—</span></div>
+      </div>
+      <div class="gstr-box">
+        <h3><span class="badge b-blu">B2B</span> Wholesale / Business</h3>
+        <div class="gstr-row"><span class="lbl">Number of Bills</span><span class="val" id="b2b-bills">—</span></div>
+        <div class="gstr-row"><span class="lbl">Taxable Value</span><span class="val" id="b2b-taxable">—</span></div>
+        <div class="gstr-row"><span class="lbl">CGST Collected</span><span class="val" id="b2b-cgst">—</span></div>
+        <div class="gstr-row"><span class="lbl">SGST Collected</span><span class="val" id="b2b-sgst">—</span></div>
+        <div class="gstr-row total"><span class="lbl">Total GST (B2B)</span><span class="val" id="b2b-gst">—</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════ GSTR-1 TAB ════════ -->
+  <div class="tab-content" id="tab-gstr1">
+
+    <!-- B2CS -->
+    <div class="card">
+      <div class="card-header">
+        <span class="badge b-grn">B2CS</span>&nbsp; B2C Small — Rate-wise Summary
+        <span style="font-size:11px;color:var(--mt);margin-left:8px">Retail bills &lt; ₹2.5 Lakh</span>
+      </div>
+      <table>
+        <thead><tr>
+          <th>GST Rate</th><th>HSN</th><th style="text-align:right">Taxable Value</th>
+          <th style="text-align:right">CGST</th><th style="text-align:right">SGST</th>
+          <th style="text-align:right">Total GST</th>
+        </tr></thead>
+        <tbody id="b2cs-tbody"></tbody>
+        <tfoot><tr>
+          <td colspan="2">TOTAL</td>
+          <td style="text-align:right" id="b2cs-tot-tax">—</td>
+          <td style="text-align:right" id="b2cs-tot-cgst">—</td>
+          <td style="text-align:right" id="b2cs-tot-sgst">—</td>
+          <td style="text-align:right" id="b2cs-tot-gst">—</td>
+        </tr></tfoot>
+      </table>
+    </div>
+
+    <!-- B2CL -->
+    <div class="card">
+      <div class="card-header">
+        <span class="badge b-yel">B2CL</span>&nbsp; B2C Large — Bill-wise (≥ ₹2.5 Lakh)
+      </div>
+      <table>
+        <thead><tr>
+          <th>Bill No</th><th>Date</th><th>Customer</th><th>Phone</th>
+          <th style="text-align:right">Taxable</th><th>Rate</th>
+          <th style="text-align:right">CGST</th><th style="text-align:right">SGST</th>
+          <th style="text-align:right">Total</th>
+        </tr></thead>
+        <tbody id="b2cl-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ════════ BILL-WISE LEDGER TAB ════════ -->
+  <div class="tab-content" id="tab-bills">
+    <div class="card">
+      <div class="card-header">
+        <i class="fas fa-list" style="color:var(--acc)"></i> Bill-wise GST Ledger
+        <span style="margin-left:auto;display:flex;gap:8px;align-items:center;">
+          <input type="text" id="bill-search" placeholder="Search bill/customer…" onkeyup="filterBills()" style="width:180px"/>
+          <select id="bill-type-filter" onchange="filterBills()" style="width:120px">
+            <option value="">All Types</option>
+            <option value="retail">Retail (B2C)</option>
+            <option value="wholesale">Wholesale (B2B)</option>
+          </select>
+          <button class="btn" onclick="exportBillsCSV()"><i class="fas fa-download"></i> CSV</button>
+        </span>
+      </div>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead><tr>
+            <th>#</th><th>Bill No</th><th>Date</th><th>Customer</th>
+            <th>Type</th><th>Payment</th>
+            <th style="text-align:right">Gross</th>
+            <th style="text-align:right">Discount</th>
+            <th style="text-align:right">Taxable</th>
+            <th style="text-align:right">Rate%</th>
+            <th style="text-align:right">CGST</th>
+            <th style="text-align:right">SGST</th>
+            <th style="text-align:right">Total</th>
+          </tr></thead>
+          <tbody id="bills-tbody"></tbody>
+          <tfoot><tr>
+            <td colspan="6" style="font-weight:700">TOTAL</td>
+            <td style="text-align:right;font-weight:700" id="bl-gross">—</td>
+            <td style="text-align:right;font-weight:700" id="bl-disc">—</td>
+            <td style="text-align:right;font-weight:700" id="bl-taxable">—</td>
+            <td></td>
+            <td style="text-align:right;font-weight:700" id="bl-cgst">—</td>
+            <td style="text-align:right;font-weight:700" id="bl-sgst">—</td>
+            <td style="text-align:right;font-weight:700;color:var(--acc)" id="bl-total">—</td>
+          </tr></tfoot>
+        </table>
+      </div>
+      <div class="pagination">
+        <button class="pg-btn" id="pg-prev" onclick="changePage(-1)">← Prev</button>
+        <span id="pg-info">Page 1</span>
+        <button class="pg-btn" id="pg-next" onclick="changePage(1)">Next →</button>
+        <span style="margin-left:auto;">Showing <span id="pg-showing">0</span> of <span id="pg-total">0</span> bills</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════ HSN SUMMARY TAB ════════ -->
+  <div class="tab-content" id="tab-hsn">
+    <div class="card">
+      <div class="card-header">
+        <i class="fas fa-barcode" style="color:var(--pur)"></i> HSN-wise Summary
+        <span style="font-size:11px;color:var(--mt);margin-left:8px">Pharmaceutical Preparations — HSN 3004/3006</span>
+      </div>
+      <table>
+        <thead><tr>
+          <th>HSN Code</th><th>Description</th><th>UOM</th>
+          <th style="text-align:right">Total Qty</th>
+          <th style="text-align:right">Taxable Value</th>
+          <th>GST Rate</th>
+          <th style="text-align:right">CGST</th>
+          <th style="text-align:right">SGST</th>
+          <th style="text-align:right">Total GST</th>
+        </tr></thead>
+        <tbody id="hsn-tbody"></tbody>
+        <tfoot><tr>
+          <td colspan="3">TOTAL</td>
+          <td style="text-align:right" id="hsn-tot-qty">—</td>
+          <td style="text-align:right" id="hsn-tot-tax">—</td>
+          <td></td>
+          <td style="text-align:right" id="hsn-tot-cgst">—</td>
+          <td style="text-align:right" id="hsn-tot-sgst">—</td>
+          <td style="text-align:right" id="hsn-tot-gst">—</td>
+        </tr></tfoot>
+      </table>
+    </div>
+
+    <!-- GSTR-3B Quick Compute -->
+    <div class="gstr-box">
+      <h3><i class="fas fa-calculator" style="color:var(--acc)"></i> GSTR-3B Quick Reference</h3>
+      <div class="gstr-row"><span class="lbl">3.1(a) — Outward Taxable Supplies (other than zero rated)</span><span class="val" id="g3b-taxable">—</span></div>
+      <div class="gstr-row"><span class="lbl">3.1(b) — Zero Rated Supplies</span><span class="val">₹0.00</span></div>
+      <div class="gstr-row"><span class="lbl">3.1(d) — Inward Supplies (Reverse Charge)</span><span class="val">₹0.00</span></div>
+      <div class="gstr-row"><span class="lbl">4 — Eligible ITC (Input Tax Credit)</span><span class="val" style="color:var(--yel)">Enter manually from purchase bills</span></div>
+      <div class="gstr-row"><span class="lbl">CGST Payable (after ITC)</span><span class="val" id="g3b-cgst">—</span></div>
+      <div class="gstr-row"><span class="lbl">SGST Payable (after ITC)</span><span class="val" id="g3b-sgst">—</span></div>
+      <div class="gstr-row total"><span class="lbl">Total Tax Payable</span><span class="val" id="g3b-total">—</span></div>
+    </div>
+  </div>
+
+  <!-- ════════ FILING TRACKER TAB ════════ -->
+  <div class="tab-content" id="tab-filing">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+
+      <!-- GSTR-1 Due Dates -->
+      <div class="card">
+        <div class="card-header"><i class="fas fa-calendar-check" style="color:var(--grn)"></i> GSTR-1 Due Dates</div>
+        <table>
+          <thead><tr><th>Period</th><th>Due Date</th><th>Status</th></tr></thead>
+          <tbody id="gstr1-calendar"></tbody>
+        </table>
+      </div>
+
+      <!-- GSTR-3B Due Dates -->
+      <div class="card">
+        <div class="card-header"><i class="fas fa-calendar-xmark" style="color:var(--yel)"></i> GSTR-3B Due Dates</div>
+        <table>
+          <thead><tr><th>Period</th><th>Due Date</th><th>Status</th></tr></thead>
+          <tbody id="gstr3b-calendar"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Compliance Tips -->
+    <div class="card" style="margin-top:0">
+      <div class="card-header"><i class="fas fa-lightbulb" style="color:var(--yel)"></i> Pharmacy GST Compliance Tips</div>
+      <div style="padding:16px;display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <div style="background:var(--card);border:1px solid var(--brd);border-radius:10px;padding:14px;">
+          <div style="color:var(--grn);font-weight:700;margin-bottom:6px;font-size:12px"><i class="fas fa-check-circle"></i> GST Rates for Medicines</div>
+          <div style="font-size:11.5px;color:var(--mt);line-height:1.7">
+            • <strong style="color:var(--tx)">0%</strong> — Life-saving medicines (WHO list, specified)<br/>
+            • <strong style="color:var(--tx)">5%</strong> — Most medicines (HSN 3004)<br/>
+            • <strong style="color:var(--tx)">12%</strong> — Ayurvedic/Homeopathic/Unani<br/>
+            • <strong style="color:var(--tx)">18%</strong> — Cosmetics, Vitamin supplements (some)
+          </div>
+        </div>
+        <div style="background:var(--card);border:1px solid var(--brd);border-radius:10px;padding:14px;">
+          <div style="color:var(--acc);font-weight:700;margin-bottom:6px;font-size:12px"><i class="fas fa-triangle-exclamation"></i> Key Requirements</div>
+          <div style="font-size:11.5px;color:var(--mt);line-height:1.7">
+            • GSTR-1 filed by <strong style="color:var(--tx)">11th</strong> of following month<br/>
+            • GSTR-3B filed by <strong style="color:var(--tx)">20th</strong> of following month<br/>
+            • Maintain purchase bills for <strong style="color:var(--tx)">ITC claims</strong><br/>
+            • Invoice must show GSTIN, HSN, tax rate
+          </div>
+        </div>
+        <div style="background:var(--card);border:1px solid var(--brd);border-radius:10px;padding:14px;">
+          <div style="color:var(--blu);font-weight:700;margin-bottom:6px;font-size:12px"><i class="fas fa-receipt"></i> Invoice Requirements</div>
+          <div style="font-size:11.5px;color:var(--mt);line-height:1.7">
+            • Bill value &gt; ₹200 → must issue invoice<br/>
+            • Include: GSTIN, Date, Customer name<br/>
+            • Show CGST + SGST separately<br/>
+            • Serial number on every invoice
+          </div>
+        </div>
+        <div style="background:var(--card);border:1px solid var(--brd);border-radius:10px;padding:14px;">
+          <div style="color:var(--pur);font-weight:700;margin-bottom:6px;font-size:12px"><i class="fas fa-file-export"></i> Export for CA/Tally</div>
+          <div style="font-size:11.5px;color:var(--mt);line-height:1.7">
+            • Use <strong style="color:var(--tx)">GSTR-1 CSV</strong> button → upload to GST portal<br/>
+            • Use <strong style="color:var(--tx)">GSTR-1 JSON</strong> → import to Tally ERP<br/>
+            • Bill-wise CSV → share with CA for reconciliation<br/>
+            • HSN summary → for GSTR-1 table 12
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /page -->
+
+<script>
+Chart.defaults.color = '#64748b';
+Chart.defaults.borderColor = '#1f2d40';
+
+const fmt = n => '₹'+Number(n||0).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+const today = new Date();
+let summaryData={}, gstr1Data={}, billsData=[], billsFiltered=[], billsPage=1;
+const LIMIT=50;
+
+// ── Init ──────────────────────────────────────────────────────────
+async function init(){
+  await loadMonths();
+  await refreshAll();
+  buildFilingCalendar();
+}
+
+async function loadMonths(){
+  const months = await fetch('/api/gst/months').then(r=>r.json());
+  const sel = document.getElementById('month-select');
+  const curMonth = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}`;
+  months.forEach(m=>{
+    const opt=document.createElement('option');
+    opt.value=m;
+    const [yr,mo]=m.split('-');
+    opt.textContent=new Date(yr,mo-1,1).toLocaleString('en-IN',{month:'long',year:'numeric'});
+    if(m===curMonth) opt.selected=true;
+    sel.appendChild(opt);
+  });
+}
+
+function onMonthChange(){ refreshAll(); }
+
+async function refreshAll(){
+  const month=document.getElementById('month-select').value;
+  const params=month?`?month=${month}`:'';
+  const [sum,g1,bills] = await Promise.all([
+    fetch('/api/gst/summary'+params).then(r=>r.json()),
+    fetch('/api/gst/gstr1'+params).then(r=>r.json()),
+    fetch('/api/gst/bills'+params+'&limit=1000').then(r=>r.json()),
+  ]);
+  summaryData=sum; gstr1Data=g1; billsData=bills.data||[];
+  billsFiltered=[...billsData];
+  renderSummary();
+  renderGSTR1();
+  renderBills();
+  renderHSN();
+}
+
+// ── Summary ───────────────────────────────────────────────────────
+function renderSummary(){
+  const s=summaryData;
+  document.getElementById('kk-gross').textContent    = fmt(s.gross_sales);
+  document.getElementById('kk-disc').textContent     = fmt(s.total_discount);
+  document.getElementById('kk-taxable').textContent  = fmt(s.taxable_value);
+  document.getElementById('kk-gst').textContent      = fmt(s.total_gst);
+  document.getElementById('kk-cgst').textContent     = fmt(s.cgst);
+  document.getElementById('kk-sgst').textContent     = fmt(s.sgst);
+  document.getElementById('kk-grand').textContent    = fmt(s.grand_total);
+  document.getElementById('kk-bills').textContent    = (s.total_bills||0).toLocaleString();
+
+  const b2c=s.b2c||{};const b2b=s.b2b||{};
+  document.getElementById('b2c-bills').textContent   = b2c.bills||0;
+  document.getElementById('b2c-taxable').textContent = fmt(b2c.taxable);
+  document.getElementById('b2c-cgst').textContent    = fmt((b2c.gst||0)/2);
+  document.getElementById('b2c-sgst').textContent    = fmt((b2c.gst||0)/2);
+  document.getElementById('b2c-gst').textContent     = fmt(b2c.gst);
+  document.getElementById('b2b-bills').textContent   = b2b.bills||0;
+  document.getElementById('b2b-taxable').textContent = fmt(b2b.taxable);
+  document.getElementById('b2b-cgst').textContent    = fmt((b2b.gst||0)/2);
+  document.getElementById('b2b-sgst').textContent    = fmt((b2b.gst||0)/2);
+  document.getElementById('b2b-gst').textContent     = fmt(b2b.gst);
+
+  renderTrendChart();
+  renderPayChart();
+}
+
+let trendChart, payChart;
+function destroyChart(c){ if(c){try{c.destroy();}catch(e){}} }
+
+function renderTrendChart(){
+  const trend=summaryData.monthly_trend||[];
+  const labels=trend.map(t=>{ const [y,m]=t.month.split('-'); return new Date(y,m-1,1).toLocaleString('en-IN',{month:'short',year:'2-digit'}); });
+  destroyChart(trendChart);
+  trendChart=new Chart(document.getElementById('chart-trend'),{
+    type:'bar',
+    data:{labels,datasets:[
+      {type:'line',label:'Sales (₹)',data:trend.map(t=>t.sales),borderColor:'#f97316',backgroundColor:'rgba(249,115,22,.08)',fill:true,tension:.4,pointRadius:3,yAxisID:'y'},
+      {type:'bar',label:'GST (₹)',data:trend.map(t=>t.gst),backgroundColor:'rgba(34,197,94,.3)',borderColor:'rgba(34,197,94,.8)',borderWidth:1,yAxisID:'y'},
+    ]},
+    options:{responsive:true,maintainAspectRatio:true,interaction:{mode:'index'},
+      plugins:{legend:{labels:{boxWidth:10,font:{size:10}}}},
+      scales:{y:{ticks:{callback:v=>'₹'+v.toLocaleString('en-IN')}},y1:{display:false}}}
+  });
+}
+
+function renderPayChart(){
+  const pm=summaryData.payment_modes||{};
+  const labels=Object.keys(pm).map(k=>k.toUpperCase());
+  const data=Object.values(pm);
+  const colors=['#f97316','#22c55e','#3b82f6','#a855f7','#eab308','#14b8a6'];
+  destroyChart(payChart);
+  if(!data.length){ document.getElementById('chart-pay').parentElement.innerHTML+='<div class="empty">No payment data</div>'; return; }
+  payChart=new Chart(document.getElementById('chart-pay'),{
+    type:'doughnut',
+    data:{labels,datasets:[{data,backgroundColor:colors,borderColor:colors.map(c=>c+'99'),borderWidth:1}]},
+    options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{position:'bottom',labels:{boxWidth:10,font:{size:10}}}}}
+  });
+}
+
+// ── GSTR-1 ────────────────────────────────────────────────────────
+function renderGSTR1(){
+  const b2cs=gstr1Data.b2cs||[];
+  const b2cl=gstr1Data.b2cl||[];
+
+  let totTax=0,totCgst=0,totSgst=0;
+  document.getElementById('b2cs-tbody').innerHTML=b2cs.map(r=>{
+    totTax+=r.taxable; totCgst+=r.cgst; totSgst+=r.sgst;
+    return `<tr>
+      <td><span class="badge b-${r.rate>=10?'blu':'grn'}">${r.rate}%</span></td>
+      <td style="color:var(--mt)">3004</td>
+      <td style="text-align:right">${fmt(r.taxable)}</td>
+      <td style="text-align:right;color:var(--teal)">${fmt(r.cgst)}</td>
+      <td style="text-align:right;color:var(--teal)">${fmt(r.sgst)}</td>
+      <td style="text-align:right;font-weight:600;color:var(--acc)">${fmt(r.cgst+r.sgst)}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('b2cs-tot-tax').textContent  = fmt(totTax);
+  document.getElementById('b2cs-tot-cgst').textContent = fmt(totCgst);
+  document.getElementById('b2cs-tot-sgst').textContent = fmt(totSgst);
+  document.getElementById('b2cs-tot-gst').textContent  = fmt(totCgst+totSgst);
+
+  const b2clTb=document.getElementById('b2cl-tbody');
+  if(!b2cl.length){
+    b2clTb.innerHTML='<tr><td colspan="9" class="empty">No B2CL bills (all bills &lt; ₹2.5 Lakh)</td></tr>';
+  } else {
+    b2clTb.innerHTML=b2cl.map(r=>`<tr>
+      <td style="font-family:'JetBrains Mono',monospace;font-size:11px">${r.bill_no}</td>
+      <td>${r.date}</td><td>${r.customer}</td><td>${r.phone}</td>
+      <td style="text-align:right">${fmt(r.taxable)}</td>
+      <td><span class="badge b-blu">${r.rate}%</span></td>
+      <td style="text-align:right;color:var(--teal)">${fmt(r.cgst)}</td>
+      <td style="text-align:right;color:var(--teal)">${fmt(r.sgst)}</td>
+      <td style="text-align:right;font-weight:600;color:var(--acc)">${fmt(r.total)}</td>
+    </tr>`).join('');
+  }
+}
+
+// ── Bill-wise Ledger ──────────────────────────────────────────────
+function filterBills(){
+  const q=(document.getElementById('bill-search').value||'').toLowerCase();
+  const bt=document.getElementById('bill-type-filter').value;
+  billsFiltered=billsData.filter(b=>{
+    const txt=(b.bill_no+b.customer+b.phone).toLowerCase();
+    return (!q||txt.includes(q)) && (!bt||b.bill_type===bt);
+  });
+  billsPage=1;
+  renderBills();
+}
+
+function renderBills(){
+  const start=(billsPage-1)*LIMIT;
+  const page=billsFiltered.slice(start,start+LIMIT);
+  const tb=document.getElementById('bills-tbody');
+
+  if(!billsFiltered.length){
+    tb.innerHTML='<tr><td colspan="13" class="empty">No bills for this period.</td></tr>';
+    ['bl-gross','bl-disc','bl-taxable','bl-cgst','bl-sgst','bl-total'].forEach(id=>document.getElementById(id).textContent='₹0.00');
+    document.getElementById('pg-showing').textContent=0;
+    document.getElementById('pg-total').textContent=0;
+    return;
+  }
+
+  tb.innerHTML=page.map((b,i)=>{
+    const typeCls=b.bill_type==='wholesale'?'b-blu':'b-grn';
+    const payCls={cash:'b-yel',upi:'b-grn',card:'b-blu',credit:'b-red',razorpay:'b-ora'}[b.payment?.toLowerCase()]||'b-teal';
+    return `<tr>
+      <td style="color:var(--mt)">${start+i+1}</td>
+      <td style="font-family:'JetBrains Mono',monospace;font-size:11px">${b.bill_no}</td>
+      <td>${b.date}</td>
+      <td>${b.customer||'—'}</td>
+      <td><span class="badge ${typeCls}">${b.bill_type}</span></td>
+      <td><span class="badge ${payCls}">${b.payment||'—'}</span></td>
+      <td style="text-align:right">${fmt(b.gross)}</td>
+      <td style="text-align:right;color:var(--red)">${b.discount?fmt(b.discount):''}</td>
+      <td style="text-align:right">${fmt(b.taxable)}</td>
+      <td style="text-align:right;font-size:11px;color:var(--mt)">${b.gst_rate?b.gst_rate+'%':''}</td>
+      <td style="text-align:right;color:var(--teal)">${fmt(b.cgst)}</td>
+      <td style="text-align:right;color:var(--teal)">${fmt(b.sgst)}</td>
+      <td style="text-align:right;font-weight:600;color:var(--acc)">${fmt(b.total)}</td>
+    </tr>`;
+  }).join('');
+
+  // Footer totals
+  const tot=(f,k)=>billsFiltered.reduce((a,b)=>a+(b[k]||0),0);
+  document.getElementById('bl-gross').textContent   = fmt(tot(billsFiltered,'gross'));
+  document.getElementById('bl-disc').textContent    = fmt(tot(billsFiltered,'discount'));
+  document.getElementById('bl-taxable').textContent = fmt(tot(billsFiltered,'taxable'));
+  document.getElementById('bl-cgst').textContent    = fmt(tot(billsFiltered,'cgst'));
+  document.getElementById('bl-sgst').textContent    = fmt(tot(billsFiltered,'sgst'));
+  document.getElementById('bl-total').textContent   = fmt(tot(billsFiltered,'total'));
+
+  const total=billsFiltered.length;
+  const pages=Math.ceil(total/LIMIT);
+  document.getElementById('pg-showing').textContent=Math.min(start+LIMIT,total);
+  document.getElementById('pg-total').textContent=total;
+  document.getElementById('pg-info').textContent=`Page ${billsPage} of ${pages}`;
+  document.getElementById('pg-prev').disabled=billsPage<=1;
+  document.getElementById('pg-next').disabled=billsPage>=pages;
+}
+
+function changePage(dir){
+  billsPage+=dir;
+  renderBills();
+  document.querySelector('.page').scrollIntoView();
+}
+
+// ── HSN Summary ───────────────────────────────────────────────────
+function renderHSN(){
+  const hsn=gstr1Data.hsn_summary||[];
+  const tb=document.getElementById('hsn-tbody');
+  let totQty=0,totTax=0,totCgst=0,totSgst=0;
+  tb.innerHTML=hsn.map(h=>{
+    totQty+=h.qty; totTax+=h.taxable; totCgst+=h.cgst; totSgst+=h.sgst;
+    const rateCls=h.rate===0?'b-grn':h.rate<=5?'b-blu':'b-ora';
+    return `<tr>
+      <td style="font-weight:600;font-family:'JetBrains Mono',monospace">${h.hsn}</td>
+      <td>${h.desc}</td><td style="color:var(--mt)">${h.uom}</td>
+      <td style="text-align:right">${h.qty.toLocaleString()}</td>
+      <td style="text-align:right">${fmt(h.taxable)}</td>
+      <td><span class="badge ${rateCls}">${h.rate}%</span></td>
+      <td style="text-align:right;color:var(--teal)">${fmt(h.cgst)}</td>
+      <td style="text-align:right;color:var(--teal)">${fmt(h.sgst)}</td>
+      <td style="text-align:right;font-weight:600;color:var(--acc)">${fmt(h.cgst+h.sgst)}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('hsn-tot-qty').textContent  = totQty.toLocaleString();
+  document.getElementById('hsn-tot-tax').textContent  = fmt(totTax);
+  document.getElementById('hsn-tot-cgst').textContent = fmt(totCgst);
+  document.getElementById('hsn-tot-sgst').textContent = fmt(totSgst);
+  document.getElementById('hsn-tot-gst').textContent  = fmt(totCgst+totSgst);
+  // GSTR-3B
+  document.getElementById('g3b-taxable').textContent  = fmt(summaryData.taxable_value);
+  document.getElementById('g3b-cgst').textContent     = fmt(summaryData.cgst);
+  document.getElementById('g3b-sgst').textContent     = fmt(summaryData.sgst);
+  document.getElementById('g3b-total').textContent    = fmt(summaryData.total_gst);
+}
+
+// ── Filing Calendar ───────────────────────────────────────────────
+function buildFilingCalendar(){
+  const rows1=[],rows3b=[];
+  for(let i=0;i<6;i++){
+    const d=new Date(today.getFullYear(),today.getMonth()-i,1);
+    const mo=d.toLocaleString('en-IN',{month:'long',year:'numeric'});
+    const due1=new Date(d.getFullYear(),d.getMonth()+1,11);
+    const due3b=new Date(d.getFullYear(),d.getMonth()+1,20);
+    const isPast1=due1<today, isPast3b=due3b<today;
+    const isCur=i===0;
+    const st1=isPast1?'<span class="badge b-grn">Filed / Due passed</span>':'<span class="badge b-yel">Upcoming</span>';
+    const st3b=isPast3b?'<span class="badge b-grn">Filed / Due passed</span>':'<span class="badge b-yel">Upcoming</span>';
+    rows1.push(`<tr><td>${mo}</td><td>11th ${due1.toLocaleString('en-IN',{month:'short',year:'numeric'})}</td><td>${st1}</td></tr>`);
+    rows3b.push(`<tr><td>${mo}</td><td>20th ${due3b.toLocaleString('en-IN',{month:'short',year:'numeric'})}</td><td>${st3b}</td></tr>`);
+  }
+  document.getElementById('gstr1-calendar').innerHTML=rows1.join('');
+  document.getElementById('gstr3b-calendar').innerHTML=rows3b.join('');
+}
+
+// ── GSTIN Edit (saves to server + localStorage) ───────────────────
+function editGSTIN(){
+  const cur=document.getElementById('gstin-val').textContent;
+  const newVal=prompt('Enter your GSTIN (15 characters):',cur);
+  if(newVal&&newVal.length===15){
+    const upper=newVal.toUpperCase();
+    document.getElementById('gstin-val').textContent=upper;
+    localStorage.setItem('selvam_gstin',upper);
+    fetch('/api/gst/settings',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({gst_gstin:upper})}).catch(()=>{});
+  } else if(newVal) alert('GSTIN must be exactly 15 characters');
+}
+
+// ── Tab Switch ────────────────────────────────────────────────────
+function switchTab(id,el){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('tab-'+id).classList.add('active');
+}
+
+// ── Exports ───────────────────────────────────────────────────────
+function exportGSTR1CSV(){
+  const month=document.getElementById('month-select').value;
+  const b2cs=gstr1Data.b2cs||[];
+  const hsn=gstr1Data.hsn_summary||[];
+  let csv='GSTR-1 Export — SS & Co Selvam Medicals\n';
+  csv+=`Period: ${month||'All Time'}\nGSTIN: ${document.getElementById('gstin-val').textContent}\n\n`;
+  csv+='B2CS (B2C Small Summary)\n';
+  csv+='GST Rate,Taxable Value,CGST,SGST,Total GST\n';
+  b2cs.forEach(r=>{ csv+=`${r.rate}%,${r.taxable},${r.cgst},${r.sgst},${r.cgst+r.sgst}\n`; });
+  csv+='\nHSN Summary\n';
+  csv+='HSN,Description,UOM,Quantity,Taxable Value,GST Rate,CGST,SGST,Total GST\n';
+  hsn.forEach(h=>{ csv+=`${h.hsn},"${h.desc}",${h.uom},${h.qty},${h.taxable},${h.rate}%,${h.cgst},${h.sgst},${h.cgst+h.sgst}\n`; });
+  csv+='\nBill-wise Ledger\n';
+  csv+='Bill No,Date,Customer,Phone,Type,Payment,Gross,Discount,Taxable,GST Rate,CGST,SGST,Total\n';
+  billsData.forEach(b=>{ csv+=`"${b.bill_no}","${b.date}","${b.customer}","${b.phone}","${b.bill_type}","${b.payment}",${b.gross},${b.discount},${b.taxable},${b.gst_rate}%,${b.cgst},${b.sgst},${b.total}\n`; });
+  download('GSTR1_'+( month||'all')+'.csv',csv,'text/csv');
+}
+
+function exportGSTR1JSON(){
+  const month=document.getElementById('month-select').value;
+  const payload={
+    gstin: document.getElementById('gstin-val').textContent,
+    fp: (month||'').replace('-',''),
+    b2cs: (gstr1Data.b2cs||[]).map(r=>({typ:'OE',pos:'33',sply_ty:'INTER',txval:r.taxable,rt:r.rate,camt:r.cgst,samt:r.sgst,csamt:0})),
+    nil: {inv:[]},
+    hsn: {data:(gstr1Data.hsn_summary||[]).map(h=>({num:1,itm_det:{ty:'G',uqc:'NOS',qty:h.qty,rt:h.rate,txval:h.taxable,camt:h.cgst,samt:h.sgst,csamt:0},hsn_sc:h.hsn,desc:h.desc}))},
+  };
+  download('GSTR1_'+( month||'all')+'.json', JSON.stringify(payload,null,2),'application/json');
+}
+
+function exportBillsCSV(){
+  const month=document.getElementById('month-select').value;
+  let csv='Bill No,Date,Customer,Phone,Type,Payment,Gross,Discount,Taxable,GST Rate,CGST,SGST,Total\n';
+  billsFiltered.forEach(b=>{ csv+=`"${b.bill_no}","${b.date}","${b.customer}","${b.phone}","${b.bill_type}","${b.payment}",${b.gross},${b.discount},${b.taxable},${b.gst_rate}%,${b.cgst},${b.sgst},${b.total}\n`; });
+  download('Bills_GST_'+(month||'all')+'.csv',csv,'text/csv');
+}
+
+function download(name, content, type){
+  const a=document.createElement('a');
+  a.href='data:'+type+';charset=utf-8,'+encodeURIComponent(content);
+  a.download=name; a.click();
+}
+
+function printReport(){
+  window.print();
+}
+
+// ── Load GSTIN (server first, localStorage fallback) ─────────────
+async function loadGSTIN(){
+  try {
+    const s=await fetch('/api/gst/settings').then(r=>r.json());
+    if(s.gst_gstin){
+      document.getElementById('gstin-val').textContent=s.gst_gstin;
+      localStorage.setItem('selvam_gstin',s.gst_gstin);
+      return;
+    }
+  } catch(e){}
+  const saved=localStorage.getItem('selvam_gstin');
+  if(saved) document.getElementById('gstin-val').textContent=saved;
+}
+
+loadGSTIN();
+init();
+</script>
+</body>
+</html>

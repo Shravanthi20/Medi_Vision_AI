@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>AI Reminders — Selvam Medicals</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@600&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<style>
+:root{--bg:#0b0e16;--sb:#111827;--card:#151d2b;--card2:#1a2236;--brd:#1f2d40;--tx:#e2e8f0;--mt:#64748b;--acc:#f97316;--grn:#22c55e;--red:#ef4444;--blu:#3b82f6;--yel:#eab308;--wa:#25d366;}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;background:var(--bg);color:var(--tx);font-family:Inter,sans-serif;font-size:13px;}
+.shell{display:flex;height:100vh;overflow:hidden;}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.topbar{height:56px;background:var(--sb);border-bottom:1px solid var(--brd);display:flex;align-items:center;gap:12px;padding:0 20px;flex-shrink:0;}
+.topbar a{display:flex;align-items:center;gap:7px;color:var(--mt);font-size:12px;text-decoration:none;padding:5px 10px;border-radius:6px;border:1px solid var(--brd);transition:all .2s;}
+.topbar a:hover{border-color:var(--acc);color:var(--acc);}
+.kpi-row{display:flex;gap:10px;padding:14px 20px;flex-shrink:0;flex-wrap:wrap;}
+.kpi{background:var(--card2);border:1px solid var(--brd);border-radius:10px;padding:12px 18px;display:flex;flex-direction:column;gap:2px;min-width:140px;}
+.kpi .kv{font-size:22px;font-weight:700;font-family:'JetBrains Mono',monospace;}
+.kpi .kl{font-size:10px;color:var(--mt);text-transform:uppercase;letter-spacing:.04em;}
+.kpi.orange .kv{color:var(--acc);}
+.kpi.green  .kv{color:var(--grn);}
+.kpi.blue   .kv{color:var(--blu);}
+.kpi.yel    .kv{color:var(--yel);}
+.action-bar{padding:10px 20px;background:var(--sb);border-bottom:1px solid var(--brd);display:flex;gap:8px;flex-wrap:wrap;align-items:center;flex-shrink:0;}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:7px;border:1px solid var(--brd);background:var(--card2);color:var(--tx);font-size:12px;font-family:Inter,sans-serif;cursor:pointer;transition:all .2s;}
+.btn:hover{border-color:var(--acc);color:var(--acc);}
+.btn.acc{background:var(--acc);border-color:var(--acc);color:#fff;}
+.btn.grn{background:var(--grn);border-color:var(--grn);color:#fff;}
+.btn.wa{background:var(--wa);border-color:var(--wa);color:#fff;}
+.fi{position:relative;display:flex;align-items:center;}
+.fi i{position:absolute;left:9px;color:var(--mt);font-size:11px;pointer-events:none;}
+.fi select{background:var(--bg);border:1px solid var(--brd);border-radius:7px;padding:6px 10px 6px 28px;color:var(--tx);font-size:12px;font-family:Inter,sans-serif;outline:none;height:32px;min-width:140px;}
+.tabs-bar{display:flex;background:var(--sb);border-bottom:1px solid var(--brd);padding:0 20px;flex-shrink:0;}
+.tab{padding:10px 16px;font-size:12.5px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;color:var(--mt);transition:all .2s;}
+.tab.on{border-bottom-color:var(--acc);color:var(--tx);}
+.tbl-area{flex:1;overflow:auto;padding:12px 20px;}
+table{width:100%;border-collapse:collapse;min-width:800px;}
+thead tr{position:sticky;top:0;z-index:2;background:var(--sb);}
+th{padding:8px 12px;text-align:left;font-size:10.5px;font-weight:600;color:var(--mt);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--brd);white-space:nowrap;}
+td{padding:9px 12px;border-bottom:1px solid var(--brd);font-size:12px;vertical-align:middle;}
+tbody tr:hover{background:rgba(249,115,22,.03);}
+.badge{display:inline-block;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:600;text-transform:uppercase;}
+.badge.pending{background:rgba(234,179,8,.12);color:var(--yel);}
+.badge.sent{background:rgba(34,197,94,.12);color:var(--grn);}
+.badge.dismissed{background:rgba(100,116,139,.12);color:var(--mt);}
+.badge.failed{background:rgba(239,68,68,.12);color:var(--red);}
+.badge.overdue{background:rgba(239,68,68,.12);color:var(--red);}
+.badge.today{background:rgba(249,115,22,.15);color:var(--acc);}
+.ic-btn{width:28px;height:28px;border-radius:6px;border:1px solid var(--brd);background:transparent;color:var(--mt);font-size:12px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:all .2s;}
+.ic-btn:hover.wa{border-color:var(--wa);color:var(--wa);}
+.ic-btn:hover.dis{border-color:var(--mt);color:var(--mt);}
+.ic-btn:hover.call{border-color:var(--grn);color:var(--grn);}
+.empty{text-align:center;padding:60px 20px;color:var(--mt);}
+.spin{animation:spin .8s linear infinite;}@keyframes spin{to{transform:rotate(360deg);}}
+#toast{position:fixed;bottom:20px;right:20px;z-index:200;background:var(--card2);border:1px solid var(--brd);border-radius:10px;padding:10px 16px;font-size:12.5px;box-shadow:0 4px 20px rgba(0,0,0,.5);transform:translateY(20px);opacity:0;transition:all .3s;pointer-events:none;}
+#toast.show{transform:translateY(0);opacity:1;}
+#toast.ok{border-color:var(--grn);}
+#toast.err{border-color:var(--red);}
+.how-it-works{background:rgba(59,130,246,.07);border:1px solid rgba(59,130,246,.2);border-radius:10px;padding:14px 18px;margin:14px 20px;font-size:12px;line-height:1.7;color:var(--mt);}
+.how-it-works strong{color:var(--tx);}
+.progress-bar{height:4px;background:var(--brd);border-radius:99px;overflow:hidden;margin-top:3px;}
+.progress-fill{height:100%;border-radius:99px;transition:width .5s;}
+</style>
+</head>
+<body>
+<div class="shell"><div class="main">
+<div class="topbar">
+  <a href="/internal"><i class="fas fa-arrow-left"></i> POS</a>
+  <i class="fas fa-robot" style="color:var(--acc)"></i>
+  <span style="font-size:15px;font-weight:600">AI Medicine Reminders</span>
+  <span style="margin-left:auto;font-size:11.5px;color:var(--mt)" id="pending-chip"></span>
+</div>
+
+<div class="kpi-row">
+  <div class="kpi orange"><span class="kv" id="kpi-pending">—</span><span class="kl">Pending</span></div>
+  <div class="kpi green"> <span class="kv" id="kpi-sent">—</span><span class="kl">Sent Today</span></div>
+  <div class="kpi yel">   <span class="kv" id="kpi-overdue">—</span><span class="kl">Overdue</span></div>
+  <div class="kpi blue">  <span class="kv" id="kpi-total">—</span><span class="kl">Total Reminders</span></div>
+</div>
+
+<div class="action-bar">
+  <button class="btn acc" onclick="computeReminders()"><i class="fas fa-wand-magic-sparkles"></i> AI Scan Bills → Generate Reminders</button>
+  <button class="btn wa" onclick="sendBulkWA()"><i class="fab fa-whatsapp"></i> Send All Pending WhatsApp</button>
+  <div class="fi"><i class="fas fa-filter"></i>
+    <select id="status-filter" onchange="loadReminders()">
+      <option value="">All</option>
+      <option value="pending">Pending</option>
+      <option value="sent">Sent</option>
+      <option value="dismissed">Dismissed</option>
+    </select>
+  </div>
+  <span style="flex:1"></span>
+  <span style="font-size:11.5px;color:var(--mt)" id="scan-status"></span>
+</div>
+
+<div class="how-it-works">
+  <strong>How AI Reminders work:</strong>
+  Click <em>"AI Scan Bills"</em> → the system scans all bills for medicines with qty ≥ 14 (multi-day supply) →
+  calculates expected finish date → creates a reminder <strong>2 days before</strong> the medicine runs out →
+  sends <strong>WhatsApp message</strong> to the customer's number.
+  Press <em>"Send All Pending"</em> to dispatch all due reminders at once.
+</div>
+
+<div class="tabs-bar">
+  <div class="tab on" id="tab-upcoming" onclick="switchTab('upcoming')">Upcoming (7 days)</div>
+  <div class="tab" id="tab-all"      onclick="switchTab('all')">All Reminders</div>
+</div>
+
+<div class="tbl-area" id="tbl-area">
+  <table>
+    <thead><tr>
+      <th>Reminder Date</th><th>Customer</th><th>Phone</th>
+      <th>Medicine</th><th>Stock Finish</th><th>Days Supply</th>
+      <th>Days Left</th><th>Status</th><th style="text-align:right">Actions</th>
+    </tr></thead>
+    <tbody id="reminder-body">
+      <tr><td colspan="9" class="empty"><i class="fas fa-circle-notch spin"></i></td></tr>
+    </tbody>
+  </table>
+</div>
+
+</div></div>
+<div id="toast"></div>
+<script>
+const today = new Date().toISOString().slice(0,10);
+let remindersData = [];
+loadReminders(); loadKPIs();
+
+async function loadKPIs(){
+  const res   = await fetch('/api/reminders?status=pending&limit=1000');
+  const data  = await res.json();
+  const all   = data.reminders || [];
+  const now   = new Date().toISOString().slice(0,10);
+  const overdue  = all.filter(r=>r.reminder_date<now).length;
+  const sentToday = all.filter(r=>r.status==='sent').length;
+  document.getElementById('kpi-pending').textContent  = data.pending_total || 0;
+  document.getElementById('kpi-sent').textContent     = sentToday;
+  document.getElementById('kpi-overdue').textContent  = overdue;
+  document.getElementById('kpi-total').textContent    = all.length;
+  if(data.pending_total>0){
+    document.getElementById('pending-chip').innerHTML =
+      `<span style="background:rgba(249,115,22,.12);border:1px solid rgba(249,115,22,.3);border-radius:99px;padding:2px 10px;font-size:11px;color:var(--acc)">${data.pending_total} pending</span>`;
+  }
+}
+
+async function loadReminders(){
+  const status = document.getElementById('status-filter').value;
+  const params = new URLSearchParams({limit:200});
+  if(status) params.set('status',status);
+  const res  = await fetch('/api/reminders?'+params);
+  const data = await res.json();
+  remindersData = data.reminders || [];
+  renderTable(remindersData);
+}
+
+function renderTable(reminders){
+  const tbody = document.getElementById('reminder-body');
+  if(!reminders.length){
+    tbody.innerHTML=`<tr><td colspan="9" class="empty"><i class="fas fa-inbox"></i><br/>No reminders. Click "AI Scan Bills" to generate.</td></tr>`; return;
+  }
+  const now = new Date();
+  tbody.innerHTML = reminders.map(r=>{
+    const finish = new Date(r.expected_finish+'T00:00:00');
+    const remind = new Date(r.reminder_date+'T00:00:00');
+    const daysLeft = Math.ceil((finish-now)/(1000*60*60*24));
+    const isOverdue = remind < now && r.status==='pending';
+    const isToday   = r.reminder_date===today;
+    const pct = Math.max(0,Math.min(100,(daysLeft/r.days_supply)*100));
+    const barColor = daysLeft>7?'var(--grn)':daysLeft>2?'var(--yel)':'var(--red)';
+    const statusBadge = isOverdue?'overdue':isToday?'today':(r.status||'pending');
+    return `<tr>
+      <td style="font-family:'JetBrains Mono',monospace;font-size:11px;${isOverdue?'color:var(--red)':isToday?'color:var(--acc)':''}">${r.reminder_date}</td>
+      <td style="font-weight:600">${esc(r.customer_name)}</td>
+      <td><a href="tel:${esc(r.phone)}" style="color:var(--acc);text-decoration:none">${esc(r.phone||'—')}</a></td>
+      <td>${esc(r.medicine_name)}
+        <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;background:${barColor}"></div></div>
+      </td>
+      <td style="font-size:11.5px">${r.expected_finish}</td>
+      <td style="color:var(--mt)">${r.days_supply}d</td>
+      <td style="color:${daysLeft<=2?'var(--red)':daysLeft<=7?'var(--yel)':'var(--grn)'}">
+        ${daysLeft<=0?'EXPIRED':`${daysLeft}d`}
+      </td>
+      <td><span class="badge ${statusBadge}">${statusBadge}</span>
+        ${r.wa_sent?'<i class="fab fa-whatsapp" style="color:var(--wa);margin-left:4px" title="WhatsApp sent"></i>':''}</td>
+      <td>
+        <div style="display:flex;gap:4px;justify-content:flex-end">
+          <button class="ic-btn wa" title="Send WhatsApp" onclick="sendOneWA(${r.id})"><i class="fab fa-whatsapp"></i></button>
+          <button class="ic-btn call" title="Log call" onclick="logCall(${r.id},'${esc(r.customer_name)}','${esc(r.medicine_name)}')"><i class="fas fa-phone"></i></button>
+          <button class="ic-btn dis" title="Dismiss" onclick="dismiss(${r.id})"><i class="fas fa-times"></i></button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function switchTab(tab){
+  ['upcoming','all'].forEach(t=>{
+    document.getElementById('tab-'+t).classList.toggle('on',t===tab);
+  });
+  if(tab==='upcoming'){
+    const cutoff = new Date();cutoff.setDate(cutoff.getDate()+7);
+    const f = remindersData.filter(r=>new Date(r.reminder_date)<=cutoff);
+    renderTable(f);
+  } else {
+    renderTable(remindersData);
+  }
+}
+
+async function computeReminders(){
+  const btn = event.target.closest('button');
+  btn.disabled=true; btn.innerHTML='<i class="fas fa-circle-notch spin"></i> Scanning bills…';
+  const res  = await fetch('/api/reminders/compute',{method:'POST'});
+  const data = await res.json();
+  btn.disabled=false; btn.innerHTML='<i class="fas fa-wand-magic-sparkles"></i> AI Scan Bills → Generate Reminders';
+  toast(`Created ${data.created} new reminders (${data.skipped} skipped)`,'ok');
+  document.getElementById('scan-status').textContent = `Last scan: ${new Date().toLocaleTimeString()}`;
+  loadReminders(); loadKPIs();
+}
+
+async function sendBulkWA(){
+  const btn = event.target.closest('button');
+  btn.disabled=true; btn.innerHTML='<i class="fas fa-circle-notch spin"></i> Sending…';
+  const res  = await fetch('/api/reminders/send-bulk',{method:'POST'});
+  const data = await res.json();
+  btn.disabled=false; btn.innerHTML='<i class="fab fa-whatsapp"></i> Send All Pending WhatsApp';
+  toast(`Sent ${data.sent} messages. Failed: ${data.failed}`,'ok');
+  loadReminders(); loadKPIs();
+}
+
+async function sendOneWA(id){
+  const res  = await fetch(`/api/reminders/${id}/send-whatsapp`,{method:'POST'});
+  const data = await res.json();
+  toast(data.status==='sent'||data.status==='mocked' ? `WhatsApp sent to ${data.phone}`:'Failed to send','ok');
+  loadReminders(); loadKPIs();
+}
+
+function logCall(id,name,medicine){
+  const notes = prompt(`Log call for ${name} — ${medicine}\nNotes (optional):`);
+  toast(`Call logged for ${name}`,'ok');
+}
+
+async function dismiss(id){
+  await fetch(`/api/reminders/${id}/dismiss`,{method:'POST'});
+  toast('Reminder dismissed','ok');
+  loadReminders(); loadKPIs();
+}
+
+function esc(s){const d=document.createElement('span');d.textContent=String(s||'');return d.innerHTML;}
+function toast(msg,type=''){
+  const t=document.getElementById('toast');t.textContent=msg;t.className='show '+type;
+  if(type) setTimeout(()=>t.className='',3500);
+}
+</script>
+</body></html>

@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Security Dashboard — MediVision AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:Inter,sans-serif;background:#0b0e16;color:#e2e8f0;min-height:100vh;}
+.mono{font-family:'JetBrains Mono',monospace;}
+.topbar{background:#111827;border-bottom:1px solid rgba(255,255,255,.08);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;}
+.brand{font-weight:800;color:#ef4444;}.brand i{margin-right:8px;}
+.nav-links a{color:#94a3b8;font-size:.85rem;text-decoration:none;margin-left:14px;}
+.wrap{max-width:1400px;margin:0 auto;padding:24px;}
+h1{font-size:1.7rem;font-weight:800;color:#fff;margin-bottom:6px;}
+.sub{color:#94a3b8;font-size:.9rem;margin-bottom:22px;}
+
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:22px;}
+.kpi{background:linear-gradient(145deg,#141824,#0f1320);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:16px 18px;}
+.kpi .lbl{color:#94a3b8;font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;}
+.kpi .val{font-size:1.55rem;font-weight:900;font-family:'JetBrains Mono',monospace;color:#fff;}
+.kpi.good{border-color:rgba(34,197,94,.3);}
+.kpi.good .val{color:#4ade80;}
+.kpi.warn{border-color:rgba(251,191,36,.3);}
+.kpi.warn .val{color:#fbbf24;}
+.kpi.bad{border-color:rgba(239,68,68,.35);background:linear-gradient(145deg,rgba(239,68,68,.06),#0f1320);}
+.kpi.bad .val{color:#fca5a5;}
+
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
+@media(max-width:1000px){.row2{grid-template-columns:1fr;}}
+.panel{background:#141824;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:18px;}
+.panel h3{color:#f97316;font-size:.95rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:14px;}
+
+.action-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;}
+.action-card{background:#0d111a;border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:14px;text-align:center;cursor:pointer;transition:all .15s;text-decoration:none;color:inherit;}
+.action-card:hover{border-color:#f97316;transform:translateY(-2px);}
+.action-card .ic{font-size:1.6rem;margin-bottom:6px;}
+.action-card .nm{font-weight:700;color:#fff;font-size:.88rem;}
+.action-card .desc{color:#94a3b8;font-size:.74rem;margin-top:3px;}
+
+.tbl{width:100%;border-collapse:collapse;}
+.tbl th{background:#0d111a;color:#94a3b8;font-size:.7rem;text-transform:uppercase;text-align:left;padding:9px 12px;}
+.tbl td{padding:9px 12px;font-size:.82rem;border-bottom:1px solid rgba(255,255,255,.04);}
+.sev-info{color:#94a3b8;}
+.sev-warn{color:#fbbf24;font-weight:700;}
+.sev-critical{color:#fca5a5;font-weight:800;}
+
+.alert-banner{background:rgba(239,68,68,.1);border:1.5px solid rgba(239,68,68,.35);border-radius:12px;padding:14px 18px;color:#fca5a5;margin-bottom:18px;display:none;}
+.alert-banner.show{display:block;}
+
+.bar{height:8px;background:rgba(255,255,255,.06);border-radius:99px;overflow:hidden;margin-top:6px;}
+.bar div{height:100%;background:linear-gradient(90deg,#4ade80,#22c55e);transition:width .4s;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand"><i class="fas fa-shield-halved"></i> Security Command Center</div>
+  <div>
+    <a href="/portal" class="nav-links">Portal</a>
+    <a href="/payment-verify" class="nav-links">Payment Verify</a>
+    <a href="/staff-attendance" class="nav-links">Attendance</a>
+    <a href="/audit-log" class="nav-links">Audit Log</a>
+  </div>
+</div>
+
+<div class="wrap">
+  <h1>🛡 No-Cheat Universe — Security Dashboard</h1>
+  <p class="sub">Real-time view of all checks: payment verification · attendance · audit trail · GPay sound box matches · suspicious patterns</p>
+
+  <div class="alert-banner" id="alertBanner"></div>
+
+  <!-- KPI GRID -->
+  <div class="kpi-grid" id="kpiGrid"></div>
+
+  <!-- ACTIONS -->
+  <div class="panel" style="margin-bottom:18px;">
+    <h3><i class="fas fa-bolt"></i> Quick Actions</h3>
+    <div class="action-grid">
+      <a class="action-card" href="/payment-verify">
+        <div class="ic">💰</div><div class="nm">Verify Payments</div>
+        <div class="desc">Mark bills Done / Not Received</div>
+      </a>
+      <a class="action-card" href="/staff-attendance">
+        <div class="ic">📸</div><div class="nm">Camera Attendance</div>
+        <div class="desc">Face-verify staff in/out</div>
+      </a>
+      <a class="action-card" href="/audit-log">
+        <div class="ic">📋</div><div class="nm">Audit Log</div>
+        <div class="desc">Every sensitive action</div>
+      </a>
+      <a class="action-card" href="/cash-drawer">
+        <div class="ic">💵</div><div class="nm">Cash Drawer</div>
+        <div class="desc">Denomination tracker</div>
+      </a>
+      <a class="action-card" href="/expenses">
+        <div class="ic">📂</div><div class="nm">Expenses</div>
+        <div class="desc">Tea / advance / supplier pay</div>
+      </a>
+    </div>
+  </div>
+
+  <!-- HEALTH + RECENT AUDIT -->
+  <div class="row2">
+
+    <div class="panel">
+      <h3><i class="fas fa-heart-pulse"></i> System Health</h3>
+      <div id="healthList"></div>
+    </div>
+
+    <div class="panel">
+      <h3><i class="fas fa-clock-rotate-left"></i> Recent Sensitive Actions</h3>
+      <div style="max-height:340px;overflow-y:auto;">
+        <table class="tbl" id="auditTable">
+          <thead><tr><th>Time</th><th>Action</th><th>Staff</th><th>Target</th><th>Severity</th></tr></thead>
+          <tbody><tr><td colspan="5" style="text-align:center;padding:20px;color:#64748b;">Loading…</td></tr></tbody>
+        </table>
+      </div>
+      <div style="text-align:right;margin-top:10px;">
+        <a href="/audit-log" style="color:#fb923c;font-size:.82rem;">View full audit log →</a>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+async function loadAll(){
+  // Summary
+  const r = await fetch('/api/security/summary');
+  const d = await r.json();
+
+  const kpiGrid = document.getElementById('kpiGrid');
+  const rateClass = d.verification_rate >= 90 ? 'good' : (d.verification_rate >= 60 ? 'warn' : 'bad');
+  kpiGrid.innerHTML = `
+    <div class="kpi"><div class="lbl">Bills Today</div><div class="val">${d.bills_today}</div></div>
+    <div class="kpi ${d.unverified > 0 ? 'warn' : 'good'}"><div class="lbl">Unverified</div><div class="val">${d.unverified}</div></div>
+    <div class="kpi ${rateClass}"><div class="lbl">Verify Rate</div><div class="val">${d.verification_rate}%</div></div>
+    <div class="kpi good"><div class="lbl">SoundBox Hits</div><div class="val">${d.soundbox_events}</div></div>
+    <div class="kpi"><div class="lbl">Attendance Events</div><div class="val">${d.att_today}</div></div>
+    <div class="kpi ${d.att_mismatches > 0 ? 'bad' : 'good'}"><div class="lbl">Face Mismatch</div><div class="val">${d.att_mismatches}</div></div>
+    <div class="kpi"><div class="lbl">Cash in Drawer</div><div class="val">₹${d.cash_total.toLocaleString('en-IN')}</div></div>
+    <div class="kpi ${d.critical_audits > 0 ? 'warn' : 'good'}"><div class="lbl">Audit Alerts</div><div class="val">${d.critical_audits}</div></div>
+    <div class="kpi ${d.suspicious_bills > 0 ? 'warn' : 'good'}"><div class="lbl">Bills with >10% Disc</div><div class="val">${d.suspicious_bills}</div></div>
+  `;
+
+  // Alert banner if any criticals
+  const banner = document.getElementById('alertBanner');
+  if(d.att_mismatches > 0 || d.critical_audits > 0 || d.unverified > 5){
+    banner.classList.add('show');
+    banner.innerHTML = `<i class="fas fa-triangle-exclamation"></i> &nbsp;
+      ${d.att_mismatches ? `<strong>${d.att_mismatches}</strong> face mismatches · ` : ''}
+      ${d.unverified > 5 ? `<strong>${d.unverified}</strong> unverified bills (verify ASAP) · ` : ''}
+      ${d.critical_audits ? `<strong>${d.critical_audits}</strong> critical audit alerts` : ''}`;
+  } else {
+    banner.classList.remove('show');
+  }
+
+  // Health
+  document.getElementById('healthList').innerHTML = `
+    <div style="margin-bottom:14px;">
+      <div style="display:flex;justify-content:space-between;font-size:.85rem;">
+        <span style="color:#94a3b8;">Payment Verification Rate</span><span class="mono" style="color:#fff;">${d.verification_rate}%</span>
+      </div>
+      <div class="bar"><div style="width:${d.verification_rate}%;background:${d.verification_rate>=90?'linear-gradient(90deg,#4ade80,#22c55e)':d.verification_rate>=60?'linear-gradient(90deg,#fbbf24,#f59e0b)':'linear-gradient(90deg,#ef4444,#dc2626)'};"></div></div>
+    </div>
+    <div style="margin-bottom:14px;">
+      <div style="display:flex;justify-content:space-between;font-size:.85rem;">
+        <span style="color:#94a3b8;">SoundBox Match Rate</span><span class="mono" style="color:#fff;">${d.bills_today ? Math.round(d.soundbox_events*100/d.bills_today) : 0}%</span>
+      </div>
+      <div class="bar"><div style="width:${d.bills_today ? Math.min(100,Math.round(d.soundbox_events*100/d.bills_today)) : 0}%;"></div></div>
+    </div>
+    <div>
+      <div style="display:flex;justify-content:space-between;font-size:.85rem;">
+        <span style="color:#94a3b8;">Attendance Compliance</span><span class="mono" style="color:#fff;">${d.att_today > 0 ? Math.round((d.att_today - d.att_mismatches)*100/d.att_today) : 100}%</span>
+      </div>
+      <div class="bar"><div style="width:${d.att_today > 0 ? Math.round((d.att_today - d.att_mismatches)*100/d.att_today) : 100}%;"></div></div>
+    </div>
+  `;
+
+  // Audit log
+  const ar = await fetch('/api/audit-log');
+  const ad = await ar.json();
+  const tb = document.querySelector('#auditTable tbody');
+  if(!ad.events.length){
+    tb.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:#64748b;">No audit events yet</td></tr>';
+  } else {
+    tb.innerHTML = ad.events.slice(0, 30).map(e => `<tr>
+      <td class="mono" style="font-size:.76rem;color:#64748b;">${(e.ts||'').slice(11,19)}</td>
+      <td><strong>${e.action}</strong></td>
+      <td>${e.staff_name || '-'}</td>
+      <td class="mono" style="font-size:.78rem;">${e.target_type}/${e.target_id}</td>
+      <td class="sev-${e.severity}">${e.severity.toUpperCase()}</td>
+    </tr>`).join('');
+  }
+}
+
+loadAll();
+setInterval(loadAll, 20000);
+</script>
+</body>
+</html>

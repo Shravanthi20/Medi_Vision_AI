@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Portal — MediVision AI</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --green: #16a34a; --green-dark: #15803d; --green-light: #dcfce7;
+      --blue: #2563eb; --blue-light: #dbeafe; --orange: #ea580c;
+      --gray: #6b7280; --gray-light: #f9fafb; --gray-border: #e5e7eb;
+      --text: #111827; --sidebar-w: 220px; --err: #dc2626;
+    }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--gray-light); color: var(--text); display: flex; min-height: 100vh; }
+
+    /* LOGIN SCREEN */
+    #loginScreen { position: fixed; inset: 0; background: linear-gradient(135deg, #f0fdf4, #eff6ff); display: flex; align-items: center; justify-content: center; z-index: 300; }
+    .login-card { background: white; border-radius: 16px; padding: 40px; width: min(380px, 95vw); box-shadow: 0 20px 60px rgba(0,0,0,.1); }
+    .login-logo { text-align: center; margin-bottom: 28px; }
+    .login-logo .cross { width: 48px; height: 48px; border-radius: 12px; margin: 0 auto 12px; display: flex; align-items: center; justify-content: center; }
+    .login-logo h2 { font-size: 1.3rem; font-weight: 800; }
+    .login-logo p { font-size: .84rem; color: var(--gray); margin-top: 4px; }
+    .tab-row { display: flex; background: var(--gray-light); border-radius: 10px; padding: 4px; margin-bottom: 20px; }
+    .tab-btn { flex: 1; padding: 8px; border: none; background: none; border-radius: 7px; font-weight: 600; font-size: .83rem; cursor: pointer; color: var(--gray); transition: all .2s; }
+    .tab-btn.active { background: white; color: var(--text); box-shadow: 0 1px 4px rgba(0,0,0,.1); }
+    .field { margin-bottom: 14px; }
+    .field label { display: block; font-size: .8rem; font-weight: 700; margin-bottom: 5px; color: #374151; }
+    .field input { width: 100%; padding: 10px 13px; border: 1.5px solid var(--gray-border); border-radius: 8px; font-size: .92rem; outline: none; font-family: inherit; }
+    .field input:focus { border-color: var(--green); }
+    .login-err { color: var(--err); font-size: .82rem; margin-bottom: 10px; display: none; }
+    .login-btn { width: 100%; padding: 12px; border: none; border-radius: 8px; font-weight: 700; font-size: .95rem; cursor: pointer; transition: all .2s; }
+    .login-btn.green { background: var(--green); color: white; }
+    .login-btn.green:hover { background: var(--green-dark); }
+    .demo-hint { text-align: center; margin-top: 14px; font-size: .78rem; color: var(--gray); }
+
+    /* SIDEBAR */
+    .sidebar { width: var(--sidebar-w); background: #0f172a; color: white; position: fixed; top: 0; left: 0; height: 100vh; display: flex; flex-direction: column; z-index: 50; }
+    .sb-logo { padding: 20px 18px; border-bottom: 1px solid rgba(255,255,255,.07); }
+    .sb-logo .row { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: .98rem; }
+    .sb-logo .cross { width: 30px; height: 30px; border-radius: 7px; display: flex; align-items: center; justify-content: center; }
+    .sb-logo .cross svg { fill: white; }
+    .sb-logo .shop-name { font-size: .78rem; color: rgba(255,255,255,.5); margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sb-logo .type-badge { display: inline-block; font-size: .65rem; font-weight: 700; padding: 2px 8px; border-radius: 10px; margin-top: 4px; }
+    .type-retail { background: var(--blue-light); color: var(--blue); }
+    .type-wholesale { background: var(--green-light); color: var(--green-dark); }
+    .sb-nav { flex: 1; padding: 12px 10px; overflow-y: auto; }
+    .sb-section { font-size: .63rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; color: rgba(255,255,255,.3); padding: 12px 8px 4px; }
+    .nav-item { display: flex; align-items: center; gap: 9px; padding: 9px 10px; border-radius: 7px; cursor: pointer; font-size: .84rem; color: rgba(255,255,255,.6); transition: all .2s; margin-bottom: 2px; text-decoration: none; }
+    .nav-item:hover { background: rgba(255,255,255,.07); color: white; }
+    .nav-item.active { background: var(--green); color: white; }
+    .nav-item .icon { font-size: .95rem; width: 18px; text-align: center; }
+    .sb-footer { padding: 14px; border-top: 1px solid rgba(255,255,255,.07); }
+    .user-info strong { color: white; font-size: .82rem; display: block; }
+    .user-info span { font-size: .72rem; color: rgba(255,255,255,.45); }
+    .logout-btn { margin-top: 8px; width: 100%; padding: 7px; background: rgba(255,255,255,.06); color: rgba(255,255,255,.55); border: none; border-radius: 6px; cursor: pointer; font-size: .78rem; }
+    .logout-btn:hover { background: rgba(220,38,38,.2); color: white; }
+
+    /* MAIN */
+    .main { margin-left: var(--sidebar-w); flex: 1; min-height: 100vh; }
+    .topbar { background: white; border-bottom: 1px solid var(--gray-border); padding: 0 24px; height: 56px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 40; }
+    .topbar h1 { font-size: 1rem; font-weight: 700; }
+    .topbar .right { display: flex; align-items: center; gap: 12px; font-size: .82rem; color: var(--gray); }
+    .topbar .clock { font-weight: 600; color: var(--text); }
+
+    .content { padding: 24px; }
+
+    /* KPI */
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; margin-bottom: 24px; }
+    .kpi { background: white; border-radius: 12px; padding: 18px; border: 1px solid var(--gray-border); }
+    .kpi-val { font-size: 1.8rem; font-weight: 800; }
+    .kpi-lbl { font-size: .73rem; color: var(--gray); margin-top: 3px; }
+    .kpi.green .kpi-val { color: var(--green); }
+    .kpi.blue .kpi-val { color: var(--blue); }
+    .kpi.orange .kpi-val { color: var(--orange); }
+    .kpi.red .kpi-val { color: var(--err); }
+
+    /* CARDS */
+    .card { background: white; border-radius: 12px; border: 1px solid var(--gray-border); overflow: hidden; margin-bottom: 20px; }
+    .card-header { padding: 14px 18px; border-bottom: 1px solid var(--gray-border); display: flex; align-items: center; justify-content: space-between; }
+    .card-header h3 { font-size: .9rem; font-weight: 700; }
+
+    /* QUICK ACTIONS */
+    .quick-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 24px; }
+    .quick-card { background: white; border-radius: 12px; border: 1px solid var(--gray-border); padding: 20px; text-align: center; cursor: pointer; transition: all .2s; text-decoration: none; color: inherit; display: block; }
+    .quick-card:hover { border-color: var(--green); box-shadow: 0 6px 20px rgba(22,163,74,.1); transform: translateY(-2px); }
+    .quick-card .q-icon { font-size: 2rem; margin-bottom: 8px; }
+    .quick-card h4 { font-size: .88rem; font-weight: 700; margin-bottom: 4px; }
+    .quick-card p { font-size: .75rem; color: var(--gray); }
+
+    /* ALERTS */
+    .alert-list { list-style: none; }
+    .alert-item { display: flex; align-items: center; gap: 12px; padding: 10px 18px; border-bottom: 1px solid #f3f4f6; font-size: .84rem; }
+    .alert-item:last-child { border-bottom: none; }
+    .alert-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .dot-red { background: var(--err); }
+    .dot-yellow { background: #f59e0b; }
+    .dot-green { background: var(--green); }
+    .alert-item .name { flex: 1; font-weight: 600; }
+    .alert-item .meta { color: var(--gray); font-size: .78rem; }
+    .pill { display: inline-flex; padding: 2px 8px; border-radius: 10px; font-size: .7rem; font-weight: 700; }
+    .pill-red { background: #fee2e2; color: var(--err); }
+    .pill-yellow { background: #fef9c3; color: #854d0e; }
+    .pill-green { background: var(--green-light); color: var(--green-dark); }
+
+    table { width: 100%; border-collapse: collapse; font-size: .84rem; }
+    th { background: var(--gray-light); padding: 9px 14px; text-align: left; font-size: .72rem; font-weight: 700; color: var(--gray); text-transform: uppercase; }
+    td { padding: 10px 14px; border-bottom: 1px solid #f3f4f6; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #fafafa; }
+
+    .btn { padding: 8px 16px; border-radius: 8px; font-weight: 600; font-size: .82rem; cursor: pointer; border: none; transition: all .2s; }
+    .btn-green { background: var(--green); color: white; }
+    .btn-green:hover { background: var(--green-dark); }
+
+    @media(max-width:768px) { .sidebar { transform: translateX(-100%); } .main { margin-left: 0; } }
+  </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="cross" style="background:var(--green)">
+        <svg width="22" height="22" viewBox="0 0 20 20" fill="white"><rect x="8" y="2" width="4" height="16" rx="1"/><rect x="2" y="8" width="16" height="4" rx="1"/></svg>
+      </div>
+      <h2>MediVision AI</h2>
+      <p>Sign in to your shop portal</p>
+    </div>
+    <div class="tab-row">
+      <button class="tab-btn active" id="tab-retail" onclick="setTab('retail')">🏪 Retail Shop</button>
+      <button class="tab-btn" id="tab-wholesale" onclick="setTab('wholesale')">🏭 Wholesaler</button>
+    </div>
+    <div class="field">
+      <label>Username</label>
+      <input id="portalUser" type="text" placeholder="Your username" onkeydown="if(event.key==='Enter')doLogin()" />
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <input id="portalPass" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()" />
+    </div>
+    <div class="login-err" id="loginErr"></div>
+    <button class="login-btn green" onclick="doLogin()">Sign In</button>
+    <p class="demo-hint">Don't have an account? <a href="/register" style="color:var(--green);font-weight:700">Register free</a></p>
+  </div>
+</div>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sb-logo">
+    <div class="row">
+      <div class="cross" id="sbCross" style="background:var(--green)">
+        <svg width="14" height="14" viewBox="0 0 20 20"><rect x="8" y="2" width="4" height="16" rx="1"/><rect x="2" y="8" width="16" height="4" rx="1"/></svg>
+      </div>
+      MediVision AI
+    </div>
+    <div class="shop-name" id="sbShopName">Loading...</div>
+    <span class="type-badge" id="sbTypeBadge">—</span>
+  </div>
+  <nav class="sb-nav">
+    <div class="sb-section">Main</div>
+    <a class="nav-item active" href="/portal"><span class="icon">🏠</span> Dashboard</a>
+    <a class="nav-item" href="/portal/billing"><span class="icon">🧾</span> Billing</a>
+
+    <div class="sb-section">Stock &amp; AI</div>
+    <a class="nav-item" href="/portal/stock"><span class="icon">📊</span> Stock &amp; Import</a>
+    <a class="nav-item" href="/portal/ai-reorder"><span class="icon">🤖</span> AI Reorder</a>
+    <a class="nav-item" href="/portal/receiving"><span class="icon">📦</span> Smart Receiving</a>
+
+    <div class="sb-section">Accounts</div>
+    <a class="nav-item" href="/portal/tally"><span class="icon">📒</span> Tally / Accounts</a>
+    <a class="nav-item" href="/portal/subscription"><span class="icon">💎</span> Subscription</a>
+
+    <div class="sb-section">Analytics &amp; HR</div>
+    <a class="nav-item" href="/portal/profit"><span class="icon">📊</span> Profit Analytics</a>
+    <a class="nav-item" href="/portal/staff-targets"><span class="icon">👥</span> Staff &amp; Salary</a>
+
+    <div class="sb-section">Operations</div>
+    <a class="nav-item" href="/portal/delivery"><span class="icon">🚗</span> Delivery Tracking</a>
+    <a class="nav-item" href="/portal/settings"><span class="icon">⚙️</span> Settings</a>
+
+    <div class="sb-section">Reports</div>
+    <a class="nav-item" href="/reports/daily_sales.html" target="_blank"><span class="icon">📈</span> Daily Sales</a>
+    <a class="nav-item" href="/reports/low_stock.html" target="_blank"><span class="icon">⚠️</span> Low Stock</a>
+    <a class="nav-item" href="/reports/expiry_stock.html" target="_blank"><span class="icon">📅</span> Expiry Report</a>
+    <a class="nav-item" href="/reports/gst_tax.html" target="_blank"><span class="icon">📋</span> GST Report</a>
+
+    <div class="sb-section">Compliance</div>
+    <a class="nav-item" href="/gst"><span class="icon">🧾</span> GST Returns</a>
+    <a class="nav-item" href="/expiry-returns"><span class="icon">🔄</span> Expiry Returns</a>
+    <a class="nav-item" href="/licenses"><span class="icon">📜</span> License Tracker</a>
+    <div class="sb-section">AI Tools</div>
+    <a class="nav-item" href="/prescription"><span class="icon">🤖</span> AI Prescription OCR</a>
+    <a class="nav-item" href="/smart-reorder"><span class="icon">📊</span> Smart Reorder AI</a>
+    <div class="sb-section">CRM</div>
+    <a class="nav-item" href="/patients"><span class="icon">🏥</span> Patient Records</a>
+    <a class="nav-item" href="/doctor-crm"><span class="icon">👨‍⚕️</span> Doctor CRM</a>
+    <a class="nav-item" href="/loyalty"><span class="icon">🌟</span> Loyalty Points</a>
+    <div class="sb-section">Multi-Branch</div>
+    <a class="nav-item" href="/branches"><span class="icon">🏢</span> Branch Manager</a>
+    <a class="nav-item" href="/catalog-manage"><span class="icon">🛒</span> WhatsApp Catalog</a>
+    <a class="nav-item" href="/catalog" target="_blank"><span class="icon">📲</span> Public Catalog</a>
+    <div class="sb-section">Wholesale</div>
+    <a class="nav-item" href="/wholesale-login"><span class="icon">🏭</span> Wholesale Portal</a>
+    <a class="nav-item" href="/wholesale" target="_blank"><span class="icon">📦</span> WS Dashboard</a>
+    <a class="nav-item" href="/ws-schemes"><span class="icon">🎁</span> Scheme Manager</a>
+    <a class="nav-item" href="/shop-login" target="_blank"><span class="icon">🏪</span> Shop Partner Login</a>
+    <div class="sb-section">Intelligence</div>
+    <a class="nav-item" href="/pricing-engine"><span class="icon">📊</span> Pricing Engine</a>
+    <a class="nav-item" href="/symptom-advisor"><span class="icon">🩺</span> Symptom Advisor</a>
+    <div class="sb-section">Cash & Expenses</div>
+    <a class="nav-item" href="/cash-drawer"><span class="icon">💵</span> Cash Drawer</a>
+    <a class="nav-item" href="/expenses"><span class="icon">📋</span> Expenses</a>
+    <div class="sb-section">Auto-Follow-up</div>
+    <a class="nav-item" href="/call-dashboard"><span class="icon">📞</span> AI Call Dashboard</a>
+    <a class="nav-item" href="/refill-reminders"><span class="icon">🔔</span> Reminder Settings</a>
+    <a class="nav-item" href="/pickpack"><span class="icon">📦</span> Pick &amp; Pack Queue</a>
+    <a class="nav-item" href="/preorders"><span class="icon">📋</span> Pre-Orders</a>
+    <div class="sb-section">Operations</div>
+    <a class="nav-item" href="/staff-tasks"><span class="icon">✅</span> Staff Tasks + ML</a>
+    <a class="nav-item" href="/staff-attendance"><span class="icon">📸</span> Camera Attendance</a>
+    <a class="nav-item" href="/payment-verify"><span class="icon">🔐</span> Payment Verify</a>
+    <a class="nav-item" href="/security-dashboard"><span class="icon">🛡</span> Security Center</a>
+    <div class="sb-section">Intelligence &amp; Reports</div>
+    <a class="nav-item" href="/reports"><span class="icon">📊</span> Reports Universe</a>
+    <a class="nav-item" href="/combinations"><span class="icon">💡</span> High-Margin Combos</a>
+    <a class="nav-item" href="/audit-log"><span class="icon">📋</span> Audit Log</a>
+    <div class="sb-section">Admin</div>
+    <a class="nav-item" href="/migrate"><span class="icon">📥</span> Migration Tool</a>
+    <a class="nav-item" href="/license"><span class="icon">🔑</span> License</a>
+    <div class="sb-section">Reports & Analytics</div>
+    <a class="nav-item" href="/reports"><span class="icon">📊</span> Reports Universe</a>
+    <div class="sb-section">Security · No-Cheat</div>
+    <a class="nav-item" href="/security-dashboard"><span class="icon">🛡️</span> Security Dashboard</a>
+    <a class="nav-item" href="/payment-verify"><span class="icon">✅</span> Payment Verify</a>
+    <a class="nav-item" href="/staff-attendance"><span class="icon">📸</span> Camera Attendance</a>
+    <a class="nav-item" href="/audit-log"><span class="icon">📋</span> Audit Log</a>
+    <div class="sb-section">Mobile & Voice</div>
+    <a class="nav-item" href="/voice-billing"><span class="icon">🎤</span> Voice Billing</a>
+    <a class="nav-item" href="/mobile-bill"><span class="icon">📱</span> Mobile POS</a>
+    <a class="nav-item" href="/manifest.json" target="_blank"><span class="icon">📲</span> Install PWA</a>
+  </nav>
+  <div class="sb-footer">
+    <div class="user-info">
+      <strong id="sbUserName">—</strong>
+      <span id="sbUserType">—</span>
+    </div>
+    <button class="logout-btn" onclick="doLogout()">Sign Out</button>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+  <div class="topbar">
+    <h1 id="topbarTitle">Dashboard</h1>
+    <div class="right">
+      <span id="todayDate" style="color:var(--gray)">—</span>
+      <span class="clock" id="clockEl">—</span>
+    </div>
+  </div>
+
+  <div class="content">
+    <!-- KPIs -->
+    <div class="kpi-grid">
+      <div class="kpi green"><div class="kpi-val" id="k-today">—</div><div class="kpi-lbl">Bills Today</div></div>
+      <div class="kpi green"><div class="kpi-val" id="k-rev">—</div><div class="kpi-lbl">Today's Revenue</div></div>
+      <div class="kpi red"><div class="kpi-val" id="k-low">—</div><div class="kpi-lbl">Low Stock Items</div></div>
+      <div class="kpi orange"><div class="kpi-val" id="k-expiry">—</div><div class="kpi-lbl">Expiring in 90d</div></div>
+      <div class="kpi blue"><div class="kpi-val" id="k-total">—</div><div class="kpi-lbl">Total Bills</div></div>
+    </div>
+
+    <!-- QUICK ACTIONS -->
+    <div class="quick-grid">
+      <a class="quick-card" href="/portal/billing">
+        <div class="q-icon">⚡</div>
+        <h4>New Bill</h4>
+        <p>Create a billing receipt fast</p>
+      </a>
+      <a class="quick-card" href="/portal/stock">
+        <div class="q-icon">📥</div>
+        <h4>Import Stock</h4>
+        <p>Paste Excel daily stock report</p>
+      </a>
+      <a class="quick-card" href="/portal/ai-reorder">
+        <div class="q-icon">🤖</div>
+        <h4>AI Reorder</h4>
+        <p>See what to order today</p>
+      </a>
+      <a class="quick-card" href="/portal/ai-reorder#compare">
+        <div class="q-icon">🔄</div>
+        <h4>Compare Wholesalers</h4>
+        <p>Find best price + free offers</p>
+      </a>
+      <a class="quick-card" href="/portal/tally">
+        <div class="q-icon">📒</div>
+        <h4>Tally / Accounts</h4>
+        <p>Supplier ledger, cheques, bank</p>
+      </a>
+      <a class="quick-card" href="/portal/receiving">
+        <div class="q-icon">📦</div>
+        <h4>Smart Receiving</h4>
+        <p>Staff checklist &amp; auto stock update</p>
+      </a>
+      <a class="quick-card" href="/portal/delivery">
+        <div class="q-icon">🚗</div>
+        <h4>Delivery Routes</h4>
+        <p>Track delivery boys &amp; shops</p>
+      </a>
+      <a class="quick-card" href="/portal/subscription">
+        <div class="q-icon">💎</div>
+        <h4>Subscription</h4>
+        <p>Manage your plan &amp; billing</p>
+      </a>
+      <a class="quick-card" href="/portal/profit">
+        <div class="q-icon">📊</div>
+        <h4>Profit Analytics</h4>
+        <p>Margins by medicine, customer &amp; staff</p>
+      </a>
+      <a class="quick-card" href="/portal/staff-targets">
+        <div class="q-icon">👥</div>
+        <h4>Staff &amp; Salary</h4>
+        <p>Targets, commission &amp; payslips</p>
+      </a>
+      <a class="quick-card" href="/portal/settings">
+        <div class="q-icon">⚙️</div>
+        <h4>Settings</h4>
+        <p>Password, staff PINs &amp; company info</p>
+      </a>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;flex-wrap:wrap">
+      <!-- STOCK ALERTS -->
+      <div class="card">
+        <div class="card-header">
+          <h3>⚠️ Stock Alerts</h3>
+          <a href="/portal/ai-reorder" style="font-size:.78rem;color:var(--green);font-weight:600">View AI Reorder →</a>
+        </div>
+        <ul class="alert-list" id="alertList">
+          <li class="alert-item"><span style="color:var(--gray);font-size:.84rem">Loading alerts...</span></li>
+        </ul>
+      </div>
+
+      <!-- RECENT BILLS -->
+      <div class="card">
+        <div class="card-header">
+          <h3>🧾 Recent Bills</h3>
+          <a href="/portal/billing" style="font-size:.78rem;color:var(--green);font-weight:600">New Bill →</a>
+        </div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr><th>Bill ID</th><th>Customer</th><th>Amount</th><th>Time</th></tr></thead>
+            <tbody id="recentBills"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- REORDER PREVIEW -->
+    <div class="card">
+      <div class="card-header">
+        <h3>🤖 AI Reorder — Top Urgent Items</h3>
+        <a href="/portal/ai-reorder" style="font-size:.78rem;color:var(--green);font-weight:600">Full AI Report →</a>
+      </div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>Medicine</th><th>Stock</th><th>Days Left</th><th>Reorder Qty</th><th>AI Min</th><th>AI Max</th><th>Status</th></tr></thead>
+          <tbody id="reorderPreview"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+let portalType = 'retail';
+function setTab(t) {
+  portalType = t;
+  document.getElementById('tab-retail').classList.toggle('active', t==='retail');
+  document.getElementById('tab-wholesale').classList.toggle('active', t==='wholesale');
+}
+
+async function doLogin() {
+  const username = document.getElementById('portalUser').value.trim();
+  const password = document.getElementById('portalPass').value.trim();
+  const errEl = document.getElementById('loginErr');
+  errEl.style.display = 'none';
+  if (!username || !password) { errEl.textContent = 'Enter username and password.'; errEl.style.display='block'; return; }
+  const res = await fetch('/api/portal/login', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({username, password}) });
+  const data = await res.json();
+  if (data.status === 'success') {
+    document.getElementById('loginScreen').style.display = 'none';
+    initPortal(data.name, data.type);
+  } else {
+    errEl.textContent = data.message || 'Invalid credentials. Account may be pending approval.';
+    errEl.style.display = 'block';
+  }
+}
+
+async function doLogout() {
+  await fetch('/api/portal/logout', { method:'POST' });
+  location.reload();
+}
+
+function initPortal(name, type) {
+  document.getElementById('sbShopName').textContent = name;
+  document.getElementById('sbUserName').textContent = name;
+  document.getElementById('sbUserType').textContent = type === 'retail' ? 'Retail Shop' : 'Wholesale Distributor';
+  document.getElementById('topbarTitle').textContent = 'Welcome, ' + name;
+  const badge = document.getElementById('sbTypeBadge');
+  badge.textContent = type === 'retail' ? '🏪 Retail' : '🏭 Wholesale';
+  badge.className = 'type-badge type-' + type;
+  document.getElementById('sbCross').style.background = type === 'retail' ? '#2563eb' : '#16a34a';
+  loadKPIs();
+  loadAlerts();
+  loadRecentBills();
+  loadReorderPreview();
+  startClock();
+}
+
+async function loadKPIs() {
+  const res = await fetch('/api/kpis');
+  const d = await res.json();
+  document.getElementById('k-today').textContent = d.today_bills ?? '—';
+  document.getElementById('k-rev').textContent = d.today_revenue ? '₹' + Math.round(d.today_revenue).toLocaleString('en-IN') : '₹0';
+  document.getElementById('k-low').textContent = d.low_stock_count ?? '—';
+  document.getElementById('k-expiry').textContent = d.expiry_alert_count ?? '—';
+  document.getElementById('k-total').textContent = d.total_bills ?? '—';
+}
+
+async function loadAlerts() {
+  const res = await fetch('/api/medicines/alerts?low_stock=15&expiry_days=90');
+  const d = await res.json();
+  const el = document.getElementById('alertList');
+  const critical = (d.low_stock || []).slice(0, 5);
+  const expiring = (d.expiring_soon || []).slice(0, 3);
+  if (!critical.length && !expiring.length) {
+    el.innerHTML = '<li class="alert-item"><span class="dot dot-green" style="width:8px;height:8px;border-radius:50%;background:var(--green);flex-shrink:0"></span><span style="font-size:.84rem;color:var(--green-dark);font-weight:600">All stock levels are healthy!</span></li>';
+    return;
+  }
+  el.innerHTML = [
+    ...critical.map(m => `<li class="alert-item">
+      <span class="alert-dot dot-red"></span>
+      <span class="name">${m.n}</span>
+      <span class="meta">Stock: ${m.s} (min: ${m.threshold})</span>
+      <span class="pill pill-red">Low Stock</span>
+    </li>`),
+    ...expiring.map(m => `<li class="alert-item">
+      <span class="alert-dot dot-yellow"></span>
+      <span class="name">${m.n}</span>
+      <span class="meta">Expires: ${m.expiry} (${m.days_left}d)</span>
+      <span class="pill pill-yellow">Expiring</span>
+    </li>`),
+  ].join('');
+}
+
+async function loadRecentBills() {
+  const res = await fetch('/api/bills?limit=6&offset=0');
+  const d = await res.json();
+  const bills = d.bills || d;
+  const el = document.getElementById('recentBills');
+  if (!bills.length) { el.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--gray);padding:20px">No bills yet today</td></tr>'; return; }
+  el.innerHTML = bills.map(b => `<tr>
+    <td style="font-size:.75rem;color:var(--gray)"><code>${b.id?.slice(-6)||'—'}</code></td>
+    <td>${b.cust||'—'}</td>
+    <td><strong style="color:var(--green)">₹${Number(b.total||0).toFixed(0)}</strong></td>
+    <td style="font-size:.75rem;color:var(--gray)">${b.date?.slice(0,8)||'—'}</td>
+  </tr>`).join('');
+}
+
+async function loadReorderPreview() {
+  const res = await fetch('/api/ai/reorder?days=30');
+  const items = await res.json();
+  const urgent = items.filter(i => i.urgency === 'critical' || i.urgency === 'low').slice(0, 8);
+  const el = document.getElementById('reorderPreview');
+  if (!urgent.length) { el.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--green);padding:20px">✓ No urgent reorders needed right now</td></tr>'; return; }
+  const urgClass = { critical: 'pill-red', low: 'pill-yellow', ok: 'pill-green' };
+  el.innerHTML = urgent.map(i => `<tr>
+    <td><strong>${i.name}</strong></td>
+    <td>${i.current_stock}</td>
+    <td>${i.days_of_stock === 999 ? '∞' : i.days_of_stock + 'd'}</td>
+    <td><strong style="color:var(--blue)">${i.reorder_qty}</strong></td>
+    <td>${i.ai_min}</td>
+    <td>${i.ai_max}</td>
+    <td><span class="pill ${urgClass[i.urgency]||'pill-green'}">${i.urgency.toUpperCase()}</span></td>
+  </tr>`).join('');
+}
+
+function startClock() {
+  function update() {
+    const now = new Date();
+    document.getElementById('clockEl').textContent = now.toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+    document.getElementById('todayDate').textContent = now.toLocaleDateString('en-IN', { weekday:'short', day:'2-digit', month:'short', year:'numeric' });
+  }
+  update(); setInterval(update, 1000);
+}
+
+// Auto-check session
+fetch('/api/portal/me').then(async r => {
+  if (r.ok) {
+    const d = await r.json();
+    if (d.username) {
+      document.getElementById('loginScreen').style.display = 'none';
+      initPortal(d.name, d.type);
+    }
+  }
+}).catch(() => {});
+</script>
+</body>
+</html>

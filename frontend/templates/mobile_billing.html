@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<meta name="theme-color" content="#0b0e16"/>
+<title>📱 MediVision Mobile POS</title>
+<link rel="manifest" href="/manifest.json"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+:root{--bg:#0b0e16;--card:#141824;--brd:rgba(255,255,255,.08);--acc:#f97316;--grn:#16a34a;--tx:#e2e8f0;--mt:#94a3b8;}
+html,body{font-family:Inter,sans-serif;background:var(--bg);color:var(--tx);min-height:100vh;overflow-x:hidden;}
+.mono{font-family:'JetBrains Mono',monospace;}
+
+/* TOP BAR */
+.top{position:sticky;top:0;z-index:50;background:linear-gradient(to bottom,#0b0e16 60%,rgba(11,14,22,.7));padding:14px 16px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--brd);backdrop-filter:blur(8px);}
+.top .logo{font-weight:800;color:var(--acc);font-size:.95rem;}
+.top .logo i{margin-right:6px;}
+.top .grow{flex:1;}
+.top .icon-btn{width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,.05);border:1px solid var(--brd);color:var(--tx);display:flex;align-items:center;justify-content:center;font-size:.9rem;cursor:pointer;}
+.top .icon-btn.online{background:rgba(34,197,94,.18);color:#4ade80;border-color:rgba(34,197,94,.3);}
+.top .icon-btn.offline{background:rgba(239,68,68,.18);color:#fca5a5;}
+
+/* TABS */
+.tabs{display:flex;background:var(--card);border-bottom:1px solid var(--brd);overflow-x:auto;scrollbar-width:none;}
+.tabs::-webkit-scrollbar{display:none;}
+.tab{flex:1;padding:14px 8px;text-align:center;font-size:.78rem;font-weight:600;color:var(--mt);border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap;min-width:80px;}
+.tab.active{color:var(--acc);border-bottom-color:var(--acc);background:rgba(249,115,22,.05);}
+.tab i{display:block;font-size:1.1rem;margin-bottom:4px;}
+
+/* PANELS */
+.panel{padding:14px 14px 100px;}
+.panel-title{font-size:.78rem;text-transform:uppercase;letter-spacing:.06em;color:var(--mt);font-weight:700;margin:10px 0 8px;}
+
+/* CARD */
+.card{background:var(--card);border:1px solid var(--brd);border-radius:14px;padding:14px;margin-bottom:10px;}
+
+/* SEARCH */
+.search-bar{position:relative;}
+.search-bar input{width:100%;background:var(--card);border:1.5px solid var(--brd);border-radius:12px;padding:14px 16px 14px 44px;color:var(--tx);font-family:inherit;font-size:.92rem;}
+.search-bar input:focus{outline:none;border-color:var(--acc);}
+.search-bar .icon{position:absolute;left:16px;top:50%;transform:translateY(-50%);color:var(--mt);}
+
+/* RESULTS */
+.results{margin-top:8px;}
+.med{display:flex;align-items:center;background:var(--card);border:1px solid var(--brd);border-radius:12px;padding:12px;margin-bottom:6px;cursor:pointer;transition:border-color .15s;}
+.med:active,.med:hover{border-color:var(--acc);}
+.med .info{flex:1;min-width:0;}
+.med .name{font-weight:700;font-size:.92rem;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.med .meta{font-size:.74rem;color:var(--mt);margin-top:2px;}
+.med .price{font-weight:800;font-family:'JetBrains Mono',monospace;font-size:.92rem;color:#4ade80;margin-left:10px;}
+
+/* CART */
+.cart-item{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;padding:10px;background:#0d111a;border-radius:10px;margin-bottom:6px;}
+.cart-item .nm{font-weight:600;font-size:.88rem;}
+.cart-item .sub{color:var(--mt);font-size:.72rem;margin-top:2px;}
+.qty-pill{display:flex;align-items:center;gap:6px;background:rgba(249,115,22,.12);border:1px solid rgba(249,115,22,.3);border-radius:99px;padding:3px 8px;}
+.qty-pill button{background:transparent;border:none;color:var(--acc);font-weight:800;width:22px;font-size:1rem;cursor:pointer;}
+.qty-pill span{min-width:18px;text-align:center;font-weight:700;color:#fff;}
+.cart-item .amt{font-family:'JetBrains Mono',monospace;font-weight:700;color:#4ade80;font-size:.88rem;min-width:65px;text-align:right;}
+
+/* CUSTOMER */
+.cust-card{background:var(--card);border:1.5px solid var(--brd);border-radius:14px;padding:14px;margin-bottom:10px;}
+.cust-card .row{display:flex;gap:8px;margin-bottom:8px;}
+.cust-card input{flex:1;background:#0b0e16;border:1.5px solid var(--brd);border-radius:9px;padding:10px 12px;color:var(--tx);font-family:inherit;font-size:.88rem;}
+.cust-card input:focus{outline:none;border-color:var(--acc);}
+.face-btn{background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;border:none;padding:11px 14px;border-radius:9px;font-weight:700;font-size:.85rem;cursor:pointer;display:flex;align-items:center;gap:6px;}
+
+/* TOTAL BAR */
+.totals-box{background:linear-gradient(145deg,#1a2030,#0d111a);border:1px solid rgba(249,115,22,.2);border-radius:14px;padding:14px;margin-bottom:10px;}
+.totals-box .row{display:flex;justify-content:space-between;padding:4px 0;font-size:.86rem;color:#94a3b8;}
+.totals-box .grand{font-size:1.4rem;font-weight:900;color:#fff;border-top:1px solid var(--brd);padding-top:8px;margin-top:6px;font-family:'JetBrains Mono',monospace;}
+
+/* BOTTOM BAR (fixed) */
+.bottom-bar{position:fixed;bottom:0;left:0;right:0;background:linear-gradient(to top,#0b0e16,rgba(11,14,22,.95));border-top:1px solid var(--brd);padding:10px 14px;display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;z-index:60;backdrop-filter:blur(8px);}
+.bb-btn{padding:11px 8px;border-radius:10px;border:none;font-weight:700;font-size:.78rem;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;font-family:inherit;}
+.bb-btn i{font-size:1rem;}
+.bb-btn.continue{background:rgba(255,255,255,.06);color:var(--mt);border:1px solid var(--brd);}
+.bb-btn.cancel{background:rgba(239,68,68,.15);color:#fca5a5;}
+.bb-btn.save{background:rgba(59,130,246,.18);color:#60a5fa;}
+.bb-btn.print{background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;}
+
+/* MODAL */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);align-items:flex-end;justify-content:center;z-index:200;backdrop-filter:blur(4px);}
+.modal-bg.show{display:flex;}
+.modal{background:var(--card);border-top:1px solid var(--brd);border-radius:20px 20px 0 0;padding:22px 18px;width:100%;max-height:90vh;overflow-y:auto;}
+.modal h3{margin-bottom:14px;color:var(--acc);font-size:1rem;}
+
+/* DENOM INPUT */
+.denom-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px;}
+.denom-cell{display:flex;align-items:center;gap:8px;background:#0b0e16;border:1px solid var(--brd);border-radius:9px;padding:8px 10px;}
+.denom-cell .label{flex:1;font-family:monospace;color:var(--mt);font-size:.85rem;}
+.denom-cell input{width:60px;background:transparent;border:none;color:var(--tx);font-family:monospace;font-size:.95rem;text-align:right;}
+.denom-cell input:focus{outline:none;}
+
+.btn-pri{background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;border:none;padding:13px;border-radius:10px;font-weight:800;font-size:.92rem;width:100%;cursor:pointer;font-family:inherit;}
+.btn-grn{background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;border:none;padding:13px;border-radius:10px;font-weight:800;font-size:.92rem;width:100%;cursor:pointer;font-family:inherit;}
+
+/* FACE CAMERA */
+#camStream{width:100%;border-radius:12px;background:#000;display:block;}
+.cam-controls{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;}
+
+/* TOAST */
+.toast{position:fixed;bottom:90px;left:14px;right:14px;background:#0d111a;border:1px solid rgba(34,197,94,.4);color:#4ade80;padding:14px 18px;border-radius:12px;font-weight:600;font-size:.88rem;z-index:300;text-align:center;display:none;}
+.toast.show{display:block;}
+.toast.err{border-color:rgba(239,68,68,.4);color:#fca5a5;}
+
+/* DEVICE NOTIF */
+.device-notif{position:fixed;top:70px;left:14px;right:14px;background:linear-gradient(145deg,#1a2030,#0d111a);border:1.5px solid rgba(249,115,22,.4);border-radius:14px;padding:14px;z-index:120;display:none;animation:slideIn .3s;}
+.device-notif.show{display:block;}
+.device-notif .head{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.device-notif .head .ic{font-size:1.2rem;}
+.device-notif .head strong{color:#fb923c;}
+.device-notif p{color:var(--mt);font-size:.82rem;margin-bottom:10px;}
+.device-notif .row{display:flex;gap:6px;}
+.device-notif button{flex:1;padding:8px;border-radius:8px;border:none;font-weight:700;font-size:.82rem;cursor:pointer;font-family:inherit;}
+@keyframes slideIn{from{transform:translateY(-20px);opacity:0;}to{transform:none;opacity:1;}}
+
+.empty{text-align:center;padding:30px 16px;color:var(--mt);}
+.empty .icon{font-size:2rem;margin-bottom:8px;opacity:.5;}
+
+@media(min-width:640px){
+  body{max-width:480px;margin:0 auto;}
+}
+</style>
+</head>
+<body>
+
+<!-- TOP -->
+<div class="top">
+  <div class="logo"><i class="fas fa-heart-pulse"></i>MV POS</div>
+  <div class="grow"></div>
+  <div class="icon-btn online" id="syncIcon" title="Device status" onclick="openDevices()"><i class="fas fa-wifi"></i></div>
+  <a href="/cash-drawer" class="icon-btn"><i class="fas fa-cash-register"></i></a>
+  <a href="/portal" class="icon-btn"><i class="fas fa-ellipsis-h"></i></a>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <div class="tab active" data-t="search"><i class="fas fa-search"></i>Search</div>
+  <div class="tab" data-t="cart"><i class="fas fa-shopping-cart"></i>Cart <span id="cartCount" style="background:#f97316;color:#fff;padding:0 6px;border-radius:99px;font-size:.7rem;margin-left:3px;display:none;">0</span></div>
+  <div class="tab" data-t="customer"><i class="fas fa-user"></i>Customer</div>
+  <div class="tab" data-t="pay"><i class="fas fa-money-bill"></i>Pay</div>
+</div>
+
+<!-- SEARCH PANEL -->
+<div class="panel" id="panel-search">
+  <div class="search-bar">
+    <i class="fas fa-search icon"></i>
+    <input type="text" id="searchInput" placeholder="Medicine name (DOLO, CROCIN, PAN…)" autocomplete="off"/>
+  </div>
+  <div class="results" id="results">
+    <div class="empty"><div class="icon">🔍</div>Search 7,137 medicines instantly</div>
+  </div>
+</div>
+
+<!-- CART PANEL -->
+<div class="panel" id="panel-cart" style="display:none;">
+  <div class="panel-title">Cart Items</div>
+  <div id="cartList">
+    <div class="empty"><div class="icon">🛒</div>Cart is empty</div>
+  </div>
+</div>
+
+<!-- CUSTOMER PANEL -->
+<div class="panel" id="panel-customer" style="display:none;">
+  <div class="panel-title">Customer Info</div>
+  <div class="cust-card">
+    <div class="row">
+      <input type="text" id="custName" placeholder="Customer name"/>
+    </div>
+    <div class="row">
+      <input type="tel" id="custPhone" placeholder="📱 WhatsApp number (10 digits)" maxlength="10"/>
+    </div>
+    <div class="row" style="gap:6px;">
+      <button class="face-btn" onclick="openFaceScan()" style="flex:1;"><i class="fas fa-camera"></i> Scan Face</button>
+      <button class="face-btn" style="background:rgba(255,255,255,.06);color:#cbd5e1;flex:1;" onclick="searchCustomer()"><i class="fas fa-search"></i> Find</button>
+    </div>
+  </div>
+  <div id="custMatch"></div>
+  <div class="panel-title" style="margin-top:14px;">Doctor (Optional)</div>
+  <div class="cust-card">
+    <input type="text" id="doctorName" placeholder="Dr. name"/>
+  </div>
+</div>
+
+<!-- PAY PANEL -->
+<div class="panel" id="panel-pay" style="display:none;">
+  <div class="totals-box">
+    <div class="row"><span>Items</span><span class="mono" id="payItems">0</span></div>
+    <div class="row"><span>Subtotal</span><span class="mono" id="paySub">₹0</span></div>
+    <div class="row"><span>Discount</span>
+      <span><input type="number" id="payDisc" value="0" style="width:60px;background:transparent;border:1px solid var(--brd);border-radius:6px;color:#fff;text-align:right;padding:2px 6px;" onchange="recalc()"/></span>
+    </div>
+    <div class="row"><span>GST (12%)</span><span class="mono" id="payTax">₹0</span></div>
+    <div class="grand"><div style="display:flex;justify-content:space-between;"><span>TOTAL</span><span id="payTotal">₹0</span></div></div>
+  </div>
+
+  <div class="panel-title">Payment Mode</div>
+  <div class="card">
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px;">
+      <div class="pmt-chip" data-m="Cash" onclick="pickPay('Cash')">💵 Cash</div>
+      <div class="pmt-chip" data-m="UPI" onclick="pickPay('UPI')">📱 UPI</div>
+      <div class="pmt-chip" data-m="Card" onclick="pickPay('Card')">💳 Card</div>
+    </div>
+    <style>.pmt-chip{padding:10px;border-radius:10px;background:rgba(255,255,255,.05);border:1.5px solid var(--brd);text-align:center;font-size:.85rem;cursor:pointer;color:var(--mt);}.pmt-chip.active{background:rgba(249,115,22,.18);border-color:var(--acc);color:#fb923c;}</style>
+  </div>
+</div>
+
+<!-- BOTTOM BAR -->
+<div class="bottom-bar">
+  <button class="bb-btn continue" onclick="continueBilling()"><i class="fas fa-plus"></i>Continue</button>
+  <button class="bb-btn cancel" onclick="cancelBill()"><i class="fas fa-times"></i>Cancel</button>
+  <button class="bb-btn save" onclick="saveBill(false)"><i class="fas fa-save"></i>Save</button>
+  <button class="bb-btn print" onclick="saveBill(true)"><i class="fas fa-print"></i>Save+Print</button>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- DEVICE NOTIFICATION -->
+<div class="device-notif" id="deviceNotif">
+  <div class="head"><span class="ic">📲</span><strong>Phone wants to send</strong></div>
+  <p id="deviceMsg">A device wants to share data</p>
+  <div class="row">
+    <button style="background:rgba(34,197,94,.2);color:#4ade80;" onclick="ackDevice('accepted')">✓ Take it</button>
+    <button style="background:rgba(239,68,68,.2);color:#fca5a5;" onclick="ackDevice('ignored')">✗ Ignore</button>
+  </div>
+</div>
+
+<!-- FACE SCAN MODAL -->
+<div class="modal-bg" id="faceModal" onclick="if(event.target===this)closeFace()">
+  <div class="modal">
+    <h3>📸 Scan Customer Face</h3>
+    <video id="camStream" autoplay playsinline muted></video>
+    <canvas id="camCanvas" style="display:none;"></canvas>
+    <div class="cam-controls">
+      <button class="btn-pri" onclick="captureFace()"><i class="fas fa-camera"></i> Capture</button>
+      <button onclick="closeFace()" style="background:rgba(255,255,255,.05);color:var(--mt);border:1px solid var(--brd);padding:13px;border-radius:10px;font-weight:700;font-family:inherit;cursor:pointer;">Cancel</button>
+    </div>
+    <p style="margin-top:10px;color:var(--mt);font-size:.78rem;text-align:center;">Face data is stored locally with the customer record</p>
+  </div>
+</div>
+
+<!-- SAVE+PRINT MODAL -->
+<div class="modal-bg" id="saveModal" onclick="if(event.target===this)closeSave()">
+  <div class="modal">
+    <h3>💵 Cash Payment</h3>
+    <p style="color:var(--mt);font-size:.86rem;margin-bottom:14px;">Bill total: <strong id="smTotal" style="color:#fff;font-family:monospace;font-size:1.1rem;">₹0</strong></p>
+
+    <div class="panel-title">Received from customer</div>
+    <div class="denom-grid" id="rcvdDenoms"></div>
+    <div style="display:flex;justify-content:space-between;background:rgba(34,197,94,.08);padding:8px 12px;border-radius:8px;margin-bottom:14px;">
+      <span style="color:#94a3b8;font-size:.85rem;">Total received</span>
+      <span class="mono" id="rcvdTotal" style="color:#4ade80;font-weight:800;">₹0</span>
+    </div>
+
+    <div id="changeBox" style="display:none;">
+      <div class="panel-title">Change to give (auto)</div>
+      <div class="card" style="background:#0d111a;" id="changeBreakdown"></div>
+    </div>
+
+    <button class="btn-grn" onclick="finishSave()" style="margin-top:14px;"><i class="fas fa-check"></i> Confirm &amp; Save</button>
+  </div>
+</div>
+
+<!-- DEVICES MODAL -->
+<div class="modal-bg" id="devicesModal" onclick="if(event.target===this)closeDevices()">
+  <div class="modal">
+    <h3>📡 Connected Devices</h3>
+    <p style="color:var(--mt);font-size:.84rem;margin-bottom:14px;">Send face scan or bills between phone and PC.</p>
+    <div id="devicesList">Loading…</div>
+    <button class="btn-pri" onclick="pushFaceToOtherDevice()" style="margin-top:14px;"><i class="fas fa-share"></i> Push current scan to all PCs</button>
+  </div>
+</div>
+
+<script>
+// ──────────────────────────────────────────────────────────────
+// STATE
+let cart = [];
+let payMode = 'Cash';
+let myDeviceId = localStorage.getItem('mv_device_id') || '';
+let lastFaceDescriptor = null;
+let pendingMsg = null;
+
+// ──────────────────────────────────────────────────────────────
+// DEVICE REGISTRATION
+async function registerDevice(){
+  const r = await fetch('/api/devices/register', {method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      device_id: myDeviceId,
+      device_name: 'Phone-' + (navigator.platform || 'Mobile'),
+      device_type: /Mobi|Android|iPhone/i.test(navigator.userAgent) ? 'phone' : 'pc',
+      user_agent: navigator.userAgent
+    })});
+  const d = await r.json();
+  if(d.device_id){
+    myDeviceId = d.device_id;
+    localStorage.setItem('mv_device_id', myDeviceId);
+  }
+}
+async function heartbeat(){
+  if(!myDeviceId) return;
+  fetch('/api/devices/heartbeat', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({device_id:myDeviceId})});
+}
+async function pollMessages(){
+  if(!myDeviceId) return;
+  try {
+    const r = await fetch('/api/devices/poll/' + myDeviceId);
+    const d = await r.json();
+    if(d.messages && d.messages.length){
+      const msg = d.messages[0];
+      pendingMsg = msg;
+      document.getElementById('deviceMsg').textContent =
+        msg.msg_type === 'face_scan' ? 'Phone scanned a face — take it into this bill?' :
+        msg.msg_type === 'bill_payload' ? 'Phone is sending bill data' :
+        msg.msg_type === 'customer_select' ? 'Phone selected: ' + (msg.payload.name || '?') :
+        'Incoming: ' + msg.msg_type;
+      document.getElementById('deviceNotif').classList.add('show');
+    }
+  } catch(e){}
+}
+
+async function ackDevice(status){
+  if(!pendingMsg) return;
+  if(status === 'accepted'){
+    // Apply payload
+    if(pendingMsg.msg_type === 'customer_select'){
+      document.getElementById('custName').value = pendingMsg.payload.name || '';
+      document.getElementById('custPhone').value = pendingMsg.payload.phone || '';
+      switchTab('customer');
+      showToast('✓ Customer info loaded');
+    } else if(pendingMsg.msg_type === 'face_scan'){
+      lastFaceDescriptor = pendingMsg.payload.descriptor;
+      if(pendingMsg.payload.match){
+        document.getElementById('custName').value = pendingMsg.payload.match.name || '';
+        document.getElementById('custPhone').value = pendingMsg.payload.match.phone || '';
+      }
+      switchTab('customer');
+      showToast('✓ Face data loaded');
+    } else if(pendingMsg.msg_type === 'bill_payload'){
+      cart = pendingMsg.payload.items || [];
+      renderCart();
+      switchTab('cart');
+      showToast('✓ Bill loaded from phone');
+    }
+  }
+  await fetch('/api/devices/ack/' + pendingMsg.id, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({status})});
+  document.getElementById('deviceNotif').classList.remove('show');
+  pendingMsg = null;
+}
+
+async function openDevices(){
+  const r = await fetch('/api/devices');
+  const d = await r.json();
+  document.getElementById('devicesList').innerHTML = d.devices.map(dv =>
+    `<div style="background:#0d111a;padding:10px;border-radius:9px;margin-bottom:6px;display:flex;align-items:center;gap:10px;">
+      <span style="font-size:1.3rem;">${dv.device_type==='phone'?'📱':'💻'}</span>
+      <div style="flex:1;">
+        <div style="font-weight:600;">${dv.device_name||'Unnamed'}</div>
+        <div style="color:var(--mt);font-size:.74rem;">${dv.is_online?'🟢 Online':'⚪ Offline'} · ${dv.device_id.slice(0,8)}</div>
+      </div>
+      <button onclick="pushTo('${dv.device_id}')" style="background:rgba(249,115,22,.2);color:#fb923c;border:none;padding:6px 12px;border-radius:8px;font-size:.78rem;cursor:pointer;">Send</button>
+    </div>`
+  ).join('') || '<p style="color:var(--mt)">No other devices registered yet.</p>';
+  document.getElementById('devicesModal').classList.add('show');
+}
+function closeDevices(){ document.getElementById('devicesModal').classList.remove('show'); }
+
+async function pushTo(toId){
+  // Send current cart + customer to target device
+  const body = {
+    from_device: myDeviceId,
+    to_device: toId,
+    msg_type: cart.length ? 'bill_payload' : 'customer_select',
+    payload: cart.length ? {items: cart} : {
+      name: document.getElementById('custName').value,
+      phone: document.getElementById('custPhone').value
+    }
+  };
+  await fetch('/api/devices/send', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  closeDevices();
+  showToast('✓ Pushed to device');
+}
+
+async function pushFaceToOtherDevice(){
+  if(!lastFaceDescriptor){
+    showToast('Scan a face first', true); return;
+  }
+  await fetch('/api/devices/send', {method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      from_device: myDeviceId,
+      to_device: 'broadcast',
+      msg_type: 'face_scan',
+      payload: {descriptor: lastFaceDescriptor}
+    })});
+  closeDevices();
+  showToast('✓ Broadcast to all PCs');
+}
+
+// ──────────────────────────────────────────────────────────────
+// TABS
+function switchTab(t){
+  document.querySelectorAll('.tab').forEach(el => el.classList.toggle('active', el.dataset.t === t));
+  ['search','cart','customer','pay'].forEach(p => {
+    document.getElementById('panel-' + p).style.display = p === t ? '' : 'none';
+  });
+  if(t === 'pay') recalc();
+  if(t === 'cart') renderCart();
+}
+document.querySelectorAll('.tab').forEach(el => el.addEventListener('click', () => switchTab(el.dataset.t)));
+
+// ──────────────────────────────────────────────────────────────
+// SEARCH
+let searchTimer = null;
+document.getElementById('searchInput').addEventListener('input', e => {
+  clearTimeout(searchTimer);
+  const q = e.target.value.trim();
+  if(q.length < 2){ document.getElementById('results').innerHTML = '<div class="empty"><div class="icon">🔍</div>Type at least 2 letters</div>'; return; }
+  searchTimer = setTimeout(() => doSearch(q), 220);
+});
+
+async function doSearch(q){
+  try {
+    const r = await fetch('/api/medicines/search?q=' + encodeURIComponent(q) + '&limit=20');
+    const d = await r.json();
+    const items = d.medicines || d.items || d.results || [];
+    if(!items.length){
+      document.getElementById('results').innerHTML = '<div class="empty"><div class="icon">📭</div>No matches</div>';
+      return;
+    }
+    document.getElementById('results').innerHTML = items.map(m =>
+      `<div class="med" onclick='addToCart(${JSON.stringify({id:m.id, name:m.n||m.name, price:m.p||m.price, category:m.c||m.category}).replace(/'/g,"&apos;")})'>
+        <div class="info">
+          <div class="name">${m.n||m.name}</div>
+          <div class="meta">${m.c||m.category||'—'} · Stock: ${m.s||m.stock||0}</div>
+        </div>
+        <div class="price">₹${(m.p||m.price||0).toFixed(2)}</div>
+      </div>`).join('');
+  } catch(e){
+    document.getElementById('results').innerHTML = '<div class="empty"><div class="icon">⚠</div>Search error</div>';
+  }
+}
+
+// ──────────────────────────────────────────────────────────────
+// CART
+function addToCart(m){
+  const ex = cart.find(c => c.id === m.id);
+  if(ex){ ex.qty += 1; }
+  else cart.push({id:m.id, name:m.name, price:parseFloat(m.price)||0, qty:1, disc:0});
+  renderCart();
+  updateCartBadge();
+  showToast('+ ' + m.name);
+}
+
+function renderCart(){
+  const list = document.getElementById('cartList');
+  if(!cart.length){
+    list.innerHTML = '<div class="empty"><div class="icon">🛒</div>Cart is empty</div>';
+    return;
+  }
+  list.innerHTML = cart.map((c,i) => `
+    <div class="cart-item">
+      <div>
+        <div class="nm">${c.name}</div>
+        <div class="sub">₹${c.price.toFixed(2)} × ${c.qty}</div>
+      </div>
+      <div class="qty-pill">
+        <button onclick="chgQty(${i},-1)">−</button>
+        <span>${c.qty}</span>
+        <button onclick="chgQty(${i},1)">+</button>
+      </div>
+      <div class="amt">₹${(c.price*c.qty).toFixed(2)}</div>
+    </div>`).join('');
+}
+
+function chgQty(i, d){
+  cart[i].qty += d;
+  if(cart[i].qty <= 0) cart.splice(i,1);
+  renderCart();
+  updateCartBadge();
+}
+
+function updateCartBadge(){
+  const c = document.getElementById('cartCount');
+  if(cart.length){ c.textContent = cart.length; c.style.display = 'inline-block'; }
+  else c.style.display = 'none';
+}
+
+// ──────────────────────────────────────────────────────────────
+// PAY CALC
+function getTotals(){
+  const sub = cart.reduce((s,c) => s + c.price*c.qty, 0);
+  const disc = parseFloat(document.getElementById('payDisc').value || 0);
+  const tax = (sub - disc) * 0.12;
+  return {sub, disc, tax, total: sub - disc + tax, items: cart.length, qty: cart.reduce((s,c)=>s+c.qty, 0)};
+}
+function recalc(){
+  const t = getTotals();
+  document.getElementById('payItems').textContent = t.items + ' (' + t.qty + ' qty)';
+  document.getElementById('paySub').textContent = '₹' + t.sub.toFixed(2);
+  document.getElementById('payTax').textContent = '₹' + t.tax.toFixed(2);
+  document.getElementById('payTotal').textContent = '₹' + t.total.toFixed(2);
+}
+function pickPay(m){
+  payMode = m;
+  document.querySelectorAll('.pmt-chip').forEach(el => el.classList.toggle('active', el.dataset.m === m));
+}
+pickPay('Cash');
+
+// ──────────────────────────────────────────────────────────────
+// BILL ACTIONS
+function continueBilling(){
+  // Clear current cart so new items can be added but keep customer
+  cart = [];
+  renderCart();
+  updateCartBadge();
+  switchTab('search');
+  showToast('✓ Started new bill');
+}
+function cancelBill(){
+  if(cart.length && !confirm('Discard current bill?')) return;
+  cart = [];
+  document.getElementById('custName').value = '';
+  document.getElementById('custPhone').value = '';
+  document.getElementById('doctorName').value = '';
+  renderCart();
+  updateCartBadge();
+  switchTab('search');
+  showToast('✕ Bill cancelled');
+}
+
+let _printAfter = false;
+async function saveBill(printAfter){
+  if(!cart.length){ showToast('Cart is empty', true); return; }
+  _printAfter = printAfter;
+  // If cash, open denomination modal
+  if(payMode === 'Cash'){
+    openSaveModal();
+  } else {
+    await doSave({});
+  }
+}
+
+function openSaveModal(){
+  const t = getTotals();
+  document.getElementById('smTotal').textContent = '₹' + t.total.toFixed(2);
+  const DENOMS = [500,200,100,50,20,10,5,2,1];
+  document.getElementById('rcvdDenoms').innerHTML = DENOMS.map(d =>
+    `<div class="denom-cell"><span class="label">₹${d} ×</span><input type="number" min="0" data-d="${d}" placeholder="0" onchange="rcvdRecalc()" /></div>`).join('');
+  document.getElementById('rcvdTotal').textContent = '₹0';
+  document.getElementById('changeBox').style.display = 'none';
+  document.getElementById('saveModal').classList.add('show');
+}
+function closeSave(){ document.getElementById('saveModal').classList.remove('show'); }
+
+let receivedNotes = {};
+async function rcvdRecalc(){
+  receivedNotes = {};
+  let total = 0;
+  document.querySelectorAll('#rcvdDenoms input').forEach(i => {
+    const v = parseInt(i.value || 0);
+    if(v > 0) receivedNotes[i.dataset.d] = v;
+    total += v * parseInt(i.dataset.d);
+  });
+  document.getElementById('rcvdTotal').textContent = '₹' + total;
+  const billTotal = getTotals().total;
+  const change = total - billTotal;
+  const cb = document.getElementById('changeBox');
+  if(change > 0){
+    cb.style.display = 'block';
+    const r = await fetch('/api/cash/suggest-change', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({amount: change})});
+    const d = await r.json();
+    const rows = Object.entries(d.breakdown).sort((a,b)=>b[0]-a[0]).map(([k,v]) =>
+      `<div style="display:flex;justify-content:space-between;padding:4px 0;font-family:monospace;font-size:.88rem;color:#fb923c;">
+        <span>${v} × ₹${k}</span><span>₹${parseInt(k)*v}</span></div>`).join('');
+    document.getElementById('changeBreakdown').innerHTML =
+      `<div style="color:#94a3b8;font-size:.82rem;margin-bottom:6px;">Change due: ₹${change}</div>` + rows +
+      (d.shortage > 0 ? `<div style="color:#fca5a5;font-size:.8rem;margin-top:4px;">⚠ Short by ₹${d.shortage}</div>` : '');
+  } else {
+    cb.style.display = 'none';
+  }
+}
+
+async function finishSave(){
+  const total = getTotals().total;
+  const rcvd = Object.values(receivedNotes).reduce((s,v,i)=>s+v*parseInt(Object.keys(receivedNotes)[i]),0);
+  if(rcvd < total){ showToast('Need at least ₹' + total, true); return; }
+  const r = await fetch('/api/cash/suggest-change', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({amount: rcvd - total})});
+  const d = await r.json();
+  closeSave();
+  await doSave({received: receivedNotes, given_change: Object.fromEntries(Object.entries(d.breakdown).map(([k,v])=>[k,v]))});
+}
+
+async function doSave(cashData){
+  const t = getTotals();
+  const body = {
+    items: cart,
+    sub: t.sub, disc: t.disc, tax: t.tax, total: t.total,
+    cust: document.getElementById('custName').value || 'Walk-in',
+    phone: document.getElementById('custPhone').value,
+    pay: payMode,
+    doctor: document.getElementById('doctorName').value,
+    bill_type: 'retail'
+  };
+  const r = await fetch('/api/bills', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const d = await r.json();
+  if(d.bill_id || d.id){
+    const billId = d.bill_id || d.id;
+    // Record cash if applicable
+    if(payMode === 'Cash' && cashData.received){
+      fetch('/api/cash/record-bill', {method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({bill_id: billId, ...cashData})});
+    }
+    showToast('✓ Bill ' + billId);
+    if(_printAfter){
+      window.open('/bill/' + billId, '_blank');
+    } else {
+      // WhatsApp prompt if phone exists
+      const phone = document.getElementById('custPhone').value.replace(/[^0-9]/g, '');
+      if(phone){
+        if(confirm('Send bill to WhatsApp ' + phone + '?')){
+          window.open('/bill/' + billId, '_blank');
+        }
+      }
+    }
+    // Reset
+    cart = [];
+    document.getElementById('custName').value = '';
+    document.getElementById('custPhone').value = '';
+    renderCart();
+    updateCartBadge();
+    switchTab('search');
+  } else {
+    showToast('Save failed', true);
+  }
+}
+
+// ──────────────────────────────────────────────────────────────
+// FACE SCAN
+let camStream = null;
+async function openFaceScan(){
+  document.getElementById('faceModal').classList.add('show');
+  try {
+    camStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:false});
+    document.getElementById('camStream').srcObject = camStream;
+  } catch(e){
+    showToast('Camera blocked - allow permission', true);
+  }
+}
+function closeFace(){
+  if(camStream){ camStream.getTracks().forEach(t=>t.stop()); camStream = null; }
+  document.getElementById('faceModal').classList.remove('show');
+}
+async function captureFace(){
+  const v = document.getElementById('camStream');
+  const c = document.getElementById('camCanvas');
+  c.width = v.videoWidth || 320;
+  c.height = v.videoHeight || 240;
+  c.getContext('2d').drawImage(v, 0, 0);
+  // Generate pseudo-descriptor (real app would use face-api.js)
+  const dataUrl = c.toDataURL('image/jpeg', 0.5);
+  const hash = await sha256(dataUrl);
+  // Convert hash into 128-float vector
+  const vec = [];
+  for(let i = 0; i < 128; i++){
+    vec.push(parseInt(hash.slice(i % 64, (i % 64) + 2), 16) / 255);
+  }
+  lastFaceDescriptor = vec;
+  // Try to match
+  const r = await fetch('/api/customers/face-match', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({vector: vec})});
+  const d = await r.json();
+  closeFace();
+  if(d.match){
+    document.getElementById('custName').value = d.customer.name;
+    document.getElementById('custPhone').value = d.customer.phone || '';
+    showToast('✓ Matched: ' + d.customer.name + ' (' + (d.score*100).toFixed(0) + '%)');
+  } else {
+    showToast('No match — fill in customer details, face will be saved');
+  }
+}
+
+async function sha256(s){
+  const buf = new TextEncoder().encode(s);
+  const h = await crypto.subtle.digest('SHA-256', buf);
+  return Array.from(new Uint8Array(h)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+async function searchCustomer(){
+  const phone = document.getElementById('custPhone').value;
+  if(!phone) return;
+  const r = await fetch('/api/customers?q=' + phone);
+  const d = await r.json();
+  const list = Array.isArray(d) ? d : (d.customers || []);
+  const match = list.find(c => c.phone === phone);
+  if(match){
+    document.getElementById('custName').value = match.name;
+    showToast('✓ Customer found: ' + match.name);
+  } else {
+    showToast('New customer — enter name');
+  }
+}
+
+// ──────────────────────────────────────────────────────────────
+// HELPERS
+function showToast(msg, err){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.toggle('err', !!err);
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ──────────────────────────────────────────────────────────────
+// INIT
+registerDevice();
+setInterval(heartbeat, 30000);
+setInterval(pollMessages, 4000);
+</script>
+</body>
+</html>

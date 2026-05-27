@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Invoice {{ bill.id }} — Selvam Medicals</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+  *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+  html,body{background:#f1f5f9;font-family:Inter,sans-serif;font-size:13px;color:#1e293b;}
+
+  /* ── PRINT CONTROLS (hidden when printing) ── */
+  .no-print{
+    background:#1e293b;padding:10px 20px;display:flex;gap:10px;
+    align-items:center;position:sticky;top:0;z-index:10;
+  }
+  .no-print button{
+    display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:7px;
+    border:1px solid #334155;background:#334155;color:#e2e8f0;font-size:12px;
+    font-family:Inter,sans-serif;cursor:pointer;transition:all .2s;
+  }
+  .no-print button.acc{background:#f97316;border-color:#f97316;color:#fff;}
+  .no-print button:hover{opacity:.85;}
+  .no-print span{color:#94a3b8;font-size:12px;margin-left:auto;}
+
+  /* ── INVOICE PAPER ── */
+  .paper{
+    width:210mm;min-height:297mm;margin:24px auto;background:#fff;
+    border-radius:6px;box-shadow:0 2px 20px rgba(0,0,0,.12);
+    padding:32px 36px;
+  }
+
+  /* ── HEADER ── */
+  .inv-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px;}
+  .logo-block .shop-name{font-size:22px;font-weight:700;color:#1e293b;letter-spacing:-.01em;}
+  .logo-block .shop-sub {font-size:11.5px;color:#64748b;margin-top:2px;}
+  .logo-block .shop-addr{font-size:11px;color:#94a3b8;margin-top:6px;line-height:1.5;}
+
+  .inv-meta{text-align:right;}
+  .inv-meta .inv-title{font-size:24px;font-weight:700;color:#f97316;letter-spacing:-.02em;}
+  .inv-meta table{margin-top:8px;border-collapse:collapse;}
+  .inv-meta td{padding:2px 0 2px 14px;font-size:12px;text-align:left;}
+  .inv-meta td:first-child{color:#64748b;text-align:right;}
+  .inv-meta td:last-child{font-weight:500;color:#1e293b;}
+
+  /* ── DIVIDER ── */
+  .divider{border:none;border-top:1.5px solid #e2e8f0;margin:20px 0;}
+  .accent-line{border-top:3px solid #f97316;margin:0 0 20px;}
+
+  /* ── BILL TO ── */
+  .bill-to-row{display:flex;gap:32px;margin-bottom:20px;}
+  .bill-to{flex:1;}
+  .bill-to .bt-label{font-size:10px;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;font-weight:600;margin-bottom:5px;}
+  .bill-to .bt-name {font-size:15px;font-weight:600;color:#1e293b;}
+  .bill-to .bt-info {font-size:11.5px;color:#64748b;margin-top:3px;line-height:1.5;}
+
+  /* ── ITEMS TABLE ── */
+  .items-wrap{overflow:hidden;border-radius:8px;border:1px solid #e2e8f0;margin-bottom:20px;}
+  .inv-table{width:100%;border-collapse:collapse;}
+  .inv-table thead{background:#f8fafc;}
+  .inv-table th{
+    padding:9px 12px;text-align:left;font-size:10.5px;font-weight:600;
+    color:#64748b;text-transform:uppercase;letter-spacing:.06em;
+    border-bottom:1px solid #e2e8f0;
+  }
+  .inv-table th.r,.inv-table td.r{text-align:right;}
+  .inv-table tbody tr:nth-child(even){background:#f8fafc;}
+  .inv-table td{
+    padding:9px 12px;font-size:12.5px;color:#334155;
+    border-bottom:1px solid #f1f5f9;
+  }
+  .inv-table tbody tr:last-child td{border-bottom:none;}
+  .inv-table .item-name{font-weight:500;color:#1e293b;}
+  .inv-table .item-gen {font-size:10.5px;color:#94a3b8;}
+
+  /* ── TOTALS ── */
+  .totals-section{display:flex;justify-content:flex-end;margin-bottom:20px;}
+  .totals-box{min-width:260px;}
+  .trow{display:flex;justify-content:space-between;padding:5px 0;font-size:12.5px;}
+  .trow .tl{color:#64748b;}
+  .trow .tv{font-weight:500;color:#334155;}
+  .trow.disc .tv{color:#eab308;}
+  .trow.total-row{
+    border-top:2px solid #f97316;margin-top:6px;padding-top:10px;
+  }
+  .trow.total-row .tl{font-size:15px;font-weight:700;color:#1e293b;}
+  .trow.total-row .tv{font-size:15px;font-weight:700;color:#f97316;}
+
+  /* ── PAYMENT BADGE ── */
+  .payment-info{
+    display:inline-flex;align-items:center;gap:6px;
+    background:#f0fdf4;border:1px solid #86efac;border-radius:6px;
+    padding:5px 12px;font-size:12px;color:#16a34a;font-weight:600;
+    margin-bottom:20px;
+  }
+
+  /* ── FOOTER ── */
+  .inv-footer{border-top:1px solid #e2e8f0;padding-top:16px;margin-top:auto;}
+  .inv-footer .terms{font-size:10.5px;color:#94a3b8;line-height:1.6;}
+  .inv-footer .thanks{font-size:13px;font-weight:600;color:#1e293b;margin-bottom:6px;}
+  .inv-footer .sig-line{
+    display:flex;justify-content:flex-end;margin-top:24px;
+  }
+  .sig-box{text-align:center;}
+  .sig-box .sig-line2{width:140px;border-top:1px solid #cbd5e1;padding-top:4px;font-size:10px;color:#94a3b8;}
+
+  /* ── STATUS WATERMARK ── */
+  .watermark{
+    position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-30deg);
+    font-size:80px;font-weight:800;color:rgba(239,68,68,.07);
+    pointer-events:none;z-index:0;letter-spacing:8px;
+    display:{{ 'block' if '[CANCELLED]' in (bill.cust or '') else 'none' }};
+  }
+
+  /* ── PRINT STYLES ── */
+  @media print{
+    .no-print{display:none!important;}
+    body{background:#fff;}
+    .paper{box-shadow:none;margin:0;border-radius:0;width:100%;padding:20px 24px;}
+    .watermark{position:fixed;}
+  }
+</style>
+</head>
+<body>
+
+<div class="watermark">CANCELLED</div>
+
+<!-- Controls (hidden on print) -->
+<div class="no-print">
+  <button onclick="window.print()" class="acc">🖨 Print / Save PDF</button>
+  <button onclick="window.close()">✕ Close</button>
+  <button onclick="sendWA()">💬 WhatsApp</button>
+  <span>Invoice {{ bill.id }}</span>
+</div>
+
+<!-- Invoice Paper -->
+<div class="paper">
+
+  <!-- Header -->
+  <div class="inv-head">
+    <div class="logo-block">
+      <div class="shop-name">SS &amp; CO</div>
+      <div class="shop-sub">Selvam Medicals</div>
+      <div class="shop-addr">
+        Retail &amp; Wholesale Pharmacy<br/>
+        Tamil Nadu, India<br/>
+        GSTIN: XXAAAAA0000A1Z5 &nbsp;|&nbsp; DL: XXXXXXXX
+      </div>
+    </div>
+    <div class="inv-meta">
+      <div class="inv-title">INVOICE</div>
+      <table>
+        <tr><td>Bill No.</td>    <td><strong>{{ bill.id }}</strong></td></tr>
+        <tr><td>Date</td>        <td>{{ bill.date or '—' }}</td></tr>
+        <tr><td>Payment</td>     <td>{{ (bill.pay or 'Cash')|upper }}</td></tr>
+        <tr><td>Type</td>        <td>{{ (bill.bill_type or 'Retail')|title }}</td></tr>
+        {% if bill.doctor and bill.doctor != 'Self' %}
+        <tr><td>Doctor Ref.</td> <td>{{ bill.doctor }}</td></tr>
+        {% endif %}
+      </table>
+    </div>
+  </div>
+
+  <hr class="accent-line"/>
+
+  <!-- Bill To -->
+  <div class="bill-to-row">
+    <div class="bill-to">
+      <div class="bt-label">Bill To</div>
+      <div class="bt-name">{{ bill.cust or 'Walk-in Customer' }}</div>
+      {% if bill.phone %}
+      <div class="bt-info">📞 {{ bill.phone }}</div>
+      {% endif %}
+    </div>
+    {% if bill.doctor and bill.doctor != 'Self' %}
+    <div class="bill-to">
+      <div class="bt-label">Prescribed By</div>
+      <div class="bt-name">Dr. {{ bill.doctor }}</div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Items Table -->
+  <div class="items-wrap">
+    <table class="inv-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Medicine / Product</th>
+          <th class="r">Qty</th>
+          <th class="r">Unit Price</th>
+          <th class="r">Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% set ns = namespace(sno=0) %}
+        {% for item in bill.items %}
+        {% set ns.sno = ns.sno + 1 %}
+        {% set name  = item.n or item.name or 'Item' %}
+        {% set qty   = item.qty or item.s or 1 %}
+        {% set price = item.p or 0 %}
+        {% set amt   = qty * price %}
+        <tr>
+          <td style="color:#94a3b8">{{ ns.sno }}</td>
+          <td>
+            <div class="item-name">{{ name }}</div>
+          </td>
+          <td class="r">{{ qty }}</td>
+          <td class="r">₹{{ "%.2f"|format(price) }}</td>
+          <td class="r" style="font-weight:600">₹{{ "%.2f"|format(amt) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Payment badge -->
+  <div class="payment-info">
+    ✓ Paid via {{ (bill.pay or 'Cash')|title }}
+  </div>
+
+  <!-- Totals -->
+  <div class="totals-section">
+    <div class="totals-box">
+      <div class="trow"><span class="tl">Subtotal</span><span class="tv">₹{{ "%.2f"|format(bill.sub or 0) }}</span></div>
+      <div class="trow disc"><span class="tl">Discount</span><span class="tv">- ₹{{ "%.2f"|format(bill.disc or 0) }}</span></div>
+      <div class="trow"><span class="tl">GST (incl.)</span><span class="tv">₹{{ "%.2f"|format(bill.tax or 0) }}</span></div>
+      <div class="trow total-row">
+        <span class="tl">TOTAL</span>
+        <span class="tv">₹{{ "%.2f"|format(bill.total or 0) }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="inv-footer">
+    <div class="thanks">Thank you for your purchase!</div>
+    <div class="terms">
+      • Medicines once sold cannot be returned without a valid prescription.<br/>
+      • Check expiry date before use. Store medicines as directed on the label.<br/>
+      • For queries or support, contact us at the number above.<br/>
+      • This is a computer-generated invoice — no signature required.
+    </div>
+    <div class="sig-line">
+      <div class="sig-box">
+        <div class="sig-line2">Authorised Signatory</div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /paper -->
+
+<script>
+async function sendWA(){
+  const phone = prompt('Customer WhatsApp number:','{{ bill.phone or "" }}');
+  if(!phone) return;
+  const res  = await fetch('/api/bills/{{ bill.id }}/whatsapp',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({phone})
+  });
+  const d = await res.json();
+  alert(d.status==='sent'||d.status==='mocked'
+    ? `✅ Receipt sent to ${phone}` : `❌ Failed: ${d.error||'unknown'}`);
+}
+</script>
+</body>
+</html>

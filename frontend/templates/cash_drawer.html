@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Cash Drawer — MediVision AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:Inter,sans-serif;background:#0b0e16;color:#e2e8f0;min-height:100vh;}
+.mono{font-family:'JetBrains Mono',monospace;}
+.topbar{background:#111827;border-bottom:1px solid rgba(255,255,255,.08);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;}
+.brand{font-weight:800;color:#f97316;font-size:1.05rem;}
+.brand i{margin-right:8px;}
+.nav-links{display:flex;gap:14px;}
+.nav-links a{color:#94a3b8;font-size:.85rem;transition:color .2s;text-decoration:none;}
+.nav-links a:hover{color:#fff;}
+.wrap{max-width:1400px;margin:0 auto;padding:24px;}
+h1{font-size:1.6rem;font-weight:800;color:#fff;margin-bottom:4px;}
+.sub{color:#94a3b8;font-size:.9rem;margin-bottom:24px;}
+
+/* KPI BAR */
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:24px;}
+.kpi{background:linear-gradient(145deg,#141824,#0f1320);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:18px 20px;}
+.kpi .lbl{color:#94a3b8;font-size:.74rem;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;}
+.kpi .val{color:#fff;font-size:1.7rem;font-weight:800;}
+.kpi .val.green{color:#4ade80;}
+.kpi .val.orange{color:#fb923c;}
+.kpi .val.red{color:#fca5a5;}
+.kpi .small{font-size:.75rem;color:#64748b;margin-top:4px;}
+
+/* DENOMINATION GRID */
+.deno-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px;margin-bottom:24px;}
+.deno{position:relative;background:linear-gradient(160deg,#141824,#0d111a);border:1.5px solid rgba(255,255,255,.08);border-radius:14px;padding:14px;transition:all .2s;cursor:pointer;}
+.deno:hover{border-color:rgba(249,115,22,.4);transform:translateY(-2px);}
+.deno.alert{border-color:rgba(239,68,68,.45);background:linear-gradient(160deg,rgba(239,68,68,.08),#0d111a);}
+.deno.alert::after{content:'⚠';position:absolute;top:8px;right:10px;color:#fca5a5;font-size:1rem;}
+.deno-head{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.deno-symbol{font-size:1.2rem;font-weight:800;}
+.note-500{color:#fbbf24;}.note-200{color:#fdba74;}.note-100{color:#f9a8d4;}.note-50{color:#86efac;}.note-20{color:#fca5a5;}.note-10{color:#a78bfa;}.note-2000{color:#c4b5fd;}
+.coin{color:#cbd5e1;}
+.deno-tag{font-size:.65rem;background:rgba(255,255,255,.06);color:#94a3b8;padding:2px 8px;border-radius:99px;text-transform:uppercase;letter-spacing:.04em;}
+.deno-count{font-size:1.8rem;font-weight:800;color:#fff;font-family:'JetBrains Mono',monospace;}
+.deno-value{color:#4ade80;font-size:.82rem;margin-top:2px;font-family:'JetBrains Mono',monospace;}
+.deno-min{color:#64748b;font-size:.7rem;margin-top:6px;}
+.deno-controls{display:flex;gap:4px;margin-top:8px;}
+.deno-btn{flex:1;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);color:#cbd5e1;padding:5px;border-radius:6px;font-size:.78rem;cursor:pointer;font-family:inherit;transition:background .15s;}
+.deno-btn:hover{background:rgba(249,115,22,.15);color:#fb923c;}
+
+/* PANELS */
+.panel-row{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:24px;}
+@media(max-width:900px){.panel-row{grid-template-columns:1fr;}}
+.panel{background:#141824;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:20px;}
+.panel h3{color:#f97316;font-size:.95rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+
+.input{width:100%;background:#0b0e16;border:1.5px solid rgba(255,255,255,.1);border-radius:9px;padding:10px 14px;color:#e2e8f0;font-family:inherit;font-size:.92rem;}
+.input:focus{outline:none;border-color:#f97316;}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 18px;border-radius:9px;font-weight:700;font-size:.88rem;border:none;cursor:pointer;font-family:inherit;transition:opacity .15s,transform .1s;}
+.btn-primary{background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;}
+.btn-primary:hover{opacity:.88;}
+.btn-green{background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;}
+.btn-green:hover{opacity:.88;}
+.btn-ghost{background:rgba(255,255,255,.05);color:#94a3b8;border:1px solid rgba(255,255,255,.1);}
+.btn-ghost:hover{background:rgba(255,255,255,.1);color:#fff;}
+
+/* GIVE CHANGE WIZARD */
+.gc-result{background:#0b0e16;border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:14px;margin-top:14px;}
+.gc-result.empty{opacity:.4;}
+.gc-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px dashed rgba(255,255,255,.05);font-family:'JetBrains Mono',monospace;font-size:.88rem;}
+.gc-row:last-child{border-bottom:none;}
+.gc-row .label{color:#94a3b8;}
+.gc-row .value{color:#fff;font-weight:700;}
+.gc-warn{color:#fca5a5;font-size:.82rem;margin-top:8px;padding:8px;background:rgba(239,68,68,.08);border-radius:6px;}
+
+/* TABLE */
+.tbl{width:100%;border-collapse:collapse;}
+.tbl th{background:#0d111a;color:#94a3b8;font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;text-align:left;padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.06);}
+.tbl td{padding:10px 12px;font-size:.85rem;border-bottom:1px solid rgba(255,255,255,.04);}
+.tbl tr:hover td{background:rgba(255,255,255,.02);}
+.tbl .mono{font-family:'JetBrains Mono',monospace;font-size:.8rem;}
+.pill{padding:2px 10px;border-radius:99px;font-size:.7rem;font-weight:700;display:inline-block;}
+.p-in{background:rgba(34,197,94,.18);color:#4ade80;}
+.p-out{background:rgba(239,68,68,.18);color:#fca5a5;}
+.p-ex{background:rgba(59,130,246,.18);color:#60a5fa;}
+
+/* MODAL */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);align-items:center;justify-content:center;z-index:100;backdrop-filter:blur(4px);}
+.modal-bg.show{display:flex;}
+.modal{background:#141824;border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:28px;width:480px;max-width:92vw;max-height:88vh;overflow-y:auto;}
+.modal h3{margin-bottom:18px;color:#f97316;font-size:1.05rem;}
+.modal-actions{display:flex;gap:8px;margin-top:18px;}
+.exch-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+
+.alert-banner{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:10px;padding:12px 16px;margin-bottom:18px;color:#fca5a5;font-size:.85rem;display:none;}
+.alert-banner.show{display:block;}
+
+@media(max-width:640px){
+  .topbar{padding:12px 16px;}
+  .nav-links{display:none;}
+  .wrap{padding:16px;}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand"><i class="fas fa-cash-register"></i> Cash Drawer</div>
+  <div class="nav-links">
+    <a href="/portal">Portal</a>
+    <a href="/expenses">Expenses</a>
+    <a href="/internal">POS</a>
+  </div>
+</div>
+
+<div class="wrap">
+  <h1>💵 Cash Drawer Management</h1>
+  <p class="sub">Live denomination tracking · auto-suggest change · expense alerts · exchange log</p>
+
+  <div class="alert-banner" id="alertBanner"></div>
+
+  <!-- KPI ROW -->
+  <div class="kpi-row">
+    <div class="kpi"><div class="lbl">Total Cash</div><div class="val green mono" id="kpiTotal">₹0</div><div class="small" id="kpiNotes">0 notes + 0 coins</div></div>
+    <div class="kpi"><div class="lbl">Today In</div><div class="val green mono" id="kpiIn">₹0</div><div class="small" id="kpiInCount">0 transactions</div></div>
+    <div class="kpi"><div class="lbl">Today Out</div><div class="val red mono" id="kpiOut">₹0</div><div class="small" id="kpiOutCount">0 transactions</div></div>
+    <div class="kpi"><div class="lbl">Low-Stock Alerts</div><div class="val orange mono" id="kpiAlerts">0</div><div class="small">denominations below threshold</div></div>
+  </div>
+
+  <!-- DENOMINATIONS -->
+  <div class="panel" style="margin-bottom:24px;">
+    <h3><i class="fas fa-coins"></i> Denominations <span style="margin-left:auto;font-weight:400;color:#64748b;font-size:.78rem;text-transform:none;">click to adjust · alerts trigger when count ≤ threshold</span></h3>
+    <div class="deno-grid" id="denoGrid">Loading…</div>
+  </div>
+
+  <!-- GIVE CHANGE + EXCHANGE -->
+  <div class="panel-row">
+
+    <!-- Give Change Wizard -->
+    <div class="panel">
+      <h3><i class="fas fa-magic"></i> Smart Change Calculator</h3>
+      <div style="display:flex;gap:10px;margin-bottom:10px;">
+        <input type="number" id="changeAmount" class="input" placeholder="Balance to give (e.g. 22)" />
+        <button class="btn btn-primary" onclick="suggestChange()">Calculate</button>
+      </div>
+      <div id="changeResult" class="gc-result empty">Enter an amount to see optimal denomination breakdown</div>
+    </div>
+
+    <!-- Exchange Card -->
+    <div class="panel">
+      <h3><i class="fas fa-exchange-alt"></i> Record Exchange</h3>
+      <p style="color:#94a3b8;font-size:.82rem;margin-bottom:12px;">Customer gave 6×₹20 for ₹100 · Petrol bunk gave 10×₹100 for ₹1000 · Bank deposit → small change</p>
+      <button class="btn btn-green" onclick="openExchange()" style="width:100%"><i class="fas fa-plus"></i> New Exchange</button>
+      <button class="btn btn-ghost" onclick="loadExchanges()" style="width:100%;margin-top:8px;"><i class="fas fa-history"></i> View Recent Exchanges</button>
+    </div>
+
+  </div>
+
+  <!-- MOVEMENTS LOG -->
+  <div class="panel">
+    <h3><i class="fas fa-list"></i> Recent Cash Movements</h3>
+    <div style="overflow-x:auto;">
+      <table class="tbl" id="movTable">
+        <thead><tr><th>Time</th><th>Type</th><th>Amount</th><th>Ref</th><th>Notes</th><th>Staff</th></tr></thead>
+        <tbody><tr><td colspan="6" style="text-align:center;padding:30px;color:#64748b;">Loading…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- ADJUST MODAL -->
+<div class="modal-bg" id="adjustModal" onclick="if(event.target===this)closeAdjust()">
+  <div class="modal">
+    <h3>Adjust <span id="adjDenom"></span></h3>
+    <p style="color:#94a3b8;font-size:.85rem;margin-bottom:10px;">Current count: <strong id="adjCurrent" style="color:#fff;font-family:monospace;"></strong></p>
+    <label style="font-size:.78rem;color:#94a3b8;text-transform:uppercase;letter-spacing:.04em;">New count</label>
+    <input type="number" id="adjNewCount" class="input" style="margin-top:6px;"/>
+    <label style="font-size:.78rem;color:#94a3b8;text-transform:uppercase;letter-spacing:.04em;display:block;margin-top:12px;">Alert threshold</label>
+    <input type="number" id="adjThreshold" class="input" style="margin-top:6px;"/>
+    <label style="font-size:.78rem;color:#94a3b8;text-transform:uppercase;letter-spacing:.04em;display:block;margin-top:12px;">Note (optional)</label>
+    <input type="text" id="adjNote" class="input" style="margin-top:6px;" placeholder="Petrol bunk exchange, opening balance, etc."/>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeAdjust()" style="flex:1">Cancel</button>
+      <button class="btn btn-primary" onclick="saveAdjust()" style="flex:1">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- EXCHANGE MODAL -->
+<div class="modal-bg" id="exchModal" onclick="if(event.target===this)closeExch()">
+  <div class="modal" style="width:680px;">
+    <h3>Record Cash Exchange</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+      <select id="exchParty" class="input">
+        <option value="customer">Customer</option>
+        <option value="petrol_bunk">Petrol Bunk</option>
+        <option value="bank">Bank</option>
+        <option value="shop_keeper">Other Shop</option>
+        <option value="other">Other</option>
+      </select>
+      <input id="exchPartyName" class="input" placeholder="Party name (optional)" />
+    </div>
+
+    <div class="exch-grid">
+      <div>
+        <h4 style="color:#fb923c;font-size:.85rem;margin-bottom:8px;">⬆ We GAVE</h4>
+        <div id="gaveInputs"></div>
+        <div style="margin-top:8px;color:#fb923c;font-family:monospace;font-size:.9rem;">Total: <span id="gaveTotal">₹0</span></div>
+      </div>
+      <div>
+        <h4 style="color:#4ade80;font-size:.85rem;margin-bottom:8px;">⬇ We RECEIVED</h4>
+        <div id="rcvdInputs"></div>
+        <div style="margin-top:8px;color:#4ade80;font-family:monospace;font-size:.9rem;">Total: <span id="rcvdTotal">₹0</span></div>
+      </div>
+    </div>
+
+    <input id="exchNotes" class="input" style="margin-top:14px;" placeholder="Notes (optional)"/>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeExch()" style="flex:1">Cancel</button>
+      <button class="btn btn-green" onclick="saveExch()" style="flex:2"><i class="fas fa-save"></i> Save Exchange</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DENOMS = [2000, 500, 200, 100, 50, 20, 10, 5, 2, 1];
+let drawer = {};
+
+async function loadDrawer(){
+  const r = await fetch('/api/cash/drawer');
+  const d = await r.json();
+  const grid = document.getElementById('denoGrid');
+  grid.innerHTML = '';
+  let totalNotes = 0, totalCoins = 0;
+  drawer = {};
+  d.items.forEach(it => {
+    drawer[it.denomination] = it.count;
+    if(it.kind === 'coin') totalCoins += it.count;
+    else totalNotes += it.count;
+    const klass = it.kind==='coin' ? 'coin' : `note-${it.denomination}`;
+    const symbol = it.denomination >= 10 ? `₹${it.denomination}` : `₹${it.denomination}`;
+    grid.innerHTML += `
+      <div class="deno ${it.count <= it.min_alert ? 'alert' : ''}" onclick="openAdjust(${it.denomination}, ${it.count}, ${it.min_alert})">
+        <div class="deno-head">
+          <span class="deno-symbol ${klass}">${symbol}</span>
+          <span class="deno-tag">${it.kind}</span>
+        </div>
+        <div class="deno-count">${it.count}</div>
+        <div class="deno-value">= ₹${(it.value).toLocaleString('en-IN')}</div>
+        <div class="deno-min">Alert at ≤${it.min_alert}</div>
+        <div class="deno-controls">
+          <button class="deno-btn" onclick="event.stopPropagation();quickAdjust(${it.denomination}, 1)">+1</button>
+          <button class="deno-btn" onclick="event.stopPropagation();quickAdjust(${it.denomination}, -1)">-1</button>
+          <button class="deno-btn" onclick="event.stopPropagation();quickAdjust(${it.denomination}, 5)">+5</button>
+          <button class="deno-btn" onclick="event.stopPropagation();quickAdjust(${it.denomination}, 10)">+10</button>
+        </div>
+      </div>`;
+  });
+  document.getElementById('kpiTotal').textContent = '₹' + d.total_cash.toLocaleString('en-IN');
+  document.getElementById('kpiNotes').textContent = `${totalNotes} notes + ${totalCoins} coins`;
+  document.getElementById('kpiAlerts').textContent = d.alerts.length;
+  // alert banner
+  const ab = document.getElementById('alertBanner');
+  if(d.alerts.length){
+    ab.classList.add('show');
+    ab.innerHTML = '<i class="fas fa-triangle-exclamation"></i> &nbsp;<strong>Low stock:</strong> '
+      + d.alerts.map(a => `₹${a.denomination} (${a.count} left)`).join(' · ');
+  } else {
+    ab.classList.remove('show');
+  }
+}
+
+async function loadMovements(){
+  const r = await fetch('/api/cash/movements');
+  const d = await r.json();
+  const tb = document.querySelector('#movTable tbody');
+  if(!d.movements.length){
+    tb.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;color:#64748b;">No movements yet</td></tr>';
+    return;
+  }
+  let todayIn = 0, todayOut = 0, inCount = 0, outCount = 0;
+  const today = new Date().toISOString().slice(0,10);
+  tb.innerHTML = d.movements.map(m => {
+    const pillCls = m.kind.includes('in') ? 'p-in' : (m.kind.includes('out') ? 'p-out' : 'p-ex');
+    if(m.ts && m.ts.startsWith(today)){
+      if(m.kind.includes('in')){ todayIn += m.amount; inCount++; }
+      else if(m.kind.includes('out')){ todayOut += m.amount; outCount++; }
+    }
+    return `<tr>
+      <td class="mono">${m.ts ? m.ts.slice(0,19).replace('T',' ') : '-'}</td>
+      <td><span class="pill ${pillCls}">${m.kind}</span></td>
+      <td class="mono" style="color:${m.kind.includes('in')?'#4ade80':'#fca5a5'};">₹${m.amount.toLocaleString('en-IN')}</td>
+      <td>${m.ref_type||'-'}/${m.ref_id||''}</td>
+      <td style="color:#94a3b8;font-size:.82rem;">${m.note||'-'}</td>
+      <td style="color:#94a3b8;">${m.staff_name||'-'}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('kpiIn').textContent = '₹' + todayIn.toLocaleString('en-IN');
+  document.getElementById('kpiInCount').textContent = `${inCount} transactions`;
+  document.getElementById('kpiOut').textContent = '₹' + todayOut.toLocaleString('en-IN');
+  document.getElementById('kpiOutCount').textContent = `${outCount} transactions`;
+}
+
+async function suggestChange(){
+  const amount = parseFloat(document.getElementById('changeAmount').value || 0);
+  const div = document.getElementById('changeResult');
+  if(!amount || amount <= 0){
+    div.className = 'gc-result empty';
+    div.textContent = 'Enter an amount to see optimal denomination breakdown';
+    return;
+  }
+  const r = await fetch('/api/cash/suggest-change', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({amount})});
+  const d = await r.json();
+  div.className = 'gc-result';
+  let html = `<div class="gc-row"><span class="label">Balance to give</span><span class="value">₹${amount}</span></div>`;
+  const denoms = Object.keys(d.breakdown).sort((a,b)=>b-a);
+  if(!denoms.length){
+    html += '<div class="gc-warn">No denomination available! Drawer empty for this amount.</div>';
+  } else {
+    denoms.forEach(dn => {
+      html += `<div class="gc-row">
+        <span class="label">${d.breakdown[dn]} × ₹${dn}</span>
+        <span class="value">₹${parseInt(dn)*d.breakdown[dn]}</span>
+      </div>`;
+    });
+  }
+  if(d.shortage > 0){
+    html += `<div class="gc-warn">⚠ Can only give ₹${d.amount_can_give} — short by ₹${d.shortage}. Need more change!</div>`;
+  }
+  div.innerHTML = html;
+}
+
+// ── ADJUST modal ──
+let adjusting = null;
+function openAdjust(denom, count, threshold){
+  adjusting = denom;
+  document.getElementById('adjDenom').textContent = '₹' + denom;
+  document.getElementById('adjCurrent').textContent = count;
+  document.getElementById('adjNewCount').value = count;
+  document.getElementById('adjThreshold').value = threshold;
+  document.getElementById('adjNote').value = '';
+  document.getElementById('adjustModal').classList.add('show');
+}
+function closeAdjust(){ document.getElementById('adjustModal').classList.remove('show'); adjusting = null; }
+async function saveAdjust(){
+  if(!adjusting) return;
+  const newCount = parseInt(document.getElementById('adjNewCount').value || 0);
+  const threshold = parseInt(document.getElementById('adjThreshold').value || 0);
+  const note = document.getElementById('adjNote').value;
+  await fetch('/api/cash/drawer/adjust', {method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({denomination:adjusting, count:newCount, note})});
+  await fetch('/api/cash/drawer/threshold', {method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({denomination:adjusting, min_alert:threshold})});
+  closeAdjust();
+  loadDrawer();
+  loadMovements();
+}
+
+async function quickAdjust(denom, delta){
+  const newCount = Math.max(0, (drawer[denom]||0) + delta);
+  await fetch('/api/cash/drawer/adjust', {method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({denomination:denom, count:newCount, note:`Quick ${delta>0?'+':''}${delta}`})});
+  loadDrawer();
+  loadMovements();
+}
+
+// ── EXCHANGE modal ──
+function openExchange(){
+  const html = DENOMS.map(d => `
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+      <span style="width:48px;font-family:monospace;font-size:.85rem;color:#cbd5e1;">₹${d}</span>
+      <input type="number" min="0" data-d="${d}" class="input gave" style="padding:6px 10px;font-size:.85rem;" placeholder="0"/>
+    </div>`).join('');
+  document.getElementById('gaveInputs').innerHTML = html;
+  document.getElementById('rcvdInputs').innerHTML = html.replace(/class="input gave"/g, 'class="input rcvd"');
+  document.querySelectorAll('.gave').forEach(i => i.addEventListener('input', recalcExch));
+  document.querySelectorAll('.rcvd').forEach(i => i.addEventListener('input', recalcExch));
+  document.getElementById('exchModal').classList.add('show');
+  recalcExch();
+}
+function closeExch(){ document.getElementById('exchModal').classList.remove('show'); }
+function recalcExch(){
+  let g = 0, r = 0;
+  document.querySelectorAll('.gave').forEach(i => {
+    g += (parseInt(i.value||0)) * parseInt(i.dataset.d);
+  });
+  document.querySelectorAll('.rcvd').forEach(i => {
+    r += (parseInt(i.value||0)) * parseInt(i.dataset.d);
+  });
+  document.getElementById('gaveTotal').textContent = '₹' + g;
+  document.getElementById('rcvdTotal').textContent = '₹' + r;
+}
+async function saveExch(){
+  const given = {}, received = {};
+  document.querySelectorAll('.gave').forEach(i => {
+    const v = parseInt(i.value || 0);
+    if(v > 0) given[i.dataset.d] = v;
+  });
+  document.querySelectorAll('.rcvd').forEach(i => {
+    const v = parseInt(i.value || 0);
+    if(v > 0) received[i.dataset.d] = v;
+  });
+  if(!Object.keys(given).length && !Object.keys(received).length){
+    alert('Enter at least one denomination'); return;
+  }
+  const body = {
+    party: document.getElementById('exchParty').value,
+    party_name: document.getElementById('exchPartyName').value,
+    given, received,
+    notes: document.getElementById('exchNotes').value
+  };
+  const res = await fetch('/api/cash/exchange', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const d = await res.json();
+  if(d.status === 'ok'){
+    closeExch();
+    loadDrawer();
+    loadMovements();
+  }
+}
+
+async function loadExchanges(){
+  const r = await fetch('/api/cash/exchanges');
+  const d = await r.json();
+  if(!d.exchanges.length){
+    alert('No exchanges recorded yet.');
+    return;
+  }
+  const lines = d.exchanges.slice(0,10).map(e =>
+    `${e.ts} · ${e.party} (${e.party_name||'-'}) · gave ₹${Object.entries(e.given).map(([k,v])=>v+'×'+k).join('+')} · got ₹${Object.entries(e.received).map(([k,v])=>v+'×'+k).join('+')}`
+  );
+  alert('Recent exchanges:\n\n' + lines.join('\n'));
+}
+
+loadDrawer();
+loadMovements();
+setInterval(loadDrawer, 30000);  // auto-refresh every 30s
+</script>
+</body>
+</html>

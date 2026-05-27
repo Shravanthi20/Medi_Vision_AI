@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>High-Margin Combinations — MediVision AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:Inter,sans-serif;background:#0b0e16;color:#e2e8f0;min-height:100vh;}
+.mono{font-family:'JetBrains Mono',monospace;}
+.topbar{background:#111827;border-bottom:1px solid rgba(255,255,255,.08);padding:14px 28px;display:flex;justify-content:space-between;align-items:center;}
+.brand{font-weight:800;color:#f97316;}
+.nav-links a{color:#94a3b8;font-size:.85rem;text-decoration:none;margin-left:14px;}
+.wrap{max-width:1400px;margin:0 auto;padding:24px;}
+h1{font-size:1.6rem;font-weight:800;color:#fff;}
+.sub{color:#94a3b8;font-size:.92rem;margin-bottom:18px;}
+.tabs{display:flex;gap:8px;margin-bottom:18px;}
+.tab{padding:10px 18px;background:#141824;border:1px solid rgba(255,255,255,.06);border-radius:9px;color:#94a3b8;cursor:pointer;font-size:.88rem;font-weight:600;}
+.tab.active{background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;border-color:#f97316;}
+.toolbar{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:center;}
+.btn{padding:9px 16px;border-radius:8px;font-weight:700;font-size:.84rem;border:none;cursor:pointer;font-family:inherit;}
+.btn-primary{background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;}
+.btn-ghost{background:rgba(255,255,255,.05);color:#94a3b8;border:1px solid rgba(255,255,255,.1);}
+.input,select{background:#141824;border:1.5px solid rgba(255,255,255,.1);border-radius:8px;padding:8px 12px;color:#e2e8f0;font-family:inherit;font-size:.85rem;}
+.panel{background:#141824;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:16px;}
+.tbl{width:100%;border-collapse:collapse;}
+.tbl th{background:#0d111a;color:#94a3b8;font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;text-align:left;padding:9px 12px;cursor:pointer;}
+.tbl td{padding:9px 12px;font-size:.84rem;border-bottom:1px solid rgba(255,255,255,.04);}
+.tbl tr:hover td{background:rgba(255,255,255,.02);}
+.combo-rank{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;font-weight:800;font-size:.75rem;display:inline-flex;align-items:center;justify-content:center;}
+.combo-rank.top{background:linear-gradient(135deg,#fbbf24,#f59e0b);}
+.score-bar{display:inline-block;width:60px;height:6px;background:rgba(255,255,255,.06);border-radius:99px;overflow:hidden;margin-right:6px;vertical-align:middle;}
+.score-bar div{height:100%;background:linear-gradient(90deg,#4ade80,#16a34a);}
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:18px;}
+.kpi{background:linear-gradient(145deg,#141824,#0f1320);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:14px;}
+.kpi .l{color:#94a3b8;font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;}
+.kpi .v{color:#fff;font-size:1.4rem;font-weight:800;font-family:'JetBrains Mono',monospace;margin-top:4px;}
+.kpi.green .v{color:#4ade80;}
+.kpi.orange .v{color:#fb923c;}
+.medkind{padding:2px 9px;border-radius:99px;font-size:.7rem;background:rgba(255,255,255,.05);color:#cbd5e1;}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="brand"><i class="fas fa-shapes"></i> High-Margin Combinations</div>
+  <div><a href="/portal" class="nav-links">Portal</a><a href="/reports" class="nav-links">Reports</a></div>
+</div>
+
+<div class="wrap">
+  <h1>💡 Combination Selling — What to Upsell</h1>
+  <p class="sub">Real co-purchase patterns from your 537+ bills · ranked by margin potential. Use these at the counter.</p>
+
+  <div class="tabs">
+    <div class="tab active" data-v="combos" onclick="switchTab('combos')"><i class="fas fa-link"></i> Combo Pairs</div>
+    <div class="tab" data-v="syrups" onclick="switchTab('syrups')"><i class="fas fa-flask"></i> Syrups Available</div>
+  </div>
+
+  <div id="combosView">
+    <div class="toolbar">
+      <label style="color:#94a3b8;font-size:.82rem;">Period:</label>
+      <select id="preset" onchange="loadCombos()">
+        <option value="all">All time</option>
+        <option value="month">This month</option>
+        <option value="year" selected>This year</option>
+        <option value="last_month">Last month</option>
+      </select>
+      <label style="color:#94a3b8;font-size:.82rem;">Min count:</label>
+      <input type="number" id="minCount" value="2" min="1" style="width:60px;" onchange="loadCombos()" class="input"/>
+      <button class="btn btn-ghost" onclick="exportCSV()"><i class="fas fa-download"></i> CSV</button>
+    </div>
+
+    <div class="kpi-row" id="comboKPIs"></div>
+
+    <div class="panel">
+      <table class="tbl" id="comboTable">
+        <thead><tr>
+          <th>#</th><th>Item A</th><th>Item B</th><th>Type</th>
+          <th>Bought Together</th><th>Avg Basket ₹</th><th>Est Margin/Combo</th><th>Score</th>
+        </tr></thead>
+        <tbody><tr><td colspan="8" style="text-align:center;padding:30px;color:#64748b;">Loading…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="syrupsView" style="display:none;">
+    <div class="panel">
+      <h3 style="color:#f97316;font-size:.95rem;margin-bottom:14px;text-transform:uppercase;letter-spacing:.05em;">All Available Syrups, Tonics &amp; Drops <span id="syrCount" style="color:#94a3b8;font-weight:400;font-size:.85rem;"></span></h3>
+      <table class="tbl" id="syrTable">
+        <thead><tr><th>Name</th><th>Category</th><th>Price ₹</th><th>Stock</th><th>Stock Value</th></tr></thead>
+        <tbody><tr><td colspan="5" style="text-align:center;padding:30px;color:#64748b;">Loading…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+function switchTab(v){
+  document.querySelectorAll('.tab').forEach(el => el.classList.toggle('active', el.dataset.v === v));
+  document.getElementById('combosView').style.display = v === 'combos' ? '' : 'none';
+  document.getElementById('syrupsView').style.display = v === 'syrups' ? '' : 'none';
+  if(v === 'syrups') loadSyrups();
+}
+
+async function loadCombos(){
+  const preset = document.getElementById('preset').value;
+  const min = document.getElementById('minCount').value;
+  const r = await fetch(`/api/combinations/high-margin?preset=${preset}&min=${min}&limit=200`);
+  const d = await r.json();
+
+  const top = d.combos[0];
+  document.getElementById('comboKPIs').innerHTML = `
+    <div class="kpi"><div class="l">Combos found</div><div class="v">${d.combos.length}</div></div>
+    <div class="kpi"><div class="l">Baskets analyzed</div><div class="v">${d.baskets_analyzed}</div></div>
+    <div class="kpi orange"><div class="l">Top combo score</div><div class="v">${top ? top.score.toFixed(0) : '—'}</div></div>
+    <div class="kpi green"><div class="l">Total margin potential</div><div class="v">₹${d.combos.reduce((s,c)=>s+c.est_margin_per_combo*c.count,0).toFixed(0)}</div></div>
+  `;
+
+  const maxScore = top ? top.score : 1;
+  const tb = document.querySelector('#comboTable tbody');
+  if(!d.combos.length){
+    tb.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:30px;color:#64748b;">No combos found — try a larger date range</td></tr>';
+    return;
+  }
+  tb.innerHTML = d.combos.map((c, i) => `
+    <tr>
+      <td><span class="combo-rank ${i < 3 ? 'top' : ''}">${i + 1}</span></td>
+      <td><strong>${c.a}</strong></td>
+      <td><strong>${c.b}</strong></td>
+      <td><span class="medkind">${c.kind}</span></td>
+      <td class="mono">${c.count}×</td>
+      <td class="mono" style="color:#4ade80;">₹${c.avg_basket_value.toFixed(0)}</td>
+      <td class="mono" style="color:#fb923c;">₹${c.est_margin_per_combo.toFixed(2)}</td>
+      <td>
+        <span class="score-bar"><div style="width:${(c.score / maxScore * 100).toFixed(0)}%;"></div></span>
+        <span class="mono" style="font-weight:700;color:#fb923c;">${c.score.toFixed(0)}</span>
+      </td>
+    </tr>`).join('');
+}
+
+async function loadSyrups(){
+  const r = await fetch('/api/combinations/syrups');
+  const d = await r.json();
+  document.getElementById('syrCount').textContent = `(${d.total} found)`;
+  const tb = document.querySelector('#syrTable tbody');
+  if(!d.syrups.length){
+    tb.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:30px;color:#64748b;">No syrups in stock</td></tr>';
+    return;
+  }
+  tb.innerHTML = d.syrups.map(m => `<tr>
+    <td><strong>${m.n}</strong></td>
+    <td><span class="medkind">${m.c||'-'}</span></td>
+    <td class="mono">₹${(m.p||0).toFixed(2)}</td>
+    <td class="mono" style="color:#4ade80;">${m.s}</td>
+    <td class="mono" style="color:#fb923c;">₹${(m.p*m.s).toFixed(0)}</td>
+  </tr>`).join('');
+}
+
+function exportCSV(){
+  const preset = document.getElementById('preset').value;
+  window.open(`/api/reports/export?report=market-basket&preset=${preset}`, '_blank');
+}
+
+loadCombos();
+</script>
+</body>
+</html>

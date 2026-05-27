@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Dashboard — MediVision AI</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --green: #16a34a; --green-dark: #15803d; --green-light: #dcfce7;
+      --blue: #2563eb; --indigo: #4f46e5; --orange: #ea580c;
+      --gray: #6b7280; --gray-light: #f9fafb; --gray-border: #e5e7eb;
+      --text: #111827; --sidebar-w: 240px; --err: #dc2626;
+    }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--gray-light); color: var(--text); display: flex; min-height: 100vh; }
+
+    /* SIDEBAR */
+    .sidebar { width: var(--sidebar-w); background: #1e293b; color: white; position: fixed; top: 0; left: 0; height: 100vh; display: flex; flex-direction: column; z-index: 50; transition: transform .3s; }
+    .sb-logo { padding: 24px 20px 20px; border-bottom: 1px solid rgba(255,255,255,.08); }
+    .sb-logo .logo-row { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 1.05rem; }
+    .cross { width: 32px; height: 32px; background: var(--green); border-radius: 7px; display: flex; align-items: center; justify-content: center; }
+    .cross svg { fill: white; }
+    .sb-logo .badge { font-size: .7rem; background: rgba(255,255,255,.12); color: rgba(255,255,255,.7); padding: 2px 8px; border-radius: 10px; margin-top: 6px; display: inline-block; }
+    .sb-nav { flex: 1; padding: 16px 12px; overflow-y: auto; }
+    .sb-section { font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; color: rgba(255,255,255,.35); padding: 14px 8px 6px; }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; cursor: pointer; font-size: .88rem; color: rgba(255,255,255,.65); transition: all .2s; margin-bottom: 2px; }
+    .nav-item:hover { background: rgba(255,255,255,.07); color: white; }
+    .nav-item.active { background: var(--green); color: white; }
+    .nav-item .icon { font-size: 1rem; width: 20px; text-align: center; }
+    .nav-item .badge { margin-left: auto; background: var(--err); color: white; font-size: .68rem; font-weight: 700; padding: 1px 6px; border-radius: 10px; }
+    .sb-footer { padding: 16px; border-top: 1px solid rgba(255,255,255,.08); }
+    .admin-info { font-size: .8rem; color: rgba(255,255,255,.55); }
+    .admin-info strong { color: white; display: block; font-size: .85rem; }
+    .logout-btn { margin-top: 10px; display: block; width: 100%; padding: 8px; text-align: center; background: rgba(255,255,255,.07); color: rgba(255,255,255,.65); border: none; border-radius: 7px; cursor: pointer; font-size: .82rem; transition: background .2s; }
+    .logout-btn:hover { background: rgba(255,0,0,.2); color: white; }
+
+    /* MAIN */
+    .main { margin-left: var(--sidebar-w); flex: 1; min-height: 100vh; }
+    .topbar { background: white; border-bottom: 1px solid var(--gray-border); padding: 0 28px; height: 60px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 40; }
+    .topbar h1 { font-size: 1.1rem; font-weight: 700; }
+    .topbar .actions { display: flex; gap: 10px; align-items: center; }
+    .btn { padding: 8px 18px; border-radius: 8px; font-weight: 600; font-size: .83rem; cursor: pointer; border: none; transition: all .2s; }
+    .btn-green { background: var(--green); color: white; }
+    .btn-green:hover { background: var(--green-dark); }
+    .btn-outline { background: transparent; border: 1.5px solid var(--gray-border); color: var(--gray); }
+    .btn-outline:hover { border-color: var(--green); color: var(--green); }
+    .btn-sm { padding: 5px 12px; font-size: .78rem; border-radius: 6px; }
+    .btn-approve { background: var(--green-light); color: var(--green-dark); border: 1px solid #bbf7d0; }
+    .btn-approve:hover { background: var(--green); color: white; }
+    .btn-reject { background: #fee2e2; color: var(--err); border: 1px solid #fecaca; }
+    .btn-reject:hover { background: var(--err); color: white; }
+    .btn-blue { background: #dbeafe; color: var(--blue); border: 1px solid #bfdbfe; }
+    .btn-blue:hover { background: var(--blue); color: white; }
+
+    .content { padding: 28px; }
+
+    /* PANELS */
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    /* KPI CARDS */
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 28px; }
+    .kpi { background: white; border-radius: 12px; padding: 20px; border: 1px solid var(--gray-border); }
+    .kpi-val { font-size: 2rem; font-weight: 800; }
+    .kpi-lbl { font-size: .78rem; color: var(--gray); margin-top: 4px; }
+    .kpi.green .kpi-val { color: var(--green); }
+    .kpi.blue .kpi-val { color: var(--blue); }
+    .kpi.orange .kpi-val { color: var(--orange); }
+    .kpi.red .kpi-val { color: var(--err); }
+
+    /* TABLES */
+    .card { background: white; border-radius: 12px; border: 1px solid var(--gray-border); overflow: hidden; margin-bottom: 24px; }
+    .card-header { padding: 16px 20px; border-bottom: 1px solid var(--gray-border); display: flex; align-items: center; justify-content: space-between; }
+    .card-header h3 { font-size: .95rem; font-weight: 700; }
+    .card-header .sub { font-size: .78rem; color: var(--gray); }
+    table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+    th { background: var(--gray-light); padding: 10px 16px; text-align: left; font-size: .75rem; font-weight: 700; color: var(--gray); text-transform: uppercase; letter-spacing: .5px; }
+    td { padding: 12px 16px; border-bottom: 1px solid #f3f4f6; vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #fafafa; }
+
+    .pill { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 12px; font-size: .72rem; font-weight: 700; }
+    .pill-pending { background: #fef9c3; color: #854d0e; }
+    .pill-approved { background: var(--green-light); color: var(--green-dark); }
+    .pill-rejected { background: #fee2e2; color: var(--err); }
+    .pill-wholesale { background: #e0e7ff; color: #3730a3; }
+    .pill-retail { background: #dbeafe; color: #1e40af; }
+    .pill-active { background: var(--green-light); color: var(--green-dark); }
+    .pill-inactive { background: #fee2e2; color: var(--err); }
+
+    .search-bar { padding: 9px 14px; border: 1.5px solid var(--gray-border); border-radius: 8px; font-size: .88rem; outline: none; min-width: 220px; }
+    .search-bar:focus { border-color: var(--green); }
+    .filter-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; }
+    .filter-select { padding: 8px 12px; border: 1.5px solid var(--gray-border); border-radius: 8px; font-size: .84rem; outline: none; }
+
+    /* MODAL */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 200; display: none; align-items: center; justify-content: center; }
+    .modal-overlay.open { display: flex; }
+    .modal { background: white; border-radius: 16px; padding: 32px; width: min(520px, 96vw); max-height: 90vh; overflow-y: auto; }
+    .modal h2 { font-size: 1.2rem; font-weight: 800; margin-bottom: 20px; }
+    .modal-close { float: right; background: none; border: none; font-size: 1.4rem; cursor: pointer; color: var(--gray); }
+    .field-group { margin-bottom: 14px; }
+    .field-group label { display: block; font-size: .8rem; font-weight: 700; color: #374151; margin-bottom: 5px; }
+    .field-group input { width: 100%; padding: 10px 13px; border: 1.5px solid var(--gray-border); border-radius: 8px; font-size: .9rem; outline: none; }
+    .field-group input:focus { border-color: var(--green); }
+    .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+    .detail-item { font-size: .84rem; }
+    .detail-item .lbl { font-size: .72rem; font-weight: 700; color: var(--gray); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 3px; }
+    .detail-item .val { color: var(--text); }
+    .modal-err { color: var(--err); font-size: .82rem; margin-top: 10px; }
+    .modal-success { color: var(--green); font-size: .82rem; margin-top: 10px; }
+
+    .empty-state { text-align: center; padding: 48px 20px; color: var(--gray); }
+    .empty-state .icon { font-size: 2.5rem; margin-bottom: 12px; }
+    .empty-state p { font-size: .9rem; }
+
+    .tab-row { display: flex; gap: 4px; border-bottom: 1px solid var(--gray-border); margin-bottom: 20px; }
+    .tab-btn { padding: 10px 18px; border: none; background: none; cursor: pointer; font-size: .88rem; font-weight: 600; color: var(--gray); border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all .2s; }
+    .tab-btn.active { color: var(--green); border-bottom-color: var(--green); }
+
+    .toast { position: fixed; bottom: 24px; right: 24px; background: #1e293b; color: white; padding: 12px 20px; border-radius: 10px; font-size: .88rem; z-index: 999; transform: translateY(80px); opacity: 0; transition: all .3s; }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast.green { background: var(--green); }
+    .toast.red { background: var(--err); }
+
+    @media(max-width:768px){ .sidebar{transform:translateX(-100%)} .main{margin-left:0} }
+  </style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN (shown if not authenticated) -->
+<div id="loginScreen" style="position:fixed;inset:0;background:linear-gradient(135deg,#f0fdf4,#eff6ff);display:flex;align-items:center;justify-content:center;z-index:300;">
+  <div style="background:white;border-radius:16px;padding:40px;width:360px;box-shadow:0 20px 60px rgba(0,0,0,.12);">
+    <div style="text-align:center;margin-bottom:28px;">
+      <div style="width:48px;height:48px;background:var(--green);border-radius:12px;margin:0 auto 12px;display:flex;align-items:center;justify-content:center;">
+        <svg width="24" height="24" viewBox="0 0 20 20" fill="white"><rect x="8" y="2" width="4" height="16" rx="1"/><rect x="2" y="8" width="16" height="4" rx="1"/></svg>
+      </div>
+      <h2 style="font-size:1.3rem;font-weight:800">Admin Login</h2>
+      <p style="font-size:.84rem;color:var(--gray);margin-top:4px">MediVision AI Platform</p>
+    </div>
+    <div style="margin-bottom:14px">
+      <label style="display:block;font-size:.8rem;font-weight:700;margin-bottom:5px">Username</label>
+      <input id="adminUser" type="text" placeholder="admin" style="width:100%;padding:10px 13px;border:1.5px solid var(--gray-border);border-radius:8px;font-size:.92rem;outline:none;" onkeydown="if(event.key==='Enter')doAdminLogin()" />
+    </div>
+    <div style="margin-bottom:20px">
+      <label style="display:block;font-size:.8rem;font-weight:700;margin-bottom:5px">Password</label>
+      <input id="adminPass" type="password" placeholder="••••••••" style="width:100%;padding:10px 13px;border:1.5px solid var(--gray-border);border-radius:8px;font-size:.92rem;outline:none;" onkeydown="if(event.key==='Enter')doAdminLogin()" />
+    </div>
+    <div id="loginErr" style="color:var(--err);font-size:.82rem;margin-bottom:10px;display:none"></div>
+    <button onclick="doAdminLogin()" style="width:100%;padding:12px;background:var(--green);color:white;border:none;border-radius:8px;font-weight:700;font-size:.95rem;cursor:pointer;">Sign In</button>
+    <p style="text-align:center;margin-top:16px;font-size:.8rem;color:var(--gray)">Default: admin / admin@123</p>
+  </div>
+</div>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sb-logo">
+    <div class="logo-row">
+      <div class="cross"><svg width="16" height="16" viewBox="0 0 20 20"><rect x="8" y="2" width="4" height="16" rx="1"/><rect x="2" y="8" width="16" height="4" rx="1"/></svg></div>
+      MediVision AI
+    </div>
+    <span class="badge">Platform Admin</span>
+  </div>
+  <nav class="sb-nav">
+    <div class="sb-section">Overview</div>
+    <div class="nav-item active" onclick="showPanel('overview')"><span class="icon">📊</span> Dashboard</div>
+
+    <div class="sb-section">Registrations</div>
+    <div class="nav-item" onclick="showPanel('pending')"><span class="icon">⏳</span> Pending <span class="badge" id="pendingBadge">0</span></div>
+    <div class="nav-item" onclick="showPanel('approved')"><span class="icon">✅</span> Approved</div>
+    <div class="nav-item" onclick="showPanel('rejected')"><span class="icon">❌</span> Rejected</div>
+
+    <div class="sb-section">Accounts</div>
+    <div class="nav-item" onclick="showPanel('wholesale')"><span class="icon">🏭</span> Wholesale</div>
+    <div class="nav-item" onclick="showPanel('retail')"><span class="icon">🏪</span> Retail Shops</div>
+
+    <div class="sb-section">System</div>
+    <div class="nav-item" onclick="showPanel('catalog')"><span class="icon">📋</span> Wholesaler Catalog</div>
+
+    <div class="sb-section">SaaS</div>
+    <a class="nav-item" href="/admin/saas" style="color:rgba(255,255,255,.65);text-decoration:none"><span class="icon">💰</span> SaaS Billing</a>
+  </nav>
+  <div class="sb-footer">
+    <div class="admin-info"><strong id="adminNameDisplay">Admin</strong> Platform Administrator</div>
+    <button class="logout-btn" onclick="doLogout()">Sign Out</button>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+  <div class="topbar">
+    <h1 id="panelTitle">Dashboard</h1>
+    <div class="actions">
+      <button class="btn btn-outline btn-sm" onclick="refreshAll()">↻ Refresh</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- OVERVIEW PANEL -->
+    <div class="panel active" id="panel-overview">
+      <div class="kpi-grid" id="kpiGrid">
+        <div class="kpi red"><div class="kpi-val" id="k-pending">—</div><div class="kpi-lbl">Pending Registrations</div></div>
+        <div class="kpi green"><div class="kpi-val" id="k-wholesale">—</div><div class="kpi-lbl">Active Wholesale Accounts</div></div>
+        <div class="kpi blue"><div class="kpi-val" id="k-retail">—</div><div class="kpi-lbl">Active Retail Shops</div></div>
+        <div class="kpi green"><div class="kpi-val" id="k-bills">—</div><div class="kpi-lbl">Bills Today</div></div>
+        <div class="kpi orange"><div class="kpi-val" id="k-approved">—</div><div class="kpi-lbl">Total Approved</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h3>Recent Pending Registrations</h3><button class="btn btn-green btn-sm" onclick="showPanel('pending')">View All</button></div>
+        <div id="overviewPendingTable"><div class="empty-state"><div class="icon">⏳</div><p>Loading...</p></div></div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+        <div class="card">
+          <div class="card-header"><h3>Recent Wholesale Accounts</h3></div>
+          <div id="overviewWholesaleTable"><div class="empty-state"><p>Loading...</p></div></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3>Recent Retail Shops</h3></div>
+          <div id="overviewRetailTable"><div class="empty-state"><p>Loading...</p></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PENDING PANEL -->
+    <div class="panel" id="panel-pending">
+      <div class="filter-row">
+        <input class="search-bar" type="text" placeholder="Search name, phone, city..." id="pendingSearch" oninput="filterTable('pendingTbody', this.value)" />
+        <button class="btn btn-green btn-sm" onclick="loadRegistrations('pending')">↻ Refresh</button>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3>Pending Registrations</h3><span class="sub">Review and approve or reject each application</span></div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr>
+              <th>#</th><th>Type</th><th>Business Name</th><th>Owner</th>
+              <th>Phone</th><th>City</th><th>GSTIN</th><th>Drug Lic.</th>
+              <th>Submitted</th><th>Actions</th>
+            </tr></thead>
+            <tbody id="pendingTbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- APPROVED PANEL -->
+    <div class="panel" id="panel-approved">
+      <div class="filter-row">
+        <input class="search-bar" type="text" placeholder="Search..." id="approvedSearch" oninput="filterTable('approvedTbody', this.value)" />
+      </div>
+      <div class="card">
+        <div class="card-header"><h3>Approved Registrations</h3></div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr><th>Type</th><th>Business Name</th><th>Owner</th><th>Phone</th><th>Username</th><th>Approved</th></tr></thead>
+            <tbody id="approvedTbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- REJECTED PANEL -->
+    <div class="panel" id="panel-rejected">
+      <div class="card">
+        <div class="card-header"><h3>Rejected Registrations</h3></div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr><th>Type</th><th>Business Name</th><th>Owner</th><th>Phone</th><th>Reason</th><th>Date</th></tr></thead>
+            <tbody id="rejectedTbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- WHOLESALE PANEL -->
+    <div class="panel" id="panel-wholesale">
+      <div class="filter-row">
+        <input class="search-bar" type="text" placeholder="Search wholesale accounts..." oninput="filterTable('wholesaleTbody', this.value)" />
+      </div>
+      <div class="card">
+        <div class="card-header"><h3>Wholesale Accounts</h3></div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr><th>#</th><th>Business Name</th><th>Owner</th><th>Phone</th><th>City</th><th>Username</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="wholesaleTbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- RETAIL PANEL -->
+    <div class="panel" id="panel-retail">
+      <div class="filter-row">
+        <input class="search-bar" type="text" placeholder="Search retail shops..." oninput="filterTable('retailTbody', this.value)" />
+      </div>
+      <div class="card">
+        <div class="card-header"><h3>Retail Shops</h3></div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr><th>#</th><th>Shop Name</th><th>Owner</th><th>Phone</th><th>City</th><th>Username</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="retailTbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- CATALOG PANEL -->
+    <div class="panel" id="panel-catalog">
+      <div class="filter-row">
+        <input class="search-bar" type="text" placeholder="Search medicine name..." oninput="filterCatalog(this.value)" />
+      </div>
+      <div class="card">
+        <div class="card-header"><h3>Wholesaler Catalog</h3><span class="sub">Medicines available from registered wholesalers</span></div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr><th>Medicine</th><th>Generic</th><th>Wholesaler</th><th>Price</th><th>MRP</th><th>Discount</th><th>Effective Price</th><th>Free Offer</th><th>Min Qty</th></tr></thead>
+            <tbody id="catalogTbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- APPROVE MODAL -->
+<div class="modal-overlay" id="approveModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('approveModal')">×</button>
+    <h2>Approve Registration</h2>
+    <div id="approveDetail" class="detail-grid"></div>
+    <hr style="border:none;border-top:1px solid var(--gray-border);margin:16px 0" />
+    <p style="font-size:.84rem;color:var(--gray);margin-bottom:16px">Create login credentials for this account. These will be communicated to the applicant.</p>
+    <div class="field-group">
+      <label>Username <span style="color:var(--err)">*</span></label>
+      <input type="text" id="approveUsername" placeholder="Choose a username" />
+    </div>
+    <div class="field-group">
+      <label>Password <span style="color:var(--err)">*</span></label>
+      <input type="password" id="approvePassword" placeholder="Set initial password" />
+    </div>
+    <div class="field-group">
+      <label>Confirm Password</label>
+      <input type="password" id="approvePassword2" placeholder="Re-enter password" />
+    </div>
+    <div class="modal-err" id="approveErr"></div>
+    <div style="display:flex;gap:10px;margin-top:16px">
+      <button class="btn btn-approve" style="flex:1;padding:11px" onclick="confirmApprove()">Approve &amp; Create Account</button>
+      <button class="btn btn-outline" onclick="closeModal('approveModal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- REJECT MODAL -->
+<div class="modal-overlay" id="rejectModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('rejectModal')">×</button>
+    <h2>Reject Registration</h2>
+    <div id="rejectDetail" class="detail-grid" style="margin-bottom:16px"></div>
+    <div class="field-group">
+      <label>Reason for rejection (will be noted internally)</label>
+      <input type="text" id="rejectNotes" placeholder="e.g. Drug license expired, invalid GSTIN..." />
+    </div>
+    <div class="modal-err" id="rejectErr"></div>
+    <div style="display:flex;gap:10px;margin-top:16px">
+      <button class="btn btn-reject" style="flex:1;padding:11px" onclick="confirmReject()">Reject Registration</button>
+      <button class="btn btn-outline" onclick="closeModal('rejectModal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- DETAIL MODAL -->
+<div class="modal-overlay" id="detailModal">
+  <div class="modal" style="width:min(680px,96vw)">
+    <button class="modal-close" onclick="closeModal('detailModal')">×</button>
+    <h2 id="detailTitle">Registration Details</h2>
+    <div id="detailContent"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let currentRegId = null;
+let allRegistrations = { pending: [], approved: [], rejected: [] };
+let allAccounts = { wholesale: [], retail: [] };
+
+async function doAdminLogin() {
+  const username = document.getElementById('adminUser').value.trim();
+  const password = document.getElementById('adminPass').value.trim();
+  const errEl = document.getElementById('loginErr');
+  errEl.style.display = 'none';
+  const res = await fetch('/api/admin/login', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({username, password}) });
+  const data = await res.json();
+  if (data.status === 'success') {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('adminNameDisplay').textContent = data.name;
+    refreshAll();
+  } else {
+    errEl.textContent = data.message || 'Invalid credentials';
+    errEl.style.display = 'block';
+  }
+}
+
+async function doLogout() {
+  await fetch('/api/admin/logout', { method: 'POST' });
+  location.reload();
+}
+
+function showPanel(name) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => {
+    if (n.textContent.trim().toLowerCase().startsWith(name === 'overview' ? 'dash' : name.slice(0,4))) n.classList.add('active');
+  });
+  const titles = { overview:'Dashboard', pending:'Pending Registrations', approved:'Approved Registrations', rejected:'Rejected Registrations', wholesale:'Wholesale Accounts', retail:'Retail Shops', catalog:'Wholesaler Catalog' };
+  document.getElementById('panelTitle').textContent = titles[name] || name;
+  if (name === 'pending') loadRegistrations('pending');
+  else if (name === 'approved') loadRegistrations('approved');
+  else if (name === 'rejected') loadRegistrations('rejected');
+  else if (name === 'wholesale') loadAccounts('wholesale');
+  else if (name === 'retail') loadAccounts('retail');
+  else if (name === 'catalog') loadCatalog();
+}
+
+async function refreshAll() {
+  loadStats();
+  loadRegistrations('pending');
+  loadAccounts('wholesale');
+  loadAccounts('retail');
+}
+
+async function loadStats() {
+  const res = await fetch('/api/admin/stats');
+  const d = await res.json();
+  document.getElementById('k-pending').textContent = d.pending_registrations ?? '—';
+  document.getElementById('k-wholesale').textContent = d.wholesale_accounts ?? '—';
+  document.getElementById('k-retail').textContent = d.retail_shops ?? '—';
+  document.getElementById('k-bills').textContent = d.today_bills ?? '—';
+  document.getElementById('k-approved').textContent = d.approved_registrations ?? '—';
+  document.getElementById('pendingBadge').textContent = d.pending_registrations || 0;
+  // Overview tables
+  loadOverviewTables();
+}
+
+async function loadOverviewTables() {
+  const [regRes, accRes] = await Promise.all([
+    fetch('/api/admin/registrations?status=pending'),
+    fetch('/api/admin/accounts'),
+  ]);
+  const regs = await regRes.json();
+  const accs = await accRes.json();
+  // Pending table (top 5)
+  const pendingEl = document.getElementById('overviewPendingTable');
+  if (!regs.length) {
+    pendingEl.innerHTML = '<div class="empty-state"><div class="icon">🎉</div><p>No pending registrations</p></div>';
+  } else {
+    pendingEl.innerHTML = buildRegTable(regs.slice(0,5), true);
+  }
+  // Wholesale (top 5)
+  const wsEl = document.getElementById('overviewWholesaleTable');
+  wsEl.innerHTML = buildMiniTable(accs.wholesale?.slice(0,5) || [], 'wholesale');
+  // Retail (top 5)
+  const rtEl = document.getElementById('overviewRetailTable');
+  rtEl.innerHTML = buildMiniTable(accs.retail?.slice(0,5) || [], 'retail');
+}
+
+async function loadRegistrations(status) {
+  const res = await fetch('/api/admin/registrations?status=' + status);
+  const rows = await res.json();
+  allRegistrations[status] = rows;
+  const tbody = document.getElementById(status + 'Tbody');
+  if (!tbody) return;
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state"><div class="icon">📭</div><p>No ${status} registrations</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = rows.map(r => `
+    <tr>
+      <td>${r.id}</td>
+      <td><span class="pill pill-${r.reg_type}">${r.reg_type}</span></td>
+      <td><strong>${r.business_name}</strong></td>
+      <td>${r.owner_name}</td>
+      <td>${r.owner_phone}</td>
+      <td>${r.city || '—'}</td>
+      <td>${r.gstin || '—'}</td>
+      <td>${r.drug_license || '—'}</td>
+      <td style="font-size:.75rem;color:var(--gray)">${fmtDate(r.submitted_at)}</td>
+      <td>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="btn btn-sm btn-blue" onclick="openDetail(${r.id})">View</button>
+          ${status==='pending' ? `
+            <button class="btn btn-sm btn-approve" onclick="openApprove(${r.id})">Approve</button>
+            <button class="btn btn-sm btn-reject" onclick="openReject(${r.id})">Reject</button>
+          ` : ''}
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+async function loadAccounts(type) {
+  const res = await fetch('/api/admin/accounts?type=' + type);
+  const data = await res.json();
+  const rows = data[type] || [];
+  allAccounts[type] = rows;
+  const tbody = document.getElementById(type + 'Tbody');
+  if (!tbody) return;
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="icon">📭</div><p>No ${type} accounts yet</p></div></td></tr>`;
+    return;
+  }
+  const nameField = type === 'wholesale' ? 'business_name' : 'shop_name';
+  tbody.innerHTML = rows.map((r,i) => `
+    <tr>
+      <td>${i+1}</td>
+      <td><strong>${r[nameField]}</strong></td>
+      <td>${r.owner_name}</td>
+      <td>${r.phone || '—'}</td>
+      <td>${r.city || '—'}</td>
+      <td><code style="font-size:.8rem;background:#f3f4f6;padding:2px 6px;border-radius:4px">${r.username}</code></td>
+      <td><span class="pill pill-${r.is_active ? 'active' : 'inactive'}">${r.is_active ? 'Active' : 'Inactive'}</span></td>
+      <td><button class="btn btn-sm ${r.is_active ? 'btn-reject' : 'btn-approve'}" onclick="toggleAccount('${type}',${r.id})">${r.is_active ? 'Disable' : 'Enable'}</button></td>
+    </tr>
+  `).join('');
+}
+
+async function loadCatalog() {
+  const res = await fetch('/api/ai/wholesaler-compare');
+  const rows = await res.json();
+  const tbody = document.getElementById('catalogTbody');
+  tbody.innerHTML = rows.map(r => `
+    <tr>
+      <td><strong>${r.medicine_name}</strong></td>
+      <td style="color:var(--gray)">${r.generic_name||'—'}</td>
+      <td>${r.wholesaler_name}</td>
+      <td>₹${r.price}</td>
+      <td style="color:var(--gray)">₹${r.mrp}</td>
+      <td>${r.discount_pct}%</td>
+      <td><strong style="color:var(--green)">₹${r.effective_price}</strong></td>
+      <td>${r.free_offer && r.free_offer!=='None' ? `<span style="color:var(--green-dark);font-size:.78rem">${r.free_offer}</span>` : '—'}</td>
+      <td>${r.min_order_qty}</td>
+    </tr>
+  `).join('');
+}
+
+function buildRegTable(rows, mini=false) {
+  if (!rows.length) return '<div class="empty-state"><div class="icon">📭</div><p>None</p></div>';
+  return `<div style="overflow-x:auto"><table>
+    <thead><tr><th>Type</th><th>Business</th><th>Owner</th><th>Phone</th><th>City</th><th>Submitted</th>${mini?'<th>Action</th>':''}</tr></thead>
+    <tbody>${rows.map(r=>`<tr>
+      <td><span class="pill pill-${r.reg_type}">${r.reg_type}</span></td>
+      <td><strong>${r.business_name}</strong></td><td>${r.owner_name}</td>
+      <td>${r.owner_phone}</td><td>${r.city||'—'}</td>
+      <td style="font-size:.75rem;color:var(--gray)">${fmtDate(r.submitted_at)}</td>
+      ${mini?`<td><button class="btn btn-sm btn-approve" onclick="openApprove(${r.id})">Approve</button></td>`:''}
+    </tr>`).join('')}</tbody>
+  </table></div>`;
+}
+
+function buildMiniTable(rows, type) {
+  if (!rows.length) return '<div class="empty-state"><p>No accounts yet</p></div>';
+  const nameField = type === 'wholesale' ? 'business_name' : 'shop_name';
+  return `<div style="overflow-x:auto"><table>
+    <thead><tr><th>Name</th><th>City</th><th>Status</th></tr></thead>
+    <tbody>${rows.map(r=>`<tr>
+      <td>${r[nameField]}</td><td>${r.city||'—'}</td>
+      <td><span class="pill pill-${r.is_active?'active':'inactive'}">${r.is_active?'Active':'Inactive'}</span></td>
+    </tr>`).join('')}</tbody>
+  </table></div>`;
+}
+
+function openApprove(id) {
+  currentRegId = id;
+  const reg = [...allRegistrations.pending].find(r => r.id === id);
+  if (!reg) return;
+  const suggested = reg.business_name.toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,12);
+  document.getElementById('approveUsername').value = suggested;
+  document.getElementById('approvePassword').value = '';
+  document.getElementById('approvePassword2').value = '';
+  document.getElementById('approveDetail').innerHTML = `
+    <div class="detail-item"><div class="lbl">Business</div><div class="val">${reg.business_name}</div></div>
+    <div class="detail-item"><div class="lbl">Type</div><div class="val">${reg.reg_type}</div></div>
+    <div class="detail-item"><div class="lbl">Owner</div><div class="val">${reg.owner_name}</div></div>
+    <div class="detail-item"><div class="lbl">Phone</div><div class="val">${reg.owner_phone}</div></div>
+    <div class="detail-item"><div class="lbl">Drug Licence</div><div class="val">${reg.drug_license||'—'}</div></div>
+    <div class="detail-item"><div class="lbl">GSTIN</div><div class="val">${reg.gstin||'—'}</div></div>
+  `;
+  document.getElementById('approveErr').textContent = '';
+  openModal('approveModal');
+}
+
+async function confirmApprove() {
+  const username = document.getElementById('approveUsername').value.trim();
+  const password = document.getElementById('approvePassword').value.trim();
+  const password2 = document.getElementById('approvePassword2').value.trim();
+  const errEl = document.getElementById('approveErr');
+  if (!username || !password) { errEl.textContent = 'Username and password are required.'; return; }
+  if (password !== password2) { errEl.textContent = 'Passwords do not match.'; return; }
+  const res = await fetch(`/api/admin/registrations/${currentRegId}/approve`, {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ username, password })
+  });
+  const data = await res.json();
+  if (data.status === 'success') {
+    closeModal('approveModal');
+    showToast('Account approved and created!', 'green');
+    refreshAll();
+  } else {
+    errEl.textContent = data.message || 'Failed to approve.';
+  }
+}
+
+function openReject(id) {
+  currentRegId = id;
+  const reg = [...allRegistrations.pending].find(r => r.id === id);
+  if (!reg) return;
+  document.getElementById('rejectDetail').innerHTML = `
+    <div class="detail-item"><div class="lbl">Business</div><div class="val">${reg.business_name}</div></div>
+    <div class="detail-item"><div class="lbl">Owner</div><div class="val">${reg.owner_name}</div></div>
+  `;
+  document.getElementById('rejectNotes').value = '';
+  document.getElementById('rejectErr').textContent = '';
+  openModal('rejectModal');
+}
+
+async function confirmReject() {
+  const notes = document.getElementById('rejectNotes').value;
+  const res = await fetch(`/api/admin/registrations/${currentRegId}/reject`, {
+    method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ notes })
+  });
+  const data = await res.json();
+  if (data.status === 'success') {
+    closeModal('rejectModal');
+    showToast('Registration rejected.', 'red');
+    refreshAll();
+  }
+}
+
+function openDetail(id) {
+  const reg = [...allRegistrations.pending, ...allRegistrations.approved, ...allRegistrations.rejected].find(r => r.id === id);
+  if (!reg) return;
+  document.getElementById('detailTitle').textContent = reg.business_name;
+  const fields = [
+    ['Business Name', reg.business_name], ['Type', reg.reg_type], ['Owner', reg.owner_name],
+    ['Phone', reg.owner_phone], ['Email', reg.owner_email], ['City', reg.city],
+    ['State', reg.state], ['Pincode', reg.pincode], ['GSTIN', reg.gstin],
+    ['Drug License', reg.drug_license], ['PAN', reg.pan], ['Bank', reg.bank_name],
+    ['Account No.', reg.bank_account], ['IFSC', reg.bank_ifsc],
+    ['Monthly Turnover', reg.monthly_turnover], ['No. of Shops/Clients', reg.no_of_shops],
+    ['Staff Count', reg.no_of_staff], ['Current Software', reg.software_used],
+    ['Heard From', reg.hear_from], ['Submitted', fmtDate(reg.submitted_at)],
+    ['Status', reg.status], ['Review Notes', reg.review_notes],
+  ];
+  document.getElementById('detailContent').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      ${fields.map(([l,v]) => `<div class="detail-item"><div class="lbl">${l}</div><div class="val">${v||'—'}</div></div>`).join('')}
+    </div>
+  `;
+  openModal('detailModal');
+}
+
+async function toggleAccount(type, id) {
+  const res = await fetch(`/api/admin/accounts/${type}/${id}/toggle`, { method: 'POST' });
+  const data = await res.json();
+  if (data.status === 'success') {
+    showToast(`Account ${data.is_active ? 'enabled' : 'disabled'}.`, data.is_active ? 'green' : 'red');
+    loadAccounts(type);
+  }
+}
+
+function filterTable(tbodyId, query) {
+  const rows = document.querySelectorAll(`#${tbodyId} tr`);
+  const q = query.toLowerCase();
+  rows.forEach(row => {
+    row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+}
+
+function filterCatalog(query) { filterTable('catalogTbody', query); }
+
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+function fmtDate(iso) {
+  if (!iso) return '—';
+  try { return new Date(iso).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' }); }
+  catch { return iso.slice(0,10); }
+}
+
+function showToast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + type;
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+document.querySelectorAll('.modal-overlay').forEach(mo => {
+  mo.addEventListener('click', e => { if (e.target === mo) mo.classList.remove('open'); });
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open'));
+});
+
+// Check if already logged in
+fetch('/api/admin/stats').then(r => {
+  if (r.ok) {
+    document.getElementById('loginScreen').style.display = 'none';
+    refreshAll();
+  }
+}).catch(() => {});
+</script>
+</body>
+</html>

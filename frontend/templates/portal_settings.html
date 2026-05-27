@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Settings — MediVision AI</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',sans-serif;background:#f0f4f8;min-height:100vh}
+.topbar{background:#1a237e;color:#fff;padding:14px 24px;display:flex;align-items:center;gap:12px}
+.topbar a{color:#90caf9;text-decoration:none;font-size:.85rem}
+.topbar h2{font-size:1.1rem;flex:1}
+.container{max-width:900px;margin:0 auto;padding:20px 16px}
+.tabs{display:flex;gap:4px;background:#e8eaf6;padding:4px;border-radius:10px;margin-bottom:20px;flex-wrap:wrap}
+.tab{padding:10px 18px;border:none;border-radius:7px;cursor:pointer;font-weight:600;font-size:.88rem;color:#666;background:none;transition:.2s}
+.tab.active{background:#1a237e;color:#fff}
+.panel{display:none}.panel.active{display:block}
+.card{background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.08);margin-bottom:16px;overflow:hidden}
+.card-hdr{padding:14px 20px;background:#1a237e;color:#fff;font-weight:700;font-size:.95rem;display:flex;align-items:center;gap:8px}
+.card-body{padding:20px}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+.fg{display:flex;flex-direction:column;gap:5px}
+.fg label{font-size:.8rem;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.3px}
+.fg input,.fg select,.fg textarea{padding:10px 12px;border:1.5px solid #ddd;border-radius:8px;font-size:.92rem;outline:none;transition:.2s;font-family:inherit}
+.fg input:focus,.fg select:focus{border-color:#1a237e;box-shadow:0 0 0 3px rgba(26,35,126,.1)}
+.fg.full{grid-column:1/-1}
+.btn{padding:11px 22px;border:none;border-radius:8px;font-size:.9rem;font-weight:700;cursor:pointer;transition:.2s;display:inline-flex;align-items:center;gap:6px}
+.btn-primary{background:#1a237e;color:#fff}.btn-primary:hover{background:#283593}
+.btn-success{background:#2e7d32;color:#fff}.btn-success:hover{background:#1b5e20}
+.btn-danger{background:#c62828;color:#fff}.btn-danger:hover{background:#b71c1c}
+.btn-outline{background:#fff;color:#1a237e;border:2px solid #1a237e}
+.btn-sm{padding:7px 14px;font-size:.82rem}
+.section-title{font-size:1rem;font-weight:700;color:#1a237e;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #e8eaf6;display:flex;align-items:center;gap:6px}
+.badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:.75rem;font-weight:700}
+.badge-admin{background:#fce4ec;color:#880e4f}
+.badge-portal{background:#e3f2fd;color:#0d47a1}
+.badge-staff{background:#e8f5e9;color:#1b5e20}
+.profile-card{display:flex;align-items:center;gap:16px;padding:16px;background:#f8f9ff;border-radius:10px;margin-bottom:20px}
+.avatar{width:56px;height:56px;border-radius:50%;background:#1a237e;color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.5rem;font-weight:700;flex-shrink:0}
+.profile-info h3{font-size:1.1rem;font-weight:700;color:#1a237e}
+.profile-info p{font-size:.85rem;color:#666;margin-top:2px}
+.strength-bar{height:6px;border-radius:3px;background:#e0e0e0;margin-top:6px;overflow:hidden}
+.strength-fill{height:100%;border-radius:3px;transition:.3s}
+.strength-weak{background:#ef5350;width:33%}
+.strength-ok{background:#ffa726;width:66%}
+.strength-strong{background:#66bb6a;width:100%}
+.hint{font-size:.78rem;color:#888;margin-top:4px}
+.alert{padding:12px 16px;border-radius:8px;margin-bottom:16px;font-size:.9rem;display:none}
+.alert-success{background:#e8f5e9;color:#2e7d32;border-left:4px solid #2e7d32;display:block}
+.alert-error{background:#ffebee;color:#c62828;border-left:4px solid #c62828;display:block}
+table{width:100%;border-collapse:collapse}
+th{background:#f5f5f5;padding:9px 12px;text-align:left;font-size:.8rem;color:#555;font-weight:700;border-bottom:2px solid #e0e0e0}
+td{padding:9px 12px;font-size:.87rem;border-bottom:1px solid #f0f0f0}
+.staff-row{display:flex;align-items:center;gap:10px;padding:12px;border-bottom:1px solid #f5f5f5}
+.staff-avatar{width:36px;height:36px;border-radius:50%;background:#e8eaf6;display:flex;align-items:center;justify-content:center;font-weight:700;color:#1a237e;font-size:.85rem;flex-shrink:0}
+.toast{position:fixed;bottom:24px;right:24px;padding:12px 20px;border-radius:8px;color:#fff;font-weight:600;display:none;z-index:9999;max-width:320px}
+.toast-success{background:#2e7d32}.toast-error{background:#c62828}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <a href="/portal" id="backLink">← Dashboard</a>
+  <h2>⚙️ Settings</h2>
+  <span class="badge badge-admin" id="userBadge">Loading...</span>
+</div>
+
+<div class="container">
+  <!-- Profile card -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-body">
+      <div class="profile-card">
+        <div class="avatar" id="avatarInit">?</div>
+        <div class="profile-info">
+          <h3 id="profileName">Loading...</h3>
+          <p id="profileRole"></p>
+          <p id="profileSince" style="font-size:.78rem;color:#aaa;margin-top:2px"></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('password')">🔐 Password / PIN</button>
+    <button class="tab" onclick="switchTab('staff')">👥 Staff PINs</button>
+    <button class="tab" onclick="switchTab('company')">🏢 Company Info</button>
+    <button class="tab" onclick="switchTab('audit')">📋 Audit Log</button>
+  </div>
+
+  <!-- PASSWORD PANEL -->
+  <div class="panel active" id="panel-password">
+    <div class="card">
+      <div class="card-hdr">🔐 Change Your Password / PIN</div>
+      <div class="card-body">
+        <div id="pwAlert"></div>
+        <div class="form-grid">
+          <div class="fg">
+            <label>Current Password / PIN</label>
+            <input type="password" id="oldPass" placeholder="Enter current password or PIN">
+          </div>
+          <div class="fg">
+            <label>New Password / PIN</label>
+            <input type="password" id="newPass" placeholder="Min 4 characters" oninput="checkStrength()">
+            <div class="strength-bar"><div class="strength-fill" id="strengthFill"></div></div>
+            <div class="hint" id="strengthHint">Enter new password to check strength</div>
+          </div>
+          <div class="fg">
+            <label>Confirm New Password</label>
+            <input type="password" id="confirmPass" placeholder="Re-enter new password">
+          </div>
+        </div>
+        <div style="margin-top:16px;display:flex;gap:10px">
+          <button class="btn btn-primary" onclick="changePassword()">🔐 Update Password</button>
+          <button class="btn btn-outline" onclick="document.getElementById('oldPass').value='';document.getElementById('newPass').value='';document.getElementById('confirmPass').value=''">Clear</button>
+        </div>
+
+        <div style="margin-top:24px;padding:14px;background:#fff8e1;border-radius:8px;font-size:.87rem">
+          <strong>Password Requirements:</strong><br>
+          ✓ Minimum 4 characters &nbsp;&nbsp; ✓ Mix letters and numbers for stronger security<br>
+          ✓ <em>Staff users:</em> PIN is numeric, 4-8 digits &nbsp;&nbsp; ✓ Change immediately if shared
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STAFF PINS PANEL -->
+  <div class="panel" id="panel-staff">
+    <div class="card">
+      <div class="card-hdr">👥 Staff PIN Management (Owner/Admin only)</div>
+      <div class="card-body">
+        <div class="hint" style="margin-bottom:16px">Reset any staff member's PIN without knowing their current PIN. Used when staff forgets login.</div>
+        <div id="staffList">Loading staff...</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:0">
+      <div class="card-hdr">➕ Add / Edit Staff</div>
+      <div class="card-body">
+        <input type="hidden" id="editStaffId">
+        <div class="form-grid">
+          <div class="fg"><label>Full Name *</label><input type="text" id="sName" placeholder="Staff full name"></div>
+          <div class="fg"><label>Role</label>
+            <select id="sRole">
+              <option>Pharmacist</option><option>Manager</option><option>Owner</option>
+              <option>Cashier</option><option>Delivery</option><option>Helper</option>
+            </select>
+          </div>
+          <div class="fg"><label>Phone</label><input type="tel" id="sPhone" placeholder="Mobile number"></div>
+          <div class="fg"><label>Base Salary (₹/month)</label><input type="number" id="sSalary" min="0" value="0"></div>
+          <div class="fg"><label>Advance Taken (₹)</label><input type="number" id="sAdvance" min="0" value="0"></div>
+          <div class="fg"><label>Joined Date</label><input type="date" id="sJoined"></div>
+          <div class="fg"><label>Initial PIN (4-8 digits)</label><input type="text" id="sPin" placeholder="Staff login PIN" maxlength="8"></div>
+        </div>
+        <div style="margin-top:12px;display:flex;gap:8px">
+          <button class="btn btn-success btn-sm" onclick="saveStaff()">💾 Save Staff</button>
+          <button class="btn btn-outline btn-sm" onclick="clearStaffForm()">Clear</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- COMPANY PANEL -->
+  <div class="panel" id="panel-company">
+    <div class="card">
+      <div class="card-hdr">🏢 Company / Shop Information</div>
+      <div class="card-body">
+        <div id="compAlert"></div>
+        <div class="form-grid">
+          <div class="fg full"><label>Shop / Business Name</label>
+            <input type="text" id="cShopName" placeholder="Selvam Medicals"></div>
+          <div class="fg full"><label>Address</label>
+            <input type="text" id="cAddress" placeholder="1266, MTP Road, Saibaba Kovil"></div>
+          <div class="fg"><label>City</label><input type="text" id="cCity" placeholder="Coimbatore"></div>
+          <div class="fg"><label>State</label><input type="text" id="cState" placeholder="Tamil Nadu"></div>
+          <div class="fg"><label>PIN Code</label><input type="text" id="cPincode" placeholder="641043"></div>
+          <div class="fg"><label>Phone</label><input type="tel" id="cPhone" placeholder="Shop contact number"></div>
+          <div class="fg"><label>Email</label><input type="email" id="cEmail" placeholder="shop@email.com"></div>
+          <div class="fg"><label>GSTIN</label><input type="text" id="cGstin" placeholder="33XXXXX..."></div>
+          <div class="fg"><label>Drug Licence No</label><input type="text" id="cDrugLic" placeholder="TN-DL-..."></div>
+          <div class="fg"><label>PAN</label><input type="text" id="cPan" placeholder="XXXXX0000X"></div>
+          <div class="fg"><label>Bank Name</label><input type="text" id="cBank" placeholder="SBI / HDFC..."></div>
+          <div class="fg"><label>Account Number</label><input type="text" id="cBankAcc"></div>
+          <div class="fg"><label>IFSC Code</label><input type="text" id="cIfsc"></div>
+          <div class="fg"><label>FY Start Month</label>
+            <select id="cFyStart">
+              <option value="04">April (Standard)</option>
+              <option value="01">January</option>
+            </select>
+          </div>
+          <div class="fg"><label>Currency Symbol</label>
+            <select id="cCurrency"><option value="₹">₹ Indian Rupee</option></select>
+          </div>
+          <div class="fg"><label>Default GST %</label><input type="number" id="cGstPct" min="0" max="28" value="12"></div>
+          <div class="fg"><label>Low Stock Alert Threshold</label><input type="number" id="cLowStock" min="1" value="10" placeholder="Alert when stock below this"></div>
+          <div class="fg"><label>Default Profit Target %</label><input type="number" id="cProfitTarget" min="0" max="100" value="20" placeholder="Target margin %"></div>
+        </div>
+        <div style="margin-top:16px">
+          <button class="btn btn-primary" onclick="saveCompany()">💾 Save Company Settings</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AUDIT LOG PANEL -->
+  <div class="panel" id="panel-audit">
+    <div class="card">
+      <div class="card-hdr">📋 Password Change Audit Log</div>
+      <div class="card-body" style="padding:0">
+        <table>
+          <thead><tr><th>Who</th><th>Type</th><th>Changed At</th><th>Changed By</th></tr></thead>
+          <tbody id="auditBody"><tr><td colspan="4" style="text-align:center;padding:20px;color:#888">Loading...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Reset PIN modal -->
+<div id="resetModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:12px;padding:24px;max-width:380px;width:90%">
+    <h3 style="color:#1a237e;margin-bottom:8px">Reset PIN</h3>
+    <p style="color:#666;font-size:.9rem;margin-bottom:16px" id="resetModalName"></p>
+    <input type="hidden" id="resetStaffId">
+    <div class="fg" style="margin-bottom:14px">
+      <label>New PIN (4-8 digits)</label>
+      <input type="text" id="resetNewPin" maxlength="8" placeholder="Enter new PIN">
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-outline btn-sm" onclick="closeReset()">Cancel</button>
+      <button class="btn btn-danger btn-sm" onclick="doReset()">Reset PIN</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let myProfile = null;
+let allStaff  = [];
+
+async function init() {
+  try {
+    myProfile = await fetch('/api/settings/profile').then(r=>r.json());
+    renderProfile();
+    loadCompany();
+  } catch(e) { console.log(e); }
+}
+
+function renderProfile() {
+  const p = myProfile;
+  if(!p || p.status==='error') return;
+  const name = p.name || p.username || 'User';
+  document.getElementById('avatarInit').textContent = name[0].toUpperCase();
+  document.getElementById('profileName').textContent = name;
+  document.getElementById('profileRole').textContent = p.role || p.account_type || p.user_type || '';
+  const badge = document.getElementById('userBadge');
+  if(p.user_type==='admin') { badge.textContent='Platform Admin'; badge.className='badge badge-admin'; }
+  else if(p.user_type==='portal') { badge.textContent=(p.account_type||'').toUpperCase(); badge.className='badge badge-portal'; }
+  else { badge.textContent='Staff'; badge.className='badge badge-staff'; }
+
+  // Back link
+  if(p.user_type==='staff') document.getElementById('backLink').href='/internal';
+}
+
+function checkStrength() {
+  const pw = document.getElementById('newPass').value;
+  const fill = document.getElementById('strengthFill');
+  const hint = document.getElementById('strengthHint');
+  if(!pw) { fill.className='strength-fill'; fill.style.width='0%'; hint.textContent='Enter new password'; return; }
+  let score = 0;
+  if(pw.length>=4) score++;
+  if(pw.length>=8) score++;
+  if(/[0-9]/.test(pw) && /[a-zA-Z]/.test(pw)) score++;
+  if(score===1) { fill.className='strength-fill strength-weak'; hint.textContent='Weak — add more characters'; }
+  else if(score===2) { fill.className='strength-fill strength-ok'; hint.textContent='OK — add letters+numbers for stronger'; }
+  else { fill.className='strength-fill strength-strong'; hint.textContent='Strong password ✓'; }
+}
+
+async function changePassword() {
+  const old = document.getElementById('oldPass').value.trim();
+  const nw  = document.getElementById('newPass').value.trim();
+  const cf  = document.getElementById('confirmPass').value.trim();
+  const alertEl = document.getElementById('pwAlert');
+
+  if(!old || !nw) { showAlert(alertEl,'error','Please fill all fields'); return; }
+  if(nw !== cf)   { showAlert(alertEl,'error','Passwords do not match'); return; }
+  if(nw.length < 4) { showAlert(alertEl,'error','Minimum 4 characters required'); return; }
+
+  const userType = myProfile?.user_type || 'staff';
+  const res = await fetch('/api/settings/change-password', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({user_type:userType, old_password:old, new_password:nw})
+  }).then(r=>r.json());
+
+  if(res.status==='success') {
+    showAlert(alertEl,'success', '✓ '+res.message);
+    document.getElementById('oldPass').value='';
+    document.getElementById('newPass').value='';
+    document.getElementById('confirmPass').value='';
+    showToast('Password updated successfully!','success');
+  } else {
+    showAlert(alertEl,'error', '✗ '+(res.message||'Error updating password'));
+  }
+}
+
+async function loadStaff() {
+  allStaff = await fetch('/api/staff/list').then(r=>r.json()).catch(()=>[]);
+  const cont = document.getElementById('staffList');
+  if(!allStaff.length) { cont.innerHTML='<p style="color:#888;padding:10px">No staff found</p>'; return; }
+  cont.innerHTML = allStaff.map(s=>`
+    <div class="staff-row">
+      <div class="staff-avatar">${s.name?.[0]||'?'}</div>
+      <div style="flex:1">
+        <strong>${s.name}</strong> <span style="color:#888;font-size:.82rem">${s.role}</span>
+        ${!s.is_active?'<span class="badge" style="background:#ffebee;color:#c62828;margin-left:4px">Inactive</span>':''}
+        <div style="font-size:.78rem;color:#aaa">${s.phone||'No phone'} · Salary: ₹${(s.salary||0).toLocaleString()}/mo</div>
+      </div>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-outline btn-sm" onclick="editStaff(${s.id})">Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="openReset(${s.id},'${s.name}')">Reset PIN</button>
+      </div>
+    </div>`).join('');
+}
+
+function editStaff(id) {
+  const s = allStaff.find(x=>x.id===id); if(!s) return;
+  document.getElementById('editStaffId').value=id;
+  document.getElementById('sName').value=s.name||'';
+  document.getElementById('sRole').value=s.role||'Pharmacist';
+  document.getElementById('sPhone').value=s.phone||'';
+  document.getElementById('sSalary').value=s.salary||0;
+  document.getElementById('sAdvance').value=s.advance||0;
+  document.getElementById('sJoined').value=s.joined_date||'';
+  document.getElementById('sPin').value='';
+  document.getElementById('sPin').placeholder='Leave blank to keep current PIN';
+  document.querySelector('#panel-staff').scrollTo(0,9999);
+  showToast('Editing '+s.name,'success');
+}
+
+async function saveStaff() {
+  const sid  = document.getElementById('editStaffId').value;
+  const name = document.getElementById('sName').value.trim();
+  if(!name) { showToast('Name required','error'); return; }
+  const payload = {
+    name, role:document.getElementById('sRole').value,
+    phone:document.getElementById('sPhone').value,
+    salary:parseFloat(document.getElementById('sSalary').value)||0,
+    advance:parseFloat(document.getElementById('sAdvance').value)||0,
+    joined_date:document.getElementById('sJoined').value, is_active:1
+  };
+  const pin = document.getElementById('sPin').value.trim();
+
+  if(sid) {
+    // Update existing
+    await fetch(`/api/staff/${sid}/update`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    if(pin) await fetch('/api/settings/admin-reset-pin',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({staff_id:parseInt(sid),new_pin:pin})});
+    showToast('Staff updated!','success');
+  } else {
+    // Add new staff via internal api
+    const res = await fetch('/api/staff',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...payload,pin:pin||'1234'})}).then(r=>r.json());
+    showToast(res.status==='success'?'Staff added!':'Error: '+res.message, res.status==='success'?'success':'error');
+  }
+  clearStaffForm(); loadStaff();
+}
+
+function clearStaffForm() {
+  ['editStaffId','sName','sPhone','sPin'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('sSalary').value=0; document.getElementById('sAdvance').value=0;
+  document.getElementById('sJoined').value=''; document.getElementById('sRole').value='Pharmacist';
+  document.getElementById('sPin').placeholder='Staff login PIN';
+}
+
+function openReset(id, name) {
+  document.getElementById('resetStaffId').value=id;
+  document.getElementById('resetModalName').textContent=`Reset PIN for: ${name}`;
+  document.getElementById('resetNewPin').value='';
+  document.getElementById('resetModal').style.display='flex';
+}
+function closeReset(){ document.getElementById('resetModal').style.display='none'; }
+
+async function doReset() {
+  const sid = document.getElementById('resetStaffId').value;
+  const pin = document.getElementById('resetNewPin').value.trim();
+  if(!pin||pin.length<4) { showToast('PIN must be 4-8 digits','error'); return; }
+  const res = await fetch('/api/settings/admin-reset-pin',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({staff_id:parseInt(sid),new_pin:pin})}).then(r=>r.json());
+  closeReset();
+  showToast(res.status==='success'?'✓ PIN reset!':'Error: '+res.message, res.status==='success'?'success':'error');
+}
+
+async function loadCompany() {
+  const data = await fetch('/api/settings/company').then(r=>r.json()).catch(()=>({}));
+  const map = {
+    shop_name:'cShopName', address:'cAddress', city:'cCity', state:'cState', pincode:'cPincode',
+    phone:'cPhone', email:'cEmail', gstin:'cGstin', drug_licence:'cDrugLic', pan:'cPan',
+    bank_name:'cBank', bank_account:'cBankAcc', bank_ifsc:'cIfsc', fy_start:'cFyStart',
+    currency:'cCurrency', default_gst:'cGstPct', low_stock_threshold:'cLowStock',
+    profit_target_pct:'cProfitTarget'
+  };
+  for(const [k,el] of Object.entries(map)) {
+    const e = document.getElementById(el);
+    if(e && data[k]) e.value=data[k];
+  }
+}
+
+async function saveCompany() {
+  const payload = {
+    shop_name:document.getElementById('cShopName').value,
+    address:document.getElementById('cAddress').value,
+    city:document.getElementById('cCity').value,
+    state:document.getElementById('cState').value,
+    pincode:document.getElementById('cPincode').value,
+    phone:document.getElementById('cPhone').value,
+    email:document.getElementById('cEmail').value,
+    gstin:document.getElementById('cGstin').value,
+    drug_licence:document.getElementById('cDrugLic').value,
+    pan:document.getElementById('cPan').value,
+    bank_name:document.getElementById('cBank').value,
+    bank_account:document.getElementById('cBankAcc').value,
+    bank_ifsc:document.getElementById('cIfsc').value,
+    fy_start:document.getElementById('cFyStart').value,
+    default_gst:document.getElementById('cGstPct').value,
+    low_stock_threshold:document.getElementById('cLowStock').value,
+    profit_target_pct:document.getElementById('cProfitTarget').value
+  };
+  const res = await fetch('/api/settings/company',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}).then(r=>r.json());
+  const alertEl = document.getElementById('compAlert');
+  if(res.status==='success') { showAlert(alertEl,'success','✓ Company settings saved!'); showToast('Saved!','success'); }
+  else showAlert(alertEl,'error','Error saving');
+}
+
+async function loadAudit() {
+  // Fetch from generic staff list as audit
+  const tbody = document.getElementById('auditBody');
+  tbody.innerHTML='<tr><td colspan="4" style="text-align:center;padding:20px;color:#888">Audit log stored in database. No recent entries to show via API — entries appear after password changes.</td></tr>';
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach((t,i)=>{
+    t.classList.toggle('active',['password','staff','company','audit'][i]===tab);
+  });
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+tab).classList.add('active');
+  if(tab==='staff') loadStaff();
+  else if(tab==='audit') loadAudit();
+}
+
+function showAlert(el, type, msg) {
+  el.innerHTML=`<div class="alert alert-${type}">${msg}</div>`;
+  setTimeout(()=>el.innerHTML='',4000);
+}
+function showToast(msg, type='success') {
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className=`toast toast-${type}`; t.style.display='block';
+  setTimeout(()=>t.style.display='none',2500);
+}
+
+init();
+</script>
+</body>
+</html>

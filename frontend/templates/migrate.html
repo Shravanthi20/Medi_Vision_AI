@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Migration Tool — MediVision AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:Inter,sans-serif;background:#0b0e16;color:#e2e8f0;min-height:100vh;}
+.mono{font-family:'JetBrains Mono',monospace;}
+.topbar{background:#111827;border-bottom:1px solid rgba(255,255,255,.08);padding:14px 28px;display:flex;justify-content:space-between;align-items:center;}
+.brand{font-weight:800;color:#f97316;}
+.nav-links a{color:#94a3b8;font-size:.85rem;text-decoration:none;margin-left:14px;}
+.wrap{max-width:1300px;margin:0 auto;padding:24px;}
+h1{font-size:1.6rem;font-weight:800;color:#fff;}
+.sub{color:#94a3b8;font-size:.92rem;margin-bottom:22px;}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+@media(max-width:980px){.row2{grid-template-columns:1fr;}}
+.panel{background:#141824;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:20px;}
+.panel h3{color:#f97316;font-size:.95rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:14px;}
+.drop-zone{border:2px dashed rgba(249,115,22,.4);border-radius:12px;padding:36px 20px;text-align:center;cursor:pointer;background:rgba(249,115,22,.03);transition:background .2s;}
+.drop-zone:hover{background:rgba(249,115,22,.08);}
+.drop-zone .ic{font-size:2.4rem;color:#fb923c;margin-bottom:8px;}
+.drop-zone p{color:#cbd5e1;font-size:.9rem;}
+.drop-zone .hint{color:#64748b;font-size:.78rem;margin-top:4px;}
+.input,textarea{width:100%;background:#0b0e16;border:1.5px solid rgba(255,255,255,.1);border-radius:9px;padding:10px 14px;color:#e2e8f0;font-family:inherit;font-size:.88rem;}
+textarea{min-height:160px;font-family:'JetBrains Mono',monospace;font-size:.78rem;}
+.input:focus,textarea:focus{outline:none;border-color:#f97316;}
+.btn{padding:11px 22px;border-radius:9px;font-weight:700;font-size:.88rem;border:none;cursor:pointer;font-family:inherit;}
+.btn-primary{background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;}
+.btn-green{background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;}
+.btn-ghost{background:rgba(255,255,255,.05);color:#94a3b8;border:1px solid rgba(255,255,255,.1);}
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:14px;}
+.kpi{background:#0d111a;border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:12px;text-align:center;}
+.kpi .l{color:#94a3b8;font-size:.68rem;text-transform:uppercase;letter-spacing:.05em;}
+.kpi .v{color:#fff;font-size:1.3rem;font-weight:800;font-family:'JetBrains Mono',monospace;margin-top:4px;}
+.kpi.good .v{color:#4ade80;}
+.kpi.warn .v{color:#fbbf24;}
+.tbl{width:100%;border-collapse:collapse;}
+.tbl th{background:#0d111a;color:#94a3b8;font-size:.68rem;text-transform:uppercase;letter-spacing:.05em;text-align:left;padding:9px 12px;}
+.tbl td{padding:9px 12px;font-size:.82rem;border-bottom:1px solid rgba(255,255,255,.04);}
+.help{background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.2);border-radius:10px;padding:14px;font-size:.84rem;color:#cbd5e1;line-height:1.6;margin-bottom:14px;}
+.help strong{color:#4ade80;}
+.help code{background:#0d111a;padding:2px 6px;border-radius:4px;font-family:monospace;font-size:.78rem;color:#fbbf24;}
+.toast{position:fixed;bottom:30px;right:30px;background:#16a34a;color:#fff;padding:14px 22px;border-radius:10px;font-weight:700;z-index:300;display:none;}
+.toast.show{display:block;}
+.toast.err{background:#ef4444;}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="brand"><i class="fas fa-file-import"></i> Migration Tool</div>
+  <div><a href="/portal" class="nav-links">Portal</a><a href="/reports" class="nav-links">Reports</a></div>
+</div>
+
+<div class="wrap">
+  <h1>📦 Import Old Billing Data</h1>
+  <p class="sub">Upload TXT/CSV files from your old DOS/Tally/Marg software. We'll parse, preview, then commit.</p>
+
+  <div class="help">
+    <strong>Supported formats:</strong> Pipe-delimited (<code>BILLNO|DATE|CUST|ITEM|QTY|RATE|AMT</code>) · Tab-separated · Comma CSV.
+    Date formats: <code>DD/MM/YY</code>, <code>DD-MM-YYYY</code>, <code>YYYY-MM-DD</code>, <code>DD.MM.YY</code>.
+    Each line = one item; bill number groups items into a single bill.
+    GST auto-calculated at 12%.
+  </div>
+
+  <div class="row2">
+    <div>
+      <div class="panel" style="margin-bottom:16px;">
+        <h3><i class="fas fa-upload"></i> 1. Upload File</h3>
+        <div class="drop-zone" onclick="document.getElementById('fileInput').click()">
+          <div class="ic">📂</div>
+          <p><strong>Click or drag-drop</strong> your bill export file here</p>
+          <div class="hint">.txt · .csv · .tsv — UTF-8 encoded</div>
+        </div>
+        <input type="file" id="fileInput" accept=".txt,.csv,.tsv,text/plain" style="display:none" onchange="loadFile(event)"/>
+      </div>
+      <div class="panel">
+        <h3><i class="fas fa-paste"></i> 2. Or Paste Text Directly</h3>
+        <textarea id="txtData" placeholder="Paste your raw bill data here..."></textarea>
+        <div style="display:flex;gap:8px;margin-top:10px;">
+          <button class="btn btn-primary" onclick="preview()" style="flex:1"><i class="fas fa-eye"></i> Preview Parse</button>
+          <button class="btn btn-ghost" onclick="loadDemo()">Demo Data</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3><i class="fas fa-microscope"></i> 3. Preview & Commit</h3>
+      <div id="previewArea">
+        <div style="text-align:center;padding:60px 16px;color:#64748b;">Upload or paste data to preview</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" style="margin-top:18px;">
+    <h3><i class="fas fa-history"></i> Migration History</h3>
+    <table class="tbl" id="histTable">
+      <thead><tr><th>When</th><th>File</th><th>Parsed</th><th>Imported</th><th>Skipped</th><th>Status</th></tr></thead>
+      <tbody><tr><td colspan="6" style="text-align:center;padding:20px;color:#64748b;">Loading…</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let parsedText = '';
+let lastFilename = '';
+
+function loadFile(ev){
+  const f = ev.target.files[0];
+  if(!f) return;
+  lastFilename = f.name;
+  const r = new FileReader();
+  r.onload = e => {
+    document.getElementById('txtData').value = e.target.result;
+    preview();
+  };
+  r.readAsText(f);
+}
+
+function loadDemo(){
+  document.getElementById('txtData').value =
+`BILLNO|DATE|CUST|PHONE|ITEM|QTY|RATE|AMT
+B001|01/04/26|Ravi Kumar|9876543210|DOLO 650|2|28|56
+B001|01/04/26|Ravi Kumar|9876543210|CROCIN 500|1|14|14
+B002|02/04/26|Meena Devi|9876543211|AUGMENTIN 625|10|142|1420
+B002|02/04/26|Meena Devi|9876543211|PAN 40|10|85|850
+B003|03/04/26|Walk-in||BRUFEN 400|6|22|132
+B004|15/04/26|Suresh|9876543212|AZITHRAL 500|3|78|234
+B004|15/04/26|Suresh|9876543212|MONTAIR LC|10|125|1250
+B005|24/05/26|Lakshmi|9876543213|PANTOP 40|10|95|950`;
+  preview();
+}
+
+async function preview(){
+  parsedText = document.getElementById('txtData').value;
+  if(!parsedText){
+    showToast('Paste data first', true); return;
+  }
+  const r = await fetch('/api/migrate/preview', {method:'POST',headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({text: parsedText})});
+  const d = await r.json();
+
+  if(d.error){
+    document.getElementById('previewArea').innerHTML =
+      '<div style="color:#fca5a5;padding:14px;background:rgba(239,68,68,.08);border-radius:9px;">' + d.error + '</div>';
+    return;
+  }
+
+  let html = `
+    <div class="kpi-row">
+      <div class="kpi good"><div class="l">Bills</div><div class="v">${d.bills_count}</div></div>
+      <div class="kpi"><div class="l">Total ₹</div><div class="v">${d.total_value.toFixed(0)}</div></div>
+      <div class="kpi warn"><div class="l">Skipped lines</div><div class="v">${d.skipped_lines}</div></div>
+    </div>
+  `;
+
+  if(d.preview && d.preview.length){
+    html += '<table class="tbl"><thead><tr><th>Date</th><th>Bill ID</th><th>Customer</th><th>Items</th><th>Total</th></tr></thead><tbody>';
+    d.preview.forEach(b => {
+      html += `<tr>
+        <td class="mono">${b.date}</td>
+        <td class="mono" style="font-size:.74rem;">${b.id}</td>
+        <td>${b.cust || '-'}<br><span style="color:#64748b;font-family:monospace;font-size:.72rem;">${b.phone || ''}</span></td>
+        <td>${b.items.length} items<br><span style="color:#94a3b8;font-size:.72rem;">${b.items.slice(0,2).map(i=>i.name).join(', ')}${b.items.length>2?'…':''}</span></td>
+        <td class="mono" style="color:#4ade80;">₹${b.total.toFixed(2)}</td>
+      </tr>`;
+    });
+    html += '</tbody></table>';
+    html += '<button class="btn btn-green" style="margin-top:14px;width:100%" onclick="commit()"><i class="fas fa-check"></i> Commit ' + d.bills_count + ' bills to database</button>';
+  }
+  document.getElementById('previewArea').innerHTML = html;
+}
+
+async function commit(){
+  if(!confirm('Import these bills into MediVision? This is permanent.')) return;
+  const r = await fetch('/api/migrate/commit', {method:'POST',headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({text: parsedText, filename: lastFilename || 'paste.txt'})});
+  const d = await r.json();
+  if(d.status === 'ok'){
+    showToast(`✓ Imported ${d.imported} bills. ${d.skipped} skipped.`);
+    loadHistory();
+    document.getElementById('previewArea').innerHTML = '<div class="kpi good" style="padding:30px;text-align:center;"><div style="font-size:2.5rem;">✅</div><div class="v" style="font-size:1.5rem;">Imported ' + d.imported + ' bills</div></div>';
+  } else {
+    showToast('Failed: ' + (d.error || 'unknown'), true);
+  }
+}
+
+async function loadHistory(){
+  const r = await fetch('/api/migrate/jobs');
+  const d = await r.json();
+  const tb = document.querySelector('#histTable tbody');
+  if(!d.jobs.length){
+    tb.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:#64748b;">No migrations yet</td></tr>';
+    return;
+  }
+  tb.innerHTML = d.jobs.map(j => `<tr>
+    <td class="mono" style="font-size:.78rem;">${j.created_at}</td>
+    <td>${j.filename}</td>
+    <td>${j.rows_parsed}</td>
+    <td style="color:#4ade80;">${j.rows_imported}</td>
+    <td style="color:#fbbf24;">${j.rows_skipped}</td>
+    <td>${j.status}</td>
+  </tr>`).join('');
+}
+
+function showToast(msg, err){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.toggle('err', !!err);
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+loadHistory();
+</script>
+</body>
+</html>

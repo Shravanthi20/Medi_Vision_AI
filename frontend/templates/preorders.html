@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Pre-Orders — MediVision AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:Inter,sans-serif;background:#0b0e16;color:#e2e8f0;min-height:100vh;}
+.mono{font-family:'JetBrains Mono',monospace;}
+.topbar{background:#111827;border-bottom:1px solid rgba(255,255,255,.08);padding:14px 28px;display:flex;justify-content:space-between;align-items:center;}
+.brand{font-weight:800;color:#f97316;}
+.nav-links a{color:#94a3b8;font-size:.85rem;text-decoration:none;margin-left:14px;}
+.wrap{max-width:1300px;margin:0 auto;padding:24px;}
+h1{font-size:1.6rem;font-weight:800;color:#fff;}
+.sub{color:#94a3b8;font-size:.92rem;margin-bottom:22px;}
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:18px;}
+.kpi{background:linear-gradient(145deg,#141824,#0f1320);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:14px;cursor:pointer;transition:all .15s;text-align:center;}
+.kpi:hover,.kpi.active{border-color:#f97316;background:rgba(249,115,22,.06);}
+.kpi .l{color:#94a3b8;font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;}
+.kpi .v{color:#fff;font-size:1.4rem;font-weight:800;font-family:'JetBrains Mono',monospace;margin-top:4px;}
+.row2{display:grid;grid-template-columns:1.2fr 1fr;gap:18px;}
+@media(max-width:980px){.row2{grid-template-columns:1fr;}}
+.panel{background:#141824;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:20px;}
+.panel h3{color:#f97316;font-size:.95rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:14px;}
+.tbl{width:100%;border-collapse:collapse;}
+.tbl th{background:#0d111a;color:#94a3b8;font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;text-align:left;padding:10px 12px;}
+.tbl td{padding:10px 12px;font-size:.85rem;border-bottom:1px solid rgba(255,255,255,.04);}
+.input,select,textarea{width:100%;background:#0b0e16;border:1.5px solid rgba(255,255,255,.1);border-radius:9px;padding:10px 14px;color:#e2e8f0;font-family:inherit;font-size:.88rem;}
+.input:focus,select:focus{outline:none;border-color:#f97316;}
+.field{margin-bottom:11px;}
+.field label{display:block;font-size:.72rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;}
+.btn{padding:10px 18px;border-radius:9px;font-weight:700;font-size:.85rem;border:none;cursor:pointer;font-family:inherit;}
+.btn-primary{background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;}
+.btn-green{background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;}
+.btn-sm{padding:5px 10px;font-size:.75rem;border-radius:6px;}
+.pill{padding:3px 10px;border-radius:99px;font-size:.7rem;font-weight:700;display:inline-block;}
+.p-pending{background:rgba(251,191,36,.18);color:#fcd34d;}
+.p-ordered{background:rgba(59,130,246,.18);color:#60a5fa;}
+.p-ready{background:rgba(168,85,247,.18);color:#c084fc;}
+.p-fulfilled{background:rgba(34,197,94,.2);color:#4ade80;}
+.p-cancelled{background:rgba(100,116,139,.2);color:#cbd5e1;}
+.pri-urgent{background:#ef4444;color:#fff;}
+.pri-high{background:#f97316;color:#fff;}
+.pri-normal{background:rgba(255,255,255,.05);color:#94a3b8;}
+.toast{position:fixed;bottom:30px;right:30px;background:#16a34a;color:#fff;padding:14px 22px;border-radius:10px;font-weight:700;z-index:300;display:none;}
+.toast.show{display:block;}
+.toast.err{background:#ef4444;}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="brand"><i class="fas fa-clipboard-list"></i> Customer Pre-Orders</div>
+  <div><a href="/portal" class="nav-links">Portal</a><a href="/pickpack" class="nav-links">Pick/Pack</a></div>
+</div>
+
+<div class="wrap">
+  <h1>📋 Customer Pre-Order Queue</h1>
+  <p class="sub">Customer requests an out-of-stock medicine — track it from request → ordered → ready → fulfilled.</p>
+
+  <div class="kpi-row" id="kpiRow"></div>
+
+  <div class="row2">
+    <div class="panel">
+      <h3><i class="fas fa-list"></i> Active Pre-Orders</h3>
+      <table class="tbl" id="poTable">
+        <thead><tr><th>Customer</th><th>Medicine</th><th>Qty</th><th>Status</th><th>Priority</th><th>Actions</th></tr></thead>
+        <tbody><tr><td colspan="6" style="text-align:center;padding:20px;color:#64748b;">Loading…</td></tr></tbody>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3><i class="fas fa-plus-circle"></i> Add Pre-Order</h3>
+      <div class="field"><label>Customer Name</label><input id="cname" class="input"/></div>
+      <div class="field"><label>Phone</label><input id="cphone" class="input"/></div>
+      <div class="field"><label>Medicine Wanted</label><input id="cmed" class="input"/></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div class="field"><label>Qty</label><input type="number" id="cqty" class="input" value="1"/></div>
+        <div class="field"><label>Needed By</label><input type="date" id="cneed" class="input"/></div>
+      </div>
+      <div class="field"><label>Priority</label>
+        <select id="cpri"><option value="normal">Normal</option><option value="high">High</option><option value="urgent">Urgent</option></select>
+      </div>
+      <div class="field"><label>Notes</label><input id="cnotes" class="input" placeholder="Optional"/></div>
+      <button class="btn btn-primary" onclick="save()" style="width:100%"><i class="fas fa-save"></i> Add Pre-Order</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let curStatus = '';
+async function load(){
+  const r = await fetch('/api/preorders' + (curStatus ? '?status=' + curStatus : ''));
+  const d = await r.json();
+  const tot = Object.values(d.stats).reduce((a,b)=>a+b,0);
+  document.getElementById('kpiRow').innerHTML = `
+    <div class="kpi ${curStatus===''?'active':''}" onclick="filter('')"><div class="l">All</div><div class="v">${tot}</div></div>
+    <div class="kpi ${curStatus==='pending'?'active':''}" onclick="filter('pending')"><div class="l">Pending</div><div class="v" style="color:#fcd34d;">${d.stats.pending}</div></div>
+    <div class="kpi ${curStatus==='ordered'?'active':''}" onclick="filter('ordered')"><div class="l">Ordered</div><div class="v" style="color:#60a5fa;">${d.stats.ordered}</div></div>
+    <div class="kpi ${curStatus==='ready'?'active':''}" onclick="filter('ready')"><div class="l">Ready</div><div class="v" style="color:#c084fc;">${d.stats.ready}</div></div>
+    <div class="kpi ${curStatus==='fulfilled'?'active':''}" onclick="filter('fulfilled')"><div class="l">Fulfilled</div><div class="v" style="color:#4ade80;">${d.stats.fulfilled}</div></div>
+  `;
+
+  const tb = document.querySelector('#poTable tbody');
+  if(!d.preorders.length){
+    tb.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;color:#64748b;">No pre-orders</td></tr>';
+    return;
+  }
+  tb.innerHTML = d.preorders.map(p => {
+    let actions = '';
+    if(p.status === 'pending') actions = `<button class="btn btn-sm btn-primary" onclick="setSt(${p.id},'ordered')">→ Order</button>`;
+    else if(p.status === 'ordered') actions = `<button class="btn btn-sm" style="background:rgba(168,85,247,.2);color:#c084fc;" onclick="setSt(${p.id},'ready')">→ Ready</button>`;
+    else if(p.status === 'ready') actions = `<button class="btn btn-sm btn-green" onclick="setSt(${p.id},'fulfilled')">✓ Fulfilled</button>`;
+    return `<tr>
+      <td><strong>${p.customer_name||'-'}</strong><br><span style="color:#94a3b8;font-size:.74rem;font-family:monospace;">${p.customer_phone||''}</span></td>
+      <td>${p.medicine}</td>
+      <td class="mono">${p.qty}</td>
+      <td><span class="pill p-${p.status}">${p.status.toUpperCase()}</span></td>
+      <td><span class="pill pri-${p.priority}">${p.priority}</span></td>
+      <td>${actions}</td>
+    </tr>`;
+  }).join('');
+}
+
+function filter(s){ curStatus = s; load(); }
+
+async function save(){
+  const body = {
+    customer_name: document.getElementById('cname').value,
+    customer_phone: document.getElementById('cphone').value,
+    medicine: document.getElementById('cmed').value,
+    qty: parseInt(document.getElementById('cqty').value || 1),
+    needed_by: document.getElementById('cneed').value,
+    priority: document.getElementById('cpri').value,
+    notes: document.getElementById('cnotes').value
+  };
+  if(!body.medicine){ showToast('Medicine name required', true); return; }
+  const r = await fetch('/api/preorders', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  if((await r.json()).status === 'ok'){
+    ['cname','cphone','cmed','cnotes'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('cqty').value = 1;
+    showToast('✓ Pre-order added');
+    load();
+  }
+}
+
+async function setSt(id, st){
+  await fetch(`/api/preorders/${id}/status`, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:st})});
+  load();
+}
+
+function showToast(m, e){
+  const t = document.getElementById('toast');
+  t.textContent = m; t.classList.toggle('err', !!e); t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+load();
+setInterval(load, 30000);
+</script>
+</body>
+</html>

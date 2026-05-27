@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Data Insights — Selvam Medicals</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@600&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root{--bg:#0b0e16;--sb:#111827;--card:#151d2b;--card2:#1a2236;--brd:#1f2d40;--tx:#e2e8f0;--mt:#64748b;--acc:#f97316;--grn:#22c55e;--red:#ef4444;--blu:#3b82f6;--yel:#eab308;--pur:#a855f7;}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;background:var(--bg);color:var(--tx);font-family:Inter,sans-serif;font-size:13px;overflow-y:auto;}
+.topbar{height:56px;background:var(--sb);border-bottom:1px solid var(--brd);display:flex;align-items:center;gap:12px;padding:0 20px;position:sticky;top:0;z-index:10;}
+.topbar a{display:flex;align-items:center;gap:7px;color:var(--mt);font-size:12px;text-decoration:none;padding:5px 10px;border-radius:6px;border:1px solid var(--brd);transition:all .2s;}
+.topbar a:hover{border-color:var(--acc);color:var(--acc);}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:7px;border:1px solid var(--brd);background:var(--card2);color:var(--tx);font-size:12px;font-family:Inter,sans-serif;cursor:pointer;transition:all .2s;}
+.btn:hover{border-color:var(--acc);color:var(--acc);}
+.fi select{background:var(--card2);border:1px solid var(--brd);border-radius:7px;padding:5px 10px;color:var(--tx);font-size:12px;font-family:Inter,sans-serif;outline:none;}
+.page{padding:20px;max-width:1400px;margin:0 auto;}
+/* KPI strip */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:20px;}
+.kpi{background:var(--card2);border:1px solid var(--brd);border-radius:12px;padding:14px 16px;}
+.kpi .kv{font-size:22px;font-weight:700;font-family:'JetBrains Mono',monospace;margin-bottom:2px;}
+.kpi .kl{font-size:10.5px;color:var(--mt);text-transform:uppercase;letter-spacing:.04em;}
+.kpi.orange .kv{color:var(--acc);}
+.kpi.green  .kv{color:var(--grn);}
+.kpi.blue   .kv{color:var(--blu);}
+.kpi.yel    .kv{color:var(--yel);}
+.kpi.red    .kv{color:var(--red);}
+.kpi.pur    .kv{color:var(--pur);}
+/* chart grids */
+.chart-grid{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:16px;}
+.chart-grid.three{grid-template-columns:1fr 1fr 1fr;}
+.chart-card{background:var(--card2);border:1px solid var(--brd);border-radius:14px;padding:16px;}
+.chart-card .ch{font-size:13px;font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+.chart-card .ch .sub{font-size:11px;color:var(--mt);margin-left:auto;}
+canvas{max-height:260px;}
+/* stock health */
+.stock-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:20px;}
+.sh-card{background:var(--card2);border:1px solid var(--brd);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:10px;}
+.sh-icon{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+.sh-val{font-size:18px;font-weight:700;font-family:'JetBrains Mono',monospace;}
+.sh-lbl{font-size:10.5px;color:var(--mt);}
+/* top table */
+.list-card{background:var(--card2);border:1px solid var(--brd);border-radius:14px;padding:0;overflow:hidden;}
+.list-card .lh{padding:12px 16px;border-bottom:1px solid var(--brd);font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px;}
+.list-card table{width:100%;border-collapse:collapse;}
+.list-card th{padding:8px 14px;text-align:left;font-size:10px;font-weight:600;color:var(--mt);text-transform:uppercase;letter-spacing:.05em;background:var(--sb);}
+.list-card td{padding:9px 14px;border-top:1px solid var(--brd);font-size:12px;}
+.list-card tbody tr:hover{background:rgba(249,115,22,.03);}
+.bar-mini{height:4px;border-radius:99px;background:var(--acc);margin-top:4px;}
+.section-title{font-size:14px;font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+.spin{animation:spin .8s linear infinite;}@keyframes spin{to{transform:rotate(360deg);}}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <a href="/internal"><i class="fas fa-arrow-left"></i> POS</a>
+  <i class="fas fa-chart-line" style="color:var(--acc)"></i>
+  <span style="font-size:15px;font-weight:600">Data Insights</span>
+  <span style="margin-left:auto;display:flex;gap:8px;align-items:center">
+    <span style="font-size:11.5px;color:var(--mt)">Revenue trend:</span>
+    <select class="fi select" id="trend-days" onchange="loadRevenueTrend()">
+      <option value="7">7 days</option>
+      <option value="14">14 days</option>
+      <option value="30" selected>30 days</option>
+      <option value="60">60 days</option>
+      <option value="90">90 days</option>
+    </select>
+    <button class="btn" onclick="refreshAll()"><i class="fas fa-rotate"></i> Refresh</button>
+  </span>
+</div>
+
+<div class="page">
+  <!-- KPI STRIP -->
+  <div class="kpi-grid" id="kpi-strip">
+    <div class="kpi orange"><div class="kv" id="kk-today">—</div><div class="kl">Today Revenue</div></div>
+    <div class="kpi green"> <div class="kv" id="kk-bills">—</div><div class="kl">Today Bills</div></div>
+    <div class="kpi blue">  <div class="kv" id="kk-customers">—</div><div class="kl">Total Customers</div></div>
+    <div class="kpi yel">   <div class="kv" id="kk-retention">—</div><div class="kl">Retention Rate</div></div>
+    <div class="kpi red">   <div class="kv" id="kk-expiry">—</div><div class="kl">Expiring Soon</div></div>
+    <div class="kpi pur">   <div class="kv" id="kk-stock-val">—</div><div class="kl">Stock Value</div></div>
+    <div class="kpi">       <div class="kv" id="kk-chronic" style="color:var(--wa,#25d366)">—</div><div class="kl">Chronic Patients</div></div>
+    <div class="kpi">       <div class="kv" id="kk-meds">—</div><div class="kl">Total Medicines</div></div>
+  </div>
+
+  <!-- REVENUE TREND + PAYMENT PIE -->
+  <div class="chart-grid" style="margin-bottom:16px">
+    <div class="chart-card">
+      <div class="ch"><i class="fas fa-chart-area" style="color:var(--acc)"></i> Revenue Trend <span class="sub" id="trend-total"></span></div>
+      <canvas id="chart-revenue"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="ch"><i class="fas fa-credit-card" style="color:var(--blu)"></i> Payment Methods</div>
+      <canvas id="chart-payment"></canvas>
+    </div>
+  </div>
+
+  <!-- TOP MEDICINES + HOURLY HEATMAP -->
+  <div class="chart-grid" style="margin-bottom:16px">
+    <div class="chart-card">
+      <div class="ch"><i class="fas fa-pills" style="color:var(--grn)"></i> Top Medicines by Revenue <span class="sub">Last 30 days</span></div>
+      <canvas id="chart-topmeds"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="ch"><i class="fas fa-clock" style="color:var(--yel)"></i> Hourly Sales Heatmap</div>
+      <canvas id="chart-hourly"></canvas>
+    </div>
+  </div>
+
+  <!-- STOCK HEALTH -->
+  <div class="section-title"><i class="fas fa-boxes-stacked" style="color:var(--acc)"></i> Stock Health</div>
+  <div class="stock-grid" id="stock-health-grid">
+    <div style="grid-column:1/-1;text-align:center;color:var(--mt);padding:20px"><i class="fas fa-circle-notch spin"></i></div>
+  </div>
+
+  <!-- TOP SPENDERS TABLE -->
+  <div class="chart-grid" style="grid-template-columns:1fr 1fr;margin-bottom:20px">
+    <div class="list-card">
+      <div class="lh"><i class="fas fa-trophy" style="color:var(--yel)"></i> Top Customers by Spend</div>
+      <table><thead><tr><th>#</th><th>Name</th><th>Phone</th><th>Visits</th><th>Total Spend</th></tr></thead>
+        <tbody id="top-spenders"></tbody>
+      </table>
+    </div>
+    <div class="list-card">
+      <div class="lh"><i class="fas fa-pills" style="color:var(--grn)"></i> Top 15 Medicines (Qty)</div>
+      <table><thead><tr><th>#</th><th>Medicine</th><th>Qty Sold</th><th>Revenue</th></tr></thead>
+        <tbody id="top-meds-table"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script>
+Chart.defaults.color      = '#64748b';
+Chart.defaults.borderColor = '#1f2d40';
+let charts = {};
+
+refreshAll();
+
+async function refreshAll(){
+  await Promise.all([loadKPIs(), loadRevenueTrend(), loadPaymentBreakdown(),
+    loadTopMedicines(), loadHourlyHeatmap(), loadStockHealth(), loadCustomerAnalytics()]);
+}
+
+async function loadKPIs(){
+  const [kpi,stock,cust] = await Promise.all([
+    fetch('/api/kpis').then(r=>r.json()),
+    fetch('/api/insights/stock-health').then(r=>r.json()),
+    fetch('/api/insights/customer-analytics').then(r=>r.json()),
+  ]);
+  document.getElementById('kk-today').textContent  = '₹'+fmt0(kpi.today_revenue||0);
+  document.getElementById('kk-bills').textContent  = (kpi.today_bills||0).toString();
+  document.getElementById('kk-customers').textContent = (cust.total_customers||0).toLocaleString();
+  document.getElementById('kk-retention').textContent = (cust.retention_rate||0)+'%';
+  document.getElementById('kk-expiry').textContent    = (stock.expiring_soon||0).toString();
+  document.getElementById('kk-stock-val').textContent = '₹'+fmt0(stock.total_stock_value||0);
+  document.getElementById('kk-chronic').textContent   = (cust.chronic_patients||0).toString();
+  document.getElementById('kk-meds').textContent      = (stock.total_medicines||0).toLocaleString();
+}
+
+async function loadRevenueTrend(){
+  const days = document.getElementById('trend-days').value;
+  const data = await fetch(`/api/insights/revenue-trend?days=${days}`).then(r=>r.json());
+  const labels = data.map(d=>d.label);
+  const revs   = data.map(d=>d.revenue);
+  const bills  = data.map(d=>d.bills);
+  const total  = revs.reduce((a,b)=>a+b,0);
+  document.getElementById('trend-total').textContent = 'Total: ₹'+fmt0(total);
+
+  destroyChart('chart-revenue');
+  charts['revenue'] = new Chart(document.getElementById('chart-revenue'),{
+    type:'bar',
+    data:{labels,datasets:[
+      {type:'line',label:'Revenue (₹)',data:revs,borderColor:'#f97316',backgroundColor:'rgba(249,115,22,.08)',fill:true,tension:.4,pointRadius:2,yAxisID:'y'},
+      {type:'bar', label:'Bills',data:bills,backgroundColor:'rgba(59,130,246,.25)',borderColor:'rgba(59,130,246,.6)',borderWidth:1,yAxisID:'y1'},
+    ]},
+    options:{responsive:true,maintainAspectRatio:true,interaction:{mode:'index'},plugins:{legend:{labels:{boxWidth:10,font:{size:10}}}},
+      scales:{
+        y :{position:'left', ticks:{callback:v=>'₹'+fmt0(v),font:{size:10}},grid:{color:'#1f2d40'}},
+        y1:{position:'right',ticks:{font:{size:10}},grid:{display:false}},
+        x :{ticks:{font:{size:10}},grid:{color:'#1f2d40'}},
+    }}
+  });
+}
+
+async function loadPaymentBreakdown(){
+  const data = await fetch('/api/insights/payment-breakdown').then(r=>r.json());
+  const labels = data.map(d=>(d.pay||'cash').toUpperCase());
+  const values = data.map(d=>d.revenue);
+  const colours = ['#22c55e','#3b82f6','#a855f7','#eab308','#ef4444','#f97316'];
+  destroyChart('chart-payment');
+  charts['payment'] = new Chart(document.getElementById('chart-payment'),{
+    type:'doughnut',
+    data:{labels,datasets:[{data:values,backgroundColor:colours.slice(0,data.length),borderColor:'#1a2236',borderWidth:2,hoverOffset:6}]},
+    options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{position:'bottom',labels:{boxWidth:10,font:{size:10},padding:10}},tooltip:{callbacks:{label:c=>`₹${fmt0(c.raw)}`}}}}
+  });
+}
+
+async function loadTopMedicines(){
+  const data = await fetch('/api/insights/top-medicines?limit=15').then(r=>r.json());
+  const maxRev = Math.max(...data.map(d=>d.revenue),1);
+  // Chart
+  destroyChart('chart-topmeds');
+  charts['topmeds'] = new Chart(document.getElementById('chart-topmeds'),{
+    type:'bar',
+    data:{
+      labels:data.slice(0,10).map(d=>d.name.length>16?d.name.slice(0,14)+'…':d.name),
+      datasets:[{label:'Revenue (₹)',data:data.slice(0,10).map(d=>d.revenue),backgroundColor:'rgba(34,197,94,.6)',borderColor:'#22c55e',borderWidth:1,borderRadius:4}]
+    },
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:true,plugins:{legend:{display:false}},
+      scales:{x:{ticks:{callback:v=>'₹'+fmt0(v),font:{size:10}},grid:{color:'#1f2d40'}},y:{ticks:{font:{size:10}},grid:{display:false}}}}
+  });
+  // Table
+  document.getElementById('top-meds-table').innerHTML = data.map((d,i)=>`<tr>
+    <td style="color:var(--mt)">${i+1}</td>
+    <td style="font-weight:500">${esc(d.name)}</td>
+    <td>${d.qty.toLocaleString()}</td>
+    <td>₹${fmt0(d.revenue)}</td>
+  </tr>`).join('');
+}
+
+async function loadHourlyHeatmap(){
+  const data = await fetch('/api/insights/hourly-heatmap').then(r=>r.json());
+  const max  = Math.max(...data.map(d=>d.count),1);
+  destroyChart('chart-hourly');
+  charts['hourly'] = new Chart(document.getElementById('chart-hourly'),{
+    type:'bar',
+    data:{
+      labels:data.map(d=>d.label),
+      datasets:[{label:'Bills',data:data.map(d=>d.count),
+        backgroundColor:data.map(d=>{ const pct=d.count/max; return `rgba(249,115,22,${0.15+pct*0.8})`; }),
+        borderColor:'rgba(249,115,22,.4)',borderWidth:1,borderRadius:2}]
+    },
+    options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{display:false}},
+      scales:{x:{ticks:{font:{size:9},maxRotation:45},grid:{color:'#1f2d40'}},y:{ticks:{font:{size:10}},grid:{color:'#1f2d40'}}}}
+  });
+}
+
+async function loadStockHealth(){
+  const s   = await fetch('/api/insights/stock-health').then(r=>r.json());
+  const div = document.getElementById('stock-health-grid');
+  div.innerHTML = [
+    {icon:'fa-box-open',bg:'rgba(34,197,94,.12)',color:'var(--grn)',  val:s.total_medicines,  lbl:'Total Medicines'},
+    {icon:'fa-check-double',bg:'rgba(34,197,94,.12)',color:'var(--grn)',  val:s.healthy,      lbl:'Healthy Stock'},
+    {icon:'fa-arrow-trend-down',bg:'rgba(234,179,8,.12)',color:'var(--yel)',val:s.low_stock,  lbl:'Low Stock'},
+    {icon:'fa-ban',bg:'rgba(239,68,68,.12)',color:'var(--red)',        val:s.zero_stock,       lbl:'Zero Stock'},
+    {icon:'fa-calendar-xmark',bg:'rgba(249,115,22,.12)',color:'var(--acc)',val:s.expiring_soon,lbl:'Expiring ≤90d'},
+    {icon:'fa-skull-crossbones',bg:'rgba(239,68,68,.15)',color:'var(--red)',val:s.expired,    lbl:'Expired'},
+    {icon:'fa-indian-rupee-sign',bg:'rgba(59,130,246,.12)',color:'var(--blu)',val:'₹'+fmt0(s.total_stock_value),lbl:'Stock Value'},
+  ].map(c=>`
+    <div class="sh-card">
+      <div class="sh-icon" style="background:${c.bg};color:${c.color}"><i class="fas ${c.icon}"></i></div>
+      <div><div class="sh-val" style="color:${c.color}">${c.val}</div><div class="sh-lbl">${c.lbl}</div></div>
+    </div>`).join('');
+}
+
+async function loadCustomerAnalytics(){
+  const data = await fetch('/api/insights/customer-analytics').then(r=>r.json());
+  const tbody = document.getElementById('top-spenders');
+  tbody.innerHTML = (data.top_spenders||[]).map((c,i)=>`<tr>
+    <td style="color:var(--mt)">${i+1}</td>
+    <td style="font-weight:600">${esc(c.name||'—')}</td>
+    <td style="color:var(--acc)">${esc(c.phone||'—')}</td>
+    <td>${c.visits||0}</td>
+    <td style="font-weight:600">₹${fmt0(c.total||0)}</td>
+  </tr>`).join('') || `<tr><td colspan="5" style="text-align:center;color:var(--mt);padding:20px">No data</td></tr>`;
+}
+
+function destroyChart(id){
+  if(charts[id]){ charts[id].destroy(); delete charts[id]; }
+}
+function fmt0(n){ return parseFloat(n||0).toLocaleString('en-IN',{maximumFractionDigits:0}); }
+function esc(s){const d=document.createElement('span');d.textContent=String(s||'');return d.innerHTML;}
+</script>
+</body></html>
