@@ -1,0 +1,228 @@
+/* ═══════════════════════════════════════════════════════════
+   customers.css
+═══════════════════════════════════════════════════════════ */
+
+.content-area {
+  flex: 1;
+  background: #0D0F12;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+
+/* BREADCRUMB */
+
+.breadcrumb-bar {
+  background: #0E1117;
+  border-bottom: 1px solid rgba(108, 108, 108, 0.4);
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.breadcrumb-parent {
+  font-family: Inter, sans-serif;
+  font-weight: 600;
+  font-size: 16px;
+  color: #9CA3AF;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.breadcrumb-parent:hover { color: #D1D5DB; }
+
+.breadcrumb-current {
+  font-family: Inter, sans-serif;
+  font-weight: 700;
+  font-size: 16px;
+  color: #4ADE80;
+}
+
+/* CUSTOMER CONTENT */
+
+.cust-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 24px;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.cust-center-wrap {
+  width: 100%;
+  max-width: 820px;
+}
+
+/* CARD */
+
+.cust-card {
+  width: 100%;
+  border-radius: 20px;
+  border: 1px solid rgba(104, 104, 104, 0.58);
+  background: #161A1F;
+  overflow: hidden;
+}
+
+.cust-card-body {
+  padding: 28px 40px 32px;
+}
+
+/* COLUMNS */
+
+.cust-columns {
+  display: flex;
+  gap: 32px;
+  width: 100%;
+  min-width: 0;
+}
+
+.cust-column-left {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.cust-column-right {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ── FIELD ROWS — hover & focus-within drive all state ── */
+
+.cust-field-row {
+  display: flex;
+  align-items: center;
+  border-radius: 8px;
+  padding: 4px 0;
+  transition: background 0.15s;
+}
+
+.cust-field-label {
+  font-family: Inter, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: #80879A;
+  white-space: nowrap;
+  width: 120px;
+  flex-shrink: 0;
+  line-height: 1;
+  transition: color 0.15s;
+}
+
+.cust-colon {
+  font-family: Inter, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: #80879A;
+  flex-shrink: 0;
+  margin: 0 12px 0 0;
+  line-height: 1;
+  transition: color 0.15s;
+}
+
+.cust-input-wrap {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* HOVER on row — label, colon, input border go orange */
+
+.cust-field-row:hover .cust-field-label,
+.cust-field-row:hover .cust-colon {
+  color: #F59E0B;
+}
+
+.cust-field-row:hover .cust-input {
+  border-color: rgba(245, 158, 11, 0.55);
+  background: #1F2430;
+}
+
+/* FOCUS-WITHIN on row — label, colon stay orange; input goes blue */
+
+.cust-field-row:focus-within .cust-field-label,
+.cust-field-row:focus-within .cust-colon {
+  color: #F59E0B;
+}
+
+.cust-field-row:focus-within .cust-input {
+  border-color: #3B82F6;
+  background: #1E2535;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.18);
+}
+
+/* INPUTS */
+
+.cust-input {
+  width: 100%;
+  height: 38px;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(150, 150, 150, 0.29);
+  background: #1C2028;
+  color: #fff;
+  font-family: Inter, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  outline: none;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+  box-sizing: border-box;
+  display: block;
+}
+
+.cust-input::placeholder {
+  color: rgba(255, 255, 255, 0.25);
+  font-weight: 400;
+}
+
+.cust-input:focus::placeholder {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+/* CARD DIVIDERS */
+
+.cust-card-top-divider {
+  width: 100%;
+  height: 1px;
+  background: rgba(108, 108, 108, 0.53);
+}
+
+.cust-card-divider {
+  width: 100%;
+  height: 1px;
+  background: rgba(108, 108, 108, 0.53);
+}
+
+.cust-card-footer {
+  padding: 18px 32px;
+  text-align: center;
+  background: #161A1F;
+}
+
+.cust-card-title {
+  font-family: Inter, sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: #D58615;
+  letter-spacing: 0.01em;
+}
+
+/* ── MAIN PANEL BLUE OUTLINE — when any input is focused ── */
+
+.main {
+  border: 2px solid transparent;
+  transition: border-color 0.4s;
+}
+
+.main.panel-active {
+  border-color: #3B82F6;
+}
