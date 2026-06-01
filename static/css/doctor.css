@@ -1,0 +1,271 @@
+/* ═══════════════════════════════════════════════════════════
+   doctor.css
+═══════════════════════════════════════════════════════════ */
+
+.content-area {
+  flex: 1;
+  background: #0D0F12;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+
+/* BREADCRUMB */
+
+.breadcrumb-bar {
+  background: #0E1117;
+  border-bottom: 1px solid rgba(108, 108, 108, 0.4);
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.breadcrumb-parent {
+  font-family: Inter, sans-serif;
+  font-weight: 600;
+  font-size: 16px;
+  color: #9CA3AF;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.breadcrumb-parent:hover { color: #D1D5DB; }
+
+.breadcrumb-current {
+  font-family: Inter, sans-serif;
+  font-weight: 700;
+  font-size: 16px;
+  color: #4ADE80;
+}
+
+/* DOCTOR CONTENT */
+
+.doc-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 24px;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.doc-center-wrap {
+  width: 100%;
+  max-width: 540px;
+}
+
+/* CARD */
+
+.doc-card {
+  width: 100%;
+  border-radius: 20px;
+  border: 1px solid rgba(104, 104, 104, 0.58);
+  background: #161A1F;
+  overflow: hidden;
+}
+
+.doc-card-body {
+  padding: 28px 40px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* FIELD ROWS — hover & focus-within drive all state */
+
+.doc-field-row {
+  display: flex;
+  align-items: center;
+  border-radius: 8px;
+  padding: 4px 0;
+  transition: background 0.15s;
+}
+
+.doc-field-label {
+  font-family: Inter, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: #80879A;
+  white-space: nowrap;
+  width: 120px;
+  flex-shrink: 0;
+  line-height: 1;
+  transition: color 0.15s;
+}
+
+.doc-colon {
+  font-family: Inter, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: #80879A;
+  flex-shrink: 0;
+  margin: 0 12px 0 0;
+  line-height: 1;
+  transition: color 0.15s;
+}
+
+.doc-input-wrap {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* HOVER on row */
+
+.doc-field-row:hover .doc-field-label,
+.doc-field-row:hover .doc-colon {
+  color: #F59E0B;
+}
+
+.doc-field-row:hover .doc-input {
+  border-color: rgba(245, 158, 11, 0.55);
+  background: #1F2430;
+}
+
+/* FOCUS-WITHIN on row */
+
+.doc-field-row:focus-within .doc-field-label,
+.doc-field-row:focus-within .doc-colon {
+  color: #F59E0B;
+}
+
+.doc-field-row:focus-within .doc-input {
+  border-color: #3B82F6;
+  background: #1E2535;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.18);
+}
+
+/* INPUTS */
+
+.doc-input {
+  width: 100%;
+  height: 38px;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(150, 150, 150, 0.29);
+  background: #1C2028;
+  color: #fff;
+  font-family: Inter, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  outline: none;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+  box-sizing: border-box;
+  display: block;
+}
+
+.doc-input::placeholder {
+  color: rgba(255, 255, 255, 0.25);
+  font-weight: 400;
+}
+
+.doc-input:focus::placeholder {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+/* CARD DIVIDERS */
+
+.doc-card-top-divider {
+  width: 100%;
+  height: 1px;
+  background: rgba(108, 108, 108, 0.53);
+}
+
+.doc-card-divider {
+  width: 100%;
+  height: 1px;
+  background: rgba(108, 108, 108, 0.53);
+}
+
+.doc-card-footer {
+  padding: 18px 32px;
+  text-align: center;
+  background: #161A1F;
+}
+
+.doc-card-title {
+  font-family: Inter, sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: #D58615;
+  letter-spacing: 0.01em;
+}
+
+/* MAIN PANEL BLUE OUTLINE — 1 second flash */
+
+.main {
+  border: 2px solid transparent;
+  transition: border-color 0.4s;
+}
+
+.main.panel-active {
+  border-color: #3B82F6;
+}
+
+/* ── FOOTER ── */
+
+.main-footer {
+  background: #0E1117;
+  border-top: 1px solid rgba(108, 108, 108, 0.4);
+  height: 70px;
+  min-height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 50px;
+  flex-shrink: 0;
+  width: 100%;
+}
+
+.footer-actions {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 1200px;
+}
+
+.action-btn {
+  background: none;
+  border: none;
+  font-family: Inter, sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 8px 4px;
+  transition: opacity 0.2s;
+}
+
+.action-btn.active       { color: #F59E0B; }
+.action-btn.active:hover { opacity: 0.75; }
+.action-btn.inactive     { color: rgba(243, 156, 18, 0.3); cursor: default; }
+
+/* CONFIRMATION MODE */
+
+.footer-confirm {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 48px;
+  width: 100%;
+}
+
+.confirm-save {
+  color: #4ADE80;
+}
+
+.confirm-save:hover { opacity: 0.75; }
+
+.confirm-reenter {
+  color: #F59E0B;
+}
+
+.confirm-reenter:hover { opacity: 0.75; }
+
+.confirm-cancel {
+  color: #F87171;
+}
+
+.confirm-cancel:hover { opacity: 0.75; }

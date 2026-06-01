@@ -312,14 +312,7 @@ def normalize_bill_row(row: sqlite3.Row) -> dict[str, Any]:
 
 @app.route("/")
 def dashboard():
-    """Render login/dashboard page"""
     return render_template("login.html")
-
-
-@app.route("/wanted")
-def wanted():
-    """Render wanted (manual) page"""
-    return render_template("wanted.html")
 
 
 @app.route("/mfrchange2")
