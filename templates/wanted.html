@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Selvam Medicals – Wanted (Manual)</title>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@700&family=Jersey+15&display=swap" rel="stylesheet">
+
+  <!-- ✅ Shared layout — sidebar + header (same file used across all pages) -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/sidebar-header.css') }}">
+
+  <!-- ✅ Page-specific styles — ONLY the card/form content -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/wanted.css') }}">
+</head>
+<body>
+<div class="app">
+
+  <!-- ══════════════════════════════════════
+       SIDEBAR  — identical to every other page
+  ══════════════════════════════════════ -->
+  <div class="left-panel">
+    <div class="logo">
+      <div class="SM">SM</div>
+      <div class="logo-text"><p>Selvam</p><p>Medicals</p></div>
+    </div>
+
+    <select class="side-bar-dropdown">
+      <option value="" disabled selected hidden>Timeline...</option>
+      <option>Daily</option>
+      <option>Weekly</option>
+      <option>Monthly</option>
+    </select>
+
+    <p class="sec-label">MENU</p>
+
+    <div class="row active">
+      <div class="opt"><i class="fa-solid fa-chart-line"></i><p class="opt-text">Sales</p></div>
+    </div>
+    <div class="row">
+      <div class="opt"><i class="fa-solid fa-cart-shopping"></i><p class="opt-text">Purchase</p></div>
+    </div>
+    <div class="row">
+      <div class="opt"><i class="fa-solid fa-list"></i><p class="opt-text">Item</p></div>
+    </div>
+    <div class="row">
+      <div class="opt"><i class="fa-solid fa-users"></i><p class="opt-text">Masters</p></div>
+    </div>
+    <div class="row">
+      <div class="opt"><i class="fa-solid fa-desktop"></i><p class="opt-text">System</p></div>
+    </div>
+    <div class="row">
+      <div class="opt"><i class="fa-solid fa-toolbox"></i><p class="opt-text">Utilities</p></div>
+    </div>
+    <div class="row sms">
+      <div class="opt"><i class="fa-solid fa-comment-dots"></i><p class="opt-text">SMS</p></div>
+    </div>
+
+    <p class="sec-label other">OTHER</p>
+
+    <div class="row settings">
+      <div class="opt"><i class="fa-solid fa-gear"></i><p class="opt-text">Settings</p></div>
+    </div>
+
+    <div class="spacer"></div>
+
+    <div class="row logout">
+      <div class="opt"><i class="fa-solid fa-right-from-bracket"></i><p class="opt-text">Logout</p></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       RIGHT COLUMN
+  ══════════════════════════════════════ -->
+  <div class="main" id="mainPanel">
+
+    <!-- HEADER — identical to every other page -->
+    <header class="header">
+      <div class="search-box">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" placeholder="Search">
+      </div>
+      <div class="fy">FY: 2026-2027</div>
+      <div class="divider-1"></div>
+      <div class="date-block">
+        <span class="date-val" id="date-val"></span>
+        <span class="day-val"  id="day-val"></span>
+      </div>
+      <div class="divider-2"></div>
+      <div class="clock" id="clock">00:00:00</div>
+      <div class="divider-3"></div>
+      <div class="user">
+        <img src="{{ url_for('static', filename='images/user-profile.jpg') }}" alt="User">
+        <span>Name</span>
+      </div>
+    </header>
+
+    <!-- CONTENT AREA -->
+    <div class="content-area">
+
+      <!-- BREADCRUMB -->
+      <div class="breadcrumb-bar">
+        <span class="breadcrumb-parent">Item</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+             stroke="#9CA3AF" stroke-width="2.5"
+             stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 18L15 12L9 6"/>
+        </svg>
+        <span class="breadcrumb-current">Wanted (Manual)</span>
+      </div>
+
+      <!-- ════════════════════════════════════════
+           WANTED (MANUAL) — page content starts here
+      ════════════════════════════════════════ -->
+      <div class="prr-content">
+        <div class="wm-center-wrap">
+          <div class="wm-card">
+
+            <div class="wm-card-header">
+              <h1 class="wm-card-title">A Ravirajans 98422</h1>
+            </div>
+
+            <div class="wm-card-body">
+
+              <div class="wm-field-row">
+                <label class="wm-field-label" for="serialNumber">Serial Number</label>
+                <span class="wm-colon">:</span>
+                <div class="wm-input-wrap">
+                  <input class="wm-input" type="text" id="serialNumber" autocomplete="off">
+                </div>
+              </div>
+
+              <div class="wm-field-row">
+                <label class="wm-field-label" for="wantedDate">Wanted Date</label>
+                <span class="wm-colon">:</span>
+                <div class="wm-input-wrap">
+                  <input class="wm-input has-cal" type="text" id="wantedDate" autocomplete="off">
+                  <span class="wm-cal-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                         stroke="#888" stroke-width="2"
+                         stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M8 2V6"/>
+                      <path d="M16 2V6"/>
+                      <path d="M19 4H5C3.9 4 3 4.9 3 6V20C3 21.1 3.9 22 5 22H19C20.1 22 21 21.1 21 20V6C21 4.9 20.1 4 19 4Z"/>
+                      <path d="M3 10H21"/>
+                      <path d="M8 14H8.01"/><path d="M12 14H12.01"/>
+                      <path d="M16 14H16.01"/><path d="M8 18H8.01"/>
+                      <path d="M12 18H12.01"/>
+                    </svg>
+                  </span>
+                </div>
+              </div>
+
+              <div class="wm-field-row">
+                <label class="wm-field-label" for="itemCode">Item Code</label>
+                <span class="wm-colon">:</span>
+                <div class="wm-input-wrap">
+                  <input class="wm-input" type="text" id="itemCode" autocomplete="off">
+                </div>
+              </div>
+
+              <div class="wm-field-row">
+                <label class="wm-field-label" for="quantity">Quantity</label>
+                <span class="wm-colon">:</span>
+                <div class="wm-input-wrap">
+                  <input class="wm-input" type="text" id="quantity" autocomplete="off">
+                </div>
+              </div>
+
+              <div class="wm-field-row">
+                <label class="wm-field-label" for="supplier">Supplier</label>
+                <span class="wm-colon">:</span>
+                <div class="wm-input-wrap">
+                  <input class="wm-input" type="text" id="supplier" autocomplete="off">
+                </div>
+              </div>
+
+              <div class="wm-field-row">
+                <label class="wm-field-label" for="wantedTF">Wanted (T/F)</label>
+                <span class="wm-colon">:</span>
+                <div class="wm-input-wrap">
+                  <input class="wm-input" type="text" id="wantedTF" autocomplete="off">
+                </div>
+              </div>
+
+            </div><!-- /.wm-card-body -->
+          </div><!-- /.wm-card -->
+        </div><!-- /.wm-center-wrap -->
+      </div><!-- /.prr-content -->
+
+      <!-- FOOTER -->
+      <footer class="footer">
+        <button class="action-btn active"   onclick="handleAction('Add')">Add</button>
+        <button class="action-btn inactive">Modify</button>
+        <button class="action-btn inactive">Delete</button>
+        <button class="action-btn active"   onclick="handleAction('View')">View</button>
+        <button class="action-btn active"   onclick="handleAction('Go To')">Go To</button>
+        <button class="action-btn active"   onclick="handleAction('Next')">Next</button>
+        <button class="action-btn active"   onclick="handleAction('Prior')">Prior</button>
+        <button class="action-btn inactive">Options</button>
+        <button class="action-btn active"   onclick="handleAction('Exit')">Exit</button>
+      </footer>
+
+    </div><!-- /.content-area -->
+  </div><!-- /.main -->
+</div><!-- /.app -->
+
+<!-- ✅ Shared sidebar-header JS (clock, date, panel border — same file used across all pages) -->
+<script src="{{ url_for('static', filename='js/sidebar-header.js') }}"></script>
+<!-- ✅ Page-specific JS — ONLY wanted-manual logic -->
+<script src="{{ url_for('static', filename='js/wanted.js') }}"></script>
+</body>
+</html>

@@ -637,12 +637,24 @@ tbody td{padding:10px 14px;font-size:12.5px;color:var(--tx);}
 <!-- Face Scan Modal -->
 <div id="face-modal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.85); z-index:9999; justify-content:center; align-items:center; backdrop-filter:blur(4px)">
   <div style="background:var(--card); border:1px solid var(--acc); padding:30px; border-radius:12px; text-align:center; width:280px; box-shadow:0 10px 40px rgba(0,0,0,0.5)">
+    <div id="face-fraud-alert" style="display:none; background:#ef4444; color:#fff; padding:8px; border-radius:8px; margin-bottom:15px; font-size:10px; font-weight:800; text-transform:uppercase; box-shadow:0 0 20px rgba(239,68,68,0.4)">
+      <i class="fas fa-triangle-exclamation fa-beat"></i> WANTED: <span id="face-fraud-reason"></span>
+    </div>
     <h3 style="color:var(--acc); margin-bottom:20px; font-size:14px; font-weight:600; letter-spacing:1px"><i class="fas fa-expand fa-spin" style="margin-right:6px"></i> SCANNING BIOMETRICS</h3>
     <div style="width:120px; height:120px; border:2px dashed rgba(245,166,35,0.3); margin:0 auto 20px; border-radius:50%; position:relative; overflow:hidden">
        <video id="face-vid" autoplay playsinline style="width:100%; height:100%; object-fit:cover; position:absolute; top:0; left:0; z-index:1; transform: scaleX(-1);"></video>
+       <canvas id="face-canvas" style="width:100%; height:100%; position:absolute; top:0; left:0; z-index:2; transform: scaleX(-1);"></canvas>
        <div id="face-scanline" style="position:absolute; top:0; left:0; right:0; height:6px; background:rgba(245,166,35,0.8); box-shadow:0 0 15px var(--acc); animation: scanline 1.2s infinite alternate linear; z-index:5;"></div>
     </div>
     <p id="face-status" style="font-size:12px; color:var(--tx); font-weight:500">Please look directly at camera.</p>
+    <div id="face-action" style="margin-top:15px; display:none">
+      <div style="margin-bottom:10px">
+        <input type="text" id="face-search" placeholder="Search Customer..." oninput="searchCustFace(this.value)" style="width:100%; padding:8px; border-radius:6px; border:1px solid var(--acc); background:rgba(0,0,0,0.2); color:var(--tx); font-size:12px">
+        <div id="face-search-results" style="max-height:100px; overflow-y:auto; margin-top:5px; text-align:left; background:var(--bg); border-radius:4px; box-shadow:0 5px 15px rgba(0,0,0,0.5)"></div>
+      </div>
+      <button id="btn-reg-face" onclick="regFaceToCust()" style="display:none; background:#22c55e; color:#fff; border:none; padding:8px 15px; border-radius:6px; font-size:11px; font-weight:700; cursor:pointer; width:100%; margin-bottom:5px"><i class="fas fa-id-card"></i> REGISTER FACE TO SELECTED</button>
+      <button onclick="regNewFace()" style="background:var(--acc); color:#000; border:none; padding:8px 15px; border-radius:6px; font-size:11px; font-weight:700; cursor:pointer; width:100%"><i class="fas fa-plus"></i> NEW CUSTOMER ENTRY</button>
+    </div>
   </div>
 </div>
 <style>@keyframes scanline { 0% { top: 0; } 100% { top: 110px; } }</style>
@@ -701,74 +713,195 @@ function attachRx(input) {
   }
 }
 let faceStream = null;
+let faceDetectionInterval = null;
+let modelsLoaded = false;
+
+let selectedRegCustId = null;
+let currentFaceVector = null;
+
+function searchCustFace(q) {
+  const res = document.getElementById('face-search-results');
+  if(!q || q.length < 2) { res.innerHTML = ''; return; }
+  const matches = CUSTOMERS.filter(c => (c.name.toLowerCase().includes(q.toLowerCase()) || c.phone.includes(q)))
+    .slice(0, 5);
+  res.innerHTML = matches.map(c => `
+    <div onclick="selectCustForFace(${c.id}, '${c.name.replace(/'/g, "\\'")}')" style="padding:8px 10px; cursor:pointer; border-bottom:1px solid rgba(255,255,255,0.1); font-size:11px; color:var(--tx)">
+      <i class="fas fa-user"></i> ${c.name} <span style="opacity:0.6; font-size:10px">(${c.phone})</span>
+    </div>
+  `).join('');
+}
+
+function selectCustForFace(id, name) {
+  selectedRegCustId = id;
+  document.getElementById('face-search').value = name;
+  document.getElementById('face-search-results').innerHTML = '';
+  document.getElementById('btn-reg-face').style.display = 'block';
+}
+
+async function regFaceToCust() {
+  if(!selectedRegCustId || !currentFaceVector) return;
+  const btn = document.getElementById('btn-reg-face');
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> REGISTERING...';
+  try {
+    const response = await fetch(API + `/customers/${selectedRegCustId}/face`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ face_vector: currentFaceVector })
+    });
+    const result = await response.json();
+    if(result.status === 'success') {
+      const cIdx = CUSTOMERS.findIndex(x => x.id == selectedRegCustId);
+      if(cIdx !== -1) CUSTOMERS[cIdx].face_vector = JSON.stringify(currentFaceVector);
+      
+      document.getElementById('face-status').innerHTML = '<div style="color:#22c55e; font-weight:700; font-size:14px"><i class="fas fa-check-circle"></i> ENROLLED SUCCESSFULLY!</div>';
+      document.getElementById('face-action').style.display = 'none';
+      setTimeout(() => { triggerFaceScan(); }, 1500);
+    } else { alert('Error: ' + result.message); }
+  } catch (e) { console.error(e); alert('Failed to register face.'); }
+  btn.innerHTML = '<i class="fas fa-id-card"></i> REGISTER FACE TO SELECTED';
+}
+
 async function triggerFaceScan() {
-  if(!window.faceapi || !faceapi.nets.tinyFaceDetector.isLoaded) { alert('AI Models are still loading (about 5MB). Please try again in 5 seconds.'); return; }
+  selectedRegCustId = null;
+  currentFaceVector = null;
+  document.getElementById('face-search').value = '';
+  document.getElementById('btn-reg-face').style.display = 'none';
   const modal = document.getElementById('face-modal');
   const vid = document.getElementById('face-vid');
-  modal.style.display = 'flex';
-  document.getElementById('face-status').textContent = 'Accessing camera...';
-  document.getElementById('face-status').style.color = 'var(--tx)';
+  const canvas = document.getElementById('face-canvas');
+  const status = document.getElementById('face-status');
   
-  try {
-    faceStream = await navigator.mediaDevices.getUserMedia({video: {facingMode: 'user'}});
-    vid.srcObject = faceStream;
-    document.getElementById('face-status').textContent = 'Analyzing facial features...';
-    
-    setTimeout(async () => {
-      const det = await faceapi.detectSingleFace(vid, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptor();
-      if(!det) {
-         document.getElementById('face-status').textContent = 'No face detected. Try again.';
-         document.getElementById('face-status').style.color = '#ef4444';
-         setTimeout(() => { if(faceStream){ faceStream.getTracks().forEach(t=>t.stop()); faceStream=null; } modal.style.display='none';}, 1500);
-         return;
-      }
-      
-      const labeled = [];
-      CUSTOMERS.forEach(c => {
-         if(c.face_vector && c.face_vector.length > 50) {
-            try {
-               const arr = new Float32Array(JSON.parse(c.face_vector));
-               labeled.push(new faceapi.LabeledFaceDescriptors(c.name + '|' + c.phone, [arr]));
-            } catch(e){ console.error('Vector err:', e); }
-         }
-      });
-      
-      if(labeled.length === 0) {
-         document.getElementById('face-status').textContent = 'Database empty. No enrolled faces.';
-         document.getElementById('face-status').style.color = '#ef4444';
-         setTimeout(() => { if(faceStream){ faceStream.getTracks().forEach(t=>t.stop()); faceStream=null; } modal.style.display='none';}, 2000);
-         return;
-      }
-      
-      const faceMatcher = new faceapi.FaceMatcher(labeled, 0.55);
-      const bestMatch = faceMatcher.findBestMatch(det.descriptor);
-      
-      if(bestMatch.label === 'unknown') {
-         document.getElementById('face-status').textContent = 'New Face! Enrolling temporarily...';
-         document.getElementById('face-status').style.color = '#f5a623';
-         
-         let h=document.getElementById('pos-face-vector');
-         if(!h){ h=document.createElement('input');h.type='hidden';h.id='pos-face-vector';document.body.appendChild(h); }
-         h.value = JSON.stringify(Array.from(det.descriptor));
-         
-         setTimeout(() => { if(faceStream){ faceStream.getTracks().forEach(t=>t.stop()); faceStream=null; } modal.style.display='none'; document.getElementById('cn').focus(); }, 2000);
-      } else {
-         const [mName, mPhone] = bestMatch.label.split('|');
-         document.getElementById('face-status').textContent = `Match Found: ${mName} (${(100 - bestMatch.distance * 100).toFixed(0)}%)`;
-         document.getElementById('face-status').style.color = '#22c55e';
-         setTimeout(() => {
-           if(faceStream){ faceStream.getTracks().forEach(t=>t.stop()); faceStream=null; }
-           modal.style.display = 'none';
-           document.getElementById('cn').value = mName;
-           document.getElementById('cp').value = mPhone;
-         }, 1200);
-      }
-    }, 1500);
-  } catch (err) {
-    document.getElementById('face-status').textContent = 'Camera access error: ' + err;
-    document.getElementById('face-status').style.color = '#ef4444';
-    setTimeout(() => { modal.style.display = 'none'; }, 2000);
+  modal.style.display = 'flex';
+  status.textContent = 'Preparing system...';
+  status.style.color = 'var(--tx)';
+
+  // 1. Lazy load face-api models
+  if(!modelsLoaded) {
+    status.textContent = 'Loading AI Models (5MB)...';
+    try {
+      await Promise.all([
+        faceapi.nets.tinyFaceDetector.loadFromUri(STATIC_BASE + '/models'),
+        faceapi.nets.faceLandmark68Net.loadFromUri(STATIC_BASE + '/models'),
+        faceapi.nets.faceRecognitionNet.loadFromUri(STATIC_BASE + '/models')
+      ]);
+      modelsLoaded = true;
+      console.log('Face API AI models loaded!');
+    } catch (err) {
+      status.textContent = 'Model load failed: ' + err.message;
+      status.style.color = '#ef4444';
+      setTimeout(() => { modal.style.display = 'none'; }, 3000);
+      return;
+    }
   }
+
+  // 2. Start webcam stream
+  try {
+    status.textContent = 'Accessing camera...';
+    faceStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: 120, height: 120 } });
+    vid.srcObject = faceStream;
+    
+    // Wait for video to be ready
+    vid.onloadedmetadata = () => {
+      status.textContent = 'Scanning biometrics...';
+      
+      // 3. Start Detection Loop
+      faceDetectionInterval = setInterval(async () => {
+        if (!faceStream) return;
+        
+        const detections = await faceapi.detectSingleFace(vid, new faceapi.TinyFaceDetectorOptions())
+          .withFaceLandmarks()
+          .withFaceDescriptor();
+
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        if (detections) {
+          currentFaceVector = Array.from(detections.descriptor);
+          // Draw bounding box
+          const dims = faceapi.matchDimensions(canvas, vid, true);
+          const resized = faceapi.resizeResults(detections, dims);
+          faceapi.draw.drawDetections(canvas, resized);
+
+          // Matching Logic (Server-side)
+          try {
+            const response = await fetch(API + '/customers/face-match', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ face_vector: Array.from(detections.descriptor) })
+            });
+            const result = await response.json();
+            
+            if (result.status === 'match') {
+              const c = result.customer;
+              
+              // Fraud/Wanted Alert
+              const fraudAlert = document.getElementById('face-fraud-alert');
+              const fraudReason = document.getElementById('face-fraud-reason');
+              if (result.wanted) {
+                fraudReason.textContent = result.wanted_reason;
+                fraudAlert.style.display = 'block';
+              } else {
+                fraudAlert.style.display = 'none';
+              }
+
+              status.innerHTML = `
+                <div style="color:#22c55e; font-weight:700; margin-bottom:4px; font-size:14px">MATCH FOUND!</div>
+                <div style="font-size:12px; color:var(--tx)">${c.name}</div>
+                <div style="font-size:11px; color:var(--acc)">${c.phone}</div>
+                <div style="font-size:10px; opacity:0.7; margin-top:4px">Last: ${c.last_purchase}</div>
+              `;
+              document.getElementById('face-action').style.display = 'none';
+              
+              clearInterval(faceDetectionInterval);
+              setTimeout(() => { 
+                closeFaceScan(); 
+                document.getElementById('cn').value = c.name; 
+                document.getElementById('cp').value = c.phone; 
+                // Trigger any lookup or UI updates
+                if (window.lookupCustomer) window.lookupCustomer(c.phone);
+              }, 1500);
+            } else {
+              status.innerHTML = '<span style="color:#f5a623; font-weight:600">Unknown visitor</span>';
+              document.getElementById('face-action').style.display = 'block';
+            }
+          } catch (e) {
+            console.error('Match API Error:', e);
+          }
+        } else {
+          status.textContent = 'No face detected';
+          status.style.color = '#ef4444';
+        }
+      }, 200);
+    };
+  } catch (err) {
+    status.textContent = 'Camera error: ' + err.message;
+    status.style.color = '#ef4444';
+    setTimeout(() => { closeFaceScan(); }, 2000);
+  }
+}
+
+function closeFaceScan() {
+  if(faceStream) {
+    faceStream.getTracks().forEach(t => t.stop());
+    faceStream = null;
+  }
+  if(faceDetectionInterval) {
+    clearInterval(faceDetectionInterval);
+    faceDetectionInterval = null;
+  }
+  document.getElementById('face-modal').style.display = 'none';
+  document.getElementById('face-action').style.display = 'none';
+  document.getElementById('face-fraud-alert').style.display = 'none';
+}
+
+function regNewFace() {
+  closeFaceScan();
+  document.getElementById('cust-mod').style.display = 'flex';
+  document.getElementById('cust-title').textContent = 'Register New Customer';
+  document.getElementById('c-id').value = '';
+  document.getElementById('c-n').value = '';
+  document.getElementById('c-p').value = '';
+  document.getElementById('c-n').focus();
 }
 // Clock
 const DY=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
@@ -1250,7 +1383,25 @@ function ecust(id){const c=CUSTOMERS.find(x=>x.id==id);if(!c)return;document.get
 let enrollStream = null;
 async function enrollFace(e) {
   e.preventDefault();
-  if(!window.faceapi){ alert('AI Models are loading, give it a moment.'); return; }
+  
+  // Lazy load if not already done
+  if(!modelsLoaded) {
+    const btn = document.getElementById('c-btn-scan');
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading AI Models...';
+    try {
+      await Promise.all([
+        faceapi.nets.tinyFaceDetector.loadFromUri(STATIC_BASE + '/models'),
+        faceapi.nets.faceLandmark68Net.loadFromUri(STATIC_BASE + '/models'),
+        faceapi.nets.faceRecognitionNet.loadFromUri(STATIC_BASE + '/models')
+      ]);
+      modelsLoaded = true;
+    } catch (err) {
+      alert('Model load failed: ' + err.message);
+      btn.innerHTML = 'Enroll Face Vector';
+      return;
+    }
+  }
+
   const vid = document.getElementById('c-vid'), btn = document.getElementById('c-btn-scan');
   if(!enrollStream) {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Initializing Camera...';
@@ -1793,13 +1944,7 @@ window.onload = () => {
     });
   }
 
-  if(window.faceapi && faceapi.nets) {
-      Promise.all([
-        faceapi.nets.tinyFaceDetector.loadFromUri(STATIC_BASE + '/models'),
-        faceapi.nets.faceLandmark68Net.loadFromUri(STATIC_BASE + '/models'),
-        faceapi.nets.faceRecognitionNet.loadFromUri(STATIC_BASE + '/models')
-      ]).then(() => console.log('Face API AI models loaded!')).catch(e=>console.log('Model err:',e));
-  }
+  // Face API pre-loading removed as per request for lazy-loading on F4 click.
   if(typeof rMasters === 'function') rMasters();
   if(typeof rPurchases === 'function') rPurchases();
   fetch(API+'/medicines').then(r=>r.json()).then(ms=>{

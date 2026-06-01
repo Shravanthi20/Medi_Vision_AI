@@ -1,0 +1,15 @@
+meta {
+  name: Get Face Logs
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/face/logs
+  body: none
+  auth: none
+}
+
+vars:pre-request {
+  baseUrl: http://127.0.0.1:5001
+}

@@ -1,0 +1,15 @@
+meta {
+  name: Get Customer Suggestions
+  type: http
+  seq: 15
+}
+
+get {
+  url: {{baseUrl}}/api/customers/1/suggestions
+  body: none
+  auth: none
+}
+
+vars:pre-request {
+  baseUrl: http://127.0.0.1:5001
+}

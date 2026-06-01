@@ -1,0 +1,23 @@
+meta {
+  name: Delete Supplier
+  type: http
+  seq: 3
+}
+
+delete {
+  url: {{baseUrl}}/api/suppliers/{{supplierId}}
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("Delete supplier succeeds", function() {
+    const body = res.getBody();
+    expect(res.getStatus()).to.equal(200);
+    expect(body).to.have.property('status', 'success');
+  });
+}

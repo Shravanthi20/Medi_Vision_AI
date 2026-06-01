@@ -1,0 +1,31 @@
+meta {
+  name: Customer Payment
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{baseUrl}}/api/customers/{{customerId}}/payment
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "amount": 50,
+    "description": "Manual test payment"
+  }
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("Customer payment succeeds", function() {
+    const body = res.getBody();
+    expect(res.getStatus()).to.equal(200);
+    expect(body).to.have.property('status', 'success');
+    expect(body).to.have.property('new_balance');
+  });
+}

@@ -1,0 +1,15 @@
+meta {
+  name: Cancel Bill With Reason
+  type: http
+  seq: 12
+}
+
+post {
+  url: {{baseUrl}}/api/bills/BILL-001/cancel
+  body: json
+  auth: none
+}
+
+vars:pre-request {
+  baseUrl: http://127.0.0.1:5001
+}

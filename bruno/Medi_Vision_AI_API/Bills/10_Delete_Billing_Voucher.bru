@@ -1,0 +1,15 @@
+meta {
+  name: Delete Billing Voucher
+  type: http
+  seq: 10
+}
+
+delete {
+  url: {{baseUrl}}/api/billing/vouchers/1
+  body: none
+  auth: none
+}
+
+vars:pre-request {
+  baseUrl: http://127.0.0.1:5001
+}

@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Selvam Medicals – Mfr / Location Change Detail</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@700&family=Jersey+15&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/sidebar-header.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/mfrchange2.css') }}">
+</head>
+<body>
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <div class="left-panel">
+    <div class="logo">
+      <div class="SM">SM</div>
+      <div class="logo-text"><p>Selvam</p><p>Medicals</p></div>
+    </div>
+    <select class="side-bar-dropdown">
+      <option value="" disabled selected hidden>Timeline...</option>
+      <option>Daily</option><option>Weekly</option><option>Monthly</option>
+    </select>
+    <p class="sec-label">MENU</p>
+    <div class="row"><div class="opt"><i class="fa-solid fa-chart-line"></i><p class="opt-text">Sales</p></div></div>
+    <div class="row active"><div class="opt"><i class="fa-solid fa-cart-shopping"></i><p class="opt-text">Purchase</p></div></div>
+    <div class="row"><div class="opt"><i class="fa-solid fa-list"></i><p class="opt-text">Item</p></div></div>
+    <div class="row"><div class="opt"><i class="fa-solid fa-users"></i><p class="opt-text">Masters</p></div></div>
+    <div class="row"><div class="opt"><i class="fa-solid fa-desktop"></i><p class="opt-text">System</p></div></div>
+    <div class="row"><div class="opt"><i class="fa-solid fa-toolbox"></i><p class="opt-text">Utilities</p></div></div>
+    <div class="row sms"><div class="opt"><i class="fa-solid fa-comment-dots"></i><p class="opt-text">SMS</p></div></div>
+    <p class="sec-label other">OTHER</p>
+    <div class="row settings"><div class="opt"><i class="fa-solid fa-gear"></i><p class="opt-text">Settings</p></div></div>
+    <div class="spacer"></div>
+    <div class="row logout"><div class="opt"><i class="fa-solid fa-right-from-bracket"></i><p class="opt-text">Logout</p></div></div>
+  </div>
+
+  <!-- RIGHT COLUMN -->
+  <div class="main" id="mainPanel">
+
+    <!-- HEADER -->
+    <header class="header">
+      <div class="search-box">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" placeholder="Search">
+      </div>
+      <div class="fy">FY: 2026-2027</div>
+      <div class="divider-1"></div>
+      <div class="date-block">
+        <span class="date-val" id="date-val"></span>
+        <span class="day-val"  id="day-val"></span>
+      </div>
+      <div class="divider-2"></div>
+      <div class="clock" id="clock">00:00:00</div>
+      <div class="divider-3"></div>
+      <div class="user">
+        <img src="{{ url_for('static', filename='images/user-profile.jpg') }}" alt="User">
+        <span>Name</span>
+      </div>
+    </header>
+
+    <!-- CONTENT AREA -->
+    <div class="content-area">
+
+      <!-- BREADCRUMB -->
+      <div class="breadcrumb-bar">
+        <span class="breadcrumb-parent">Item</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+             stroke="#9CA3AF" stroke-width="2.5"
+             stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 18L15 12L9 6"/>
+        </svg>
+        <span class="breadcrumb-parent" onclick="window.history.back()">Mfr / Location Change</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+             stroke="#9CA3AF" stroke-width="2.5"
+             stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 18L15 12L9 6"/>
+        </svg>
+        <span class="breadcrumb-current" id="breadcrumbCurrent">Manufacturer Change</span>
+      </div>
+
+      <!-- DETAIL CONTENT -->
+      <div class="prr-content">
+        <div class="mcd-scroll-wrap">
+
+          <!-- SECTION 1: Input Card -->
+          <div class="mcd-card">
+            <div class="mcd-card-header">
+              <h1 class="mcd-card-title">
+                Changing Manufacturer / Location / Supplier for Items
+              </h1>
+            </div>
+            <div class="mcd-card-body">
+
+              <!-- Static label row -->
+              <div class="mcd-field-row">
+                <label class="mcd-field-label">Change Mfr. / Location / Supplier</label>
+                <span class="mcd-colon">:</span>
+                <span class="mcd-static-value" id="staticChangeType">Manufacturer</span>
+              </div>
+
+              <!-- Change From -->
+              <div class="mcd-field-row">
+                <label class="mcd-field-label" id="labelFrom">Change Mfr. From</label>
+                <span class="mcd-colon">:</span>
+                <input
+                  class="mcd-input"
+                  id="inputFrom"
+                  type="text"
+                  placeholder="Enter value..."
+                  autocomplete="off"
+                >
+              </div>
+
+              <!-- Change To -->
+              <div class="mcd-field-row">
+                <label class="mcd-field-label" id="labelTo">Change Mfr. To</label>
+                <span class="mcd-colon">:</span>
+                <input
+                  class="mcd-input"
+                  id="inputTo"
+                  type="text"
+                  placeholder="Enter value..."
+                  autocomplete="off"
+                >
+              </div>
+
+            </div>
+          </div>
+
+          <!-- SECTION 2: Confirmation Card -->
+          <div class="mcd-card">
+            <div class="mcd-card-header">
+              <h2 class="mcd-card-title">Do you want to proceed ?</h2>
+            </div>
+            <div class="mcd-card-body">
+
+              <!-- Summary From -->
+              <div class="mcd-field-row">
+                <label class="mcd-field-label" id="summaryLabelFrom">Change Mfr. From</label>
+                <span class="mcd-colon">:</span>
+                <div class="mcd-readonly-box" id="summaryFrom">—</div>
+              </div>
+
+              <!-- Summary To -->
+              <div class="mcd-field-row">
+                <label class="mcd-field-label" id="summaryLabelTo">Change Mfr. To</label>
+                <span class="mcd-colon">:</span>
+                <div class="mcd-readonly-box" id="summaryTo">—</div>
+              </div>
+
+              <!-- Shall I Change Y/N -->
+              <div class="mcd-field-row mcd-yn-row">
+                <label class="mcd-field-label">Shall I Change (Y/N)</label>
+                <span class="mcd-colon">:</span>
+                <div class="mcd-yn-group">
+                  <button class="mcd-yn-btn mcd-yes-btn" id="yesBtn"
+                          onclick="mcdSetConfirm('Yes')">Yes</button>
+                  <button class="mcd-yn-btn mcd-no-btn  mcd-no-active" id="noBtn"
+                          onclick="mcdSetConfirm('No')">No</button>
+                </div>
+              </div>
+            
+            
+            
+
+
+            </div>
+            
+          </div>
+        <div class="divider-bottom"></div>
+
+        </div><!-- /.mcd-scroll-wrap -->
+        
+      </div><!-- /.prr-content -->
+
+     
+    
+    </div><!-- /.content-area -->
+  </div><!-- /.main -->
+</div><!-- /.app -->
+
+<script src="{{ url_for('static', filename='js/sidebar-header.js') }}"></script>
+<script src="{{ url_for('static', filename='js/mfrchange2.js') }}"></script>
+</body>
+</html>

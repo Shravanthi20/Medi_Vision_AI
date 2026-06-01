@@ -1,0 +1,50 @@
+from flask import Flask
+from flask_cors import CORS
+from dotenv import load_dotenv
+import os
+
+# Load environment variables from .env file
+load_dotenv()
+
+from .config import STATIC_DIR, TEMPLATES_DIR
+from .routes import register_blueprints
+from .extensions import db, migrate, ma, limiter
+
+# Import all models so Alembic auto-discovers them for migrations
+from . import models  # noqa: F401
+
+
+def create_app() -> Flask:
+    app = Flask(
+        __name__,
+        template_folder=str(TEMPLATES_DIR),
+        static_folder=str(STATIC_DIR),
+        static_url_path="/static",
+    )
+    CORS(app)
+    app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-key")
+    app.config["MAX_CONTENT_LENGTH"] = 32 * 1024 * 1024
+    
+    # Configure secure session cookies
+    app.config["SESSION_COOKIE_HTTPONLY"] = True
+    app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+    app.config["SESSION_COOKIE_SECURE"] = os.environ.get("SESSION_COOKIE_SECURE", "False").lower() in ("true", "1")
+    
+    database_url = os.getenv("DATABASE_URL", "").strip()
+    if not database_url:
+        raise RuntimeError("DATABASE_URL must be set for Postgres-only mode")
+
+    # Configure Postgres URI
+    app.config["SQLALCHEMY_DATABASE_URI"] = database_url
+    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+    # Initialize extensions
+    db.init_app(app)
+    migrate.init_app(app, db)
+    ma.init_app(app)
+    limiter.init_app(app)
+
+    # Register blueprints (all refactored for Postgres/ORM)
+    register_blueprints(app)
+
+    return app

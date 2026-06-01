@@ -1,0 +1,15 @@
+meta {
+  name: Api Daily Sales
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/api/reports/daily-sales
+  body: none
+  auth: none
+}
+
+vars:pre-request {
+  baseUrl: http://127.0.0.1:5001
+}

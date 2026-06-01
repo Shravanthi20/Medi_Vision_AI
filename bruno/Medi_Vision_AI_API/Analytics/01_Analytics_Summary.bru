@@ -1,0 +1,15 @@
+meta {
+  name: Analytics Summary
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/analytics/summary
+  body: none
+  auth: none
+}
+
+vars:pre-request {
+  baseUrl: http://127.0.0.1:5001
+}

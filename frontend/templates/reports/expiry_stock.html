@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Expiry & Short Expiry Report — Selvam Medicals</title>
+    <meta name="description" content="Short Expiry and Expired Stock Report for Selvam Medicals."/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+    <link rel="stylesheet" href="/static/css/reports.css"/>
+    <style>
+        .status-tag { display:inline-block;padding:2px 8px;border-radius:12px;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.03em; }
+        .st-expired { background:#fde8e8;color:#dc2626; }
+        .st-30 { background:#fff3e0;color:#d97706; }
+        .st-60 { background:#fef3c7;color:#b45309; }
+        .st-90 { background:#e8f5e9;color:#16a34a; }
+    </style>
+</head>
+<body>
+
+<div class="report-toolbar">
+    <div class="toolbar-left">
+        <a href="/" class="toolbar-brand"><div class="logo-circle">SM</div><span>SELVAM MEDICALS</span></a>
+        <span class="toolbar-title"><i class="fas fa-triangle-exclamation"></i>&nbsp; Expiry Report</span>
+    </div>
+    <div class="toolbar-actions">
+        <button class="btn-toolbar btn-back" onclick="history.back()"><i class="fas fa-arrow-left"></i> Back</button>
+        <button class="btn-toolbar btn-print" onclick="window.print()"><i class="fas fa-print"></i> Print</button>
+    </div>
+</div>
+
+<div class="report-container" id="report-loading">
+    <div class="report-loading"><i class="fas fa-spinner fa-spin"></i><p>Analyzing stock expiry…</p></div>
+</div>
+
+<div class="report-container" id="report-content" style="display:none;">
+    <div class="report-page">
+        <div class="store-header">
+            <h1>SELVAM MEDICALS</h1>
+            <div class="store-subtitle">Retail & Wholesale Chemists</div>
+            <div class="store-details">No.1, Main Road, Chennai — 600001 &nbsp;|&nbsp; Ph: 044-XXXXXXXX<br/><strong>GSTIN:</strong> 33AAAAA1234A1Z5 &nbsp;&nbsp;<strong>DL No:</strong> TN-01-XXXXX / TN-01-XXXXX</div>
+        </div>
+
+        <div class="report-title-bar">
+            <h2><i class="fas fa-triangle-exclamation" style="margin-right:6px;"></i> SHORT EXPIRY & EXPIRED STOCK</h2>
+            <div class="report-meta"><div><strong>As of:</strong> <span id="ex-date"></span></div></div>
+        </div>
+
+        <!-- Summary Cards -->
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:0;border-bottom:1px solid #ddd;">
+            <div style="padding:14px 16px;text-align:center;border-right:1px solid #eee;">
+                <div style="font-size:10px;color:#777;text-transform:uppercase;">Expired</div>
+                <div style="font-size:20px;font-weight:800;color:#dc2626;" id="ex-expired">0</div>
+            </div>
+            <div style="padding:14px 16px;text-align:center;border-right:1px solid #eee;">
+                <div style="font-size:10px;color:#777;text-transform:uppercase;">≤30 Days</div>
+                <div style="font-size:20px;font-weight:800;color:#d97706;" id="ex-30">0</div>
+            </div>
+            <div style="padding:14px 16px;text-align:center;border-right:1px solid #eee;">
+                <div style="font-size:10px;color:#777;text-transform:uppercase;">≤60 Days</div>
+                <div style="font-size:20px;font-weight:800;color:#b45309;" id="ex-60">0</div>
+            </div>
+            <div style="padding:14px 16px;text-align:center;border-right:1px solid #eee;">
+                <div style="font-size:10px;color:#777;text-transform:uppercase;">≤90 Days</div>
+                <div style="font-size:20px;font-weight:800;color:#16a34a;" id="ex-90">0</div>
+            </div>
+            <div style="padding:14px 16px;text-align:center;">
+                <div style="font-size:10px;color:#777;text-transform:uppercase;">Value at Risk</div>
+                <div style="font-size:20px;font-weight:800;color:#1a1a2e;" id="ex-val">₹0</div>
+            </div>
+        </div>
+
+        <div class="report-table-wrap">
+            <table class="report-table">
+                <thead><tr>
+                    <th>Item Name</th><th>Batch</th><th>Manufacturer</th><th>Expiry</th>
+                    <th class="text-center">Days Left</th><th class="text-center">Qty</th>
+                    <th class="text-right">MRP</th><th class="text-right">Value at Risk</th><th>Status</th>
+                </tr></thead>
+                <tbody id="ex-tbody"></tbody>
+            </table>
+        </div>
+
+        <div id="ex-empty" class="report-empty" style="display:none;">
+            <i class="fas fa-check-circle" style="color:#16a34a;"></i>
+            <p>No expiring stock within the next 90 days. All clear!</p>
+        </div>
+
+        <div class="report-footer">
+            <div class="footer-note">Medicines expiring within 90 days should be returned to suppliers or placed on promotional sale. Drugs & Cosmetics Act, 1940 compliance required.</div>
+            <div class="footer-sign"><div class="sign-line"></div><div>Pharmacist</div></div>
+        </div>
+    </div>
+</div>
+
+<script>
+function fmt(n) { return '₹' + Number(n || 0).toFixed(2); }
+
+function statusClass(s) {
+    if (s === 'EXPIRED') return 'st-expired';
+    if (s.includes('30')) return 'st-30';
+    if (s.includes('60')) return 'st-60';
+    return 'st-90';
+}
+
+async function loadReport() {
+    try {
+        const res = await fetch('/api/reports/expiry-stock');
+        const d = await res.json();
+
+        document.getElementById('ex-date').textContent = d.report_date;
+        document.getElementById('ex-expired').textContent = d.summary.expired;
+        document.getElementById('ex-30').textContent = d.summary.within_30;
+        document.getElementById('ex-60').textContent = d.summary.within_60;
+        document.getElementById('ex-90').textContent = d.summary.within_90;
+        document.getElementById('ex-val').textContent = fmt(d.summary.total_at_risk_value);
+
+        const tbody = document.getElementById('ex-tbody');
+        tbody.innerHTML = '';
+
+        if (!d.items.length) {
+            document.getElementById('ex-empty').style.display = '';
+        } else {
+            d.items.forEach(item => {
+                tbody.innerHTML += `<tr>
+                    <td><strong>${item.item_name}</strong></td>
+                    <td>${item.batch_no}</td>
+                    <td>${item.manufacturer}</td>
+                    <td>${item.expiry_date}</td>
+                    <td class="text-center" style="font-weight:600;${item.days_left < 0 ? 'color:#dc2626' : item.days_left <= 30 ? 'color:#d97706' : ''}">${item.days_left}</td>
+                    <td class="text-center">${item.current_qty}</td>
+                    <td class="text-right">${fmt(item.mrp)}</td>
+                    <td class="text-right" style="font-weight:600;">${fmt(item.risk_value)}</td>
+                    <td><span class="status-tag ${statusClass(item.status)}">${item.status}</span></td>
+                </tr>`;
+            });
+        }
+
+        document.getElementById('report-loading').style.display = 'none';
+        document.getElementById('report-content').style.display = '';
+    } catch (e) {
+        console.error(e);
+        document.getElementById('report-loading').innerHTML = '<div class="report-empty"><i class="fas fa-exclamation-triangle"></i><p>Failed to load expiry report.</p></div>';
+    }
+}
+
+loadReport();
+</script>
+</body>
+</html>

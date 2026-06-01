@@ -1,0 +1,18 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": [
+    "static/js/login.js",
+    "static/js/dashboard.js",
+    "static/js/sidebar.js",
+    "static/js/header.js",
+    "static/js/sidebar-header.js",
+    "static/js/supl_mfr_purchasewise.js",
+    "static/js/purchaseregister.js"
+  ],
+  "project": [
+    "static/js/**/*.js",
+    "!static/js/face-api.min.js"
+  ],
+  "ignoreDependencies": [],
+  "ignoreExportsUsedInFile": true
+}
