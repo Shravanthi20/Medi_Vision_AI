@@ -11,6 +11,7 @@ from flask_cors import CORS
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.environ.get("PHARMACY_DB_PATH", os.path.join(BASE_DIR, "database.db"))
+DASHBOARD_PATH = os.path.join(BASE_DIR, "/templates/login.html")
 
 
 app = Flask(__name__)
@@ -938,7 +939,16 @@ def delete_doctor(id):
     return jsonify({"status": "success"})
 
 
-# Initialize database
+@app.route('/mfrchange2')
+def mfr_change_detail_page():
+    return render_template('mfrchange2.html')
+
+
+@app.route('/wanted')
+def wanted():
+    return render_template('wanted.html')
+
+
 init_db()
 
 
