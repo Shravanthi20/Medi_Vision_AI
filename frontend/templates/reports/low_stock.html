@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Low Stock & Reorder Report — Selvam Medicals</title>
+    <meta name="description" content="Low Stock and Reorder Level Report for Selvam Medicals."/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+    <link rel="stylesheet" href="/static/css/reports.css"/>
+    <style>
+        .stock-bar { display:inline-block;height:6px;border-radius:3px;min-width:4px; }
+        .stock-zero { background:#dc2626; }
+        .stock-low { background:#f59e0b; }
+        .stock-ok { background:#22c55e; }
+    </style>
+</head>
+<body>
+
+<div class="report-toolbar">
+    <div class="toolbar-left">
+        <a href="/" class="toolbar-brand"><div class="logo-circle">SM</div><span>SELVAM MEDICALS</span></a>
+        <span class="toolbar-title"><i class="fas fa-box-open"></i>&nbsp; Low Stock & Reorder</span>
+    </div>
+    <div class="toolbar-actions">
+        <button class="btn-toolbar btn-back" onclick="history.back()"><i class="fas fa-arrow-left"></i> Back</button>
+        <button class="btn-toolbar btn-print" onclick="window.print()"><i class="fas fa-print"></i> Print</button>
+    </div>
+</div>
+
+<div class="report-container" id="report-loading">
+    <div class="report-loading"><i class="fas fa-spinner fa-spin"></i><p>Checking stock levels…</p></div>
+</div>
+
+<div class="report-container" id="report-content" style="display:none;">
+    <div class="report-page">
+        <div class="store-header">
+            <h1>SELVAM MEDICALS</h1>
+            <div class="store-subtitle">Retail & Wholesale Chemists</div>
+            <div class="store-details">No.1, Main Road, Chennai — 600001 &nbsp;|&nbsp; Ph: 044-XXXXXXXX</div>
+        </div>
+
+        <div class="report-title-bar">
+            <h2><i class="fas fa-box-open" style="margin-right:6px;"></i> REORDER & LOW STOCK REPORT</h2>
+            <div class="report-meta">
+                <div><strong>Date:</strong> <span id="ls-date"></span></div>
+                <div><strong>Items Checked:</strong> <span id="ls-checked"></span> &nbsp;|&nbsp; <strong>Below Reorder:</strong> <span id="ls-count" style="color:#dc2626;font-weight:700;"></span></div>
+            </div>
+        </div>
+
+        <div class="report-table-wrap">
+            <table class="report-table">
+                <thead><tr>
+                    <th>Item Name</th><th>Category</th><th>Manufacturer</th>
+                    <th class="text-center">Stock</th><th class="text-center">Reorder Lvl</th>
+                    <th class="text-center">Max Stock</th><th class="text-center">Deficit</th>
+                    <th class="text-center">Suggested Order</th><th>Level</th>
+                </tr></thead>
+                <tbody id="ls-tbody"></tbody>
+            </table>
+        </div>
+
+        <div id="ls-empty" class="report-empty" style="display:none;">
+            <i class="fas fa-check-circle" style="color:#16a34a;"></i>
+            <p>All items are above their reorder levels. Stock is healthy!</p>
+        </div>
+
+        <div class="report-footer">
+            <div class="footer-note">Items are sorted by deficit (highest first). Use the "Suggested Order" column as a guide for purchase orders.</div>
+            <div class="footer-sign"><div class="sign-line"></div><div>Store Manager</div></div>
+        </div>
+    </div>
+</div>
+
+<script>
+async function loadReport() {
+    try {
+        const res = await fetch('/api/reports/low-stock');
+        const d = await res.json();
+
+        document.getElementById('ls-date').textContent = d.report_date;
+        document.getElementById('ls-checked').textContent = d.total_items_checked;
+        document.getElementById('ls-count').textContent = d.total_below_reorder;
+
+        const tbody = document.getElementById('ls-tbody');
+        tbody.innerHTML = '';
+
+        if (!d.items.length) {
+            document.getElementById('ls-empty').style.display = '';
+        } else {
+            d.items.forEach(item => {
+                const pct = item.reorder_level > 0 ? Math.round((item.current_stock / item.reorder_level) * 100) : 0;
+                const barClass = item.current_stock === 0 ? 'stock-zero' : item.current_stock < item.reorder_level ? 'stock-low' : 'stock-ok';
+                const barWidth = Math.min(100, Math.max(5, pct));
+
+                tbody.innerHTML += `<tr>
+                    <td><strong>${item.item_name}</strong></td>
+                    <td>${item.category}</td>
+                    <td>${item.manufacturer}</td>
+                    <td class="text-center" style="font-weight:600;${item.current_stock === 0 ? 'color:#dc2626' : ''}">${item.current_stock}</td>
+                    <td class="text-center">${item.reorder_level}</td>
+                    <td class="text-center">${item.max_stock}</td>
+                    <td class="text-center" style="font-weight:700;color:#dc2626;">${item.deficit}</td>
+                    <td class="text-center" style="font-weight:700;color:#3b82f6;">${item.suggested_order}</td>
+                    <td><div class="stock-bar ${barClass}" style="width:${barWidth}px;"></div> <span style="font-size:10px;color:#777;">${pct}%</span></td>
+                </tr>`;
+            });
+        }
+
+        document.getElementById('report-loading').style.display = 'none';
+        document.getElementById('report-content').style.display = '';
+    } catch (e) {
+        console.error(e);
+        document.getElementById('report-loading').innerHTML = '<div class="report-empty"><i class="fas fa-exclamation-triangle"></i><p>Failed to load low stock report.</p></div>';
+    }
+}
+
+loadReport();
+</script>
+</body>
+</html>

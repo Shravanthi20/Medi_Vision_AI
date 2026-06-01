@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Credit Note — Selvam Medicals</title>
+    <meta name="description" content="Credit Note / Sales Return document for Selvam Medicals."/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+    <link rel="stylesheet" href="/static/css/reports.css"/>
+</head>
+<body>
+
+<!-- Toolbar -->
+<div class="report-toolbar">
+    <div class="toolbar-left">
+        <a href="/" class="toolbar-brand">
+            <div class="logo-circle">SM</div>
+            <span>SELVAM MEDICALS</span>
+        </a>
+        <span class="toolbar-title"><i class="fas fa-receipt"></i>&nbsp; Credit Note</span>
+    </div>
+    <div class="toolbar-actions">
+        <button class="btn-toolbar btn-back" onclick="history.back()"><i class="fas fa-arrow-left"></i> Back</button>
+        <button class="btn-toolbar btn-print" onclick="window.print()"><i class="fas fa-print"></i> Print</button>
+    </div>
+</div>
+
+<!-- Loading -->
+<div class="report-container" id="report-loading">
+    <div class="report-loading">
+        <i class="fas fa-spinner fa-spin"></i>
+        <p>Loading credit note…</p>
+    </div>
+</div>
+
+<!-- Report -->
+<div class="report-container" id="report-content" style="display:none;">
+    <div class="report-page">
+
+        <div class="store-header">
+            <h1>SELVAM MEDICALS</h1>
+            <div class="store-subtitle">Retail & Wholesale Chemists</div>
+            <div class="store-details">
+                No.1, Main Road, Chennai — 600001 &nbsp;|&nbsp; Ph: 044-XXXXXXXX<br/>
+                <strong>GSTIN:</strong> 33AAAAA1234A1Z5
+            </div>
+        </div>
+
+        <div class="report-title-bar">
+            <h2><i class="fas fa-rotate-left" style="margin-right:6px;"></i> CREDIT NOTE</h2>
+            <div class="report-meta">
+                <div><strong>CN No:</strong> <span id="cn-no"></span></div>
+                <div><strong>Date:</strong> <span id="cn-date"></span></div>
+            </div>
+        </div>
+
+        <div class="report-info">
+            <div>
+                <div><span class="info-label">Customer:</span> <span id="cn-cust"></span></div>
+                <div><span class="info-label">Phone:</span> <span id="cn-phone"></span></div>
+                <div><span class="info-label">Address:</span> <span id="cn-addr"></span></div>
+            </div>
+            <div style="text-align:right;">
+                <div><span class="info-label">Orig. Invoice:</span> <span id="cn-orig-bill"></span></div>
+                <div><span class="info-label">Orig. Date:</span> <span id="cn-orig-date"></span></div>
+                <div><span class="info-label">Reason:</span> <span id="cn-reason"></span></div>
+            </div>
+        </div>
+
+        <div class="report-table-wrap">
+            <table class="report-table">
+                <thead>
+                    <tr>
+                        <th>S.No</th>
+                        <th>Item Name</th>
+                        <th>Batch</th>
+                        <th>Exp</th>
+                        <th class="text-center">Qty Returned</th>
+                        <th class="text-right">Rate</th>
+                        <th class="text-right">GST</th>
+                        <th class="text-right">Return Value</th>
+                    </tr>
+                </thead>
+                <tbody id="cn-tbody"></tbody>
+            </table>
+        </div>
+
+        <div class="report-summary">
+            <table>
+                <tr><td>Return Sub-Total</td><td id="sum-return"></td></tr>
+                <tr><td>CGST Reversal</td><td id="sum-cgst"></td></tr>
+                <tr><td>SGST Reversal</td><td id="sum-sgst"></td></tr>
+                <tr id="sum-igst-row" style="display:none"><td>IGST Reversal</td><td id="sum-igst"></td></tr>
+                <tr class="total-row"><td>NET REFUND</td><td id="sum-net"></td></tr>
+            </table>
+        </div>
+
+        <div class="amount-words" id="cn-words"></div>
+
+        <div id="cn-remarks" style="padding: 0 32px 12px; font-size: 11.5px; color: #555; display:none;">
+            <strong>Remarks:</strong> <span id="cn-remarks-text"></span>
+        </div>
+
+        <div class="report-footer">
+            <div class="footer-note">
+                This credit note is issued against the original invoice referenced above.
+                E & O.E.
+            </div>
+            <div class="footer-sign">
+                <div class="sign-line"></div>
+                <div>Authorised Signatory</div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+const RETURN_ID = "{{ return_id }}";
+const API = `/api/reports/credit-note/${RETURN_ID}`;
+
+function fmt(n) { return '₹' + Number(n || 0).toFixed(2); }
+
+function numberToWords(num) {
+    if (num === 0) return 'Zero';
+    const ones = ['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine',
+                   'Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen',
+                   'Seventeen','Eighteen','Nineteen'];
+    const tens = ['','','Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
+    function chunk(n) {
+        if (n < 20) return ones[n];
+        if (n < 100) return tens[Math.floor(n / 10)] + (n % 10 ? ' ' + ones[n % 10] : '');
+        return ones[Math.floor(n / 100)] + ' Hundred' + (n % 100 ? ' ' + chunk(n % 100) : '');
+    }
+    const intPart = Math.floor(Math.abs(num));
+    const decPart = Math.round((Math.abs(num) - intPart) * 100);
+    let words = '';
+    if (intPart >= 10000000) words += chunk(Math.floor(intPart / 10000000)) + ' Crore ';
+    if (intPart >= 100000) words += chunk(Math.floor((intPart % 10000000) / 100000)) + ' Lakh ';
+    if (intPart >= 1000) words += chunk(Math.floor((intPart % 100000) / 1000)) + ' Thousand ';
+    if (intPart >= 100) words += chunk(Math.floor((intPart % 1000) / 100)) + ' Hundred ';
+    const rem = intPart % 100;
+    if (rem) words += chunk(rem);
+    words = words.trim() + ' Rupees';
+    if (decPart > 0) words += ' and ' + chunk(decPart) + ' Paise';
+    return words + ' Only';
+}
+
+async function loadCreditNote() {
+    try {
+        const res = await fetch(API);
+        if (!res.ok) {
+            document.getElementById('report-loading').innerHTML =
+                '<div class="report-empty"><i class="fas fa-exclamation-triangle"></i><p>Credit note not found.</p></div>';
+            return;
+        }
+        const d = await res.json();
+
+        document.getElementById('cn-no').textContent = 'CN-' + d.return_no;
+        document.getElementById('cn-date').textContent = d.return_date;
+        document.getElementById('cn-cust').textContent = d.customer_name;
+        document.getElementById('cn-phone').textContent = d.customer_phone || '—';
+        document.getElementById('cn-addr').textContent = d.customer_address || '—';
+        document.getElementById('cn-orig-bill').textContent = d.original_bill_id || '—';
+        document.getElementById('cn-orig-date').textContent = d.original_bill_date || '—';
+        document.getElementById('cn-reason').textContent = d.reason || '—';
+
+        const tbody = document.getElementById('cn-tbody');
+        tbody.innerHTML = '';
+        d.items.forEach(item => {
+            tbody.innerHTML += `<tr>
+                <td class="text-center">${item.sno}</td>
+                <td>${item.item_name}</td>
+                <td>${item.batch_no}</td>
+                <td>${item.expiry}</td>
+                <td class="text-center">${item.qty_returned}</td>
+                <td class="text-right">${fmt(item.return_rate)}</td>
+                <td class="text-right">${fmt(item.gst_amount)}</td>
+                <td class="text-right">${fmt(item.return_value)}</td>
+            </tr>`;
+        });
+
+        document.getElementById('sum-return').textContent = fmt(d.total_return_amount);
+        document.getElementById('sum-cgst').textContent = fmt(d.cgst_amount);
+        document.getElementById('sum-sgst').textContent = fmt(d.sgst_amount);
+        if (d.igst_amount > 0) {
+            document.getElementById('sum-igst-row').style.display = '';
+            document.getElementById('sum-igst').textContent = fmt(d.igst_amount);
+        }
+        document.getElementById('sum-net').textContent = fmt(d.net_return_amount);
+        document.getElementById('cn-words').innerHTML =
+            '<strong>Refund Amount in Words:</strong> ' + numberToWords(d.net_return_amount);
+
+        if (d.remarks) {
+            document.getElementById('cn-remarks').style.display = '';
+            document.getElementById('cn-remarks-text').textContent = d.remarks;
+        }
+
+        document.title = `Credit Note CN-${d.return_no} — Selvam Medicals`;
+        document.getElementById('report-loading').style.display = 'none';
+        document.getElementById('report-content').style.display = '';
+    } catch (e) {
+        console.error(e);
+        document.getElementById('report-loading').innerHTML =
+            '<div class="report-empty"><i class="fas fa-exclamation-triangle"></i><p>Failed to load credit note.</p></div>';
+    }
+}
+
+loadCreditNote();
+</script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+meta {
+  name: Update Customer Face
+  type: http
+  seq: 13
+}
+
+patch {
+  url: {{baseUrl}}/api/customers/1/face
+  body: json
+  auth: none
+}
+
+vars:pre-request {
+  baseUrl: http://127.0.0.1:5001
+}

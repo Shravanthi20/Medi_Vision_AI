@@ -1,0 +1,15 @@
+meta {
+  name: Api Attendance Salary
+  type: http
+  seq: 14
+}
+
+get {
+  url: {{baseUrl}}/api/reports/attendance-salary
+  body: none
+  auth: none
+}
+
+vars:pre-request {
+  baseUrl: http://127.0.0.1:5001
+}

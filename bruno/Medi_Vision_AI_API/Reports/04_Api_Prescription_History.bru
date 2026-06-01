@@ -1,0 +1,15 @@
+meta {
+  name: Api Prescription History
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/api/reports/prescription-history/1
+  body: none
+  auth: none
+}
+
+vars:pre-request {
+  baseUrl: http://127.0.0.1:5001
+}

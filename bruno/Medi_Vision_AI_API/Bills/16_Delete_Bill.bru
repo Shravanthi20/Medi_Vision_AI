@@ -1,0 +1,15 @@
+meta {
+  name: Delete Bill
+  type: http
+  seq: 16
+}
+
+delete {
+  url: {{baseUrl}}/api/bills/BILL-001
+  body: none
+  auth: none
+}
+
+vars:pre-request {
+  baseUrl: http://127.0.0.1:5001
+}

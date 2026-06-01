@@ -1,0 +1,15 @@
+meta {
+  name: Finance Summary
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/api/finance/summary
+  body: none
+  auth: none
+}
+
+vars:pre-request {
+  baseUrl: http://127.0.0.1:5001
+}

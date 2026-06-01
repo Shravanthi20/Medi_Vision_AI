@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Selvam Medicals – Purchase Registers</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #0D1117;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 24px 16px;
+    }
+
+    /* ── BREADCRUMB ── */
+    .breadcrumb {
+      width: 100%;
+      max-width: 900px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 24px;
+      padding: 0 8px;
+    }
+
+    .bc-parent {
+      font-size: clamp(18px, 2vw, 24px);
+      font-weight: 400;
+      color: #A39E9E;
+    }
+
+    .bc-current {
+      font-size: clamp(18px, 2vw, 24px);
+      font-weight: 700;
+      color: #67EB76;
+    }
+
+    /* ── MAIN CARD ── */
+    .card {
+      width: 100%;
+      max-width: 900px;
+      background: #161A1F;
+      border: 1px solid rgba(104, 104, 104, 0.58);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    /* ── CARD TITLE ── */
+    .card-title {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 16px;
+      border-bottom: 1px solid rgba(108, 108, 108, 0.53);
+    }
+
+    .card-title h1 {
+      font-size: clamp(22px, 3vw, 36px);
+      font-weight: 700;
+      color: #D58615;
+      text-align: center;
+    }
+
+    /* ── MENU ITEMS ── */
+    .menu-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 24px 32px;
+    }
+
+    .menu-btn {
+      width: 100%;
+      text-align: left;
+      padding: 14px 16px;
+      border-radius: 12px;
+      background: #1C2028;
+      border: 1px solid rgba(233, 112, 32, 0.29);
+      color: #fff;
+      font-family: 'Inter', sans-serif;
+      font-size: clamp(15px, 1.6vw, 26px);
+      font-weight: 600;
+      cursor: pointer;
+      outline: none;
+      transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+    }
+
+    .menu-btn:hover {
+      border-color: rgba(245, 158, 11, 0.65);
+      background: #1F2430;
+      box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.15);
+    }
+
+    .menu-btn.selected {
+      background: #1D281C;
+      border-color: #37e920;
+      box-shadow: 0 0 0 1px #37e920;
+    }
+
+    .menu-btn:active {
+      transform: scale(0.99);
+    }
+
+    /* ── CHOICE BAR ── */
+    .choice-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px 12px;
+      padding: 16px 32px;
+      background: #161A1F;
+    }
+
+    .choice-label {
+      font-size: clamp(14px, 1.4vw, 20px);
+      font-weight: 700;
+      color: #D58615;
+      background: #252B36;
+      padding: 8px 14px;
+      border-radius: 8px;
+    }
+
+    .choice-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      border: 1px solid transparent;
+      background: #252B36;
+      color: #D58615;
+      font-family: 'Inter', sans-serif;
+      font-size: clamp(13px, 1.2vw, 16px);
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      outline: none;
+      transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+    }
+
+    .choice-btn:hover {
+      border-color: rgba(245, 158, 11, 0.65);
+      background: #1F2430;
+      box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.15);
+    }
+
+    .choice-btn.selected {
+      background: #1D281C;
+      border-color: #37e920;
+      color: #fff;
+      box-shadow: 0 0 0 1px #37e920;
+    }
+
+    .choice-btn:active {
+      transform: scale(0.96);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- BREADCRUMB -->
+  <div class="breadcrumb">
+    <span class="bc-parent">Sales</span>
+    <svg width="6" height="13" viewBox="0 0 6 13" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M0 12.246L6 6.12298L0 0" stroke="#968A8A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <span class="bc-current">Purchase Registers</span>
+  </div>
+
+  <!-- MAIN CARD -->
+  <div class="card">
+
+    <!-- TITLE -->
+    <div class="card-title">
+      <h1>Select Your Choice</h1>
+    </div>
+
+    <!-- MENU ITEMS -->
+    <div class="menu-list">
+      <button class="menu-btn" data-id="1">1 - Purchase Register</button>
+      <button class="menu-btn" data-id="2">2 - VAT - Purchase Register (Bill,Taxwise) Annexure 1</button>
+      <button class="menu-btn" data-id="3">3 - Salestax Format - Before VAT</button>
+      <button class="menu-btn" data-id="4">4 - Form A9&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- Before VAT</button>
+      <button class="menu-btn" data-id="5">5 - RST Report&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- Before VAT</button>
+      <button class="menu-btn" data-id="6">6 - Purchase Itemwise Report</button>
+      <button class="menu-btn" data-id="7">7 - Purchase Pkg,Tax Differences Report</button>
+      <button class="menu-btn" data-id="8">8 - Purchase Register - Supplierwise</button>
+    </div>
+
+    <!-- CHOICE BAR -->
+    <div class="choice-bar">
+      <span class="choice-label">Choice</span>
+      <button class="choice-btn" data-id="1">1</button>
+      <button class="choice-btn" data-id="2">2</button>
+      <button class="choice-btn" data-id="3">3</button>
+      <button class="choice-btn" data-id="4">4</button>
+      <button class="choice-btn" data-id="5">5</button>
+      <button class="choice-btn" data-id="6">6</button>
+      <button class="choice-btn" data-id="7">7</button>
+      <button class="choice-btn" data-id="8">8</button>
+    </div>
+
+  </div>
+
+  <script>
+    const menuBtns   = document.querySelectorAll('.menu-btn');
+    const choiceBtns = document.querySelectorAll('.choice-btn');
+
+    function setSelection(id) {
+      menuBtns.forEach(function(btn) {
+        btn.classList.toggle('selected', parseInt(btn.getAttribute('data-id')) === id);
+      });
+      choiceBtns.forEach(function(btn) {
+        btn.classList.toggle('selected', parseInt(btn.getAttribute('data-id')) === id);
+      });
+    }
+
+    menuBtns.forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        setSelection(parseInt(btn.getAttribute('data-id')));
+      });
+    });
+
+    choiceBtns.forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        setSelection(parseInt(btn.getAttribute('data-id')));
+      });
+    });
+  </script>
+
+</body>
+</html>

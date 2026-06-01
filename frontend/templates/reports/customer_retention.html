@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Customer Retention (CRM) — Selvam Medicals</title>
+    <meta name="description" content="Customer Retention and Purchase Patterns Report."/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+    <link rel="stylesheet" href="/static/css/reports.css"/>
+    <style>
+        .overdue-yes { color: #dc2626; font-weight: 700; }
+        .overdue-no { color: #16a34a; font-weight: 600; }
+        .item-chip { display:inline-block; padding:2px 6px; background:#f1f5f9; border-radius:4px; font-size:10px; margin:2px; border:1px solid #e2e8f0; }
+    </style>
+</head>
+<body>
+
+<div class="report-toolbar">
+    <div class="toolbar-left">
+        <a href="/" class="toolbar-brand"><div class="logo-circle">SM</div><span>SELVAM MEDICALS</span></a>
+        <span class="toolbar-title"><i class="fas fa-heartbeat"></i>&nbsp; Customer Retention</span>
+    </div>
+    <div class="toolbar-actions">
+        <button class="btn-toolbar btn-back" onclick="history.back()"><i class="fas fa-arrow-left"></i> Back</button>
+        <button class="btn-toolbar btn-print" onclick="window.print()"><i class="fas fa-print"></i> Print</button>
+    </div>
+</div>
+
+<div class="report-container" id="report-loading">
+    <div class="report-loading"><i class="fas fa-spinner fa-spin"></i><p>Loading CRM data…</p></div>
+</div>
+
+<div class="report-container" id="report-content" style="display:none;">
+    <div class="report-page">
+        <div class="store-header">
+            <h1>SELVAM MEDICALS</h1>
+            <div class="store-subtitle">Retail & Wholesale Chemists</div>
+            <div class="store-details">No.1, Main Road, Chennai — 600001</div>
+        </div>
+
+        <div class="report-title-bar">
+            <h2><i class="fas fa-heartbeat" style="margin-right:6px;"></i> CUSTOMER RETENTION & PURCHASE PATTERNS</h2>
+            <div class="report-meta"><div><strong>As of:</strong> <span id="cr-date"></span></div></div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-bottom:1px solid #ddd;">
+            <div style="padding:14px 20px;text-align:center;border-right:1px solid #eee;">
+                <div style="font-size:10px;color:#777;text-transform:uppercase;">Total Customers</div>
+                <div style="font-size:20px;font-weight:800;color:#1a1a2e;" id="cr-total">0</div>
+            </div>
+            <div style="padding:14px 20px;text-align:center;border-right:1px solid #eee;">
+                <div style="font-size:10px;color:#777;text-transform:uppercase;">Tracked Patients</div>
+                <div style="font-size:20px;font-weight:800;color:#3b82f6;" id="cr-chronic">0</div>
+            </div>
+            <div style="padding:14px 20px;text-align:center;">
+                <div style="font-size:10px;color:#777;text-transform:uppercase;">Overdue Patients</div>
+                <div style="font-size:20px;font-weight:800;color:#dc2626;" id="cr-overdue">0</div>
+            </div>
+        </div>
+
+        <div class="report-table-wrap">
+            <table class="report-table">
+                <thead><tr>
+                    <th>Customer Name</th><th>Phone</th><th>Items Tracked</th>
+                    <th>Last Purchase</th><th>Expected Return</th><th class="text-center">Status</th>
+                </tr></thead>
+                <tbody id="cr-tbody"></tbody>
+            </table>
+        </div>
+
+        <div id="cr-empty" class="report-empty" style="display:none;">
+            <i class="fas fa-smile-beam" style="color:#16a34a;"></i>
+            <p>No customer purchase patterns recorded yet.</p>
+        </div>
+
+        <div class="report-footer">
+            <div class="footer-note">This report identifies patients who buy chronic medications and highlights those who missed their expected return date. Use this for SMS follow-ups. E & O.E.</div>
+            <div class="footer-sign"><div class="sign-line"></div><div>Manager / CRM</div></div>
+        </div>
+    </div>
+</div>
+
+<script>
+async function loadReport() {
+    try {
+        const res = await fetch('/api/reports/customer-retention');
+        const d = await res.json();
+
+        document.getElementById('cr-date').textContent = d.report_date;
+        document.getElementById('cr-total').textContent = d.total_customers;
+        document.getElementById('cr-chronic').textContent = d.total_chronic_patients;
+        document.getElementById('cr-overdue').textContent = d.overdue_count;
+
+        const tbody = document.getElementById('cr-tbody');
+        tbody.innerHTML = '';
+
+        if (!d.retention_data.length) {
+            document.getElementById('cr-empty').style.display = '';
+        } else {
+            d.retention_data.forEach(r => {
+                const statusHtml = r.is_overdue
+                    ? `<span class="overdue-yes">Overdue by ${r.days_overdue} days</span>`
+                    : `<span class="overdue-no">On Track</span>`;
+                
+                const itemsHtml = r.items_tracked.map(item => `<span class="item-chip">${item}</span>`).join('');
+
+                tbody.innerHTML += `<tr>
+                    <td><strong>${r.customer_name}</strong></td>
+                    <td>${r.phone || '—'}</td>
+                    <td>${itemsHtml}</td>
+                    <td>${r.last_purchase_date}</td>
+                    <td style="font-weight:600;">${r.next_expected_date}</td>
+                    <td class="text-center">${statusHtml}</td>
+                </tr>`;
+            });
+        }
+
+        document.getElementById('report-loading').style.display = 'none';
+        document.getElementById('report-content').style.display = '';
+    } catch (e) {
+        console.error(e);
+        document.getElementById('report-loading').innerHTML = '<div class="report-empty"><i class="fas fa-exclamation-triangle"></i><p>Failed to load customer retention report.</p></div>';
+    }
+}
+
+loadReport();
+</script>
+</body>
+</html>

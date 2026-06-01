@@ -1,0 +1,15 @@
+meta {
+  name: Get Wanted List
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/wanted-list
+  body: none
+  auth: none
+}
+
+vars:pre-request {
+  baseUrl: http://127.0.0.1:5001
+}

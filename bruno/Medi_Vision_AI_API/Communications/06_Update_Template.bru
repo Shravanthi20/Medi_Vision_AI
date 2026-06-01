@@ -1,0 +1,15 @@
+meta {
+  name: Update Template
+  type: http
+  seq: 6
+}
+
+put {
+  url: {{baseUrl}}/api/communications/templates/1
+  body: json
+  auth: none
+}
+
+vars:pre-request {
+  baseUrl: http://127.0.0.1:5001
+}

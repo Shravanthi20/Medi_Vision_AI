@@ -1,0 +1,277 @@
+/* ═══════════════════════════════════════════════════════════════
+   purchaseregister.css
+   Page-specific styles for the Purchase Registers screen.
+   Sidebar styles  → /static/css/sidebar.css
+   Header styles   → /static/css/header.css
+
+   CHANGES FROM ORIGINAL:
+   ─────────────────────
+   1. .menu-btn:focus   → blue removed, outline: none only
+   2. .choice-btn:focus → blue removed, outline: none only
+   3. .menu-btn.selected:hover  → green holds on hover (doesn't revert to orange)
+   4. .choice-btn.selected:hover → green holds on hover
+   5. .main.panel-active → blue border on panel (was already present, confirmed)
+═══════════════════════════════════════════════════════════════ */
+
+/* ── RESET & BASE ── */
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: Inter, sans-serif;
+  background: #000;
+}
+
+/* ── APP SHELL ── */
+.app {
+  width: 1442px;
+  height: 1034px;
+  display: flex;
+}
+
+/* ── RIGHT COLUMN  1162 × 1034 ── */
+.main {
+  width: 1162px;
+  height: 1034px;
+  display: flex;
+  flex-direction: column;
+  border: 2px solid transparent;
+  transition: border-color 0.2s;
+}
+
+/* PANEL ACTIVE — blue border on main container (triggers on any selection) */
+.main.panel-active {
+  border-color: #3B82F6;
+}
+
+/* ── CONTENT AREA ── */
+.content-area {
+  flex: 1;
+  background: #0A0D11;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ── BREADCRUMB ── */
+.breadcrumb-bar {
+  background: #0E1117;
+  border-bottom: 1px solid rgba(108, 108, 108, 0.4);
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.breadcrumb-parent {
+  font-weight: 600;
+  font-size: 16px;
+  color: #9CA3AF;
+}
+
+.breadcrumb-current {
+  font-weight: 700;
+  font-size: 16px;
+  color: #4ADE80;
+}
+
+/* ── CENTER STAGE ── */
+.center-stage {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── MENU CARD ── */
+.menu-card {
+  width: 900px;
+  background: #161A1F;
+  border: 1px solid rgba(104, 104, 104, 0.58);
+  border-radius: 24px;
+  overflow: hidden;
+}
+
+/* ── CARD TITLE ── */
+.menu-card-title {
+  text-align: center;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid rgba(108, 108, 108, 0.53);
+}
+
+.menu-card-title h1 {
+  font-family: Inter, sans-serif;
+  font-weight: 700;
+  font-size: 32px;
+  color: #D58615;
+  line-height: 1.2;
+}
+
+/* ── MENU ITEMS LIST ── */
+.menu-btn-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px 28px 14px;
+}
+
+.menu-btn {
+  width: 100%;
+  padding: 13px 24px;
+  border-radius: 12px;
+  border: 1px solid rgba(233, 112, 32, 0.29);
+  background: #1C2028;
+  color: #fff;
+  font-family: Inter, sans-serif;
+  font-weight: 600;
+  font-size: 20px;
+  text-align: left;
+  cursor: pointer;
+
+  /* CHANGED: outline: none removes any browser default focus ring */
+  outline: none;
+
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.menu-btn .btn-num {
+  flex-shrink: 0;
+  width: 2ch;
+  margin-right: 10px;
+}
+
+.menu-btn .btn-dash {
+  flex-shrink: 0;
+  margin-right: 12px;
+}
+
+.menu-btn .btn-label {
+  flex: none;
+}
+
+.menu-btn .btn-suffix {
+  flex-shrink: 0;
+  color: #D0D0D0;
+  margin-left: 16px;
+}
+
+/* HOVER — amber/orange glow (unchanged) */
+.menu-btn:hover {
+  border-color: rgba(245, 158, 11, 0.65);
+  background: #1F2430;
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.15);
+}
+
+/* FOCUS — CHANGED: blue removed, only suppresses outline */
+.menu-btn:focus {
+  outline: none;
+}
+
+/* SELECTED state — green border glow (unchanged) */
+.menu-btn.selected {
+  border-color: #37e920;
+  background: #1C2028;
+  color: #fff;
+  box-shadow: 0 0 0 1px #37e920;
+}
+
+/* SELECTED + HOVER — ADDED: green holds, orange does not override */
+.menu-btn.selected:hover {
+  border-color: #37e920;
+  background: #1C2028;
+  box-shadow: 0 0 0 1px #37e920;
+}
+
+/* ACTIVE (click) */
+.menu-btn:active {
+  transform: scale(0.98);
+}
+
+/* ── CHOICE ROW ── */
+.choice-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 28px 22px;
+}
+
+.choice-label {
+  flex-shrink: 0;
+  border-radius: 12px;
+  background: #1C2028;
+  border: 1px solid rgba(150, 150, 150, 0.18);
+  padding: 12px 18px;
+  color: #D58615;
+  font-family: Inter, sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.choice-buttons {
+  flex: 1;
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.choice-btn {
+  flex: 1;
+  min-width: 0;
+  height: 52px;
+  border-radius: 12px;
+  border: 1px solid rgba(150, 150, 150, 0.18);
+  background: #1C2028;
+  color: #D58615;
+  font-family: Inter, sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  /* CHANGED: outline: none removes any browser default focus ring */
+  outline: none;
+
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+
+/* choice-btn hover — orange (unchanged) */
+.choice-btn:hover {
+  border-color: rgba(245, 158, 11, 0.65);
+  background: #1F2430;
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.15);
+}
+
+/* choice-btn focus — CHANGED: blue removed, only suppresses outline */
+.choice-btn:focus {
+  outline: none;
+}
+
+/* choice-btn selected — green (unchanged) */
+.choice-btn.selected {
+  border-color: #37e920;
+  background: #1D281C;
+  color: #fff;
+  box-shadow: 0 0 0 1px #37e920;
+}
+
+/* choice-btn selected + hover — ADDED: green holds, orange does not override */
+.choice-btn.selected:hover {
+  border-color: #37e920;
+  background: #1D281C;
+  color: #fff;
+  box-shadow: 0 0 0 1px #37e920;
+}

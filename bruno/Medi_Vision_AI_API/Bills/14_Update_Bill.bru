@@ -1,0 +1,15 @@
+meta {
+  name: Update Bill
+  type: http
+  seq: 14
+}
+
+patch {
+  url: {{baseUrl}}/api/bills/BILL-001
+  body: json
+  auth: none
+}
+
+vars:pre-request {
+  baseUrl: http://127.0.0.1:5001
+}

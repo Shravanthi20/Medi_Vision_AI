@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Profit & Loss Summary — Selvam Medicals</title>
+    <meta name="description" content="Gross Margin and Profit & Loss Summary Report."/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+    <link rel="stylesheet" href="/static/css/reports.css"/>
+    <style>
+        .pl-section { padding:6px 24px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center; }
+        .pl-label { font-size:12.5px; color:#555; }
+        .pl-value { font-size:14px; font-weight:700; }
+        .pl-section.total { background:#f8fafc; border-bottom:2px solid #ddd; padding:10px 24px; }
+        .pl-section.profit { background:#f0fdf4; }
+        .pl-section.loss { background:#fef2f2; }
+    </style>
+</head>
+<body>
+
+<div class="report-toolbar">
+    <div class="toolbar-left">
+        <a href="/" class="toolbar-brand"><div class="logo-circle">SM</div><span>SELVAM MEDICALS</span></a>
+        <span class="toolbar-title"><i class="fas fa-chart-line"></i>&nbsp; Profit & Loss</span>
+    </div>
+    <div class="toolbar-actions">
+        <button class="btn-toolbar btn-back" onclick="history.back()"><i class="fas fa-arrow-left"></i> Back</button>
+        <button class="btn-toolbar btn-print" onclick="window.print()"><i class="fas fa-print"></i> Print</button>
+    </div>
+</div>
+
+<div class="report-filters">
+    <label>From:</label><input type="date" id="f-start"/>
+    <label>To:</label><input type="date" id="f-end"/>
+    <button class="btn-filter" onclick="loadReport()"><i class="fas fa-filter"></i> Load</button>
+</div>
+
+<div class="report-container" id="report-loading">
+    <div class="report-loading"><i class="fas fa-spinner fa-spin"></i><p>Computing P&L…</p></div>
+</div>
+
+<div class="report-container" id="report-content" style="display:none;">
+    <div class="report-page">
+        <div class="store-header">
+            <h1>SELVAM MEDICALS</h1>
+            <div class="store-subtitle">Retail & Wholesale Chemists</div>
+            <div class="store-details">No.1, Main Road, Chennai — 600001 &nbsp;|&nbsp; <strong>GSTIN:</strong> 33AAAAA1234A1Z5</div>
+        </div>
+
+        <div class="report-title-bar">
+            <h2><i class="fas fa-chart-line" style="margin-right:6px;"></i> PROFIT & LOSS SUMMARY</h2>
+            <div class="report-meta"><div id="pl-period"></div><div id="pl-bills"></div></div>
+        </div>
+
+        <!-- P&L Statement Layout -->
+        <div style="padding:10px 24px 2px;font-size:11px;font-weight:700;color:#777;text-transform:uppercase;letter-spacing:0.05em;">Revenue</div>
+        <div class="pl-section"><span class="pl-label">Net Sales Revenue</span><span class="pl-value" style="color:#16a34a;" id="pl-revenue">₹0</span></div>
+        <div class="pl-section"><span class="pl-label" style="font-size:11px;color:#999;">  └ Discounts Given</span><span class="pl-value" style="font-size:12px;color:#999;" id="pl-disc">₹0</span></div>
+        <div class="pl-section"><span class="pl-label" style="font-size:11px;color:#999;">  └ Tax Collected</span><span class="pl-value" style="font-size:12px;color:#999;" id="pl-tax">₹0</span></div>
+
+        <div style="padding:10px 24px 2px;font-size:11px;font-weight:700;color:#777;text-transform:uppercase;letter-spacing:0.05em;">Cost of Goods</div>
+        <div class="pl-section"><span class="pl-label">Cost of Goods Sold (COGS)</span><span class="pl-value" style="color:#dc2626;" id="pl-cogs">₹0</span></div>
+
+        <div class="pl-section total">
+            <span class="pl-label" style="font-size:13px;font-weight:700;color:#1a1a2e;">GROSS PROFIT</span>
+            <span><span class="pl-value" style="font-size:16px;" id="pl-gross">₹0</span> <span style="font-size:11px;color:#777;" id="pl-gross-pct"></span></span>
+        </div>
+
+        <div style="padding:10px 24px 2px;font-size:11px;font-weight:700;color:#777;text-transform:uppercase;letter-spacing:0.05em;">Operating Expenses</div>
+        <div id="pl-expenses-container"></div>
+        <div class="pl-section"><span class="pl-label" style="font-weight:600;">Total Operating Expenses</span><span class="pl-value" style="color:#d97706;" id="pl-opex">₹0</span></div>
+
+        <div class="pl-section total" id="pl-net-section">
+            <span class="pl-label" style="font-size:14px;font-weight:800;color:#1a1a2e;">NET PROFIT / (LOSS)</span>
+            <span><span class="pl-value" style="font-size:18px;" id="pl-net">₹0</span> <span style="font-size:11px;color:#777;" id="pl-net-pct"></span></span>
+        </div>
+
+        <div class="report-footer">
+            <div class="footer-note">Profit & Loss is computed from actual sale cost snapshots (purchase_rate_at_sale). Tax amounts are pass-through and not included in profit calculations. E & O.E.</div>
+            <div class="footer-sign"><div class="sign-line"></div><div>Owner / CA</div></div>
+        </div>
+    </div>
+</div>
+
+<script>
+function fmt(n) { return '₹' + Number(n || 0).toFixed(2); }
+function fmtL(n) { return '₹' + Number(n || 0).toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+
+async function loadReport() {
+    const start = document.getElementById('f-start').value;
+    const end = document.getElementById('f-end').value;
+    let url = '/api/reports/profit-loss';
+    const params = [];
+    if (start) params.push('start_date=' + start);
+    if (end) params.push('end_date=' + end);
+    if (params.length) url += '?' + params.join('&');
+
+    document.getElementById('report-loading').style.display = '';
+    document.getElementById('report-content').style.display = 'none';
+
+    try {
+        const res = await fetch(url);
+        const d = await res.json();
+
+        document.getElementById('pl-period').innerHTML = `<strong>Period:</strong> ${d.start_date} to ${d.end_date}`;
+        document.getElementById('pl-bills').innerHTML = `<strong>Bills:</strong> ${d.total_bills}`;
+
+        document.getElementById('pl-revenue').textContent = fmtL(d.revenue.net_sales);
+        document.getElementById('pl-disc').textContent = fmtL(d.revenue.total_discount);
+        document.getElementById('pl-tax').textContent = fmtL(d.revenue.tax_collected);
+        document.getElementById('pl-cogs').textContent = fmtL(d.cost_of_goods_sold);
+
+        document.getElementById('pl-gross').textContent = fmtL(d.gross_profit);
+        document.getElementById('pl-gross').style.color = d.gross_profit >= 0 ? '#16a34a' : '#dc2626';
+        document.getElementById('pl-gross-pct').textContent = `(${d.gross_margin_pct}%)`;
+
+        // Expense breakdown
+        const container = document.getElementById('pl-expenses-container');
+        container.innerHTML = '';
+        if (d.expense_categories.length) {
+            d.expense_categories.forEach(e => {
+                container.innerHTML += `<div class="pl-section"><span class="pl-label" style="font-size:11.5px;color:#666;">&nbsp;&nbsp;${e.category}</span><span class="pl-value" style="font-size:12px;color:#666;">${fmt(e.amount)}</span></div>`;
+            });
+        } else {
+            container.innerHTML = '<div class="pl-section"><span class="pl-label" style="color:#999;">No expenses recorded</span><span class="pl-value" style="color:#999;">₹0.00</span></div>';
+        }
+
+        document.getElementById('pl-opex').textContent = fmtL(d.operating_expenses);
+
+        const netSection = document.getElementById('pl-net-section');
+        netSection.className = 'pl-section total ' + (d.net_profit >= 0 ? 'profit' : 'loss');
+        document.getElementById('pl-net').textContent = fmtL(d.net_profit);
+        document.getElementById('pl-net').style.color = d.net_profit >= 0 ? '#16a34a' : '#dc2626';
+        document.getElementById('pl-net-pct').textContent = `(${d.net_margin_pct}%)`;
+
+        document.title = `P&L ${d.start_date}–${d.end_date} — Selvam Medicals`;
+        document.getElementById('report-loading').style.display = 'none';
+        document.getElementById('report-content').style.display = '';
+    } catch (e) {
+        console.error(e);
+        document.getElementById('report-loading').innerHTML = '<div class="report-empty"><i class="fas fa-exclamation-triangle"></i><p>Failed to load P&L report.</p></div>';
+    }
+}
+
+const now = new Date();
+document.getElementById('f-start').value = now.toISOString().slice(0, 8) + '01';
+document.getElementById('f-end').value = now.toISOString().slice(0, 10);
+loadReport();
+</script>
+</body>
+</html>

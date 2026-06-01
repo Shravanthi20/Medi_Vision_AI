@@ -1,0 +1,15 @@
+meta {
+  name: Profit Loss Report
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{baseUrl}}/api/finance/profit-loss
+  body: none
+  auth: none
+}
+
+vars:pre-request {
+  baseUrl: http://127.0.0.1:5001
+}

@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Inventory Valuation — Selvam Medicals</title>
+    <meta name="description" content="Inventory Valuation and Stock Status Report for Selvam Medicals."/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+    <link rel="stylesheet" href="/static/css/reports.css"/>
+</head>
+<body>
+
+<div class="report-toolbar">
+    <div class="toolbar-left">
+        <a href="/" class="toolbar-brand"><div class="logo-circle">SM</div><span>SELVAM MEDICALS</span></a>
+        <span class="toolbar-title"><i class="fas fa-warehouse"></i>&nbsp; Inventory Valuation</span>
+    </div>
+    <div class="toolbar-actions">
+        <button class="btn-toolbar btn-back" onclick="history.back()"><i class="fas fa-arrow-left"></i> Back</button>
+        <button class="btn-toolbar btn-print" onclick="window.print()"><i class="fas fa-print"></i> Print</button>
+    </div>
+</div>
+
+<div class="report-container" id="report-loading">
+    <div class="report-loading"><i class="fas fa-spinner fa-spin"></i><p>Calculating inventory value…</p></div>
+</div>
+
+<div class="report-container" id="report-content" style="display:none;">
+    <div class="report-page">
+        <div class="store-header">
+            <h1>SELVAM MEDICALS</h1>
+            <div class="store-subtitle">Retail & Wholesale Chemists</div>
+            <div class="store-details">No.1, Main Road, Chennai — 600001 &nbsp;|&nbsp; Ph: 044-XXXXXXXX<br/><strong>GSTIN:</strong> 33AAAAA1234A1Z5</div>
+        </div>
+
+        <div class="report-title-bar">
+            <h2><i class="fas fa-warehouse" style="margin-right:6px;"></i> INVENTORY VALUATION & STOCK STATUS</h2>
+            <div class="report-meta"><div><strong>As of:</strong> <span id="iv-date"></span></div></div>
+        </div>
+
+        <!-- KPI Cards -->
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-bottom:1px solid #ddd;">
+            <div style="padding:14px 20px;text-align:center;border-right:1px solid #eee;">
+                <div style="font-size:10px;color:#777;text-transform:uppercase;">Total Batches</div>
+                <div style="font-size:20px;font-weight:800;color:#1a1a2e;" id="iv-batches">0</div>
+            </div>
+            <div style="padding:14px 20px;text-align:center;border-right:1px solid #eee;">
+                <div style="font-size:10px;color:#777;text-transform:uppercase;">Value at MRP</div>
+                <div style="font-size:20px;font-weight:800;color:#3b82f6;" id="iv-mrp">₹0</div>
+            </div>
+            <div style="padding:14px 20px;text-align:center;border-right:1px solid #eee;">
+                <div style="font-size:10px;color:#777;text-transform:uppercase;">Value at Cost</div>
+                <div style="font-size:20px;font-weight:800;color:#d97706;" id="iv-cost">₹0</div>
+            </div>
+            <div style="padding:14px 20px;text-align:center;">
+                <div style="font-size:10px;color:#777;text-transform:uppercase;">Gross Margin</div>
+                <div style="font-size:20px;font-weight:800;color:#16a34a;" id="iv-margin">₹0</div>
+                <div style="font-size:11px;color:#777;" id="iv-margin-pct"></div>
+            </div>
+        </div>
+
+        <!-- Category Summary -->
+        <div style="padding:12px 24px 4px;font-size:13px;font-weight:700;color:#1a1a2e;">Category-wise Summary</div>
+        <div class="report-table-wrap">
+            <table class="report-table">
+                <thead><tr>
+                    <th>Category</th><th class="text-center">Batches</th><th class="text-center">Total Qty</th>
+                    <th class="text-right">MRP Value (₹)</th><th class="text-right">Cost Value (₹)</th><th class="text-right">Margin (₹)</th>
+                </tr></thead>
+                <tbody id="iv-cat-tbody"></tbody>
+            </table>
+        </div>
+
+        <!-- Detailed Items -->
+        <div style="padding:12px 24px 4px;font-size:13px;font-weight:700;color:#1a1a2e;">Batch-wise Detail</div>
+        <div class="report-table-wrap">
+            <table class="report-table">
+                <thead><tr>
+                    <th>Item Name</th><th>Batch</th><th>Category</th><th>Exp</th>
+                    <th class="text-center">Qty</th><th class="text-right">MRP</th><th class="text-right">Cost</th>
+                    <th class="text-right">MRP Value</th><th class="text-right">Cost Value</th><th class="text-right">Margin%</th>
+                </tr></thead>
+                <tbody id="iv-tbody"></tbody>
+            </table>
+        </div>
+
+        <div class="report-footer">
+            <div class="footer-note">Inventory valued at current MRP and last purchase rate. For insurance/audit purposes. E & O.E.</div>
+            <div class="footer-sign"><div class="sign-line"></div><div>Accountant / Owner</div></div>
+        </div>
+    </div>
+</div>
+
+<script>
+function fmt(n) { return '₹' + Number(n || 0).toFixed(2); }
+function fmtL(n) { return '₹' + Number(n || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}); }
+
+async function loadReport() {
+    try {
+        const res = await fetch('/api/reports/inventory-valuation');
+        const d = await res.json();
+
+        document.getElementById('iv-date').textContent = d.report_date;
+        document.getElementById('iv-batches').textContent = d.total_batches;
+        document.getElementById('iv-mrp').textContent = fmtL(d.total_mrp_value);
+        document.getElementById('iv-cost').textContent = fmtL(d.total_purchase_value);
+        document.getElementById('iv-margin').textContent = fmtL(d.total_margin);
+        document.getElementById('iv-margin-pct').textContent = d.margin_pct + '%';
+
+        // Category summary
+        const ctbody = document.getElementById('iv-cat-tbody');
+        ctbody.innerHTML = '';
+        d.category_summary.forEach(c => {
+            ctbody.innerHTML += `<tr>
+                <td><strong>${c.category}</strong></td>
+                <td class="text-center">${c.items_count}</td>
+                <td class="text-center">${c.total_qty}</td>
+                <td class="text-right">${fmtL(c.mrp_value)}</td>
+                <td class="text-right">${fmtL(c.purchase_value)}</td>
+                <td class="text-right" style="color:#16a34a;font-weight:600;">${fmtL(c.margin)}</td>
+            </tr>`;
+        });
+
+        // Detail
+        const tbody = document.getElementById('iv-tbody');
+        tbody.innerHTML = '';
+        d.items.forEach(item => {
+            tbody.innerHTML += `<tr>
+                <td>${item.item_name}</td>
+                <td>${item.batch_no}</td>
+                <td>${item.category}</td>
+                <td>${item.expiry}</td>
+                <td class="text-center">${item.current_qty}</td>
+                <td class="text-right">${fmt(item.mrp)}</td>
+                <td class="text-right">${fmt(item.purchase_rate)}</td>
+                <td class="text-right">${fmt(item.mrp_value)}</td>
+                <td class="text-right">${fmt(item.purchase_value)}</td>
+                <td class="text-right" style="color:${item.margin_pct >= 20 ? '#16a34a' : item.margin_pct >= 10 ? '#d97706' : '#dc2626'};font-weight:600;">${item.margin_pct}%</td>
+            </tr>`;
+        });
+
+        document.title = `Inventory Valuation ${d.report_date} — Selvam Medicals`;
+        document.getElementById('report-loading').style.display = 'none';
+        document.getElementById('report-content').style.display = '';
+    } catch (e) {
+        console.error(e);
+        document.getElementById('report-loading').innerHTML = '<div class="report-empty"><i class="fas fa-exclamation-triangle"></i><p>Failed to load inventory valuation.</p></div>';
+    }
+}
+
+loadReport();
+</script>
+</body>
+</html>

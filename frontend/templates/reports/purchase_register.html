@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Purchase Register — Selvam Medicals</title>
+    <meta name="description" content="Purchase Register with Supplier-wise breakdown."/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+    <link rel="stylesheet" href="/static/css/reports.css"/>
+</head>
+<body>
+
+<div class="report-toolbar">
+    <div class="toolbar-left">
+        <a href="/" class="toolbar-brand"><div class="logo-circle">SM</div><span>SELVAM MEDICALS</span></a>
+        <span class="toolbar-title"><i class="fas fa-truck-ramp-box"></i>&nbsp; Purchase Register</span>
+    </div>
+    <div class="toolbar-actions">
+        <button class="btn-toolbar btn-back" onclick="history.back()"><i class="fas fa-arrow-left"></i> Back</button>
+        <button class="btn-toolbar btn-print" onclick="window.print()"><i class="fas fa-print"></i> Print</button>
+    </div>
+</div>
+
+<div class="report-filters">
+    <label>From:</label><input type="date" id="f-start"/>
+    <label>To:</label><input type="date" id="f-end"/>
+    <button class="btn-filter" onclick="loadReport()"><i class="fas fa-filter"></i> Load</button>
+</div>
+
+<div class="report-container" id="report-loading">
+    <div class="report-loading"><i class="fas fa-spinner fa-spin"></i><p>Loading purchases…</p></div>
+</div>
+
+<div class="report-container" id="report-content" style="display:none;">
+    <div class="report-page">
+        <div class="store-header">
+            <h1>SELVAM MEDICALS</h1>
+            <div class="store-subtitle">Retail & Wholesale Chemists</div>
+            <div class="store-details">No.1, Main Road, Chennai — 600001 &nbsp;|&nbsp; <strong>GSTIN:</strong> 33AAAAA1234A1Z5</div>
+        </div>
+
+        <div class="report-title-bar">
+            <h2><i class="fas fa-truck-ramp-box" style="margin-right:6px;"></i> PURCHASE REGISTER</h2>
+            <div class="report-meta"><div id="pr-period"></div></div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-bottom:1px solid #ddd;">
+            <div style="padding:14px 20px;text-align:center;border-right:1px solid #eee;">
+                <div style="font-size:10px;color:#777;text-transform:uppercase;">Total Invoices</div>
+                <div style="font-size:20px;font-weight:800;color:#1a1a2e;" id="pr-count">0</div>
+            </div>
+            <div style="padding:14px 20px;text-align:center;border-right:1px solid #eee;">
+                <div style="font-size:10px;color:#777;text-transform:uppercase;">Suppliers</div>
+                <div style="font-size:20px;font-weight:800;color:#3b82f6;" id="pr-sup">0</div>
+            </div>
+            <div style="padding:14px 20px;text-align:center;">
+                <div style="font-size:10px;color:#777;text-transform:uppercase;">Grand Total</div>
+                <div style="font-size:20px;font-weight:800;color:#16a34a;" id="pr-total">₹0</div>
+            </div>
+        </div>
+
+        <!-- Supplier Summary -->
+        <div style="padding:12px 24px 4px;font-size:13px;font-weight:700;color:#1a1a2e;">Supplier-wise Summary</div>
+        <div class="report-table-wrap">
+            <table class="report-table" style="max-width:500px;">
+                <thead><tr><th>Supplier</th><th class="text-center">Invoices</th><th class="text-right">Total (₹)</th></tr></thead>
+                <tbody id="pr-sup-tbody"></tbody>
+            </table>
+        </div>
+
+        <!-- Invoices -->
+        <div style="padding:12px 24px 4px;font-size:13px;font-weight:700;color:#1a1a2e;">Invoice Detail</div>
+        <div class="report-table-wrap">
+            <table class="report-table">
+                <thead><tr>
+                    <th>Ref No</th><th>Inv No</th><th>Date</th><th>Supplier</th><th class="text-center">Items</th>
+                    <th class="text-right">Gross</th><th class="text-right">Disc</th><th class="text-right">Tax</th><th class="text-right">Net (₹)</th>
+                </tr></thead>
+                <tbody id="pr-tbody"></tbody>
+            </table>
+        </div>
+
+        <div class="report-footer">
+            <div class="footer-note">Purchase Register — for internal use and audit trail. Cross-verify with supplier invoices. E & O.E.</div>
+            <div class="footer-sign"><div class="sign-line"></div><div>Accountant</div></div>
+        </div>
+    </div>
+</div>
+
+<script>
+function fmt(n) { return '₹' + Number(n || 0).toFixed(2); }
+
+async function loadReport() {
+    const start = document.getElementById('f-start').value;
+    const end = document.getElementById('f-end').value;
+    let url = '/api/reports/purchase-register';
+    const params = [];
+    if (start) params.push('start_date=' + start);
+    if (end) params.push('end_date=' + end);
+    if (params.length) url += '?' + params.join('&');
+
+    document.getElementById('report-loading').style.display = '';
+    document.getElementById('report-content').style.display = 'none';
+
+    try {
+        const res = await fetch(url);
+        const d = await res.json();
+
+        document.getElementById('pr-period').innerHTML = `<strong>Period:</strong> ${d.start_date || 'All'} to ${d.end_date || 'All'}`;
+        document.getElementById('pr-count').textContent = d.total_invoices;
+        document.getElementById('pr-sup').textContent = d.supplier_summary.length;
+        document.getElementById('pr-total').textContent = fmt(d.grand_total);
+
+        // Supplier summary
+        const stbody = document.getElementById('pr-sup-tbody');
+        stbody.innerHTML = '';
+        d.supplier_summary.forEach(s => {
+            stbody.innerHTML += `<tr><td><strong>${s.supplier}</strong></td><td class="text-center">${s.invoices}</td><td class="text-right">${fmt(s.total)}</td></tr>`;
+        });
+
+        // Invoice detail
+        const tbody = document.getElementById('pr-tbody');
+        tbody.innerHTML = '';
+        if (!d.invoices.length) {
+            tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#999;">No purchase invoices for this period.</td></tr>';
+        } else {
+            d.invoices.forEach(inv => {
+                tbody.innerHTML += `<tr>
+                    <td><strong>${inv.ref_no}</strong></td><td>${inv.invoice_no}</td><td>${inv.invoice_date}</td>
+                    <td>${inv.supplier}</td><td class="text-center">${inv.items_count}</td>
+                    <td class="text-right">${fmt(inv.gross)}</td><td class="text-right">${fmt(inv.discount)}</td>
+                    <td class="text-right">${fmt(inv.tax)}</td><td class="text-right" style="font-weight:600;">${fmt(inv.net)}</td>
+                </tr>`;
+            });
+        }
+
+        document.getElementById('report-loading').style.display = 'none';
+        document.getElementById('report-content').style.display = '';
+    } catch (e) {
+        console.error(e);
+        document.getElementById('report-loading').innerHTML = '<div class="report-empty"><i class="fas fa-exclamation-triangle"></i><p>Failed to load purchase register.</p></div>';
+    }
+}
+
+loadReport();
+</script>
+</body>
+</html>

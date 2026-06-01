@@ -1,0 +1,262 @@
+{
+  "name": "WhatsApp Reorder Conversation (Menu-Driven)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "reorder-outbound",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "1a2b3c4d-0001",
+      "name": "Webhook — Outbound Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 200],
+      "webhookId": "reorder-outbound"
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "waMessage",
+              "value": "={{ $json.body.message }}"
+            },
+            {
+              "name": "supplierPhone",
+              "value": "={{ $json.body.supplier_phone }}"
+            },
+            {
+              "name": "reorderRef",
+              "value": "={{ $json.body.reorder_id }}"
+            },
+            {
+              "name": "callbackUrl",
+              "value": "={{ $json.body.callback_url }}"
+            },
+            {
+              "name": "callbackSecret",
+              "value": "={{ $json.body.callback_secret }}"
+            },
+            {
+              "name": "pharmacyWhatsApp",
+              "value": "={{ $json.body.pharmacy_whatsapp }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "1a2b3c4d-0002",
+      "name": "Set — Extract Outbound Fields",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [460, 200]
+    },
+    {
+      "parameters": {
+        "accountSid": "={{ $env.TWILIO_ACCOUNT_SID }}",
+        "authToken": "={{ $env.TWILIO_AUTH_TOKEN }}",
+        "from": "={{ $env.TWILIO_WHATSAPP_NUMBER }}",
+        "to": "=whatsapp:{{ $json.supplierPhone }}",
+        "message": "={{ $json.waMessage }}"
+      },
+      "id": "1a2b3c4d-0003",
+      "name": "Twilio — Send WhatsApp",
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [680, 200],
+      "credentials": {
+        "twilioApi": {
+          "id": "twilio-credentials",
+          "name": "Twilio Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"ok\": true }",
+        "options": {}
+      },
+      "id": "1a2b3c4d-0004",
+      "name": "Respond to Webhook — OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [900, 200]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "reorder-inbound",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "1a2b3c4d-0005",
+      "name": "Webhook — Inbound (Twilio)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 500],
+      "webhookId": "reorder-inbound",
+      "notes": "Configure your Twilio number's WhatsApp inbound webhook to POST to this URL."
+    },
+    {
+      "parameters": {
+        "jsCode": "// ─── Inbound reply parser ───────────────────────────────────────────────\n// Twilio sends the supplier's reply as 'Body' in the form body.\n// We extract it and decide the reorder status.\n\nconst body = $input.first().json.body;\nconst raw = (body.Body || '').trim();\n\n// Retrieve the reorder ref from the incoming message or a prior mapping\n// (Twilio echoes back the conversation context via 'WaId' or correlates\n//  via session — for simplicity we store reorder_id in n8n static data).\nconst n8nConvId = body.WaId || body.From || 'unknown';\n\nlet status = 'PROCESSING';\nlet confirmedItems = null;\nlet notes = null;\n\nif (raw === '1') {\n  status = 'CONFIRMED';\n} else if (raw === '2') {\n  status = 'REJECTED';\n} else if (raw.startsWith('3')) {\n  // Parse \"3, 1=20, 2=40\" format\n  const overrides = {};\n  const matches = [...raw.matchAll(/(\\d+)\\s*=\\s*(\\d+)/g)];\n  for (const m of matches) {\n    overrides[parseInt(m[1])] = parseInt(m[2]);\n  }\n  // Build confirmed_items — actual items will be merged by the backend\n  confirmedItems = Object.entries(overrides).map(([idx, qty]) => ({\n    item_index: parseInt(idx),\n    confirmed_qty: qty\n  }));\n  status = 'PARTIALLY_CONFIRMED';\n} else {\n  notes = `Could not auto-parse: ${raw}`;\n}\n\nreturn [{\n  json: {\n    status,\n    confirmed_items: confirmedItems,\n    supplier_response: raw,\n    n8n_conversation_id: n8nConvId,\n    provider_message_id: body.MessageSid || null,\n    notes,\n    // Pass through the callback config stored in n8n workflow static data\n    callback_url: $getWorkflowStaticData('node').callbackUrl,\n    callback_secret: $getWorkflowStaticData('node').callbackSecret,\n    reorder_id: $getWorkflowStaticData('node').reorderId,\n  }\n}];"
+      },
+      "id": "1a2b3c4d-0006",
+      "name": "Code — Parse Supplier Reply",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 500]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.callback_url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ reorder_id: $json.reorder_id, status: $json.status, supplier_response: $json.supplier_response, confirmed_items: $json.confirmed_items, n8n_conversation_id: $json.n8n_conversation_id, provider_message_id: $json.provider_message_id, secret: $json.callback_secret }) }}",
+        "options": {}
+      },
+      "id": "1a2b3c4d-0007",
+      "name": "HTTP Request — POST to Backend Callback",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [680, 500]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.status }}",
+              "operation": "equal",
+              "value2": "error"
+            }
+          ]
+        }
+      },
+      "id": "1a2b3c4d-0008",
+      "name": "Switch — Check Callback Success",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 1,
+      "position": [900, 500]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Log the failure for manual review\nconst data = $input.first().json;\nconsole.error('[Reorder Callback Failed]', JSON.stringify(data));\nreturn [{ json: { logged: true, data } }];"
+      },
+      "id": "1a2b3c4d-0009",
+      "name": "Code — Log Failure",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 600]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Store outbound context in workflow static data so the inbound node\n// can retrieve it when the supplier replies.\nconst data = $input.first().json;\nconst staticData = $getWorkflowStaticData('node');\nstaticData.reorderId = data.reorder_id;\nstaticData.callbackUrl = data.callback_url;\nstaticData.callbackSecret = data.callback_secret;\nreturn $input.all();"
+      },
+      "id": "1a2b3c4d-0010",
+      "name": "Code — Store Context",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 340]
+    }
+  ],
+  "connections": {
+    "Webhook — Outbound Trigger": {
+      "main": [
+        [
+          { "node": "Set — Extract Outbound Fields", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Set — Extract Outbound Fields": {
+      "main": [
+        [
+          { "node": "Code — Store Context", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Code — Store Context": {
+      "main": [
+        [
+          { "node": "Twilio — Send WhatsApp", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Twilio — Send WhatsApp": {
+      "main": [
+        [
+          { "node": "Respond to Webhook — OK", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Webhook — Inbound (Twilio)": {
+      "main": [
+        [
+          { "node": "Code — Parse Supplier Reply", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Code — Parse Supplier Reply": {
+      "main": [
+        [
+          { "node": "HTTP Request — POST to Backend Callback", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "HTTP Request — POST to Backend Callback": {
+      "main": [
+        [
+          { "node": "Switch — Check Callback Success", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Switch — Check Callback Success": {
+      "main": [
+        [],
+        [
+          { "node": "Code — Log Failure", "type": "main", "index": 0 }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "pinData": {},
+  "versionId": "1",
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "n8nVersion": "1.x.x"
+  },
+  "_readme": {
+    "description": "Menu-driven WhatsApp reorder conversation workflow for AutomatePharm.",
+    "setup": [
+      "1. Import this file into n8n (Workflows → Import from File).",
+      "2. Create Twilio credentials in n8n with TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN.",
+      "3. Set n8n environment variables: TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_WHATSAPP_NUMBER.",
+      "4. Copy the 'Webhook — Outbound Trigger' URL into .env as N8N_WEBHOOK_URL.",
+      "5. Copy the 'Webhook — Inbound (Twilio)' URL into your Twilio console as the incoming WhatsApp message webhook URL.",
+      "6. Set BASE_URL and N8N_INBOUND_WEBHOOK_SECRET in your backend .env.",
+      "7. Activate the workflow."
+    ],
+    "menuOptions": {
+      "1": "Confirm all items at requested quantities → status: CONFIRMED",
+      "2": "Reject the entire order → status: REJECTED",
+      "3 (with overrides)": "Partial confirm, e.g. '3, 1=20, 2=40' → status: PARTIALLY_CONFIRMED"
+    }
+  }
+}

@@ -1,0 +1,133 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+* {
+    box-sizing: border-box;
+    font-family: 'Inter', sans-serif;
+}
+
+body {
+    margin: 0;
+    background-color: #0d0f11;
+    overflow: hidden;
+}
+
+.sidebar {
+    width: 220px;
+    height: 100vh;
+    background-color: #16191e;
+    padding: 20px 14px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    border-right: 1px solid #252930;
+}
+
+/* Brand Section */
+.sidebar-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.logo-circle {
+    background-color: #f39c12;
+    color: #000;
+    font-weight: 800;
+    min-width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+}
+
+.brand-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+}
+
+.brand-name {
+    color: #fff;
+    font-weight: 700;
+    font-size: 13px;
+}
+
+.brand-sub {
+    color: #6c727a;
+    font-size: 10px;
+}
+
+/* Timeline Dropdown Stylings */
+.timeline-container {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.timeline-select {
+    width: 100%;
+    background: #1f2329;
+    color: #8a8d91;
+    border: 1px solid #2d323a;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    appearance: none;
+    cursor: pointer;
+    outline: none;
+}
+
+.timeline-icon {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 14px;
+    height: 14px;
+    color: #6c727a;
+    pointer-events: none;
+}
+
+/* Nav Menu Styles */
+.section-title {
+    color: #434952;
+    font-size: 10px;
+    font-weight: 700;
+    margin: 15px 0 8px 10px;
+    letter-spacing: 1px;
+}
+
+.nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #8a8d91;
+    text-decoration: none;
+    padding: 9px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    transition: 0.2s;
+    margin-bottom: 2px;
+}
+
+.nav-item svg {
+    width: 18px;
+    height: 18px;
+    stroke-width: 1.5;
+}
+
+/*Active Logic */
+.nav-item.active {
+    color: #f39c12 !important;
+    background: #23282f;
+}
+
+.nav-item.active svg {
+    stroke: #f39c12;
+}
+
+.nav-item:hover {
+    color: #f39c12;
+}

@@ -1,0 +1,15 @@
+meta {
+  name: List Adjustments
+  type: http
+  seq: 12
+}
+
+get {
+  url: {{baseUrl}}/api/inventory/adjustments
+  body: none
+  auth: none
+}
+
+vars:pre-request {
+  baseUrl: http://127.0.0.1:5001
+}
