@@ -1,0 +1,12 @@
+{
+  "name": "automatePharm-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Knip config for AutomatePharm frontend dead code analysis",
+  "scripts": {
+    "knip": "knip"
+  },
+  "devDependencies": {
+    "knip": "^5.x"
+  }
+}

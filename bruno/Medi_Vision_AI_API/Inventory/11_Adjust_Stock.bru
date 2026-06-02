@@ -1,0 +1,15 @@
+meta {
+  name: Adjust Stock
+  type: http
+  seq: 11
+}
+
+post {
+  url: {{baseUrl}}/api/inventory/adjust
+  body: json
+  auth: none
+}
+
+vars:pre-request {
+  baseUrl: http://127.0.0.1:5001
+}

@@ -1,0 +1,189 @@
+/* ═══════════════════════════════════════════════════════════
+   wanted-manual.css
+   ⚠️  This file styles ONLY the Wanted (Manual) card content.
+   Sidebar, header, breadcrumb → sidebar-header.css
+═══════════════════════════════════════════════════════════ */
+
+
+/* ── CONTENT AREA — flex column so footer pins to bottom ── */
+.content-area {
+  flex: 1;
+  background: #0D0F12;
+  display: flex;
+  flex-direction: column;  /* ← stacks breadcrumb / prr-content / footer vertically */
+  overflow: hidden;
+}
+
+
+/* ── PRR-CONTENT  flex:1 pushes footer to bottom ── */
+.prr-content {
+  flex: 1;                 /* ← takes all remaining space, footer stays at bottom */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 24px;
+  overflow: hidden;
+}
+
+
+/* ── Card wrapper ── */
+.wm-center-wrap {
+  width: 100%;
+  max-width: 580px;
+}
+
+
+/* ── Card ── */
+.wm-card {
+  width: 100%;
+  border-radius: 20px;
+  border: 1px solid rgba(104, 104, 104, .58);
+  background: #161A1F;
+}
+
+
+/* ── Card header ── */
+.wm-card-header {
+  padding: 18px 32px;
+  border-bottom: 1px solid rgba(108, 108, 108, .53);
+  text-align: center;
+}
+
+.wm-card-title {
+  font-family: Inter, sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: #D58615;
+  letter-spacing: .01em;
+}
+
+
+/* ── Card body ── */
+.wm-card-body {
+  padding: 28px 40px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+
+/* ── Field row  (label : input on one line) ── */
+.wm-field-row {
+  display: flex;
+  align-items: center;
+}
+
+.wm-field-label {
+  font-family: Inter, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: #80879A;
+  white-space: nowrap;
+  width: 140px;
+  flex-shrink: 0;
+}
+
+.wm-colon {
+  font-size: 14px;
+  font-weight: 600;
+  color: #80879A;
+  margin: 0 12px 0 0;
+  flex-shrink: 0;
+}
+
+
+/* ── Input wrapper ── */
+.wm-input-wrap {
+  position: relative;
+  flex: 1;
+}
+
+
+/* ── Text input ── */
+.wm-input {
+  width: 100%;
+  height: 38px;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(150, 150, 150, .29);
+  background: #1C2028;
+  color: #fff;
+  font-family: Inter, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  outline: none;
+  transition: border-color .15s, box-shadow .15s;
+}
+
+.wm-input:hover:not(:focus) {
+  border-color: rgba(150, 150, 150, .5);
+}
+
+.wm-input:focus {
+  border-color: rgba(245, 158, 11, .55);
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, .10);
+}
+
+/* Input with calendar icon — extra right padding */
+.wm-input.has-cal {
+  padding-right: 38px;
+}
+
+
+/* ── Calendar icon inside input ── */
+.wm-cal-icon {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+}
+
+
+/* ── FOOTER — pinned to bottom via flex chain ── */
+.footer {
+  background: #0E1117;
+  border-top: 1px solid rgba(108, 108, 108, .4);
+  height: 68px;
+  min-height: 68px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  flex-shrink: 0;   /* ← never shrink, always full height */
+  width: 100%;
+}
+
+.action-btn {
+  background: none;
+  border: none;
+  font-family: Inter, sans-serif;
+  font-weight: 700;
+  font-size: clamp(12px, 1.4vw, 16px);
+  padding: 4px 6px;
+  cursor: default;
+}
+.action-btn.active       { color: #F59E0B; cursor: pointer; }
+.action-btn.active:hover { opacity: .8; }
+.action-btn.inactive     { color: rgba(255, 255, 255, .22); }
+
+.breadcrumb-bar {
+  background: #0E1117;
+  border-bottom: 1px solid rgba(108, 108, 108, .4);
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.breadcrumb-parent {
+  font-weight: 600;
+  font-size: 16px;
+  color: #9CA3AF;
+  cursor: pointer;
+  transition: color .15s;
+}
+.breadcrumb-parent:hover { color: #D1D5DB; }
+.breadcrumb-current { font-weight: 700; font-size: 16px; color: #4ADE80; }

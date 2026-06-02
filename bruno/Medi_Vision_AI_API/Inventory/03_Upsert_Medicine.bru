@@ -1,0 +1,46 @@
+meta {
+  name: Upsert Medicine
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/medicines
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "id": "{{medicineId}}",
+    "n": "Dolo 650",
+    "g": "Paracetamol",
+    "c": "Tablet",
+    "p": 30,
+    "s": 50,
+    "batch": "B101",
+    "expiry": "2027-12-31",
+    "p_rate": 20,
+    "p_packing": "1x10",
+    "s_packing": "1x10",
+    "p_gst": 5,
+    "s_gst": 5,
+    "disc": 0,
+    "offer": "",
+    "reorder": 10,
+    "max_qty": 200,
+    "shelf_id": "MAIN"
+  }
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("Upsert medicine succeeds", function() {
+    const body = res.getBody();
+    expect(res.getStatus()).to.equal(200);
+    expect(body).to.have.property('status', 'success');
+  });
+}

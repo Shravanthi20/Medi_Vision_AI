@@ -1,0 +1,15 @@
+meta {
+  name: Delete Med
+  type: http
+  seq: 9
+}
+
+delete {
+  url: {{baseUrl}}/api/medicines/1
+  body: none
+  auth: none
+}
+
+vars:pre-request {
+  baseUrl: http://127.0.0.1:5001
+}

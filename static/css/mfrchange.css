@@ -1,0 +1,349 @@
+/* ═══════════════════════════════════════════════════════════
+   mfrchange.css  —  Mfr / Location Change
+   Sidebar + Header  →  sidebar-header.css
+═══════════════════════════════════════════════════════════ */
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; overflow: hidden; }
+body { font-family: Inter, sans-serif; background: #000; }
+
+/* ── APP SHELL ── */
+.app  { width: 1442px; height: 1034px; display: flex; }
+
+/* ── RIGHT COLUMN ── */
+.main {
+  width: 1162px;
+  height: 1034px;
+  display: flex;
+  flex-direction: column;
+  border: 2px solid transparent;
+  transition: border-color .2s;
+}
+.main.panel-active { border-color: #3B82F6; }
+
+/* ── CONTENT AREA ── */
+.content-area {
+  flex: 1;
+  background: #0D0F12;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ── BREADCRUMB ── */
+.breadcrumb-bar {
+  background: #0E1117;
+  border-bottom: 1px solid rgba(108, 108, 108, .4);
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.breadcrumb-parent {
+  font-weight: 600;
+  font-size: 16px;
+  color: #9CA3AF;
+  cursor: pointer;
+  transition: color .15s;
+}
+.breadcrumb-parent:hover { color: #D1D5DB; }
+.breadcrumb-current { font-weight: 700; font-size: 16px; color: #4ADE80; }
+
+/* ══════════════════════════════════════════
+   PRR-CONTENT — centres the card
+══════════════════════════════════════════ */
+.prr-content {
+  flex: 1;
+  display: flex;
+  align-items: center;       /* vertical centre */
+  justify-content: center;   /* horizontal centre */
+  padding: 32px 24px;
+  overflow: hidden;
+}
+
+/* ══════════════════════════════════════════
+   CARD WRAPPER
+══════════════════════════════════════════ */
+.mlc-center-wrap {
+  width: 100%;
+  max-width: 850px;          /* bigger width to fill container */
+}
+
+/* ══════════════════════════════════════════
+   CARD
+══════════════════════════════════════════ */
+.mlc-card {
+  width: 100%;
+  border-radius: 20px;
+  border: 1px solid rgba(104, 104, 104, .58);
+  background: #161A1F;
+  overflow: visible;
+}
+
+/* ── Card Header ── */
+.mlc-card-header {
+  padding: 28px 40px;        /* bigger padding */
+  border-bottom: 1px solid rgba(108, 108, 108, .53);
+  text-align: center;
+}
+
+.mlc-card-title {
+  font-family: Inter, sans-serif;
+  font-size: 24px;           /* bigger title */
+  font-weight: 700;
+  line-height: 1.3;
+  color: #D58615;
+  letter-spacing: .01em;
+}
+
+/* ── Card Body ── */
+.mlc-card-body {
+  padding: 48px 40px;        /* bigger padding */
+  display: flex;
+  flex-direction: column;
+  gap: 32px;                 /* bigger gap between elements */
+  align-items: center;
+  justify-content: center;
+}
+
+/* ══════════════════════════════════════════
+   FIELD ROW  — label and value on same line
+══════════════════════════════════════════ */
+.mlc-field-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+}
+
+/* Label */
+.mlc-field-label {
+  font-family: Inter, sans-serif;
+  font-size: 25px;           /* slightly bigger than original */
+  font-weight: 600;
+  line-height: 1;
+  color: #80879A;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Colon */
+.mlc-colon {
+  font-family: Inter, sans-serif;
+  font-size: 15px;           /* slightly bigger than original */
+  font-weight: 600;
+  line-height: 1;
+  color: #80879A;
+  flex-shrink: 0;
+  margin: 0;
+}
+
+/* ══════════════════════════════════════════
+   VALUE DISPLAY (no dropdown)
+══════════════════════════════════════════ */
+.mlc-value {
+  font-family: Inter, sans-serif;
+  font-size: 17px;           /* bigger font */
+  font-weight: 600;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+/* ══════════════════════════════════════════
+   CUSTOM DROPDOWN (hidden if not needed)
+══════════════════════════════════════════ */
+.mlc-dropdown {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.mlc-dropdown-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 150px;
+  height: 40px;              /* slightly taller */
+  padding: 0 16px;           /* slightly more padding */
+  border-radius: 8px;
+  border: 1px solid rgba(150, 150, 150, .29);
+  background: #1C2028;
+  color: #fff;
+  font-family: Inter, sans-serif;
+  font-size: 15px;           /* slightly bigger */
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+  transition: border-color .15s, box-shadow .15s, background .15s;
+  white-space: nowrap;
+}
+
+.mlc-dropdown-btn:hover {
+  border-color: rgba(245, 158, 11, .6);
+  background: #1F2430;
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, .10);
+}
+
+.mlc-dropdown-btn:focus {
+  border-color: #3B82F6;
+  box-shadow: 0 0 0 1px #3B82F6;
+}
+
+/* Chevron */
+.mlc-chevron {
+  flex-shrink: 0;
+  margin-left: auto;
+  transition: transform .2s ease;
+}
+.mlc-chevron.open { transform: rotate(180deg); }
+
+/* Dropdown list */
+.mlc-dropdown-list {
+  display: none;
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  width: 100%;
+  border-radius: 8px;
+  border: 1px solid rgba(150, 150, 150, .29);
+  background: #1C2028;
+  overflow: hidden;
+  z-index: 100;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .5);
+  list-style: none;
+}
+.mlc-dropdown-list.open { display: block; }
+
+.mlc-dropdown-item {
+  padding: 10px 14px;
+  font-family: Inter, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  cursor: pointer;
+  transition: background .12s;
+  line-height: 1;
+}
+.mlc-dropdown-item:hover  { background: rgba(128, 135, 154, .15); }
+.mlc-dropdown-item.active { color: #D58615; }
+
+/* ══════════════════════════════════════════
+   NEXT BUTTON WRAPPER
+══════════════════════════════════════════ */
+.mlc-btn-wrap {
+  display: flex;
+  justify-content: center;
+}
+
+/* ══════════════════════════════════════════
+   NEXT BUTTON — premium sweep animation
+══════════════════════════════════════════ */
+.mlc-next-btn {
+  padding: 12px 60px;        /* bigger padding */
+  border-radius: 18px;
+  border: none;
+  background: #FFCC00;
+  color: #0B0A0A;
+  font-family: Inter, sans-serif;
+  font-size: 18px;           /* bigger font */
+  font-weight: 800;
+  letter-spacing: .06em;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .3);
+  transition: background .15s,
+              transform .2s cubic-bezier(.34, 1.56, .64, 1),
+              box-shadow .2s;
+}
+
+/* Sweep animation layer */
+.next-btn-special {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+/* Shine sweep */
+.next-btn-special::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  width: 50%;
+  left: -70%;
+  background: linear-gradient(
+    108deg,
+    transparent 15%,
+    rgba(255, 255, 255, .55) 50%,
+    transparent 85%
+  );
+  transform: skewX(-16deg);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Bottom glow bar */
+.next-btn-special::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%) scaleX(0);
+  width: 70%;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #b8860b, transparent);
+  border-radius: 2px;
+  transition: transform .28s cubic-bezier(.34, 1.56, .64, 1);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.next-btn-special:hover {
+  background: #f5c400;
+  transform: scale(1.07) translateY(-2px);
+  box-shadow: 0 8px 28px rgba(255, 204, 0, .35),
+              0 0 0 2px rgba(255, 204, 0, .2);
+}
+.next-btn-special:hover::before {
+  animation: mlc-sweep .5s cubic-bezier(.4, 0, .2, 1) forwards;
+}
+.next-btn-special:hover::after {
+  transform: translateX(-50%) scaleX(1);
+}
+.next-btn-special:active {
+  transform: scale(.96) translateY(0);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .3);
+}
+
+@keyframes mlc-sweep {
+  0%   { left: -70%; }
+  100% { left: 130%; }
+}
+
+/* ══════════════════════════════════════════
+   FOOTER
+══════════════════════════════════════════ */
+.footer {
+  background: #0E1117;
+  border-top: 1px solid rgba(108, 108, 108, .4);
+  height: 68px;
+  min-height: 68px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  flex-shrink: 0;
+  width: 100%;
+}
+
+.action-btn {
+  background: none;
+  border: none;
+  font-family: Inter, sans-serif;
+  font-weight: 700;
+  font-size: clamp(12px, 1.4vw, 16px);
+  padding: 4px 6px;
+  cursor: default;
+}
+.action-btn.active       { color: #F59E0B; cursor: pointer; }
+.action-btn.active:hover { opacity: .8; }
+.action-btn.inactive     { color: rgba(255, 255, 255, .22); }

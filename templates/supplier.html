@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Selvam Medicals – Supplier</title>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@700&family=Jersey+15&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/sidebar-header.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/supplier.css') }}">
+</head>
+<body>
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <div class="left-panel">
+    <div class="logo">
+      <div class="SM">SM</div>
+      <div class="logo-text"><p>Selvam</p><p>Medicals</p></div>
+    </div>
+    <select class="side-bar-dropdown">
+      <option value="" disabled selected hidden>Timeline...</option>
+      <option>Daily</option><option>Weekly</option><option>Monthly</option>
+    </select>
+    <p class="sec-label">MENU</p>
+    <div class="row"><div class="opt"><i class="fa-solid fa-chart-line"></i><p class="opt-text">Sales</p></div></div>
+    <div class="row"><div class="opt"><i class="fa-solid fa-cart-shopping"></i><p class="opt-text">Purchase</p></div></div>
+    <div class="row"><div class="opt"><i class="fa-solid fa-list"></i><p class="opt-text">Item</p></div></div>
+    <div class="row active"><div class="opt"><i class="fa-solid fa-users"></i><p class="opt-text">Masters</p></div></div>
+    <div class="row"><div class="opt"><i class="fa-solid fa-desktop"></i><p class="opt-text">System</p></div></div>
+    <div class="row"><div class="opt"><i class="fa-solid fa-toolbox"></i><p class="opt-text">Utilities</p></div></div>
+    <div class="row sms"><div class="opt"><i class="fa-solid fa-comment-dots"></i><p class="opt-text">SMS</p></div></div>
+    <p class="sec-label other">OTHER</p>
+    <div class="row settings"><div class="opt"><i class="fa-solid fa-gear"></i><p class="opt-text">Settings</p></div></div>
+    <div class="spacer"></div>
+    <div class="row logout"><div class="opt"><i class="fa-solid fa-right-from-bracket"></i><p class="opt-text">Logout</p></div></div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main" id="mainPanel">
+
+    <header class="header">
+      <div class="search-box">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" placeholder="Search">
+      </div>
+      <div class="fy">FY: 2026-2027</div>
+      <div class="divider-1"></div>
+      <div class="date-block">
+        <span class="date-val" id="date-val"></span>
+        <span class="day-val" id="day-val"></span>
+      </div>
+      <div class="divider-2"></div>
+      <div class="clock" id="clock">00:00:00</div>
+      <div class="divider-3"></div>
+      <div class="user">
+        <img src="{{ url_for('static', filename='images/user-profile.jpg') }}" alt="User">
+        <span>Name</span>
+      </div>
+    </header>
+
+    <div class="content-area">
+
+      <!-- BREADCRUMB -->
+      <div class="breadcrumb-bar">
+        <span class="breadcrumb-parent">Masters</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18L15 12L9 6"/></svg>
+        <span class="breadcrumb-current">Supplier</span>
+      </div>
+
+      <!-- CARD -->
+      <div class="sup-content">
+        <div class="sup-center-wrap">
+          <div class="sup-card">
+
+            <div class="sup-card-top-divider"></div>
+
+            <div class="sup-card-body">
+              <div class="sup-grid">
+
+                <!-- ROW 1 -->
+                <div class="sup-field-row">
+                  <label class="sup-field-label">Supplier Code</label>
+                  <span class="sup-colon">:</span>
+                  <div class="sup-input-wrap"><input class="sup-input" type="text" id="supplierCode" autocomplete="off"></div>
+                </div>
+                <div class="sup-field-row">
+                  <label class="sup-field-label">Supplier Name</label>
+                  <span class="sup-colon">:</span>
+                  <div class="sup-input-wrap"><input class="sup-input" type="text" id="supplierName" autocomplete="off"></div>
+                </div>
+                <div class="sup-field-row">
+                  <label class="sup-field-label">Address 1</label>
+                  <span class="sup-colon">:</span>
+                  <div class="sup-input-wrap"><input class="sup-input" type="text" id="address1" autocomplete="off"></div>
+                </div>
+
+                <!-- ROW 2 -->
+                <div class="sup-field-row">
+                  <label class="sup-field-label">Address 2</label>
+                  <span class="sup-colon">:</span>
+                  <div class="sup-input-wrap"><input class="sup-input" type="text" id="address2" autocomplete="off"></div>
+                </div>
+                <div class="sup-field-row">
+                  <label class="sup-field-label">Mobile No</label>
+                  <span class="sup-colon">:</span>
+                  <div class="sup-input-wrap"><input class="sup-input" type="tel" id="mobileNo" autocomplete="off"></div>
+                </div>
+                <div class="sup-field-row">
+                  <label class="sup-field-label">Dl. Number</label>
+                  <span class="sup-colon">:</span>
+                  <div class="sup-input-wrap"><input class="sup-input" type="text" id="dlNumber" autocomplete="off"></div>
+                </div>
+
+                <!-- ROW 3 -->
+                <div class="sup-field-row">
+                  <label class="sup-field-label">TIN Number</label>
+                  <span class="sup-colon">:</span>
+                  <div class="sup-input-wrap"><input class="sup-input" type="text" id="tinNumber" autocomplete="off"></div>
+                </div>
+                <div class="sup-field-row">
+                  <label class="sup-field-label">Supl.Category</label>
+                  <span class="sup-colon">:</span>
+                  <div class="sup-input-wrap"><input class="sup-input" type="text" id="supplCategory" autocomplete="off"></div>
+                </div>
+                <div class="sup-field-row">
+                  <label class="sup-field-label">Discount(%)</label>
+                  <span class="sup-colon">:</span>
+                  <div class="sup-input-wrap"><input class="sup-input" type="text" id="discount" autocomplete="off"></div>
+                </div>
+
+                <!-- ROW 4 -->
+                <div class="sup-field-row">
+                  <label class="sup-field-label">Email ID</label>
+                  <span class="sup-colon">:</span>
+                  <div class="sup-input-wrap"><input class="sup-input" type="text" id="emailId" autocomplete="off"></div>
+                </div>
+                <div class="sup-field-row">
+                  <label class="sup-field-label">Opening Bal.</label>
+                  <span class="sup-colon">:</span>
+                  <div class="sup-input-wrap"><input class="sup-input" type="text" id="openingBal" autocomplete="off"></div>
+                </div>
+                <div class="sup-field-row">
+                  <label class="sup-field-label">Remarks</label>
+                  <span class="sup-colon">:</span>
+                  <div class="sup-input-wrap"><input class="sup-input" type="text" id="remarks" autocomplete="off"></div>
+                </div>
+
+                <!-- ROW 5 -->
+                <div class="sup-field-row">
+                  <label class="sup-field-label">Vat Cat</label>
+                  <span class="sup-colon">:</span>
+                  <div class="sup-input-wrap"><input class="sup-input" type="text" id="vatCat" autocomplete="off"></div>
+                </div>
+                <div class="sup-field-row">
+                  <label class="sup-field-label">Medicines</label>
+                  <span class="sup-colon">:</span>
+                  <div class="sup-input-wrap"><input class="sup-input" type="text" id="medicines" autocomplete="off"></div>
+                </div>
+                <div class="sup-field-row">
+                  <label class="sup-field-label">CST</label>
+                  <span class="sup-colon">:</span>
+                  <div class="sup-input-wrap"><input class="sup-input" type="text" id="cst" autocomplete="off"></div>
+                </div>
+
+                <!-- ROW 6 -->
+                <div class="sup-field-row">
+                  <label class="sup-field-label">State</label>
+                  <span class="sup-colon">:</span>
+                  <div class="sup-input-wrap"><input class="sup-input" type="text" id="state" autocomplete="off"></div>
+                </div>
+                <div class="sup-field-row">
+                  <label class="sup-field-label">GSTIN No.</label>
+                  <span class="sup-colon">:</span>
+                  <div class="sup-input-wrap"><input class="sup-input" type="text" id="gstinNo" autocomplete="off"></div>
+                </div>
+                <div class="sup-field-row">
+                  <label class="sup-field-label">Cr. Days</label>
+                  <span class="sup-colon">:</span>
+                  <div class="sup-input-wrap"><input class="sup-input" type="text" id="crDays" autocomplete="off"></div>
+                </div>
+
+                <!-- ROW 7 -->
+                <div class="sup-field-row">
+                  <label class="sup-field-label">Disc. Type</label>
+                  <span class="sup-colon">:</span>
+                  <div class="sup-input-wrap"><input class="sup-input" type="text" id="discType" autocomplete="off"></div>
+                </div>
+                <div class="sup-field-row">
+                  <label class="sup-field-label">Less%</label>
+                  <span class="sup-colon">:</span>
+                  <div class="sup-input-wrap"><input class="sup-input" type="text" id="less" autocomplete="off"></div>
+                </div>
+                <div class="sup-field-row">
+                  <label class="sup-field-label">Balance</label>
+                  <span class="sup-colon">:</span>
+                  <div class="sup-input-wrap"><input class="sup-input" type="text" id="balance" autocomplete="off"></div>
+                </div>
+
+              </div><!-- /.sup-grid -->
+            </div><!-- /.sup-card-body -->
+
+            <!-- DAY SELECTOR -->
+            <div class="sup-days">
+              <button class="day-btn" data-day="Sunday">Sunday</button>
+              <button class="day-btn" data-day="Monday">Monday</button>
+              <button class="day-btn active" data-day="Tuesday">Tuesday</button>
+              <button class="day-btn" data-day="Wednesday">Wednesday</button>
+              <button class="day-btn" data-day="Thursday">Thursday</button>
+              <button class="day-btn" data-day="Friday">Friday</button>
+              <button class="day-btn active" data-day="Saturday">Saturday</button>
+            </div>
+
+            <!-- CARD FOOTER -->
+            <div class="sup-card-divider"></div>
+            <div class="sup-card-footer">
+              <span class="sup-card-title" id="footerHelperText">Supplier Setup</span>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- FOOTER -->
+      <footer class="main-footer">
+        <div class="footer-actions">
+          <button class="action-btn active" onclick="handleAction('Add')">Add</button>
+          <button class="action-btn active" onclick="handleAction('Modify')">Modify</button>
+          <button class="action-btn active" onclick="handleAction('Delete')">Delete</button>
+          <button class="action-btn active" onclick="handleAction('View')">View</button>
+          <button class="action-btn active" onclick="handleAction('Go To')">Go To</button>
+          <button class="action-btn active" onclick="handleAction('Next')">Next</button>
+          <button class="action-btn active" onclick="handleAction('Prior')">Prior</button>
+          <button class="action-btn active" onclick="handleAction('Options')">Options</button>
+          <button class="action-btn active" onclick="handleAction('Exit')">Exit</button>
+        </div>
+      </footer>
+
+    </div>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/sidebar-header.js') }}"></script>
+<script src="{{ url_for('static', filename='js/supplier.js') }}"></script>
+</body>
+</html>

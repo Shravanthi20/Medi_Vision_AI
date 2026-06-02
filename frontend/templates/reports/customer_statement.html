@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Customer Statement — Selvam Medicals</title>
+    <meta name="description" content="Customer Account Statement for Selvam Medicals."/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+    <link rel="stylesheet" href="/static/css/reports.css"/>
+</head>
+<body>
+
+<!-- Toolbar -->
+<div class="report-toolbar">
+    <div class="toolbar-left">
+        <a href="/" class="toolbar-brand">
+            <div class="logo-circle">SM</div>
+            <span>SELVAM MEDICALS</span>
+        </a>
+        <span class="toolbar-title"><i class="fas fa-book-open"></i>&nbsp; Customer Statement</span>
+    </div>
+    <div class="toolbar-actions">
+        <button class="btn-toolbar btn-back" onclick="history.back()"><i class="fas fa-arrow-left"></i> Back</button>
+        <button class="btn-toolbar btn-print" onclick="window.print()"><i class="fas fa-print"></i> Print</button>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="report-filters" id="report-filters">
+    <label>From:</label>
+    <input type="date" id="filter-start"/>
+    <label>To:</label>
+    <input type="date" id="filter-end"/>
+    <button class="btn-filter" onclick="loadStatement()"><i class="fas fa-filter"></i> Apply</button>
+</div>
+
+<!-- Loading -->
+<div class="report-container" id="report-loading">
+    <div class="report-loading">
+        <i class="fas fa-spinner fa-spin"></i>
+        <p>Loading statement…</p>
+    </div>
+</div>
+
+<!-- Report -->
+<div class="report-container" id="report-content" style="display:none;">
+    <div class="report-page">
+
+        <div class="store-header">
+            <h1>SELVAM MEDICALS</h1>
+            <div class="store-subtitle">Retail & Wholesale Chemists</div>
+            <div class="store-details">
+                No.1, Main Road, Chennai — 600001 &nbsp;|&nbsp; Ph: 044-XXXXXXXX<br/>
+                <strong>GSTIN:</strong> 33AAAAA1234A1Z5
+            </div>
+        </div>
+
+        <div class="report-title-bar">
+            <h2><i class="fas fa-book-open" style="margin-right:6px;"></i> ACCOUNT STATEMENT</h2>
+            <div class="report-meta" id="stmt-period"></div>
+        </div>
+
+        <div class="report-info">
+            <div>
+                <div><span class="info-label">Customer:</span> <span id="stmt-cust"></span></div>
+                <div><span class="info-label">Phone:</span> <span id="stmt-phone"></span></div>
+            </div>
+            <div style="text-align:right;">
+                <div><span class="info-label">Address:</span> <span id="stmt-addr"></span></div>
+                <div><span class="info-label">Family Members:</span> <span id="stmt-family"></span></div>
+            </div>
+        </div>
+
+        <div class="report-table-wrap">
+            <table class="report-table" id="stmt-table">
+                <thead>
+                    <tr>
+                        <th style="width:30px;">#</th>
+                        <th>Date</th>
+                        <th>Type</th>
+                        <th>Reference</th>
+                        <th>Description</th>
+                        <th class="text-right">Debit (₹)</th>
+                        <th class="text-right">Credit (₹)</th>
+                        <th class="text-right">Balance (₹)</th>
+                    </tr>
+                </thead>
+                <tbody id="stmt-tbody"></tbody>
+            </table>
+        </div>
+
+        <!-- Closing Summary -->
+        <div class="report-summary">
+            <table>
+                <tr><td>Opening Balance</td><td id="sum-opening"></td></tr>
+                <tr><td>Total Debits (Sales)</td><td id="sum-debits"></td></tr>
+                <tr><td>Total Credits (Payments)</td><td id="sum-credits"></td></tr>
+                <tr class="total-row"><td>Closing Balance</td><td id="sum-closing"></td></tr>
+            </table>
+        </div>
+
+        <div class="report-footer">
+            <div class="footer-note">
+                This statement is computer-generated. For any discrepancies, please contact us within 7 days.
+            </div>
+            <div class="footer-sign">
+                <div class="sign-line"></div>
+                <div>For Selvam Medicals</div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+const CUSTOMER_ID = {{ customer_id }};
+
+function fmt(n) { return '₹' + Number(n || 0).toFixed(2); }
+
+async function loadStatement() {
+    const startDate = document.getElementById('filter-start').value;
+    const endDate = document.getElementById('filter-end').value;
+
+    let url = `/api/reports/customer-statement/${CUSTOMER_ID}`;
+    const params = [];
+    if (startDate) params.push('start_date=' + startDate);
+    if (endDate) params.push('end_date=' + endDate);
+    if (params.length) url += '?' + params.join('&');
+
+    document.getElementById('report-loading').style.display = '';
+    document.getElementById('report-content').style.display = 'none';
+
+    try {
+        const res = await fetch(url);
+        if (!res.ok) {
+            document.getElementById('report-loading').innerHTML =
+                '<div class="report-empty"><i class="fas fa-exclamation-triangle"></i><p>Customer not found.</p></div>';
+            return;
+        }
+        const d = await res.json();
+
+        document.getElementById('stmt-cust').textContent = d.customer_name;
+        document.getElementById('stmt-phone').textContent = d.customer_phone || '—';
+        document.getElementById('stmt-addr').textContent = d.customer_address || '—';
+        document.getElementById('stmt-family').textContent = d.family_member_count > 1
+            ? d.family_member_count + ' members (family account)'
+            : 'Individual';
+
+        let periodHtml = '';
+        if (d.start_date || d.end_date) {
+            periodHtml = `<div><strong>Period:</strong> ${d.start_date || 'Beginning'} — ${d.end_date || 'Today'}</div>`;
+        } else {
+            periodHtml = '<div>All transactions</div>';
+        }
+        document.getElementById('stmt-period').innerHTML = periodHtml;
+
+        // Build table
+        const tbody = document.getElementById('stmt-tbody');
+        tbody.innerHTML = '';
+
+        // Opening balance row
+        tbody.innerHTML += `<tr class="balance-row">
+            <td></td>
+            <td colspan="4">Opening Balance</td>
+            <td class="text-right"></td>
+            <td class="text-right"></td>
+            <td class="text-right">${fmt(d.opening_balance)}</td>
+        </tr>`;
+
+        let totalDebits = 0;
+        let totalCredits = 0;
+
+        d.entries.forEach(e => {
+            const typeClass = e.ref_type === 'Sale' ? 'badge-debit' : 'badge-credit';
+            totalDebits += e.debit;
+            totalCredits += e.credit;
+            tbody.innerHTML += `<tr>
+                <td class="text-center">${e.id}</td>
+                <td>${e.date}</td>
+                <td><span class="badge ${typeClass}">${e.ref_type}</span></td>
+                <td>${e.ref_id}</td>
+                <td>${e.description}</td>
+                <td class="text-right">${e.debit > 0 ? fmt(e.debit) : ''}</td>
+                <td class="text-right">${e.credit > 0 ? fmt(e.credit) : ''}</td>
+                <td class="text-right">${fmt(e.balance)}</td>
+            </tr>`;
+        });
+
+        // Closing balance row
+        tbody.innerHTML += `<tr class="balance-row">
+            <td></td>
+            <td colspan="4"><strong>Closing Balance</strong></td>
+            <td class="text-right"></td>
+            <td class="text-right"></td>
+            <td class="text-right"><strong>${fmt(d.closing_balance)}</strong></td>
+        </tr>`;
+
+        document.getElementById('sum-opening').textContent = fmt(d.opening_balance);
+        document.getElementById('sum-debits').textContent = fmt(totalDebits);
+        document.getElementById('sum-credits').textContent = fmt(totalCredits);
+        document.getElementById('sum-closing').textContent = fmt(d.closing_balance);
+
+        document.title = `Statement — ${d.customer_name} — Selvam Medicals`;
+        document.getElementById('report-loading').style.display = 'none';
+        document.getElementById('report-content').style.display = '';
+    } catch (e) {
+        console.error(e);
+        document.getElementById('report-loading').innerHTML =
+            '<div class="report-empty"><i class="fas fa-exclamation-triangle"></i><p>Failed to load statement.</p></div>';
+    }
+}
+
+loadStatement();
+</script>
+</body>
+</html>

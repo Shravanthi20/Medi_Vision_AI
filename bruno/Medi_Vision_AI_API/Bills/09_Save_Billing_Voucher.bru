@@ -1,0 +1,15 @@
+meta {
+  name: Save Billing Voucher
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{baseUrl}}/api/billing/vouchers
+  body: json
+  auth: none
+}
+
+vars:pre-request {
+  baseUrl: http://127.0.0.1:5001
+}

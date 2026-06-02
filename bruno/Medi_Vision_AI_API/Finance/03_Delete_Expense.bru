@@ -1,0 +1,15 @@
+meta {
+  name: Delete Expense
+  type: http
+  seq: 3
+}
+
+delete {
+  url: {{baseUrl}}/api/finance/expenses/1
+  body: none
+  auth: none
+}
+
+vars:pre-request {
+  baseUrl: http://127.0.0.1:5001
+}

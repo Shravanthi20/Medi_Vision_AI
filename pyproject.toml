@@ -1,0 +1,40 @@
+[tool.deptry]
+# Only scan the active Flask backend — ignore old prototype, migration scripts, and scratch files
+exclude = [
+    ".venv/",
+    "SELVAM_MEDICALS fc/",
+    "migrations/",
+    "scratch/",
+    "seed_*.py",
+    "debug_*.py",
+]
+
+# DEP001: Intentionally imported direct transitive deps (installed via Flask-SQLAlchemy / Flask-Migrate / Flask-Cors)
+# or packages whose import name differs from the pip package name:
+#   dotenv     → installed as python-dotenv, import name is 'dotenv'
+#   werkzeug   → installed as a Flask dependency
+#   sqlalchemy → installed via Flask-SQLAlchemy
+#   alembic    → installed via Flask-Migrate
+[tool.deptry.per_rule_ignores]
+DEP001 = ["sqlalchemy", "alembic", "werkzeug", "dotenv"]
+
+# DEP002: Runtime/test/driver deps deptry cannot detect via static analysis:
+#   python-dotenv  → loaded via pathlib in config.py (no 'import dotenv' in that file)
+#   psycopg2-binary → registered as DB driver via DATABASE_URL string, never imported
+#   pgvector       → registered as SA dialect extension, no direct import in Flask app
+#   pytest         → test runner only, not imported in source code
+DEP002 = ["python-dotenv", "psycopg2-binary", "pgvector", "pytest"]
+
+[tool.vulture]
+exclude = [
+    "SELVAM_MEDICALS fc/",
+    "migrations/",
+    "scratch/",
+    "seed_*.py",
+    "debug_*.py",
+    ".venv/",
+    "venv/",
+    "backend/schemas/"
+]
+min_confidence = 80
+paths = ["backend/"]
