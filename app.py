@@ -833,10 +833,30 @@ def delete_doctor(id):
 def mfr_change_detail_page():
     return render_template('mfrchange2.html')
 
+@app.route('/doctor')
+def doctor():
+    return render_template('doctor.html')
+
+@app.route('/supplier-manufacturer')
+def supplier_manufacturer():
+    return render_template('supplier-manufacturer.html')
+
+@app.route('/supplier')
+def supplier():
+    return render_template('supplier.html')
+
+@app.route('/supplier-items')
+def supplier_items():
+    return render_template('supplier-items.html')
+
 
 @app.route('/wanted')
 def wanted():
     return render_template('wanted.html')
+
+@app.route('/customers')
+def customers():
+    return render_template('customers.html')
 
 
 init_db()
