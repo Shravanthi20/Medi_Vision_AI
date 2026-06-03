@@ -315,12 +315,6 @@ def dashboard():
     return render_template("login.html")
 
 
-@app.route("/mfrchange2")
-def mfr_change_detail_page():
-    """Render manufacturer/location change page"""
-    return render_template("mfrchange2.html")
-
-
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # API ROUTES (JSON Data)
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -940,6 +934,10 @@ def mfr_change_detail_page():
 @app.route('/wanted')
 def wanted():
     return render_template('wanted.html')
+
+@app.route('/customers')
+def customers():
+    return render_template('customers.html')
 
 
 init_db()
