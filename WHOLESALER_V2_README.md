@@ -1,162 +1,136 @@
-# MediVision Wholesale — v2 (fully-loaded distributor suite)
+# MediVision Wholesale — reference (updated after the multi-tenant + capacity/feature push)
 
-Built overnight on top of the retail MediVision AI, but deployed as a
-**completely separate app** (own database, own login, own domain) so
-retail data and wholesale data never mix.
+This file replaces the earlier single-company version of this doc — a lot changed
+underneath (multi-tenant, per-user roles, several new features) and the old URLs/
+logins are no longer accurate. Everything below is current as of this session.
 
-**Live at:**
-- Primary:   https://wholesale.selvammedicals.in
-- Fallback:  https://selvammedicals.in/wholesale/  (works even if the subdomain DNS is ever off)
-- Public catalog (no login):  https://wholesale.selvammedicals.in/catalog
-
-**Admin login** (paste into Google Password Manager next time you sign in):
-- URL:      https://wholesale.selvammedicals.in/login
-- Name:     anything you like (used for the audit log)
-- Password: `TjWHDJgVZ1swm8OP`
+Completely separate from the retail MediVision app (own databases, own domain,
+own login) — retail and wholesale data never mix.
 
 ---
 
-## What's built
+## URLs
 
-### Core distribution
-| Module     | URL         | What it does |
-|------------|-------------|--------------|
-| Dashboard  | `/`         | KPIs: active shops, open orders, invoiced today/month, outstanding, overdue, low-stock, top shops, recent orders, overdue chasers |
-| Retail shops | `/shops`  | Master with GSTIN, DL, credit limit, credit days, price tier (A/B/C for volume pricing), route, status |
-| Shop detail | `/shops/<id>` | Recent orders, invoices, payments and running outstanding for that shop |
-| Items      | `/items`    | Wholesale item master with SKU, generic, manufacturer, pack, HSN, GST%, MRP, PTR-A/B/C, scheme (10+1 etc), MOQ, stock, reorder-level, category, batch, expiry |
-| Orders     | `/orders`   | List filtered by status; full lifecycle `draft → confirmed → dispatched → invoiced → paid` (or `cancelled`) |
-| New order  | `/orders/new` | Line-item entry with autocomplete against the item master; rate auto-fills from the shop's price tier |
-| Order detail | `/orders/<id>` | View lines, run next lifecycle step, timeline; dispatch auto-deducts stock, invoice auto-creates the invoice row with due-date from the shop's credit_days |
-| Invoices   | `/invoices` | List filtered by open/partial/paid/**overdue** |
-| Invoice detail | `/invoices/<id>` | Print-ready tax invoice with company + shop + GST breakup; record cash/UPI/bank/cheque payments; shows balance due |
-| Ledger     | `/ledger`   | Every shop with outstanding, sorted overdue-first; one-tap WhatsApp reminder link |
-| Routes     | `/routes`   | Delivery beats with day-of-week + salesman; shops assigned per route |
-| Public catalog | `/catalog` | Retail shops browse without login, drop qty against items, enter shop code, order lands as a **draft** in `/orders`; unknown shop codes auto-create a `[Pending]` shop on hold for you to approve |
-| WhatsApp intake | `POST /api/whatsapp/inbound` | Twilio-webhook stub; parses `SEL001: Dolo 650 x5, Crocin x2` into a draft order — wire the Twilio number to this URL later and orders start dropping in from WhatsApp |
+| What | URL |
+|---|---|
+| **Platform owner console** (manage companies, billing, suspend/activate) | https://wholesale.selvammedicals.in/platform/login |
+| **Company sign-in** (staff/admin) | https://wholesale.selvammedicals.in/portal |
+| **Shop sign-in** (your retail customers) | https://wholesale.selvammedicals.in/shop/login |
+| **Public catalog** (no login, shareable/QR-codeable) | https://wholesale.selvammedicals.in/c/**rathna**/catalog |
+| **Public corporate website** | https://wholesale.selvammedicals.in/company |
 
-### ERP for the wholesaler's own organization
-| Module     | URL         | What it does |
-|------------|-------------|--------------|
-| Staff      | `/staff`    | Employee master with role, phone, aadhaar, join date, base salary, OT rate |
-| Attendance | `/attendance` | Mark present/half/absent/leave + OT hours per staff per day |
-| Payroll    | `/payroll`  | Monthly view: days worked, OT, base earned (base ÷ working-days × days-worked), OT amount, advances, net payable |
-| Suppliers  | `/suppliers` | Manufacturer/distributor master |
-| Purchases  | `/purchases` | Purchase orders with lines, GST; "mark received" bumps stock automatically |
-| Expenses   | `/expenses` | Categorised expense entries with monthly total and by-category breakdown |
-| Reports    | `/reports`  | Monthly revenue, expenses, rough profit, top items, top shops, GST in/out/net, invoice ageing (0/30/60/90/90+ buckets) |
-| Customize  | `/customize` | Toggle any module on/off, edit company details for invoices, edit invoice terms + bank block, add custom key=value fields on shops and items |
-| Settings   | `/settings` | Environment info (company details, DB path) |
-
-### Public + integration
-| Endpoint | Purpose |
-|----------|---------|
-| `GET /api/items?q=&limit=` | JSON items list — used by the order-entry autocomplete |
-| `GET /api/shops?q=`        | JSON shops list |
-| `GET /catalog`             | Public catalog for retail shops to place orders themselves |
-| `POST /api/whatsapp/inbound` | Twilio-webhook stub for parsing WhatsApp orders |
-| `GET /health`              | Uptime probe |
+The `/catalog` and `/api/whatsapp/inbound` URLs **without a company slug still
+exist** but only work correctly from inside an already-logged-in session — a
+fresh visitor or a Twilio webhook MUST use the slug-scoped URLs above. This
+was a real bug found and fixed this session (see "Multi-tenant" below) — don't
+revert to the bare URLs when configuring anything external.
 
 ---
 
-## Sample data seeded
+## Logins
 
-- **10 retail shops** in Coimbatore / Tirupur / Erode / Ooty / Salem area
-- **50 medicines** across painkillers, antibiotics, acidity, allergy, cardiac, diabetic, cold-cough, topical, supplements, otc, anti-emetic, gastro, hormonal — with realistic MRP + PTR (A/B/C tiers) + schemes like "10+1"
-- **7 suppliers** (Micro Labs, GSK, IPCA, Sun Pharma, Cipla, Torrent, Sanofi)
-- **7 staff** (2 salesmen, 2 delivery, 1 accountant, 1 packer, 1 reception) with base salary + OT rate
-- **4 delivery routes** with day-of-week and assigned salesman
-- **20 sales orders** spread across the last 30 days in various statuses (draft, dispatched, invoiced)
-- **12 invoices** (some paid, some open, some already overdue → so `/ledger` and `/reports` aging show real buckets)
-- **7 monthly expenses** across rent, salary, transport, utilities, fuel, office, marketing
+### Platform owner (you)
+- Password: `KIsf4AbGVX81NLNz3Q`
 
-The seed is **idempotent** — re-running it will not create duplicates.
-To wipe everything and start fresh: `rm /var/www/wholesaler/wholesaler.db && systemctl restart wholesaler.service && cd /var/www/wholesaler && ./venv/bin/python seed.py`.
+### Company: Sri Rathna Agencies (slug `rathna`)
+- Company password (logs in as **owner** role): `rathna2026`
+- Two **staff accounts were created live during testing** — real accounts on
+  the production tenant, not throwaway. Change or remove them:
+  - `ramesh` / `sales1234` — role: salesman
+  - `priya` / `acct1234` — role: accountant
+
+### Company: Demo Distributors (slug `demo`)
+- Password: `demo2026` (empty shop, for showing the platform without touching real data)
+
+**Staff login flow:** at `/portal`, tick "I have a personal staff login" to
+switch the form from company-password to username+password. Owners manage
+staff accounts at **Staff logins** in the nav (owner role only).
 
 ---
 
-## Files on the VPS
+## Everything built this session, in order
 
+1. **Wanted-list matcher scaling fix** — was O(catalog size) per line (SequenceMatcher
+   against the whole catalog); a 100-line upload against a real 15,000-SKU catalog
+   would have taken ~63s and exceeded gunicorn's own 60s timeout. Now a prefix-bucket
+   index, capped candidates, bounded cost regardless of catalog size. Measured
+   71,000x speedup at 15,000 items; verified identical matching behavior on the
+   original test file.
+2. **Capacity**: gunicorn 2→3 workers on both apps, SQLite WAL mode (readers don't
+   block behind a writer on the same tenant DB), MemoryMax=512M safety caps.
+3. **Shop-portal cart** — `/shop/catalog` → `/shop/cart` → checkout, localStorage-backed,
+   shop's own tier pricing, no shop-code re-entry needed (session-authenticated).
+4. **WhatsApp ordering** (Twilio) — `/api/whatsapp/inbound/<slug>`. A shop texts
+   `SEL001: Dolo 650 x5, Crocin x2` and gets a reply confirming what matched, through
+   the same alias/exact/fuzzy matcher the wanted-list uses. **Not yet connected to a
+   real Twilio account** — see the checklist in `wholesaler/whatsapp.py`'s docstring.
+   Status shown at `/customize`.
+5. **UPI Pay Now** — `upi://pay` deep link + QR per invoice, using the company's own
+   UPI ID (set at `/customize`, field "UPI ID (VPA)"). No payment gateway account
+   needed. **Not auto-reconciled** — "record payment" stays a manual step.
+6. **Multi-user roles** — owner / accountant / salesman, see Logins above.
+7. **PDF invoices** — real server-rendered PDF (reportlab) with letterhead
+   (upload a logo at `/customize`), GST breakup, terms/bank details. "Download PDF"
+   button on every invoice, admin and shop-portal sides both.
+
+### A real bug found and fixed along the way
+
+A Twilio webhook carries no session cookie. The multi-tenant resolver
+(`tenancy.py`) only knows the tenant from a session, so a cookie-less request
+was **silently falling back to a stale leftover database** from before
+multi-tenancy existed — same seed data, so it *looked* like it was working,
+but any alias or data added after multi-tenancy went live was invisible to it.
+The identical bug existed in the public `/catalog` link for any visitor with
+no prior admin session. Both fixed the same way: the tenant now has to come
+from an explicit URL segment (`/api/whatsapp/inbound/<slug>`,
+`/c/<slug>/catalog`) which 404s loudly on anything invalid instead of guessing.
+The stale database was also renamed aside and replaced with an empty one, so
+any *future* bug of this shape fails obviously instead of silently serving
+plausible-looking wrong data. Full details and the verification steps are in
+the git commit `dbb3b97` and `50bbe36`.
+
+---
+
+## Architecture notes
+
+- **Multi-tenant, database-per-company**: `tenants/<slug>.db`, not shared tables.
+  A missing WHERE clause literally cannot leak one company's data into another's
+  view — the other company's rows are in a file the request never opens.
+- **VPS is 1 shared vCPU** (Hostinger, `88.222.215.67`), also running the retail
+  MediVision app, the Aurilius site (Node/Postgres), and nginx. See the capacity
+  numbers gathered this session: realistically ~15-30 truly simultaneous active
+  users across everything before requests start queuing (not crashing — nginx
+  queues, gunicorn processes, response times just climb).
+- **Owner privacy boundary is structural, not policy**: `/platform/*` only ever
+  opens `platform.db` (hardcoded, no path argument anywhere in that code path).
+  Usage numbers shown to the owner are counts/totals pushed up by each tenant —
+  never a row of their actual business data.
+
+---
+
+## Known follow-ups
+
+- **`tenants/123.db`** exists on the VPS and wasn't created by me — flagged twice
+  now, still unaddressed. Check `/platform` next time you're in, or ask about it.
+- **WhatsApp needs a real Twilio account** to actually receive messages — the
+  code is done and tested with simulated Twilio requests, but nothing is
+  listening on a real WhatsApp number yet.
+- **UPI needs your real UPI ID** entered at `/customize` — currently only set on
+  the `rathna` tenant with a placeholder VPA (`rathnaagencies@okhdfcbank`) used
+  for testing.
+- **No signed SSL cert issue** — everything's on the existing `selvammedicals.in`
+  wildcard-adjacent setup, no action needed.
+- Next-iteration ideas from the original build (barcode scan, Excel bulk import,
+  per-shop price agreements, multi-branch/depot) are all still open — see the
+  original feature list further down if useful, none of it was touched this session.
+
+---
+
+## Quick smoke test if you want to confirm everything's alive
+
+```bash
+curl -s -o /dev/null -w "%{http_code}\n" https://wholesale.selvammedicals.in/portal
+curl -s -o /dev/null -w "%{http_code}\n" https://wholesale.selvammedicals.in/c/rathna/catalog
+curl -s -o /dev/null -w "%{http_code}\n" https://wholesale.selvammedicals.in/company
 ```
-/var/www/wholesaler/
-├── app.py            # main routes (dashboard, shops, items, orders, invoices, ledger, routes, catalog, wa-inbound)
-├── erp.py            # side-import: staff/attendance/payroll, suppliers/purchases, expenses, reports, customize, /api/*
-├── wsgi.py           # gunicorn entry (imports app + erp)
-├── seed.py           # sample data
-├── requirements.txt  # flask, gunicorn, python-dotenv
-├── .env              # WS_SECRET_KEY, WS_ADMIN_PASSWORD, DB path, company details, PORT=3002
-├── wholesaler.db     # SQLite database — back this up
-├── venv/             # Python 3.10 virtualenv
-├── static/style.css  # dark theme, matches MediVision brand
-└── templates/
-    ├── base.html           # nav + layout
-    ├── login.html
-    ├── dashboard.html
-    ├── shops.html / shop_detail.html
-    ├── items.html
-    ├── orders.html / order_new.html / order_detail.html
-    ├── invoices.html / invoice_detail.html
-    ├── ledger.html
-    ├── routes.html
-    ├── catalog.html / catalog_thanks.html
-    ├── staff.html / attendance.html / payroll.html
-    ├── suppliers.html / purchases.html / purchase_new.html / purchase_detail.html
-    ├── expenses.html
-    ├── reports.html
-    ├── customize.html
-    └── settings.html
-```
-
-Service: `systemctl status wholesaler.service` — auto-restarts on crash, auto-starts on VPS reboot (via the existing pm2 systemd unit is unrelated; this uses its own systemd unit `wholesaler.service`).
-
-Logs:
-- `/var/log/wholesaler-access.log` (every HTTP request)
-- `/var/log/wholesaler-error.log`  (crashes + startup)
-
----
-
-## Try it now (order-of-operations walk-through)
-
-1. Sign in at https://wholesale.selvammedicals.in/login
-2. **Dashboard** — you should see 10 active shops, 50 items in catalog, revenue this month, real overdue amounts
-3. **New order** → pick "Selvam Medicals" → start typing an item name (autocomplete works) → set qty → save → confirm → dispatch (stock deducts) → invoice (invoice row created with 30-day due)
-4. **Invoice detail** → record a partial payment → status flips to `partial` → record the rest → status flips to `paid`
-5. **Ledger** — every unpaid shop shows outstanding, with a WhatsApp-remind link
-6. **Attendance** → mark today for every staff → save
-7. **Payroll** → the same month shows base + OT + advances → net payable per person
-8. **Expenses** → add today's diesel or shop rent → shows in the by-category card and in `/reports`
-9. **Reports** → revenue, rough profit, GST net, invoice ageing all in one screen
-10. **Customize** → toggle "Purchases" off → the nav link disappears without deleting any data → toggle back on → link returns
-11. **Catalog** (open in incognito): https://wholesale.selvammedicals.in/catalog — this is what retail shops see; order lands as a draft in `/orders`
-
----
-
-## What's NOT built yet (next-iteration ideas)
-
-- **Multi-user with roles** (staff can log in with different permissions — currently one shared admin login)
-- **PDF invoices** (currently print-to-PDF from the browser; a proper server-side PDF with your letterhead is next)
-- **WhatsApp Business API wiring** (the `/api/whatsapp/inbound` parser is ready; needs a Twilio number and webhook config)
-- **SMS / WhatsApp reminders** on overdue (link exists, one-click sends via WA — automation is next)
-- **Delivery boy mobile app** — a Capacitor wrapper of `/routes` that lets a salesman tick-off deliveries and collect cash on the road
-- **Retail-shop self-service portal** — each shop logs in with their code + OTP, sees their own ledger, downloads invoices, pays online
-- **UPI collect** on invoices — currently manual "record payment"; wire Razorpay/PhonePe for a proper "pay now" button on the shop-side portal
-- **Barcode scan** in item master and PO receipt
-- **Item image upload** for catalog
-- **Bulk import from Excel** (item master + shop master)
-- **Historical shop-wise price agreements** (right now the tier is fixed per shop; some shops negotiate item-specific rates)
-- **Stock ledger** (in/out log per item — currently we just show current stock)
-- **Multi-branch/depot** (right now single warehouse)
-- **Push notifications** to phone for new catalog orders
-
-Ping me any morning with which one is highest priority and I'll build it next.
-
----
-
-## Files that back this up
-
-Backup nightly to keep sleeping easy:
-```
-scp -i ~/.ssh/id_ed25519_medivision_vps root@88.222.215.67:/var/www/wholesaler/wholesaler.db ./wholesaler-$(date +%Y%m%d).db
-```
-
-Full disaster-recovery: everything except `wholesaler.db` and `.env` is regenerable from this repo. Just keep those two files backed up.
+All three should return `200`.
