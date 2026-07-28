@@ -1,0 +1,32 @@
+{% extends "site/base.html" %}
+{% block title %}Brands — {{ c.company }}{% endblock %}
+{% block body %}
+
+<div class="hero" style="padding:56px 0 48px">
+  <div class="wrap">
+    <div class="eyebrow">{{ brands|length }} companies stocked</div>
+    <h1 style="font-size:clamp(28px,4.4vw,44px)">Brands we carry</h1>
+    <p class="lede">Indian and multinational manufacturers across acute, chronic, OTC and cold-chain lines. If you need something not on this list, ask — we source it.</p>
+  </div>
+</div>
+
+<section>
+  <div class="wrap">
+    <div class="chips">
+      {% for b in brands %}<span class="chip">{{ b }}</span>{% endfor %}
+    </div>
+  </div>
+</section>
+
+<div class="ctaband">
+  <div class="wrap">
+    <h2>Looking for a specific product?</h2>
+    <p>Search the live catalog for real-time availability and your rate, or call us and we'll check the shelf.</p>
+    <div class="hero-actions" style="justify-content:center">
+      <a href="{{ url_for('catalog') }}" class="btn">Search the catalog</a>
+      <a href="tel:{{ c.phone }}" class="btn o">Call {{ c.phone }}</a>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

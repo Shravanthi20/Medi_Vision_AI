@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}Auto-Reorder Bot — Wholesale{% endblock %}
+{% block body %}
+<h1>Auto-Reorder Bot 🤖</h1>
+<p class="sub">Upload your current stock. The bot reads your own sales history, works out what will run out, and drafts the purchase orders.</p>
+
+<div class="card">
+  <h3>1 · Upload stock file</h3>
+  <form method="POST" enctype="multipart/form-data">
+    <div class="row two">
+      <div class="field">
+        <label>Stock file (.xlsx or .csv)</label>
+        <input type="file" name="file" accept=".xlsx,.xlsm,.csv" required>
+      </div>
+      <div class="field">
+        <label>Don't have one?</label>
+        <a class="btn" href="{{ url_for('reorder_template') }}" style="display:block;text-align:center">↓ Download template with your items</a>
+      </div>
+    </div>
+
+    <h3 style="margin-top:18px">2 · Planning rules</h3>
+    <div class="row four">
+      <div class="field"><label>Sales lookback (days)</label><input name="lookback_days" type="number" min="7" value="{{ params.lookback_days }}"></div>
+      <div class="field"><label>Supplier lead time (days)</label><input name="lead_time_days" type="number" min="1" value="{{ params.lead_time_days }}"></div>
+      <div class="field"><label>Target stock cover (days)</label><input name="target_cover" type="number" min="7" value="{{ params.target_cover }}"></div>
+      <div class="field"><label>Safety buffer (days)</label><input name="safety_days" type="number" min="0" value="{{ params.safety_days }}"></div>
+    </div>
+    <button class="btn primary">Analyse &amp; suggest reorders</button>
+  </form>
+
+  <details style="margin-top:16px">
+    <summary style="cursor:pointer;color:var(--dim);font-size:13px">How the bot decides (click to expand)</summary>
+    <div style="color:var(--dim);font-size:13px;margin-top:10px;line-height:1.7">
+      <b>Velocity</b> = units sold per day, measured from your own invoiced orders over the lookback window.<br>
+      <b>Days of cover</b> = current stock ÷ velocity — how long you'll last.<br>
+      <b>Flagged</b> if cover &lt; (lead time + safety buffer), <i>or</i> stock is at/below the item's own reorder level.<br>
+      <b>Suggested qty</b> = enough to reach the target cover, raised to the item's MOQ, then rounded up to a scheme break-point (e.g. 10+1) when that's within reach — because a marginally bigger order that earns free goods is strictly better value.<br>
+      Columns accepted in your file: <code>code</code>/<code>sku</code>, <code>name</code>/<code>item</code>, <code>stock</code>/<code>qty</code>/<code>closing</code>, <code>supplier</code>/<code>company</code>. Extra columns are ignored.
+      {% if not have_xlsx %}<br><b style="color:var(--amber)">Note: openpyxl isn't installed, so .xlsx won't read — save as CSV.</b>{% endif %}
+    </div>
+  </details>
+</div>
+
+{% if uploaded and plan %}
+<div class="kpis">
+  <div class="kpi red"><div class="v">{{ urgent }}</div><div class="l">Urgent (below lead time)</div></div>
+  <div class="kpi amber"><div class="v">{{ plan|length }}</div><div class="l">Items to reorder</div></div>
+  <div class="kpi green"><div class="v">{{ total_value | money }}</div><div class="l">Suggested order value</div></div>
+  <div class="kpi"><div class="v">{{ unmatched|length }}</div><div class="l">Rows not matched</div></div>
+</div>
+
+<form method="POST" action="{{ url_for('reorder_create_pos') }}">
+  <div class="card" style="padding:0;overflow:auto">
+    <div style="padding:14px 18px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+      <h3 style="margin:0">3 · Review &amp; adjust</h3>
+      <label style="font-size:13px;color:var(--dim)"><input type="checkbox" id="all" checked> select all</label>
+    </div>
+    <table>
+      <thead><tr>
+        <th></th><th>Item</th><th>Manufacturer</th><th class="right">In stock</th>
+        <th class="right">Sold/day</th><th class="right">Cover</th><th>Why</th>
+        <th class="right">Order qty</th><th class="right">Value</th>
+      </tr></thead>
+      <tbody>
+      {% for p in plan %}
+        <tr {% if p.urgent %}style="background:rgba(239,68,68,.07)"{% endif %}>
+          <td><input type="checkbox" class="sel" name="item_id[]" value="{{ p.item_id }}" checked></td>
+          <td><b>{{ p.name }}</b><div style="font-size:11.5px;color:var(--dim)">{{ p.code }} · {{ p.pack_size or '' }}{% if p.scheme %} · scheme {{ p.scheme }}{% endif %}</div></td>
+          <td>{{ p.manufacturer }}</td>
+          <td class="right">{{ p.stock | int }}</td>
+          <td class="right">{{ p.velocity }}</td>
+          <td class="right">{% if p.cover_days is not none %}<b style="color:{{ 'var(--red)' if p.urgent else 'var(--amber)' }}">{{ p.cover_days }}d</b>{% else %}—{% endif %}</td>
+          <td style="font-size:12.5px;color:var(--dim)">{{ p.reason }}</td>
+          <td class="right"><input name="qty[]" type="number" min="0" value="{{ p.suggested }}" style="width:90px;text-align:right"></td>
+          <td class="right">{{ p.value | money }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <button class="btn primary">4 · Create draft purchase orders (grouped by manufacturer)</button>
+  <p style="color:var(--dim);font-size:12.5px;margin-top:8px">Creates one draft PO per manufacturer. Nothing is sent to anyone — review each PO, then use "mark received" when goods actually arrive.</p>
+</form>
+
+<script>
+document.getElementById('all').onchange = e =>
+  document.querySelectorAll('.sel').forEach(c => c.checked = e.target.checked);
+</script>
+{% endif %}
+
+{% if unmatched %}
+<div class="card">
+  <h3>Rows we couldn't match to your item master ({{ unmatched|length }})</h3>
+  <p style="color:var(--dim);font-size:13px">These were in your file but don't exist as items yet. Add them in <a href="{{ url_for('items') }}">Items</a> and re-upload, or ignore them.</p>
+  <table>
+    <thead><tr><th>Code</th><th>Name</th><th class="right">Stock</th><th>Supplier</th></tr></thead>
+    <tbody>
+    {% for r in unmatched[:50] %}
+      <tr><td>{{ r.code or '—' }}</td><td>{{ r.name or '—' }}</td><td class="right">{{ r.stock | int }}</td><td>{{ r.supplier or '—' }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}

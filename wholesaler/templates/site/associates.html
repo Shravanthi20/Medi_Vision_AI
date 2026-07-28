@@ -1,0 +1,52 @@
+{% extends "site/base.html" %}
+{% block title %}Associates — {{ c.company }}{% endblock %}
+{% block body %}
+
+<div class="hero" style="padding:56px 0 48px">
+  <div class="wrap">
+    <div class="eyebrow">Who we supply</div>
+    <h1 style="font-size:clamp(28px,4.4vw,44px)">Our associates</h1>
+    <p class="lede">We serve every kind of dispensing point — from a single-counter pharmacy to a multi-speciality hospital store.</p>
+  </div>
+</div>
+
+<section>
+  <div class="wrap">
+    <div class="cards">
+      <div class="card"><div class="ic">🏪</div><h3>Retail pharmacies</h3>
+        <p>Independent chemists and neighbourhood medical stores. Daily beat coverage, flexible order sizes, no minimum-order pressure.</p></div>
+      <div class="card"><div class="ic">🏥</div><h3>Hospitals &amp; nursing homes</h3>
+        <p>In-house pharmacies and ward stores with scheduled replenishment, rate contracts and emergency top-ups.</p></div>
+      <div class="card"><div class="ic">⛓</div><h3>Pharmacy chains</h3>
+        <p>Multi-branch groups with consolidated billing, branch-wise delivery and a single monthly statement.</p></div>
+      <div class="card"><div class="ic">🩺</div><h3>Doctors &amp; dispensaries</h3>
+        <p>Clinic dispensaries and consulting practices with small-pack supply and sample-free honest billing.</p></div>
+      <div class="card"><div class="ic">🏛</div><h3>Government institutions</h3>
+        <p>Tender supply to PHCs, government hospitals and medical colleges with full documentation and batch traceability.</p></div>
+      <div class="card"><div class="ic">🤝</div><h3>Co-operative societies</h3>
+        <p>Employee and community co-operative stores with agreed margins and predictable monthly cycles.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="alt">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2>Becoming an associate</h2>
+      <p>Three steps, usually done within a working day.</p>
+    </div>
+    <div class="cards">
+      <div class="card"><div class="ic">1</div><h3>Share your details</h3>
+        <p>Shop name, drug licence and GSTIN. Either through the contact form or over the phone.</p></div>
+      <div class="card"><div class="ic">2</div><h3>We verify &amp; set terms</h3>
+        <p>We confirm your licence, agree a credit limit and cycle, and assign you to a delivery route.</p></div>
+      <div class="card"><div class="ic">3</div><h3>Order from anywhere</h3>
+        <p>You get a shop code. Use it on the web catalog, over WhatsApp, or just call the counter.</p></div>
+    </div>
+    <div style="margin-top:30px">
+      <a href="{{ url_for('site_contact') }}" class="btn primary">Apply to become an associate</a>
+    </div>
+  </div>
+</section>
+
+{% endblock %}

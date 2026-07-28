@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}Website content — Wholesale{% endblock %}
+{% block body %}
+<h1>Public website content</h1>
+<p class="sub">Everything on the customer-facing site is edited here. Live at <a href="{{ url_for('site_home') }}" target="_blank">/company ↗</a></p>
+
+<form method="POST">
+  <div class="card">
+    <h3>Company identity</h3>
+    <div class="row two">
+      <div class="field"><label>Company name</label><input name="site.company" value="{{ current['site.company'] }}"></div>
+      <div class="field"><label>Mission (one line, shown in footer)</label><input name="site.mission" value="{{ current['site.mission'] }}"></div>
+    </div>
+    <div class="field"><label>Headline / tagline</label><input name="site.tagline" value="{{ current['site.tagline'] }}"></div>
+    <div class="field"><label>Sub-headline</label><textarea name="site.subtagline" rows="2">{{ current['site.subtagline'] }}</textarea></div>
+  </div>
+
+  <div class="card">
+    <h3>Headline numbers</h3>
+    <div class="row four">
+      <div class="field"><label>Years in business</label><input name="site.years" value="{{ current['site.years'] }}"></div>
+      <div class="field"><label>Retailers served</label><input name="site.retailers" value="{{ current['site.retailers'] }}"></div>
+      <div class="field"><label>Brands stocked</label><input name="site.brands" value="{{ current['site.brands'] }}"></div>
+      <div class="field"><label>Deliveries / week</label><input name="site.deliveries" value="{{ current['site.deliveries'] }}"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>About text</h3>
+    <div class="field"><label>About us (blank line separates paragraphs)</label>
+      <textarea name="site.about" rows="8">{{ current['site.about'] }}</textarea></div>
+  </div>
+
+  <div class="card">
+    <h3>Contact details</h3>
+    <div class="row two">
+      <div class="field"><label>Address</label><input name="site.address" value="{{ current['site.address'] }}"></div>
+      <div class="field"><label>Phone</label><input name="site.phone" value="{{ current['site.phone'] }}"></div>
+    </div>
+    <div class="row three">
+      <div class="field"><label>Email</label><input name="site.email" value="{{ current['site.email'] }}"></div>
+      <div class="field"><label>Business hours</label><input name="site.hours" value="{{ current['site.hours'] }}"></div>
+      <div class="field"><label>GSTIN</label><input name="site.gstin" value="{{ current['site.gstin'] }}"></div>
+    </div>
+    <div class="field"><label>Drug licence no.</label><input name="site.dl" value="{{ current['site.dl'] }}"></div>
+  </div>
+
+  <div class="card">
+    <h3>Brands</h3>
+    <div class="field"><label>Comma-separated list of companies you stock</label>
+      <textarea name="site.brandlist" rows="4">{{ current['site.brandlist'] }}</textarea></div>
+  </div>
+
+  <div class="card">
+    <h3>Services &amp; proof points</h3>
+    <div class="field"><label>Services — one per line, format: <code>Title|Description</code></label>
+      <textarea name="site.services" rows="7">{{ current['site.services'] }}</textarea></div>
+    <div class="field"><label>Numbers we're held to — one per line, format: <code>Value|Label</code></label>
+      <textarea name="site.whyus" rows="5">{{ current['site.whyus'] }}</textarea></div>
+  </div>
+
+  <button class="btn primary">Save website content</button>
+</form>
+
+<div class="card">
+  <h3>Enquiries from the website ({{ enquiries|length }})</h3>
+  <table>
+    <thead><tr><th>When</th><th>Name</th><th>Phone</th><th>Shop</th><th>Message</th></tr></thead>
+    <tbody>
+    {% for e in enquiries %}
+      <tr>
+        <td class="nowrap">{{ e.created_at }}</td>
+        <td><b>{{ e.name }}</b></td>
+        <td><a href="https://wa.me/91{{ e.phone|replace('+','')|replace(' ','') }}" target="_blank">{{ e.phone }}</a></td>
+        <td>{{ e.shop or '—' }}</td>
+        <td style="font-size:13px">{{ e.message or '—' }}</td>
+      </tr>
+    {% else %}<tr><td colspan="5" style="text-align:center;color:var(--dim);padding:20px">No enquiries yet.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

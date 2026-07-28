@@ -33,6 +33,8 @@
     {% if features.expenses %}
     <a href="{{ url_for('expenses') }}"   class="{{ 'active' if request.endpoint=='expenses' else '' }}">Expenses</a>
     {% endif %}
+    <a href="{{ url_for('reorder') }}" class="{{ 'active' if request.endpoint=='reorder' else '' }}">🤖 Reorder</a>
+    <a href="{{ url_for('site_admin') }}" class="{{ 'active' if request.endpoint=='site_admin' else '' }}">Website</a>
     {% if features.reports %}
     <a href="{{ url_for('reports') }}"    class="{{ 'active' if request.endpoint=='reports' else '' }}">Reports</a>
     {% endif %}

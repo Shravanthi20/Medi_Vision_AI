@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{% block title %}{{ c.company }}{% endblock %}</title>
+<meta name="description" content="{{ c.subtagline }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='site.css') }}">
+</head>
+<body>
+
+<header class="hdr">
+  <div class="wrap hdr-in">
+    <a href="{{ url_for('site_home') }}" class="brand">
+      <div class="mark">{{ c.company[0] }}</div>
+      <div>{{ c.company }}<small>Pharmaceutical Distribution</small></div>
+    </a>
+    <nav class="nav">
+      <a href="{{ url_for('site_home') }}"       class="{{ 'on' if request.endpoint=='site_home' }}">Home</a>
+      <a href="{{ url_for('site_about') }}"      class="{{ 'on' if request.endpoint=='site_about' }}">About</a>
+      <a href="{{ url_for('site_brands') }}"     class="{{ 'on' if request.endpoint=='site_brands' }}">Brands</a>
+      <a href="{{ url_for('site_associates') }}" class="{{ 'on' if request.endpoint=='site_associates' }}">Associates</a>
+      <a href="{{ url_for('site_contact') }}"    class="{{ 'on' if request.endpoint=='site_contact' }}">Contact</a>
+      <a href="{{ url_for('catalog') }}" class="cta">Order Online</a>
+    </nav>
+  </div>
+</header>
+
+{% block body %}{% endblock %}
+
+<footer>
+  <div class="wrap">
+    <div class="fgrid">
+      <div>
+        <h4>{{ c.company }}</h4>
+        <p style="margin:0;color:#94a3b8">{{ c.mission }}</p>
+      </div>
+      <div>
+        <h4>Company</h4>
+        <a href="{{ url_for('site_about') }}">About us</a>
+        <a href="{{ url_for('site_brands') }}">Brands we carry</a>
+        <a href="{{ url_for('site_associates') }}">Who we supply</a>
+        <a href="{{ url_for('site_contact') }}">Contact</a>
+      </div>
+      <div>
+        <h4>Order</h4>
+        <a href="{{ url_for('catalog') }}">Online catalog</a>
+        <a href="tel:{{ c.phone }}">Order by phone</a>
+        <a href="https://wa.me/{{ c.phone | replace('+','') | replace(' ','') }}">Order on WhatsApp</a>
+      </div>
+      <div>
+        <h4>Reach us</h4>
+        <p style="margin:0;color:#94a3b8">{{ c.address }}<br>
+          <a href="tel:{{ c.phone }}" style="display:inline">{{ c.phone }}</a><br>
+          <a href="mailto:{{ c.email }}" style="display:inline">{{ c.email }}</a><br>
+          {{ c.hours }}</p>
+      </div>
+    </div>
+    <div class="fbot">
+      <div>&copy; 2026 {{ c.company }}. All rights reserved.</div>
+      <div>{% if c.gstin %}GSTIN {{ c.gstin }}{% endif %}{% if c.dl %} &middot; DL {{ c.dl }}{% endif %}</div>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

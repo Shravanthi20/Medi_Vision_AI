@@ -1,0 +1,44 @@
+{% extends "site/base.html" %}
+{% block title %}About — {{ c.company }}{% endblock %}
+{% block body %}
+
+<div class="hero" style="padding:56px 0 48px">
+  <div class="wrap">
+    <div class="eyebrow">About us</div>
+    <h1 style="font-size:clamp(28px,4.4vw,44px)">{{ c.years }} years supplying the medicines your patients need</h1>
+  </div>
+</div>
+
+<section>
+  <div class="wrap split">
+    <div class="prose">
+      {% for para in c.about.split('\n\n') %}<p>{{ para }}</p>{% endfor %}
+      <p style="margin-top:26px;padding:20px;background:var(--brand-l);border-radius:12px;
+                color:var(--brand-d);font-weight:600;font-size:17px">“{{ c.mission }}”</p>
+    </div>
+    <div>
+      <div class="info">
+        <div class="row"><div class="k">Since</div><div class="v">{{ 2026 - (c.years | int) }}</div></div>
+        <div class="row"><div class="k">Retailers</div><div class="v">{{ c.retailers }}+ served</div></div>
+        <div class="row"><div class="k">Brands</div><div class="v">{{ c.brands }}+ companies</div></div>
+        <div class="row"><div class="k">Address</div><div class="v">{{ c.address }}</div></div>
+        {% if c.gstin %}<div class="row"><div class="k">GSTIN</div><div class="v">{{ c.gstin }}</div></div>{% endif %}
+        {% if c.dl %}<div class="row"><div class="k">DL No.</div><div class="v">{{ c.dl }}</div></div>{% endif %}
+      </div>
+      <a href="{{ url_for('site_contact') }}" class="btn primary" style="width:100%;text-align:center;margin-top:18px">Get in touch</a>
+    </div>
+  </div>
+</section>
+
+<section class="alt">
+  <div class="wrap">
+    <div class="sec-head"><h2>How we work</h2></div>
+    <div class="cards">
+      {% for s in services %}
+        <div class="card"><div class="ic">✦</div><h3>{{ s.title }}</h3><p>{{ s.desc }}</p></div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+{% endblock %}

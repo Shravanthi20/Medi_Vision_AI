@@ -1,0 +1,90 @@
+{% extends "site/base.html" %}
+{% block title %}{{ c.company }} — {{ c.tagline }}{% endblock %}
+{% block body %}
+
+<div class="hero">
+  <div class="wrap">
+    <div class="eyebrow">● {{ c.years }} years of distribution</div>
+    <h1>{{ c.tagline }}</h1>
+    <p class="lede">{{ c.subtagline }}</p>
+    <div class="hero-actions">
+      <a href="{{ url_for('catalog') }}" class="btn primary">Browse catalog &amp; order →</a>
+      <a href="{{ url_for('site_contact') }}" class="btn ghost">Become a customer</a>
+    </div>
+  </div>
+</div>
+
+<div class="statband">
+  <div class="wrap statgrid">
+    <div><div class="v">{{ c.years }}+</div><div class="l">Years in business</div></div>
+    <div><div class="v">{{ c.retailers }}+</div><div class="l">Retailers served</div></div>
+    <div><div class="v">{{ c.brands }}+</div><div class="l">Companies stocked</div></div>
+    <div><div class="v">{{ c.deliveries }}+</div><div class="l">Deliveries a week</div></div>
+  </div>
+</div>
+
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <h2>What we do for your counter</h2>
+      <p>Distribution is a service business, not a price list. Here's what that means in practice.</p>
+    </div>
+    <div class="cards">
+      {% for s in services %}
+        <div class="card">
+          <div class="ic">✦</div>
+          <h3>{{ s.title }}</h3>
+          <p>{{ s.desc }}</p>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<section class="alt">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2>Numbers we're held to</h2>
+      <p>Anyone can promise service. These are the measures our customers actually judge us on.</p>
+    </div>
+    <div class="whygrid">
+      {% for s in stats %}
+        <div class="why"><div class="v">{{ s.value }}</div><div class="l">{{ s.label }}</div></div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap split">
+    <div class="prose">
+      <div class="sec-head" style="margin-bottom:22px">
+        <h2>Brands on our shelves</h2>
+        <p>We carry {{ c.brands }}+ Indian and multinational pharmaceutical companies across every major therapy area.</p>
+      </div>
+      <div class="chips">
+        {% for b in brands[:16] %}<span class="chip">{{ b }}</span>{% endfor %}
+      </div>
+      <p style="margin-top:22px"><a href="{{ url_for('site_brands') }}">See the full list →</a></p>
+    </div>
+    <div class="info">
+      <div class="row"><div class="k">Address</div><div class="v">{{ c.address }}</div></div>
+      <div class="row"><div class="k">Phone</div><div class="v"><a href="tel:{{ c.phone }}">{{ c.phone }}</a></div></div>
+      <div class="row"><div class="k">Email</div><div class="v"><a href="mailto:{{ c.email }}">{{ c.email }}</a></div></div>
+      <div class="row"><div class="k">Hours</div><div class="v">{{ c.hours }}</div></div>
+    </div>
+  </div>
+</section>
+
+<div class="ctaband">
+  <div class="wrap">
+    <h2>Ready to place your first order?</h2>
+    <p>Browse the live catalog, add what you need, and enter your shop code. New shops get verified within a day.</p>
+    <div class="hero-actions" style="justify-content:center">
+      <a href="{{ url_for('catalog') }}" class="btn">Open the catalog</a>
+      <a href="{{ url_for('site_contact') }}" class="btn o">Talk to us first</a>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

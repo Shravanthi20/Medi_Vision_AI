@@ -1,0 +1,54 @@
+{% extends "site/base.html" %}
+{% block title %}Contact — {{ c.company }}{% endblock %}
+{% block body %}
+
+<div class="hero" style="padding:56px 0 48px">
+  <div class="wrap">
+    <div class="eyebrow">Contact</div>
+    <h1 style="font-size:clamp(28px,4.4vw,44px)">Let's talk</h1>
+    <p class="lede">New shop, existing associate, or just a question about a product — reach us however is easiest.</p>
+  </div>
+</div>
+
+<section>
+  <div class="wrap split">
+    <div>
+      {% if sent %}
+        <div class="note ok"><b>Thank you.</b> We've got your details and someone will call you shortly.</div>
+      {% endif %}
+      <div class="card">
+        <h3 style="margin-bottom:16px">Send us a message</h3>
+        <form method="POST">
+          <div class="row2">
+            <div class="field"><label>Your name *</label><input name="name" required></div>
+            <div class="field"><label>Phone *</label><input name="phone" required inputmode="tel"></div>
+          </div>
+          <div class="field"><label>Shop / institution name</label><input name="shop"></div>
+          <div class="field"><label>How can we help?</label>
+            <textarea name="message" rows="5" placeholder="e.g. I'd like to open an account for my pharmacy in Coimbatore."></textarea>
+          </div>
+          <button class="btn primary" style="width:100%">Send message</button>
+        </form>
+      </div>
+    </div>
+
+    <div>
+      <div class="info">
+        <div class="row"><div class="k">Address</div><div class="v">{{ c.address }}</div></div>
+        <div class="row"><div class="k">Phone</div><div class="v"><a href="tel:{{ c.phone }}">{{ c.phone }}</a></div></div>
+        <div class="row"><div class="k">Email</div><div class="v"><a href="mailto:{{ c.email }}">{{ c.email }}</a></div></div>
+        <div class="row"><div class="k">Hours</div><div class="v">{{ c.hours }}</div></div>
+        {% if c.gstin %}<div class="row"><div class="k">GSTIN</div><div class="v">{{ c.gstin }}</div></div>{% endif %}
+        {% if c.dl %}<div class="row"><div class="k">DL No.</div><div class="v">{{ c.dl }}</div></div>{% endif %}
+      </div>
+
+      <div style="margin-top:18px;display:grid;gap:10px">
+        <a href="https://wa.me/{{ c.phone | replace('+','') | replace(' ','') }}" class="btn ghost" style="text-align:center">💬 Message on WhatsApp</a>
+        <a href="tel:{{ c.phone }}" class="btn ghost" style="text-align:center">📞 Call the counter</a>
+        <a href="{{ url_for('catalog') }}" class="btn primary" style="text-align:center">🛒 Order online now</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% endblock %}
