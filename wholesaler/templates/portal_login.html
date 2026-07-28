@@ -11,6 +11,14 @@
   </div>
   <p style="text-align:center;color:var(--dim);font-size:13px;margin:0 0 18px">
     One portal · many distribution companies</p>
+
+  <a href="{{ url_for('demo_enter') }}"
+     style="display:block;text-align:center;background:linear-gradient(90deg,#7c3aed,#a855f7);
+            color:#fff;padding:13px;border-radius:12px;font-weight:700;margin-bottom:16px;
+            text-decoration:none">
+    🧪 Try the live demo — no password needed →
+  </a>
+
   <div class="card">
     <form method="POST" autocomplete="on">
       {% if error %}<div class="flash err">{{ error }}</div>{% endif %}

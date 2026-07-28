@@ -63,6 +63,16 @@
     </form>
   </nav>
 </header>
+{% if session.get('is_demo') %}
+<div style="background:linear-gradient(90deg,#7c3aed,#a855f7);color:#fff;padding:9px 16px;
+     display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;
+     font-size:13px;font-weight:600">
+  <span>🧪 DEMO SANDBOX — nothing here is real, changes are safe and can be reset anytime.</span>
+  <form method="POST" action="{{ url_for('demo_reset_route') }}" style="display:inline">
+    <button type="submit" class="btn sm" style="background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.4)">↻ Reset demo data</button>
+  </form>
+</div>
+{% endif %}
 {% endif %}
 
 <main>
