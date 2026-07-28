@@ -6,7 +6,7 @@
 
 <div class="kpis">
   <div class="kpi blue"><div class="v">{{ kpi.shops }}</div><div class="l">Active shops</div></div>
-  <div class="kpi"><div class="v">{{ kpi.items }}</div><div class="l">Items in catalog</div></div>
+  <div class="kpi"><div class="v">{{ kpi["items"] }}</div><div class="l">Items in catalog</div></div>
   <div class="kpi amber"><div class="v">{{ kpi.orders_open }}</div><div class="l">Open orders</div></div>
   <div class="kpi green"><div class="v">{{ kpi.today_sales | money }}</div><div class="l">Invoiced today</div></div>
   <div class="kpi green"><div class="v">{{ kpi.month_sales | money }}</div><div class="l">Invoiced this month</div></div>

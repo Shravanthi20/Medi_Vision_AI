@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sign in — MediVision Wholesale Portal</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head><body>
+<main><div class="login-wrap">
+  <div class="brand" style="justify-content:center">
+    <div class="logo">W</div>
+    <div style="font-size:22px">MediVision <span class="ai">Wholesale</span></div>
+  </div>
+  <p style="text-align:center;color:var(--dim);font-size:13px;margin:0 0 18px">
+    One portal · many distribution companies</p>
+  <div class="card">
+    <form method="POST" autocomplete="on">
+      {% if error %}<div class="flash err">{{ error }}</div>{% endif %}
+      <div class="field">
+        <label>Company code</label>
+        <input name="company" required autocapitalize="none" autocorrect="off"
+               placeholder="e.g. rathna" style="text-transform:lowercase">
+      </div>
+      <div class="field"><label>Your name</label>
+        <input name="name" autocomplete="name" placeholder="Who's signing in"></div>
+      <div class="field"><label>Password</label>
+        <input name="password" type="password" required autocomplete="current-password"></div>
+      <button class="btn primary wide">Sign in</button>
+    </form>
+    <p style="color:var(--dim);font-size:12.5px;margin-top:14px;text-align:center">
+      Don't have a company code? <a href="{{ url_for('site_contact') }}">Request access</a>
+    </p>
+  </div>
+  <p style="text-align:center;margin-top:16px">
+    <a href="{{ url_for('platform_login') }}" style="color:var(--txt-mut);font-size:12px">Platform owner sign-in</a>
+  </p>
+</div></main>
+</body></html>

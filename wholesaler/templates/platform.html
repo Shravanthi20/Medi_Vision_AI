@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Platform — Companies</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head><body>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="logo" style="background:linear-gradient(135deg,#6366f1,#8b5cf6)">◆</div>
+    <div>Platform <span style="color:#a78bfa">Owner</span> <small>Multi-company console</small></div>
+  </div>
+  <nav class="nav">
+    <a href="{{ url_for('platform_home') }}" class="active">Companies</a>
+    <a href="{{ url_for('platform_log_view') }}">Activity log</a>
+    <form method="POST" action="{{ url_for('platform_logout') }}" style="display:inline">
+      <button class="btn sm">Sign out</button></form>
+  </nav>
+</header>
+
+<main><div class="wrap">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in messages %}<div class="flash {{ cat }}">{{ msg }}</div>{% endfor %}
+  {% endwith %}
+
+  <h1>Companies</h1>
+  <p class="sub">{{ period }} · every company runs on its own isolated database.</p>
+
+  <div class="kpis">
+    <div class="kpi blue"><div class="v">{{ kpi.companies }}</div><div class="l">Companies</div></div>
+    <div class="kpi green"><div class="v">{{ kpi.active }}</div><div class="l">Active</div></div>
+    <div class="kpi red"><div class="v">{{ kpi.suspended }}</div><div class="l">Suspended</div></div>
+    <div class="kpi green"><div class="v">{{ kpi.mrr | money }}</div><div class="l">MRR</div></div>
+    <div class="kpi"><div class="v">{{ kpi.collected | money }}</div><div class="l">Collected {{ period }}</div></div>
+    <div class="kpi amber"><div class="v">{{ kpi.unpaid | money }}</div><div class="l">Still to collect</div></div>
+    <div class="kpi blue"><div class="v">{{ kpi.total_orders }}</div><div class="l">Orders this month (all)</div></div>
+    <div class="kpi blue"><div class="v">{{ kpi.gmv | money }}</div><div class="l">GMV this month (all)</div></div>
+  </div>
+
+  <div class="card" style="background:rgba(99,102,241,.08);border-color:rgba(139,92,246,.35)">
+    <b style="color:#a78bfa">🔒 Privacy boundary</b>
+    <p style="color:var(--dim);font-size:13px;margin:6px 0 0;line-height:1.65">
+      The figures above are <b>counts and totals only</b>, pushed up by each company from their own
+      database. This console connects to <code>platform.db</code> and nothing else — there is no
+      code path here that opens a company's data file, so their shops, customers, orders and
+      pricing are not readable from this screen or any other screen in this console.
+    </p>
+  </div>
+
+  <div class="card" style="padding:0;overflow:auto">
+    <table>
+      <thead><tr>
+        <th>Company</th><th>Code</th><th>Plan</th><th>Status</th>
+        <th class="right">Usage (their counts)</th><th class="right">Fee</th><th>Billing</th><th>Actions</th>
+      </tr></thead>
+      <tbody>
+      {% for c in companies %}
+        <tr>
+          <td><b>{{ c.name }}</b>
+            <div style="font-size:11.5px;color:var(--dim)">{{ c.owner_name }}{% if c.phone %} · {{ c.phone }}{% endif %}{% if c.city %} · {{ c.city }}{% endif %}</div>
+            <div style="font-size:11px;color:var(--txt-mut)">joined {{ c.created_at[:10] }}{% if c.last_login %} · last in {{ c.last_login[:10] }}{% endif %}</div></td>
+          <td><code>{{ c.slug }}</code></td>
+          <td>{{ plans[c.plan].label if c.plan in plans else c.plan }}</td>
+          <td>{% if c.status=='suspended' %}<span class="pill overdue">suspended</span>
+              {% else %}<span class="pill active">{{ c.status }}</span>{% endif %}</td>
+          <td class="right" style="font-size:12.5px;color:var(--dim)">
+            {{ c.stat_shops }} shops · {{ c.stat_items }} items<br>
+            {{ c.stat_month_orders }} orders / {{ c.stat_month_revenue | money }} this month</td>
+          <td class="right">{{ c.monthly_fee | money }}</td>
+          <td>{% if c.paid_this_month %}<span class="pill paid">paid</span>
+              {% else %}<span class="pill due">due</span>{% endif %}</td>
+          <td>
+            <div style="display:flex;gap:5px;flex-wrap:wrap">
+              {% if not c.paid_this_month %}
+              <form method="POST" action="{{ url_for('platform_company_action', cid=c.id, action='pay') }}">
+                <input type="hidden" name="amount" value="{{ c.monthly_fee }}">
+                <button class="btn sm">Mark paid</button></form>
+              {% endif %}
+              {% if c.status=='active' %}
+              <form method="POST" action="{{ url_for('platform_company_action', cid=c.id, action='suspend') }}">
+                <button class="btn sm red">Suspend</button></form>
+              {% else %}
+              <form method="POST" action="{{ url_for('platform_company_action', cid=c.id, action='activate') }}">
+                <button class="btn sm primary">Activate</button></form>
+              {% endif %}
+              <form method="POST" action="{{ url_for('platform_company_action', cid=c.id, action='resetpw') }}">
+                <button class="btn sm">Reset pw</button></form>
+              <form method="POST" action="{{ url_for('platform_company_action', cid=c.id, action='plan') }}">
+                <select name="plan" onchange="this.form.submit()" style="padding:5px 8px;font-size:12px">
+                  {% for k, p in plans.items() %}
+                    <option value="{{ k }}" {% if c.plan==k %}selected{% endif %}>{{ p.label }} ₹{{ p.price }}</option>
+                  {% endfor %}
+                </select></form>
+              {% if c.phone %}
+              <a class="btn sm" target="_blank"
+                 href="https://wa.me/91{{ c.phone|replace('+','')|replace(' ','') }}?text={{ ('Hi, your MediVision Wholesale subscription of ' ~ (c.monthly_fee|money) ~ ' for ' ~ period ~ ' is due. Thank you!')|urlencode }}">WA</a>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="8"><div class="empty"><div class="em">🏢</div>No companies yet. Onboard your first one below.</div></td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>Onboard a new company</h3>
+    <form method="POST" action="{{ url_for('platform_company_new') }}">
+      <div class="row three">
+        <div class="field"><label>Company name *</label><input name="name" required placeholder="Sri Rathna Agencies"></div>
+        <div class="field"><label>Company code *</label>
+          <input name="slug" required placeholder="rathna" pattern="[a-z0-9][a-z0-9-]{1,30}"
+                 style="text-transform:lowercase">
+          <span style="font-size:11.5px;color:var(--dim)">lowercase, they type this to sign in</span></div>
+        <div class="field"><label>Plan</label>
+          <select name="plan">{% for k, p in plans.items() %}<option value="{{ k }}">{{ p.label }} — ₹{{ p.price }}/mo</option>{% endfor %}</select></div>
+      </div>
+      <div class="row four">
+        <div class="field"><label>Owner name</label><input name="owner_name"></div>
+        <div class="field"><label>Phone</label><input name="phone"></div>
+        <div class="field"><label>Email</label><input name="email" type="email"></div>
+        <div class="field"><label>City</label><input name="city"></div>
+      </div>
+      <div class="field" style="max-width:340px"><label>Password (blank = generate one)</label><input name="password"></div>
+      <button class="btn primary">Create company + provision database</button>
+      <p style="color:var(--dim);font-size:12px;margin-top:8px">
+        Creates an empty, isolated database for them. The password is shown once on the next screen —
+        copy it before you navigate away, it's stored only as a salted hash.
+      </p>
+    </form>
+  </div>
+</div></main>
+</body></html>

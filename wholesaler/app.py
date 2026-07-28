@@ -211,14 +211,21 @@ def audit(actor, action, entity=None, entity_id=None, details=""):
 def login_required(f):
     @functools.wraps(f)
     def wrap(*a, **k):
-        if not session.get("ws_user"):
-            return redirect(url_for("login", next=request.path))
+        # Require BOTH a signed-in user AND a resolved tenant. A platform-owner
+        # session has no tenant, so it can never reach a company's screens.
+        if not session.get("ws_user") or not session.get("tenant"):
+            return redirect("/portal")
         return f(*a, **k)
     return wrap
 
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
+    # Superseded by the multi-company /portal sign-in.
+    return redirect("/portal")
+
+
+def _legacy_login_unused():
     error = ""
     if request.method == "POST":
         pw = request.form.get("password", "")

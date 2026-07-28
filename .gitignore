@@ -55,3 +55,6 @@ routes.txt
 wholesaler/wholesaler.db
 wholesaler/.env
 wholesaler/venv/
+
+wholesaler/tenants/
+wholesaler/platform.db

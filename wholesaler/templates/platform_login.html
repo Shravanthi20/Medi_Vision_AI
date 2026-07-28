@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Platform owner — sign in</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head><body>
+<main><div class="login-wrap">
+  <div class="brand" style="justify-content:center">
+    <div class="logo" style="background:linear-gradient(135deg,#6366f1,#8b5cf6)">◆</div>
+    <div style="font-size:22px">Platform <span style="color:#a78bfa">Owner</span></div>
+  </div>
+  <div class="card">
+    <form method="POST" autocomplete="on">
+      {% if error %}<div class="flash err">{{ error }}</div>{% endif %}
+      <div class="field"><label>Owner password</label>
+        <input name="password" type="password" required autocomplete="current-password" autofocus></div>
+      <button class="btn primary wide">Sign in</button>
+    </form>
+    <p style="color:var(--dim);font-size:12px;margin-top:14px;line-height:1.6">
+      This console manages companies, plans and billing.
+      It <b>cannot</b> open any company's business data — orders, customers and
+      stock live in separate databases this console never connects to.
+    </p>
+  </div>
+  <p style="text-align:center;margin-top:16px">
+    <a href="{{ url_for('portal_login') }}" style="color:var(--txt-mut);font-size:12px">← Company sign-in</a>
+  </p>
+</div></main>
+</body></html>

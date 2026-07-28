@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Platform — Activity log</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head><body>
+<header class="topbar">
+  <div class="brand">
+    <div class="logo" style="background:linear-gradient(135deg,#6366f1,#8b5cf6)">◆</div>
+    <div>Platform <span style="color:#a78bfa">Owner</span></div>
+  </div>
+  <nav class="nav">
+    <a href="{{ url_for('platform_home') }}">Companies</a>
+    <a href="{{ url_for('platform_log_view') }}" class="active">Activity log</a>
+    <form method="POST" action="{{ url_for('platform_logout') }}" style="display:inline">
+      <button class="btn sm">Sign out</button></form>
+  </nav>
+</header>
+<main><div class="wrap">
+  <h1>Activity log</h1>
+  <p class="sub">Every administrative action taken from this console.</p>
+  <div class="card" style="padding:0;overflow:auto">
+    <table>
+      <thead><tr><th>When</th><th>Who</th><th>Action</th><th>Company</th><th>Detail</th></tr></thead>
+      <tbody>
+      {% for r in rows %}
+        <tr><td class="nowrap">{{ r.ts }}</td><td>{{ r.actor }}</td>
+            <td><span class="pill active">{{ r.action }}</span></td>
+            <td><code>{{ r.company or '—' }}</code></td><td>{{ r.detail or '—' }}</td></tr>
+      {% else %}<tr><td colspan="5" style="text-align:center;color:var(--dim);padding:24px">Nothing logged yet.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div></main>
+</body></html>
