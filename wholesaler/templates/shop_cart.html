@@ -1,0 +1,97 @@
+{% extends "shop_base.html" %}
+{% block title %}Your cart{% endblock %}
+{% block body %}
+<h1>Your cart</h1>
+<p class="sub"><a href="{{ url_for('shop_catalog') }}">← Keep browsing the catalog</a></p>
+
+<div id="empty" class="empty hide"><div class="em">🛒</div>Your cart is empty. <a href="{{ url_for('shop_catalog') }}">Browse the catalog →</a></div>
+
+<div class="card" id="cartCard" style="padding:0;overflow:auto">
+  <table>
+    <thead><tr><th>Item</th><th class="right">Rate</th><th class="right">Qty</th><th class="right">Line total</th><th></th></tr></thead>
+    <tbody id="cartBody"></tbody>
+    <tfoot><tr><td colspan="3" class="right"><b>Total</b></td><td class="right" id="cartTotal"><b>₹0.00</b></td><td></td></tr></tfoot>
+  </table>
+</div>
+
+<form method="POST" action="{{ url_for('shop_cart_checkout') }}" id="checkoutForm">
+  <div class="card" id="notesCard">
+    <div class="field"><label>Notes / delivery request</label><input name="notes" placeholder="optional"></div>
+    <div id="hiddenInputs"></div>
+    <button type="submit" class="btn primary wide" id="placeBtn">Place order</button>
+  </div>
+</form>
+
+<script>
+(() => {
+  const KEY = 'mv_shop_cart_{{ session.shop_id }}';
+  const load = () => { try { return JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (e) { return {}; } };
+  const save = (cart) => localStorage.setItem(KEY, JSON.stringify(cart));
+  const money = n => '₹' + n.toFixed(2);
+
+  function render() {
+    const cart = load();
+    const ids = Object.keys(cart);
+    if (!ids.length) {
+      document.getElementById('empty').classList.remove('hide');
+      document.getElementById('cartCard').classList.add('hide');
+      document.getElementById('notesCard').classList.add('hide');
+      return;
+    }
+    let total = 0;
+    const body = document.getElementById('cartBody');
+    body.innerHTML = '';
+    ids.forEach(id => {
+      const it = cart[id];
+      const line = it.qty * it.rate;
+      total += line;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><b>${it.name}</b><div style="font-size:11.5px;color:var(--dim)">${it.pack || ''}</div></td>
+        <td class="right">₹${it.rate.toFixed(2)}</td>
+        <td class="right"><input type="number" min="0" step="1" value="${it.qty}" data-id="${id}" class="qtyEdit" style="width:70px;text-align:right"></td>
+        <td class="right lineTotal">${money(line)}</td>
+        <td><button type="button" class="btn sm red rmBtn" data-id="${id}">✕</button></td>`;
+      body.appendChild(tr);
+    });
+    document.getElementById('cartTotal').textContent = money(total);
+
+    body.querySelectorAll('.qtyEdit').forEach(inp => {
+      inp.addEventListener('change', () => {
+        const cart2 = load();
+        const q = parseInt(inp.value, 10) || 0;
+        if (q <= 0) { delete cart2[inp.dataset.id]; } else { cart2[inp.dataset.id].qty = q; }
+        save(cart2);
+        render();
+      });
+    });
+    body.querySelectorAll('.rmBtn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const cart2 = load();
+        delete cart2[btn.dataset.id];
+        save(cart2);
+        render();
+      });
+    });
+  }
+
+  document.getElementById('checkoutForm').addEventListener('submit', (e) => {
+    const cart = load();
+    const ids = Object.keys(cart);
+    if (!ids.length) { e.preventDefault(); return; }
+    const holder = document.getElementById('hiddenInputs');
+    holder.innerHTML = '';
+    ids.forEach(id => {
+      const h1 = document.createElement('input');
+      h1.type = 'hidden'; h1.name = 'item_id[]'; h1.value = id;
+      const h2 = document.createElement('input');
+      h2.type = 'hidden'; h2.name = 'qty[]'; h2.value = cart[id].qty;
+      holder.appendChild(h1); holder.appendChild(h2);
+    });
+    // cart is cleared on the thank-you page, not here, in case of a submit error
+  });
+
+  render();
+})();
+</script>
+{% endblock %}

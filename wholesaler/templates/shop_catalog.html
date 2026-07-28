@@ -1,0 +1,83 @@
+{% extends "shop_base.html" %}
+{% block title %}Place order{% endblock %}
+{% block body %}
+<h1>Place order</h1>
+<p class="sub">Tier {{ shop.price_tier }} pricing — your negotiated rate is already applied below.</p>
+
+<form method="GET" class="searchbar">
+  <input name="q" value="{{ q or '' }}" placeholder="Search medicine name / generic…">
+  <button class="btn">Search</button>
+  {% if categories %}
+    <select onchange="location.href='?category='+encodeURIComponent(this.value)" class="btn">
+      <option value="">All categories</option>
+      {% for cat in categories %}<option value="{{ cat }}" {% if cat==category %}selected{% endif %}>{{ cat }}</option>{% endfor %}
+    </select>
+  {% endif %}
+</form>
+
+<div class="card" style="padding:0;overflow:auto">
+  <table id="catTable">
+    <thead><tr><th>Item</th><th>Pack</th><th class="right">MRP</th><th class="right">Your rate</th>
+      <th>Scheme</th><th class="right nowrap">Qty</th><th></th></tr></thead>
+    <tbody>
+    {% for it in items %}
+      <tr data-id="{{ it.id }}" data-name="{{ it.name|e }}" data-pack="{{ it.pack_size or '' }}" data-rate="{{ it.rate }}">
+        <td><b>{{ it.name }}</b><div style="font-size:11.5px;color:var(--dim)">{{ it.generic or '' }} · {{ it.manufacturer or '' }}</div></td>
+        <td>{{ it.pack_size or '' }}</td>
+        <td class="right">₹{{ '%.2f' % it.mrp }}</td>
+        <td class="right"><b>₹{{ '%.2f' % it.rate }}</b></td>
+        <td>{{ it.scheme or '' }}</td>
+        <td class="right"><input type="number" min="0" step="1" value="0" class="qtyInput" style="width:70px;text-align:right"></td>
+        <td><button type="button" class="btn sm primary addBtn">Add</button></td>
+      </tr>
+    {% else %}<tr><td colspan="7"><div class="empty">No items match.</div></td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div id="cartBar" class="hide" style="position:sticky;bottom:0;background:var(--green);color:#04140b;
+     border-radius:14px;padding:14px 18px;margin-top:16px;display:flex;justify-content:space-between;
+     align-items:center;font-weight:700;box-shadow:0 -6px 24px rgba(0,0,0,.25)">
+  <span id="cartSummary">0 items — ₹0.00</span>
+  <a href="{{ url_for('shop_cart') }}" style="background:#04140b;color:#fff;padding:9px 18px;
+     border-radius:9px;font-weight:700">View cart →</a>
+</div>
+
+<script>
+(() => {
+  const KEY = 'mv_shop_cart_{{ session.shop_id }}';
+  const load = () => { try { return JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (e) { return {}; } };
+  const save = (cart) => localStorage.setItem(KEY, JSON.stringify(cart));
+
+  function updateBar() {
+    const cart = load();
+    const ids = Object.keys(cart);
+    const bar = document.getElementById('cartBar');
+    if (!ids.length) { bar.classList.add('hide'); return; }
+    let count = 0, total = 0;
+    ids.forEach(id => { count += cart[id].qty; total += cart[id].qty * cart[id].rate; });
+    document.getElementById('cartSummary').textContent = `${count} item${count === 1 ? '' : 's'} — ₹${total.toFixed(2)}`;
+    bar.classList.remove('hide');
+  }
+
+  document.querySelectorAll('.addBtn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tr = btn.closest('tr');
+      const qtyInput = tr.querySelector('.qtyInput');
+      const qty = parseInt(qtyInput.value, 10) || 0;
+      if (qty <= 0) { qtyInput.focus(); return; }
+      const cart = load();
+      const id = tr.dataset.id;
+      cart[id] = { qty, name: tr.dataset.name, pack: tr.dataset.pack, rate: parseFloat(tr.dataset.rate) };
+      save(cart);
+      btn.textContent = 'Added ✓';
+      setTimeout(() => { btn.textContent = 'Add'; }, 900);
+      updateBar();
+    });
+  });
+
+  updateBar();
+})();
+</script>
+{% endblock %}

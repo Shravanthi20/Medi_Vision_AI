@@ -1,0 +1,20 @@
+{% extends "shop_base.html" %}
+{% block title %}Order placed{% endblock %}
+{% block body %}
+<div style="max-width:480px;margin:6vh auto;text-align:center">
+  <div class="card">
+    <div style="font-size:48px">✅</div>
+    <h1>Order placed</h1>
+    <p class="sub">We've received your order.</p>
+    <div style="margin:20px 0;padding:14px;background:var(--card-2);border-radius:10px">
+      <div style="color:var(--dim);font-size:12px;text-transform:uppercase">Order number</div>
+      <div style="font-size:20px;font-weight:700;letter-spacing:1px">{{ order_no }}</div>
+    </div>
+    <a class="btn primary" href="{{ url_for('shop_orders') }}">Track this order →</a>
+    <a class="btn" href="{{ url_for('shop_catalog') }}" style="margin-top:8px">Order more</a>
+  </div>
+</div>
+<script>
+  localStorage.removeItem('mv_shop_cart_{{ session.shop_id }}');
+</script>
+{% endblock %}

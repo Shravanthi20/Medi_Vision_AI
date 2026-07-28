@@ -713,3 +713,102 @@ def shop_wanted():
         ups = c.execute("""SELECT * FROM wanted_uploads WHERE shop_id=? ORDER BY id DESC LIMIT 20""",
                         (session["shop_id"],)).fetchall()
     return render_template("shop_wanted.html", uploads=ups, have_xlsx=HAVE_XLSX)
+
+
+# ══════════════════════════════════════════════════════════════════════
+#  SHOP PORTAL — cart + checkout
+#  The cart lives in the browser's localStorage (keyed per shop), not
+#  server-side session state: it needs to survive across searches/category
+#  changes without a round trip, and localStorage is naturally scoped per
+#  browser so two shops on the same distributor never share a cart. The
+#  server only ever sees the cart once, at checkout submit.
+# ══════════════════════════════════════════════════════════════════════
+@app.route("/shop/catalog")
+@shop_required
+def shop_catalog():
+    q = (request.args.get("q") or "").strip()
+    category = (request.args.get("category") or "").strip()
+    shop = _shop_ctx()
+    with conn() as c:
+        cats = [r["category"] for r in c.execute(
+            "SELECT DISTINCT category FROM wholesale_items WHERE category!='' ORDER BY category").fetchall()]
+        if q:
+            like = f"%{q}%"
+            rows = c.execute(
+                "SELECT * FROM wholesale_items WHERE status='active' AND (name LIKE ? OR generic LIKE ?) ORDER BY name LIMIT 200",
+                (like, like)).fetchall()
+        elif category:
+            rows = c.execute(
+                "SELECT * FROM wholesale_items WHERE status='active' AND category=? ORDER BY name LIMIT 200",
+                (category,)).fetchall()
+        else:
+            rows = c.execute("SELECT * FROM wholesale_items WHERE status='active' ORDER BY name LIMIT 150").fetchall()
+
+    items = []
+    for r in rows:
+        d = dict(r)
+        d["rate"] = rate_for_shop(r, shop["price_tier"])
+        items.append(d)
+
+    return render_template("shop_catalog.html", items=items, categories=cats, q=q, category=category, shop=shop)
+
+
+@app.route("/shop/cart")
+@shop_required
+def shop_cart():
+    return render_template("shop_cart.html")
+
+
+@app.route("/shop/cart/checkout", methods=["POST"])
+@shop_required
+def shop_cart_checkout():
+    shop_id = session["shop_id"]
+    item_ids = request.form.getlist("item_id[]")
+    qtys = request.form.getlist("qty[]")
+    notes = (request.form.get("notes") or "").strip()
+
+    if not item_ids:
+        flash("Your cart is empty.", "err")
+        return redirect(url_for("shop_cart"))
+
+    with conn() as c:
+        shop = c.execute("SELECT * FROM retail_shops WHERE id=?", (shop_id,)).fetchone()
+        order_no = next_order_no()
+        cur = c.execute(
+            "INSERT INTO sales_orders (order_no, shop_id, notes, source, created_by) VALUES (?,?,?,?,?)",
+            (order_no, shop_id, notes, "shop_portal", session.get("shop_name") or "shop"))
+        order_id = cur.lastrowid
+        added = 0
+        for iid, q_str in zip(item_ids, qtys):
+            if not iid or not q_str:
+                continue
+            qty = int(float(q_str) or 0)
+            if qty <= 0:
+                continue
+            item = c.execute("SELECT * FROM wholesale_items WHERE id=? AND status='active'", (int(iid),)).fetchone()
+            if not item:
+                continue
+            rate = rate_for_shop(item, shop["price_tier"])
+            free = 0
+            if item["scheme"] and "+" in (item["scheme"] or ""):
+                try:
+                    b, bs = item["scheme"].split("+"); b, bs = int(b), int(bs)
+                    if b > 0:
+                        free = (qty // b) * bs
+                except Exception:
+                    pass
+            c.execute("""INSERT INTO sales_order_items
+                (order_id, item_id, item_name, pack_size, qty, free_qty, rate, gst_rate, amount)
+                VALUES (?,?,?,?,?,?,?,?,?)""",
+                (order_id, item["id"], item["name"], item["pack_size"], qty, free, rate, item["gst_rate"], qty * rate))
+            added += 1
+
+    if added == 0:
+        with conn() as c:
+            c.execute("DELETE FROM sales_orders WHERE id=?", (order_id,))
+        flash("No valid items in your cart.", "err")
+        return redirect(url_for("shop_cart"))
+
+    compute_order_totals(order_id)
+    audit(session.get("shop_name"), "shop_portal_order", "order", order_id, order_no)
+    return render_template("shop_cart_thanks.html", order_no=order_no)

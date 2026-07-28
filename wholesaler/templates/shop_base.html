@@ -25,7 +25,7 @@
   </div>
   <nav class="nav">
     <a href="{{ url_for('shop_home') }}"   class="{{ 'active' if request.endpoint=='shop_home' }}">Dashboard</a>
-    <a href="{{ url_for('catalog') }}">Place order</a>
+    <a href="{{ url_for('shop_catalog') }}" class="{{ 'active' if request.endpoint in ['shop_catalog','shop_cart'] }}">Place order</a>
     <a href="{{ url_for('shop_wanted') }}" class="{{ 'active' if request.endpoint=='shop_wanted' }}">Wanted list</a>
     <a href="{{ url_for('shop_orders') }}" class="{{ 'active' if request.endpoint=='shop_orders' }}">My orders</a>
     <a href="{{ url_for('shop_bills') }}"  class="{{ 'active' if request.endpoint=='shop_bills' }}">My bills</a>
