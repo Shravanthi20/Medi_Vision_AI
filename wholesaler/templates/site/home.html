@@ -32,7 +32,7 @@
     <div class="cards">
       {% for s in services %}
         <div class="card">
-          <div class="ic">✦</div>
+          <div class="ic">{{ s.icon or '✦' }}</div>
           <h3>{{ s.title }}</h3>
           <p>{{ s.desc }}</p>
         </div>

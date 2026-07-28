@@ -37,8 +37,16 @@ a:hover{text-decoration:underline}
 .cta:hover{background:var(--brand-d);text-decoration:none}
 
 /* Hero */
-.hero{background:linear-gradient(165deg,#f0fdfa 0%,#f8fafc 55%,#fff 100%);
+.hero{position:relative;overflow:hidden;
+  background:linear-gradient(165deg,#f0fdfa 0%,#f8fafc 55%,#fff 100%);
   border-bottom:1px solid var(--line);padding:76px 0 68px}
+.hero::before{content:"";position:absolute;top:-120px;right:-120px;width:420px;height:420px;
+  border-radius:50%;background:radial-gradient(circle,rgba(15,118,110,.10),rgba(15,118,110,0) 70%);
+  pointer-events:none}
+.hero::after{content:"";position:absolute;bottom:-160px;left:-100px;width:320px;height:320px;
+  border-radius:50%;background:radial-gradient(circle,rgba(2,132,199,.07),rgba(2,132,199,0) 70%);
+  pointer-events:none}
+.hero .wrap{position:relative}
 .hero h1{font-size:clamp(32px,5.2vw,54px);line-height:1.12;margin:0 0 18px;
   letter-spacing:-1.4px;font-weight:800;max-width:16ch}
 .hero .lede{font-size:clamp(16px,2.1vw,19.5px);color:var(--ink-2);max-width:60ch;margin:0 0 30px}
@@ -69,20 +77,26 @@ section.alt{background:var(--bg-2)}
 /* Cards */
 .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:22px}
 .card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:26px;
-  box-shadow:var(--shadow)}
+  box-shadow:var(--shadow);transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease}
+.card:hover{transform:translateY(-3px);border-color:var(--brand-l);
+  box-shadow:0 4px 10px rgba(15,23,42,.07), 0 16px 34px rgba(15,23,42,.09)}
 .card h3{margin:0 0 9px;font-size:18px;font-weight:700}
 .card p{margin:0;color:var(--ink-2);font-size:15.2px}
 .card .ic{width:44px;height:44px;border-radius:11px;background:var(--brand-l);color:var(--brand-d);
-  display:grid;place-items:center;font-size:20px;margin-bottom:15px}
+  display:grid;place-items:center;font-size:20px;margin-bottom:15px;transition:transform .18s ease}
+.card:hover .ic{transform:scale(1.08)}
 
 /* Brand chips */
 .chips{display:flex;flex-wrap:wrap;gap:10px}
 .chip{background:#fff;border:1px solid var(--line);border-radius:9px;padding:11px 17px;
-  font-weight:600;font-size:14.5px;color:var(--ink-2)}
+  font-weight:600;font-size:14.5px;color:var(--ink-2);transition:border-color .15s ease,color .15s ease}
+.chip:hover{border-color:var(--brand);color:var(--brand-d)}
 
 /* Why-us numbers */
 .whygrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:22px}
-.why{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:26px;text-align:center}
+.why{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:26px;text-align:center;
+  transition:transform .18s ease,box-shadow .18s ease}
+.why:hover{transform:translateY(-3px);box-shadow:var(--shadow)}
 .why .v{font-size:34px;font-weight:800;color:var(--brand);letter-spacing:-1px;line-height:1}
 .why .l{color:var(--ink-3);font-size:14px;margin-top:8px}
 

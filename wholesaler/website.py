@@ -63,6 +63,29 @@ def sv(key: str) -> str:
     return setting_get(key, DEFAULTS.get(key, ""))
 
 
+# Keyword -> icon, checked in order against the service title. Falls back to
+# a generic mark. Keyword-matched (not positional) so it still makes sense
+# even after an owner edits/reorders/adds lines from /site-admin.
+_ICON_KEYWORDS = [
+    (("deliver", "fleet", "next-day", "next day"), "🚚"),
+    (("stock", "sku", "range", "inventory"), "📦"),
+    (("cold", "chain", "storage", "vaccine", "insulin"), "🌡️"),
+    (("credit", "payment", "terms", "billing"), "🤝"),
+    (("expiry", "expired", "return", "credit note"), "♻️"),
+    (("digital", "whatsapp", "online", "app", "order by"), "💬"),
+    (("gst", "tax", "compliance", "licence", "license"), "📋"),
+    (("support", "service", "call", "help"), "🎧"),
+]
+
+
+def _icon_for(title: str) -> str:
+    t = title.lower()
+    for keywords, icon in _ICON_KEYWORDS:
+        if any(k in t for k in keywords):
+            return icon
+    return "✦"
+
+
 def site_ctx() -> dict:
     """Everything the public templates need."""
     brands = [b.strip() for b in sv("site.brandlist").split(",") if b.strip()]
@@ -71,7 +94,8 @@ def site_ctx() -> dict:
     for line in sv("site.services").splitlines():
         if "|" in line:
             title, desc = line.split("|", 1)
-            services.append({"title": title.strip(), "desc": desc.strip()})
+            title = title.strip()
+            services.append({"title": title, "desc": desc.strip(), "icon": _icon_for(title)})
 
     stats = []
     for line in sv("site.whyus").splitlines():
