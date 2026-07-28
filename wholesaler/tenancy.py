@@ -179,6 +179,12 @@ def _tenant_aware_conn():
     c = sqlite3.connect(path)
     c.row_factory = sqlite3.Row
     c.execute("PRAGMA foreign_keys = ON")
+    # WAL: readers no longer block behind a writer (or vice versa) on the
+    # same tenant DB. Matters once a tenant has more than one person
+    # working at a time - a wanted-list upload writing rows no longer
+    # stalls someone else's page load against the same file.
+    c.execute("PRAGMA journal_mode = WAL")
+    c.execute("PRAGMA synchronous = NORMAL")
     try:
         yield c
         c.commit()

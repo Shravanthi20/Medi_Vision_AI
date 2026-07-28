@@ -1,0 +1,16 @@
+[Unit]
+Description=MediVision Wholesale (Flask + gunicorn)
+After=network.target
+
+[Service]
+Type=simple
+MemoryMax=512M
+User=root
+WorkingDirectory=/var/www/wholesaler
+EnvironmentFile=/var/www/wholesaler/.env
+ExecStart=/var/www/wholesaler/venv/bin/gunicorn wsgi:app -w 3 -b 127.0.0.1:3002 --timeout 60 --access-logfile /var/log/wholesaler-access.log --error-logfile /var/log/wholesaler-error.log
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

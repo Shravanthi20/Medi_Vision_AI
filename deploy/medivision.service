@@ -1,0 +1,16 @@
+[Unit]
+Description=MediVision AI (Flask + gunicorn)
+After=network.target
+
+[Service]
+Type=simple
+MemoryMax=512M
+User=root
+WorkingDirectory=/var/www/medivision
+EnvironmentFile=/var/www/medivision/.env
+ExecStart=/var/www/medivision/venv/bin/gunicorn wsgi:app -w 3 -b 127.0.0.1:3001 --timeout 120 --access-logfile /var/log/medivision-access.log --error-logfile /var/log/medivision-error.log
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
