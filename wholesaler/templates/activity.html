@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Activity — Wholesale{% endblock %}
+{% block body %}
+<h1>Activity log</h1>
+<p class="sub">Who did what, newest first. {{ rows|length }} shown (last 300).</p>
+
+<form method="GET" class="searchbar">
+  <select name="actor" onchange="this.form.submit()">
+    <option value="">Everyone</option>
+    {% for a in actors %}<option value="{{ a }}" {{ 'selected' if a==actor else '' }}>{{ a }}</option>{% endfor %}
+  </select>
+  <select name="entity" onchange="this.form.submit()">
+    <option value="">All records</option>
+    {% for e in entities %}<option value="{{ e }}" {{ 'selected' if e==entity else '' }}>{{ e }}</option>{% endfor %}
+  </select>
+  {% if actor or entity %}<a class="btn" href="{{ url_for('activity_log') }}">Clear</a>{% endif %}
+</form>
+
+<div class="card" style="padding:0;overflow:auto">
+  <table>
+    <thead><tr><th>When</th><th>Who</th><th>Did what</th><th>On</th><th>Details</th></tr></thead>
+    <tbody>
+    {% for r in rows %}
+      <tr>
+        <td class="nowrap" style="font-size:12.5px;color:var(--dim)">{{ r.ts }}</td>
+        <td><b>{{ r.actor or '—' }}</b></td>
+        <td><span class="pill open">{{ r.action }}</span></td>
+        <td style="font-size:12.5px">
+          {% if r.entity == 'order' and r.entity_id %}
+            <a href="{{ url_for('order_detail', order_id=r.entity_id) }}">order #{{ r.entity_id }}</a>
+          {% elif r.entity %}{{ r.entity }}{% if r.entity_id %} #{{ r.entity_id }}{% endif %}
+          {% else %}—{% endif %}
+        </td>
+        <td style="font-size:12.5px;color:var(--dim)">{{ r.details or '' }}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="5"><div class="empty"><div class="em">🗒️</div>Nothing logged yet.</div></td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

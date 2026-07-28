@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Import stock — Wholesale{% endblock %}
+{% block body %}
+<h1>Import stock</h1>
+<p class="sub">Upload a supplier price list or your own stock sheet. Re-uploading an updated file updates existing items instead of duplicating them.</p>
+
+<div class="card">
+  <form method="POST" enctype="multipart/form-data">
+    <div class="row two">
+      <div class="field"><label>Stock file (.xlsx or .csv)</label>
+        <input type="file" name="file" accept=".xlsx,.xlsm,.csv" required></div>
+      <div class="field"><label>&nbsp;</label><button class="btn primary wide">Import</button></div>
+    </div>
+  </form>
+</div>
+
+<div class="card">
+  <h3>How the columns are read</h3>
+  <p style="color:var(--dim);font-size:13px;margin-top:0">
+    Only <b>Name</b> is required — everything else is optional and matched by its heading,
+    so most supplier sheets import as-is without editing. Headings are case-insensitive.
+  </p>
+  <table>
+    <thead><tr><th>Column</th><th>Accepted headings</th></tr></thead>
+    <tbody>
+      <tr><td><b>Name</b> (required)</td><td>Name · Product · Item · Medicine · Description</td></tr>
+      <tr><td>Code</td><td>Code · SKU · Item Code</td></tr>
+      <tr><td>Generic</td><td>Generic · Molecule · Composition · Salt</td></tr>
+      <tr><td>Manufacturer</td><td>Manufacturer · Company · Mfr · Brand</td></tr>
+      <tr><td>Pack</td><td>Pack · Packing · Pack Size</td></tr>
+      <tr><td>MRP</td><td>MRP</td></tr>
+      <tr><td>Rate (tier A)</td><td>PTR · Rate · Price · Net Rate</td></tr>
+      <tr><td>Rate B / C</td><td>PTR B · Rate B · Tier B (same for C)</td></tr>
+      <tr><td>GST</td><td>GST · GST% · Tax</td></tr>
+      <tr><td>Stock</td><td>Stock · Qty · Quantity · Closing · Balance</td></tr>
+      <tr><td>Scheme</td><td>Scheme · Offer · Deal</td></tr>
+      <tr><td>Batch / Expiry</td><td>Batch · Lot / Expiry · Exp · Expdt</td></tr>
+      <tr><td>Category</td><td>Category · Type · Group</td></tr>
+      <tr><td>Reorder level</td><td>Reorder · Min Qty · Minimum</td></tr>
+    </tbody>
+  </table>
+  <p style="color:var(--dim);font-size:12.5px">
+    Matching: an item is updated if its <b>Code</b> matches an existing item, or failing that
+    its <b>Name</b> matches exactly. Otherwise it's added as a new item.
+  </p>
+</div>
+{% endblock %}

@@ -691,3 +691,170 @@ def custom_field_del(fid):
         c.execute("DELETE FROM custom_fields WHERE id=?", (fid,))
     flash("Field removed.", "ok")
     return redirect(url_for("customize"))
+
+
+# ═════════════════════════════════════════════════════════════════════
+#  ACTIVITY LOG — "who did what"
+#
+#  audit() has been writing to audit_log since day one (every order
+#  confirm/dispatch/invoice, every payment, every staff/user change), but
+#  there was no way to READ it. For a distributor with a salesman and an
+#  accountant sharing the system, "who confirmed this order?" is a daily
+#  question. Owner-only: it shows every user's actions, which is
+#  management information, not something a salesman should browse.
+# ═════════════════════════════════════════════════════════════════════
+@app.route("/activity")
+@login_required
+def activity_log():
+    actor = (request.args.get("actor") or "").strip()
+    entity = (request.args.get("entity") or "").strip()
+    with conn() as c:
+        q = "SELECT * FROM audit_log"
+        where, params = [], []
+        if actor:
+            where.append("actor=?")
+            params.append(actor)
+        if entity:
+            where.append("entity=?")
+            params.append(entity)
+        if where:
+            q += " WHERE " + " AND ".join(where)
+        q += " ORDER BY id DESC LIMIT 300"
+        rows = c.execute(q, params).fetchall()
+        actors = [r["actor"] for r in c.execute(
+            "SELECT DISTINCT actor FROM audit_log WHERE actor IS NOT NULL AND actor!='' ORDER BY actor").fetchall()]
+        entities = [r["entity"] for r in c.execute(
+            "SELECT DISTINCT entity FROM audit_log WHERE entity IS NOT NULL AND entity!='' ORDER BY entity").fetchall()]
+    return render_template("activity.html", rows=rows, actors=actors, entities=entities,
+                           actor=actor, entity=entity)
+
+
+# ═════════════════════════════════════════════════════════════════════
+#  BULK STOCK IMPORT
+#
+#  Adding a catalog one item at a time is fine for a demo and unusable
+#  for a real distributor with thousands of SKUs. Reuses the same
+#  forgiving column-detection idea as the wanted-list parser, but writes
+#  to wholesale_items. Matches on `code` when present, else on exact
+#  name, so re-uploading a supplier's updated price list UPDATES rows
+#  rather than creating duplicates.
+# ═════════════════════════════════════════════════════════════════════
+_IMPORT_FIELDS = {
+    "code":         ("code", "sku", "item code", "product code"),
+    "name":         ("name", "product", "item", "medicine", "description", "particular"),
+    "generic":      ("generic", "molecule", "composition", "salt"),
+    "manufacturer": ("manufacturer", "company", "mfr", "make", "brand"),
+    "pack_size":    ("pack", "packing", "pack size", "packsize"),
+    "mrp":          ("mrp", "m.r.p"),
+    "ptr":          ("ptr", "rate", "price", "purchase rate", "net rate"),
+    "ptr_b":        ("ptr_b", "ptr b", "rate b", "tier b"),
+    "ptr_c":        ("ptr_c", "ptr c", "rate c", "tier c"),
+    "gst_rate":     ("gst", "gst%", "gst rate", "tax"),
+    "hsn":          ("hsn", "hsn code"),
+    "scheme":       ("scheme", "offer", "deal"),
+    "stock":        ("stock", "qty", "quantity", "closing", "balance"),
+    "reorder_level":("reorder", "reorder level", "min qty", "minimum"),
+    "category":     ("category", "type", "group"),
+    "batch":        ("batch", "batch no", "lot"),
+    "expiry":       ("expiry", "exp", "expdt", "expiry date"),
+}
+_NUMERIC_FIELDS = {"mrp", "ptr", "ptr_b", "ptr_c", "gst_rate", "stock", "reorder_level"}
+
+
+def _parse_stock_file(fs):
+    """Read an .xlsx/.csv into a list of dicts keyed by wholesale_items columns."""
+    import io, csv as _csv, re as _re
+    fname = (fs.filename or "").lower()
+    raw = fs.read()
+
+    if fname.endswith(".csv"):
+        table = list(_csv.reader(io.StringIO(raw.decode("utf-8-sig", errors="replace"))))
+    elif fname.endswith((".xlsx", ".xlsm")):
+        try:
+            from openpyxl import load_workbook
+        except ImportError:
+            return [], "openpyxl isn't installed — save the file as CSV and retry."
+        wb = load_workbook(io.BytesIO(raw), data_only=True, read_only=True)
+        table = [[("" if v is None else str(v).strip()) for v in r]
+                 for r in wb.active.iter_rows(values_only=True)]
+    else:
+        return [], "Please upload a .xlsx or .csv file."
+
+    table = [r for r in table if any(str(x).strip() for x in r)]
+    if len(table) < 2:
+        return [], "That file has no data rows under its header."
+
+    header = [str(h).lower().strip() for h in table[0]]
+    colmap = {}
+    for idx, h in enumerate(header):
+        for field, aliases in _IMPORT_FIELDS.items():
+            if field in colmap:
+                continue
+            if any(h == a or h.replace(".", "").replace("_", " ") == a for a in aliases):
+                colmap[field] = idx
+                break
+    if "name" not in colmap:
+        return [], ("Couldn't find a product-name column. Name one column "
+                    "'Name' (or Product / Item / Medicine) and retry.")
+
+    rows = []
+    for r in table[1:]:
+        rec = {}
+        for field, idx in colmap.items():
+            val = str(r[idx]).strip() if idx < len(r) else ""
+            if field in _NUMERIC_FIELDS:
+                m = _re.search(r"-?\d+(\.\d+)?", val.replace(",", ""))
+                rec[field] = float(m.group()) if m else 0
+            else:
+                rec[field] = val
+        if rec.get("name"):
+            rows.append(rec)
+    return rows, None
+
+
+@app.route("/items/import", methods=["GET", "POST"])
+@login_required
+def items_import():
+    if request.method == "POST":
+        f = request.files.get("file")
+        if not f or not f.filename:
+            flash("Choose a file first.", "err")
+            return redirect(url_for("items_import"))
+        rows, err = _parse_stock_file(f)
+        if err:
+            flash(err, "err")
+            return redirect(url_for("items_import"))
+        if not rows:
+            flash("No product rows found in that file.", "err")
+            return redirect(url_for("items_import"))
+
+        created = updated = 0
+        with conn() as c:
+            for rec in rows:
+                existing = None
+                if rec.get("code"):
+                    existing = c.execute("SELECT id FROM wholesale_items WHERE code=?", (rec["code"],)).fetchone()
+                if not existing:
+                    existing = c.execute("SELECT id FROM wholesale_items WHERE name=?", (rec["name"],)).fetchone()
+
+                if existing:
+                    fields = [k for k in rec if k != "code"]
+                    c.execute(
+                        f"UPDATE wholesale_items SET {', '.join(k + '=?' for k in fields)} WHERE id=?",
+                        [rec[k] for k in fields] + [existing["id"]],
+                    )
+                    updated += 1
+                else:
+                    cols = list(rec.keys())
+                    c.execute(
+                        f"INSERT INTO wholesale_items ({', '.join(cols)}) VALUES ({', '.join('?' * len(cols))})",
+                        [rec[k] for k in cols],
+                    )
+                    created += 1
+
+        audit(session.get("ws_user"), "import_items", "item", None,
+              f"{f.filename}: +{created} new, {updated} updated")
+        flash(f"Imported {f.filename} — {created} new item(s), {updated} updated.", "ok")
+        return redirect(url_for("items"))
+
+    return render_template("items_import.html")

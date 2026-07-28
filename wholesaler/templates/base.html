@@ -25,6 +25,7 @@
     {% endif %}
     <a href="{{ url_for('shops') }}"     class="{{ 'active' if request.endpoint in ['shops','shop_detail'] else '' }}">Shops</a>
     <a href="{{ url_for('items') }}"     class="{{ 'active' if request.endpoint=='items' else '' }}">Items</a>
+    <a href="{{ url_for('items_import') }}" class="{{ 'active' if request.endpoint=='items_import' else '' }}" style="font-size:12.5px;color:var(--dim)">· Import</a>
     <a href="{{ url_for('routes') }}"    class="{{ 'active' if request.endpoint=='routes' else '' }}">Routes</a>
     {% if features.staff %}
     <a href="{{ url_for('staff_list') }}" class="{{ 'active' if request.endpoint in ['staff_list','attendance','payroll'] else '' }}">Staff</a>
@@ -55,6 +56,7 @@
     {% endif %}
     {% if role == 'owner' %}
     <a href="{{ url_for('users_list') }}" class="{{ 'active' if request.endpoint=='users_list' else '' }}">Staff logins</a>
+    <a href="{{ url_for('activity_log') }}" class="{{ 'active' if request.endpoint=='activity_log' else '' }}">Activity</a>
     {% endif %}
     <a href="{{ url_for('settings_page') }}">Settings</a>
     <span style="font-size:11.5px;color:var(--dim);padding:0 4px">{{ session.ws_user }} · {{ role }}</span>

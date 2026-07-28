@@ -171,7 +171,8 @@ def users_action(uid, action):
 # ══════════════════════════════════════════════════════════════════════
 _FINANCIAL_ENDPOINTS = ["invoices", "invoice_detail", "invoice_pay", "ledger",
                         "expenses", "expense_save", "payroll", "payroll_advance", "reports"]
-_OWNER_ONLY_ENDPOINTS = ["customize", "custom_field_add", "custom_field_del", "site_admin"]
+_OWNER_ONLY_ENDPOINTS = ["customize", "custom_field_add", "custom_field_del", "site_admin",
+                         "activity_log"]
 
 
 def _lock_down_routes():
