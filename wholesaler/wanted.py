@@ -150,6 +150,17 @@ def _sim(a: str, b: str) -> float:
     return SequenceMatcher(None, a, b).ratio()
 
 
+# Fuzzy-matching used to score every unmatched line against the ENTIRE
+# catalog (O(catalog_size) SequenceMatcher calls per line). Fine at 50
+# items; at a real distributor's 5,000-15,000 SKUs, a 100-line upload could
+# mean 1M+ comparisons in one request, monopolising a gunicorn worker for
+# tens of seconds on a shared 1-vCPU box. Below, candidates are narrowed to
+# a prefix bucket first, capped at MAX_FUZZY_CANDIDATES — cost per line is
+# now bounded and independent of catalog size, not just "usually small."
+MAX_FUZZY_CANDIDATES = 300
+MIN_BUCKET_SIZE = 8   # widen to the 1-char bucket if the 2-char one is this sparse
+
+
 def load_catalog(c):
     rows = c.execute("""SELECT id, code, name, generic, manufacturer, pack_size, ptr, ptr_b, ptr_c,
                                gst_rate, scheme, moq, stock, mrp
@@ -163,7 +174,44 @@ def load_catalog(c):
     return cat
 
 
-def match_line(c, catalog, shop_id, raw_name):
+def build_catalog_index(catalog):
+    """
+    Built ONCE per upload, not per line.
+      exact_norm/exact_code — O(1) lookup for exact matches (was an
+        O(catalog_size) scan before).
+      idx2/idx1 — items bucketed by the first 2 (then 1, as a fallback)
+        characters of their normalised name AND generic name, so a fuzzy
+        match only scores plausible candidates instead of everything.
+    """
+    exact_norm, exact_code = {}, {}
+    idx2, idx1 = {}, {}
+    for it in catalog:
+        if it["_norm"]:
+            exact_norm.setdefault(it["_norm"], it)
+            idx2.setdefault(it["_norm"][:2], []).append(it)
+            idx1.setdefault(it["_norm"][:1], []).append(it)
+        if it["_gnorm"]:
+            idx2.setdefault(it["_gnorm"][:2], []).append(it)
+            idx1.setdefault(it["_gnorm"][:1], []).append(it)
+        code = (it["code"] or "").lower().replace(" ", "")
+        if code:
+            exact_code.setdefault(code, it)
+    return {"exact_norm": exact_norm, "exact_code": exact_code, "idx2": idx2, "idx1": idx1}
+
+
+def _fuzzy_candidates(n, index):
+    seen = {}
+    for it in index["idx2"].get(n[:2], []):
+        seen[it["id"]] = it
+    if len(seen) < MIN_BUCKET_SIZE:
+        for it in index["idx1"].get(n[:1], []):
+            seen[it["id"]] = it
+    # dict preserves insertion order; cap bounds worst case regardless of
+    # catalog size (e.g. a catalog skewed toward one starting letter).
+    return list(seen.values())[:MAX_FUZZY_CANDIDATES]
+
+
+def match_line(c, index, shop_id, raw_name):
     """Return (item_id, match_type, confidence, suggestions[])."""
     n = norm(raw_name)
     if not n:
@@ -179,22 +227,22 @@ def match_line(c, catalog, shop_id, raw_name):
     if row:
         return row["item_id"], "global", 1.0, []
 
-    # 3 — exact on normalised name, or on SKU code
-    for it in catalog:
-        if it["_norm"] == n or (it["code"] or "").lower() == n.replace(" ", ""):
-            return it["id"], "exact", 1.0, []
+    # 3 — exact on normalised name, or on SKU code — O(1) dict lookup
+    it = index["exact_norm"].get(n) or index["exact_code"].get(n.replace(" ", ""))
+    if it:
+        return it["id"], "exact", 1.0, []
 
-    # 4 — fuzzy. Score against name and generic, keep the best per item.
+    # 4 — fuzzy, over a bounded candidate set instead of the whole catalog
     scored = []
-    for it in catalog:
-        s = _sim(n, it["_norm"])
-        if it["_gnorm"]:
-            s = max(s, _sim(n, it["_gnorm"]) * 0.95)   # generic match is slightly weaker evidence
+    for cand in _fuzzy_candidates(n, index):
+        s = _sim(n, cand["_norm"])
+        if cand["_gnorm"]:
+            s = max(s, _sim(n, cand["_gnorm"]) * 0.95)   # generic match is slightly weaker evidence
         # a shared leading token is a strong hint ("pan 40" vs "pantop 40")
-        if n.split()[:1] and it["_norm"].split()[:1] and n.split()[0] == it["_norm"].split()[0]:
+        if n.split()[:1] and cand["_norm"].split()[:1] and n.split()[0] == cand["_norm"].split()[0]:
             s = min(1.0, s + 0.12)
         if s > 0.55:
-            scored.append((s, it))
+            scored.append((s, cand))
     scored.sort(key=lambda x: -x[0])
 
     if scored and scored[0][0] >= 0.88:
@@ -318,6 +366,7 @@ def process_wanted(shop_id, rows, filename, source="admin"):
     """Shared by the admin upload and the shop-portal upload."""
     with conn() as c:
         catalog = load_catalog(c)
+        index = build_catalog_index(catalog)   # once per upload, not per line
         cur = c.execute("""INSERT INTO wanted_uploads (shop_id, filename, total_lines, source)
                            VALUES (?,?,?,?)""", (shop_id, filename, len(rows), source))
         upload_id = cur.lastrowid
@@ -325,7 +374,7 @@ def process_wanted(shop_id, rows, filename, source="admin"):
         auto = review = missing = 0
         demand_rows = []
         for r in rows:
-            item_id, mtype, conf, sugg = match_line(c, catalog, shop_id, r["name"])
+            item_id, mtype, conf, sugg = match_line(c, index, shop_id, r["name"])
             c.execute("""INSERT INTO wanted_lines
                 (upload_id, raw_name, norm_name, qty, item_id, match_type, confidence, suggestions)
                 VALUES (?,?,?,?,?,?,?,?)""",
