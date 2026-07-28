@@ -33,7 +33,7 @@
       {% endif %}
     </form>
 
-    <form method="POST" action="{{ url_for('catalog_order') }}">
+    <form method="POST" action="{{ url_for('public_catalog_order', slug=public_catalog_slug) if public_catalog_slug else url_for('catalog_order') }}">
       <div class="card" style="padding:0;overflow:auto">
         <table>
           <thead><tr><th>Item</th><th>Pack</th><th class="right">MRP</th><th class="right">PTR</th><th>Scheme</th><th class="right nowrap">Order qty</th></tr></thead>

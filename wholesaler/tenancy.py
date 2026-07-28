@@ -151,6 +151,31 @@ def tenant_db_path(slug: str) -> str:
     return os.path.join(TENANT_DIR, f"{slug}.db")
 
 
+def enter_tenant(slug: str):
+    """
+    Explicitly bind THIS request to a tenant DB, bypassing session lookup.
+
+    _resolve_tenant() below only knows the tenant from a browser session
+    cookie. That's wrong for any entry point that legitimately has no
+    session but DOES know the tenant some other way — a Twilio webhook
+    (the company is in the URL Twilio was configured to POST to), or a
+    public QR-code catalog link (the company is in the URL a shop
+    scanned). Call this FIRST, before any conn() use, in such a route.
+
+    Validates the company exists and is active, so a stale/typo'd/
+    suspended link 404s loudly instead of silently reading nothing (or —
+    the bug this exists to prevent — silently falling back to whatever
+    core.DB_PATH happens to point at).
+    """
+    with platform_conn() as pc:
+        comp = pc.execute("SELECT * FROM companies WHERE slug=? AND status='active'", (slug,)).fetchone()
+    if not comp:
+        abort(404)
+    g.tenant_slug = slug
+    g.tenant_db = tenant_db_path(slug)
+    return comp
+
+
 # ══════════════════════════════════════════════════════════════════════
 #  TENANT RESOLUTION — make core.conn() open the right file
 # ══════════════════════════════════════════════════════════════════════
@@ -204,6 +229,10 @@ except ImportError:
     pass
 try:
     import wanted as _wanted; _wanted.conn = _tenant_aware_conn
+except ImportError:
+    pass
+try:
+    import whatsapp as _whatsapp; _whatsapp.conn = _tenant_aware_conn
 except ImportError:
     pass
 

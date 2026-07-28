@@ -42,7 +42,7 @@
     <a href="{{ url_for('reports') }}"    class="{{ 'active' if request.endpoint=='reports' else '' }}">Reports</a>
     {% endif %}
     {% if features.catalog %}
-    <a href="{{ url_for('catalog') }}"   target="_blank">Catalog ↗</a>
+    <a href="{{ url_for('public_catalog', slug=session.tenant) }}" target="_blank">Catalog ↗</a>
     {% endif %}
     {% if features.custom %}
     <a href="{{ url_for('customize') }}" class="{{ 'active' if request.endpoint=='customize' else '' }}">Customize</a>

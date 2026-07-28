@@ -29,7 +29,7 @@ from datetime import datetime, timedelta, date
 from contextlib import contextmanager
 
 from flask import (Flask, request, render_template, redirect, url_for,
-                   session, flash, jsonify, abort, Response)
+                   session, flash, jsonify, abort, Response, g)
 from dotenv import load_dotenv
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -654,6 +654,16 @@ def order_action(order_id):
             flash("Action not allowed at current status.", "err")
             return redirect(url_for("order_detail", order_id=order_id))
     audit(session.get("ws_user"), action, "order", order_id, order["order_no"])
+    if action == "confirm":
+        # Lazy import: by request time wsgi.py has already loaded whatsapp.py
+        # into sys.modules, this is just a cache lookup, not a re-import -
+        # avoids a circular import at module-load time (whatsapp.py imports
+        # from app.py). Never let a notification failure break the confirm.
+        try:
+            import whatsapp
+            whatsapp.notify_order_confirmed(order_id)
+        except Exception:
+            pass
     flash(f"Order {action}ed.", "ok")
     return redirect(url_for("order_detail", order_id=order_id))
 
@@ -797,7 +807,19 @@ def catalog():
             rows = c.execute("SELECT * FROM wholesale_items WHERE status='active' AND category=? ORDER BY name LIMIT 200", (category,)).fetchall()
         else:
             rows = c.execute("SELECT * FROM wholesale_items WHERE status='active' ORDER BY name LIMIT 100").fetchall()
-    return render_template("catalog.html", items=rows, categories=cats, q=q, category=category, company=COMPANY_NAME)
+    return render_template("catalog.html", items=rows, categories=cats, q=q, category=category,
+                           company=COMPANY_NAME, public_catalog_slug=getattr(g, "public_catalog_slug", None))
+
+
+def _catalog_redirect():
+    """
+    Back to the catalog the visitor actually came from. The tenant-scoped
+    public_catalog() wrapper stamps g.public_catalog_slug before calling
+    through here — without that, a redirect to bare url_for('catalog')
+    would lose the tenant (no session on a public link) and 404/misbehave.
+    """
+    slug = getattr(g, "public_catalog_slug", None)
+    return redirect(url_for("public_catalog", slug=slug)) if slug else redirect(url_for("catalog"))
 
 
 @app.route("/catalog/order", methods=["POST"])
@@ -810,7 +832,7 @@ def catalog_order():
 
     if not shop_code:
         flash("Please enter your shop code so we can identify you.", "err")
-        return redirect(url_for("catalog"))
+        return _catalog_redirect()
 
     with conn() as c:
         shop = c.execute("SELECT * FROM retail_shops WHERE code=? OR phone=? OR whatsapp=?",
@@ -860,77 +882,37 @@ def catalog_order():
         with conn() as c:
             c.execute("DELETE FROM sales_orders WHERE id=?", (order_id,))
         flash("No valid items in your order. Add quantities and resubmit.", "err")
-        return redirect(url_for("catalog"))
+        return _catalog_redirect()
 
     compute_order_totals(order_id)
     audit(shop_code, "public_order", "order", order_id, order_no)
     return render_template("catalog_thanks.html", order_no=order_no, shop_code=shop_code)
 
 
-# ═════════════════════════════════════════════════════════════════════
-#  WHATSAPP INBOUND ORDER STUB (for Twilio-webhook wiring later)
-# ═════════════════════════════════════════════════════════════════════
-@app.route("/api/whatsapp/inbound", methods=["POST"])
-def whatsapp_inbound():
-    """
-    Stub for parsing a WhatsApp-style message like:
-      "SEL001: Dolo 650 x5, Crocin x2, Zerodol SP x10"
-    into a draft order. Wire Twilio webhook here later.
-    """
-    text = (request.form.get("Body") or request.json.get("text") if request.is_json else request.form.get("Body") or "").strip()
-    if not text:
-        return jsonify({"error": "empty message"}), 400
+# ── Tenant-scoped public entry point — THE URL to actually share/QR-code.
+#    Bare /catalog above has no way to know the tenant without a session
+#    (see enter_tenant()'s docstring for why that's a real bug, not a
+#    style preference); a fresh visitor with no prior login must arrive
+#    through here so the tenant comes from the URL itself. ──────────────
+@app.route("/c/<slug>/catalog")
+def public_catalog(slug):
+    import tenancy
+    tenancy.enter_tenant(slug)
+    g.public_catalog_slug = slug
+    return catalog()
 
-    shop_code = None
-    body = text
-    if ":" in text:
-        shop_code, body = text.split(":", 1)
-        shop_code = shop_code.strip().upper()
 
-    with conn() as c:
-        shop = None
-        if shop_code:
-            shop = c.execute("SELECT * FROM retail_shops WHERE code=? OR phone=? OR whatsapp=?",
-                             (shop_code, shop_code, shop_code)).fetchone()
-        if not shop:
-            return jsonify({"error": "unknown shop_code", "shop_code": shop_code}), 400
+@app.route("/c/<slug>/catalog/order", methods=["POST"])
+def public_catalog_order(slug):
+    import tenancy
+    tenancy.enter_tenant(slug)
+    g.public_catalog_slug = slug
+    return catalog_order()
 
-        order_no = next_order_no()
-        cur = c.execute(
-            "INSERT INTO sales_orders (order_no, shop_id, source, created_by, notes, status) VALUES (?,?,?,?,?,?)",
-            (order_no, shop["id"], "whatsapp", shop_code, text[:400], "draft"),
-        )
-        order_id = cur.lastrowid
 
-        added = 0
-        for part in body.split(","):
-            part = part.strip()
-            if not part:
-                continue
-            qty = 1
-            name_part = part
-            if "x" in part.lower():
-                # "Dolo 650 x5" → name="Dolo 650", qty=5
-                p1, p2 = part.lower().rsplit("x", 1)
-                try:
-                    qty = int(p2.strip())
-                    name_part = p1.strip()
-                except Exception:
-                    pass
-            like = f"%{name_part.strip()}%"
-            item = c.execute("SELECT * FROM wholesale_items WHERE name LIKE ? OR generic LIKE ? ORDER BY name LIMIT 1", (like, like)).fetchone()
-            if not item:
-                continue
-            rate = rate_for_shop(item, shop["price_tier"])
-            c.execute("""INSERT INTO sales_order_items
-                (order_id, item_id, item_name, pack_size, qty, rate, gst_rate, amount)
-                VALUES (?,?,?,?,?,?,?,?)""",
-                (order_id, item["id"], item["name"], item["pack_size"], qty, rate, item["gst_rate"], qty * rate))
-            added += 1
-
-    compute_order_totals(order_id)
-    audit(shop_code, "whatsapp_order", "order", order_id, order_no)
-    return jsonify({"status": "ok", "order_no": order_no, "lines_matched": added})
+# WhatsApp inbound/outbound now lives in whatsapp.py (Twilio webhook +
+# TwiML replies + real send capability), imported via wsgi.py. Removed
+# from here to avoid double-registering /api/whatsapp/inbound.
 
 
 # ═════════════════════════════════════════════════════════════════════
