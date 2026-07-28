@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Pending shops — Wholesale{% endblock %}
+{% block body %}
+<h1>Shop applications</h1>
+<p class="sub">Retailers who registered from your public site. Approving one assigns their shop code and lets them sign in and order.</p>
+
+{% if not shops %}
+  <div class="empty"><div class="em">📭</div>
+    No applications waiting.<br>
+    <span style="font-size:12.5px">Share your sign-up link:
+      <code>{{ request.url_root }}shop/register?c={{ session.tenant }}</code></span>
+  </div>
+{% else %}
+  {% for s in shops %}
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap">
+      <div>
+        <div style="font-size:17px;font-weight:800">{{ s.name }}</div>
+        <div style="color:var(--dim);font-size:12.5px;margin-top:2px">
+          Applied {{ s.created_at[:16] }}
+          {% if s.contact_person %} · {{ s.contact_person }}{% endif %}
+        </div>
+      </div>
+      <form method="POST" action="{{ url_for('shop_reject', shop_id=s.id) }}"
+            onsubmit="return confirm('Reject {{ s.name }}?')">
+        <button class="btn sm red" type="submit">Reject</button>
+      </form>
+    </div>
+
+    <div class="row two" style="margin-top:12px">
+      <div style="font-size:13px">
+        <div style="color:var(--dim);font-size:11px;text-transform:uppercase;letter-spacing:.4px">Contact</div>
+        📞 {{ s.phone }}{% if s.whatsapp and s.whatsapp != s.phone %} · WA {{ s.whatsapp }}{% endif %}<br>
+        {% if s.email %}✉️ {{ s.email }}<br>{% endif %}
+        {% if s.address or s.city %}📍 {{ s.address }} {{ s.city }} {{ s.pincode }}{% endif %}
+      </div>
+      <div style="font-size:13px">
+        <div style="color:var(--dim);font-size:11px;text-transform:uppercase;letter-spacing:.4px">Licences</div>
+        GSTIN: {{ s.gstin or '— not given —' }}<br>
+        Drug licence: {{ s.drug_license or '— not given —' }}
+      </div>
+    </div>
+
+    <form method="POST" action="{{ url_for('shop_approve', shop_id=s.id) }}"
+          style="margin-top:14px;border-top:1px solid var(--line);padding-top:14px">
+      <div class="row four">
+        <div class="field"><label>Shop code</label>
+          <input name="code" placeholder="auto" style="text-transform:uppercase"></div>
+        <div class="field"><label>Price tier</label>
+          <select name="price_tier">
+            <option value="A">A — standard</option>
+            <option value="B">B</option>
+            <option value="C">C</option>
+          </select></div>
+        <div class="field"><label>Credit limit ₹</label>
+          <input name="credit_limit" type="number" step="100" value="0"></div>
+        <div class="field"><label>Credit days</label>
+          <input name="credit_days" type="number" value="30"></div>
+      </div>
+      {% if routes %}
+      <div class="field"><label>Delivery route</label>
+        <select name="route_id">
+          <option value="">— none —</option>
+          {% for r in routes %}<option value="{{ r.id }}">{{ r.name }}</option>{% endfor %}
+        </select></div>
+      {% endif %}
+      <button class="btn primary" type="submit">Approve &amp; activate</button>
+      <span style="color:var(--dim);font-size:12px;margin-left:8px">
+        Leave the code blank and we'll generate one.
+      </span>
+    </form>
+  </div>
+  {% endfor %}
+{% endif %}
+{% endblock %}

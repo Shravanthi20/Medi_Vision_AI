@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Application received</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head><body>
+<main><div class="wrap" style="max-width:520px;margin:10vh auto;text-align:center">
+  <div style="font-size:52px;margin-bottom:10px">{{ '📋' if existing else '✅' }}</div>
+  {% if existing %}
+    <h1>We already have your shop</h1>
+    <p class="sub" style="margin-bottom:22px">
+      There's already an application or account for this phone number with {{ comp_name }}.
+      If you can't sign in, call them and they'll sort it out in a minute.
+    </p>
+  {% else %}
+    <h1>Application sent</h1>
+    <p class="sub" style="margin-bottom:22px">
+      {{ comp_name }} has your details. Once they approve you, you'll get your shop code —
+      then you can sign in, see your own trade prices, and order any time.
+    </p>
+  {% endif %}
+  <a class="btn primary" href="{{ url_for('shop_login', c=company) }}">Go to sign-in</a>
+</div></main>
+</body></html>

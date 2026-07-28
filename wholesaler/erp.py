@@ -219,7 +219,20 @@ def features():
 
 @app.context_processor
 def _inject_features():
-    return {"features": features(), "wholesale_company": setting_get("company.name", "MediVision Wholesale")}
+    # Pending-application count drives the nav badge. Only queried for a
+    # signed-in tenant session: a public page (catalog, registration) has
+    # no tenant bound, and conn() would fall back to the default DB.
+    pending = 0
+    if session.get("ws_user") and session.get("tenant"):
+        try:
+            with conn() as c:
+                pending = c.execute(
+                    "SELECT COUNT(*) n FROM retail_shops WHERE status='pending'").fetchone()["n"]
+        except Exception:
+            pending = 0
+    return {"features": features(),
+            "wholesale_company": setting_get("company.name", "MediVision Wholesale"),
+            "pending_shops": pending}
 
 
 # ═════════════════════════════════════════════════════════════════════

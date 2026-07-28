@@ -24,6 +24,7 @@
     <a href="{{ url_for('ledger') }}"    class="{{ 'active' if request.endpoint=='ledger' else '' }}">Ledger</a>
     {% endif %}
     <a href="{{ url_for('shops') }}"     class="{{ 'active' if request.endpoint in ['shops','shop_detail'] else '' }}">Shops</a>
+    <a href="{{ url_for('shops_pending') }}" class="{{ 'active' if request.endpoint=='shops_pending' else '' }}" style="font-size:12.5px;color:var(--dim)">· Applications{% if pending_shops %} <span class="pill hold" style="padding:1px 7px">{{ pending_shops }}</span>{% endif %}</a>
     <a href="{{ url_for('items') }}"     class="{{ 'active' if request.endpoint=='items' else '' }}">Items</a>
     <a href="{{ url_for('items_import') }}" class="{{ 'active' if request.endpoint=='items_import' else '' }}" style="font-size:12.5px;color:var(--dim)">· Import</a>
     <a href="{{ url_for('routes') }}"    class="{{ 'active' if request.endpoint=='routes' else '' }}">Routes</a>

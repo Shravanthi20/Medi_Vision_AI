@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Open a trade account</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head><body>
+<main><div class="wrap" style="max-width:640px;margin:5vh auto">
+  <div class="brand" style="justify-content:center;margin-bottom:6px">
+    <div class="logo">W</div>
+    <div style="font-size:22px">Open a <span class="ai">trade account</span></div>
+  </div>
+  <p style="text-align:center;color:var(--dim);font-size:13px;margin:0 0 20px">
+    Tell us about your shop. Your distributor reviews it and activates your login — usually the same day.
+  </p>
+
+  <div class="card">
+    {% if error %}<div class="flash err">{{ error }}</div>{% endif %}
+    <form method="POST" autocomplete="on">
+      <div class="field">
+        <label>Distributor code *</label>
+        <input name="company" value="{{ company }}" required autocapitalize="none" autocorrect="off"
+               placeholder="e.g. rathna" style="text-transform:lowercase">
+        <div style="font-size:11.5px;color:var(--dim);margin-top:3px">
+          The code your supplier gave you. Ask them if you're not sure.
+        </div>
+      </div>
+
+      <h3 style="margin:20px 0 10px">Your shop</h3>
+      <div class="row two">
+        <div class="field"><label>Shop name *</label>
+          <input name="name" required placeholder="e.g. Sri Ram Medical Hall"></div>
+        <div class="field"><label>Phone *</label>
+          <input name="phone" required inputmode="tel" placeholder="10-digit mobile"></div>
+      </div>
+      <div class="row two">
+        <div class="field"><label>Owner / contact person</label>
+          <input name="contact_person" autocomplete="name"></div>
+        <div class="field"><label>WhatsApp (if different)</label>
+          <input name="whatsapp" inputmode="tel"></div>
+      </div>
+      <div class="field"><label>Email</label><input name="email" type="email"></div>
+      <div class="field"><label>Address</label><input name="address"></div>
+      <div class="row two">
+        <div class="field"><label>City</label><input name="city"></div>
+        <div class="field"><label>Pincode</label><input name="pincode" inputmode="numeric"></div>
+      </div>
+
+      <h3 style="margin:20px 0 10px">Licences</h3>
+      <div class="row two">
+        <div class="field"><label>GSTIN</label>
+          <input name="gstin" style="text-transform:uppercase" placeholder="33AAAAA0000A1Z5"></div>
+        <div class="field"><label>Drug licence no.</label>
+          <input name="drug_license" style="text-transform:uppercase"></div>
+      </div>
+      <p style="color:var(--dim);font-size:12px;margin:0 0 14px">
+        Not mandatory to apply, but your distributor will usually ask for these before activating credit.
+      </p>
+
+      <button class="btn primary wide">Send application</button>
+    </form>
+  </div>
+
+  <p style="text-align:center;margin-top:16px;font-size:13px">
+    Already have a shop code? <a href="{{ url_for('shop_login') }}">Sign in →</a>
+  </p>
+</div></main>
+</body></html>

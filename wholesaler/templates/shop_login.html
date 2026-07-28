@@ -20,6 +20,9 @@
     </form>
     <p style="color:var(--dim);font-size:12.5px;margin-top:12px;text-align:center">
       First time? Enter the PIN you'd like and it's saved for next time.</p>
+    <p style="font-size:13px;margin-top:10px;text-align:center;border-top:1px solid var(--line);padding-top:12px">
+      No account yet? <a href="{{ url_for('shop_register', c=company) }}">Open a trade account →</a>
+    </p>
   </div>
 </div>
 {% endblock %}

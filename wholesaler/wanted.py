@@ -612,12 +612,25 @@ def shop_login():
             from flask import g
             g.tenant_slug, g.tenant_db = company, T.tenant_db_path(company)
             with conn() as c:
-                shop = c.execute("SELECT * FROM retail_shops WHERE code=? OR phone=?", (code, code)).fetchone()
+                # status='active' is a SECURITY filter, not a tidiness one.
+                # Rows exist here that must never be able to sign in:
+                #   'pending'  — self-registered, not yet approved
+                #   'rejected' — turned down
+                #   'hold'     — auto-created by a public-catalog order
+                # Matching on phone as well as code means an unapproved
+                # applicant would otherwise log in with their own phone
+                # number and set a PIN, skipping approval entirely.
+                shop = c.execute(
+                    "SELECT * FROM retail_shops WHERE (code=? OR phone=?) AND status='active'",
+                    (code, code)).fetchone()
                 row = c.execute("SELECT * FROM shop_logins WHERE shop_id=?",
                                 (shop["id"],)).fetchone() if shop else None
             if not shop:
                 session.pop("tenant", None)
-                error = "No shop with that code."
+                # Deliberately identical whether the shop is unknown or merely
+                # not yet approved - don't confirm to a stranger that a given
+                # phone number is registered with this distributor.
+                error = "No active shop with that code. If you've just applied, wait for approval."
             elif row and row["pin"] and row["pin"] != pin:
                 session.pop("tenant", None)
                 error = "Wrong PIN."
@@ -955,3 +968,149 @@ def shop_cart_checkout():
     compute_order_totals(order_id)
     audit(session.get("shop_name"), "shop_portal_order", "order", order_id, order_no)
     return render_template("shop_cart_thanks.html", order_no=order_no)
+
+
+# ══════════════════════════════════════════════════════════════════════
+#  RETAILER SELF-REGISTRATION
+#
+#  Until now a new retail shop could only exist if the distributor typed
+#  it in, or if it stumbled through the public catalog (which auto-creates
+#  a bare "[Pending] CODE" row with no contact details). Neither turns a
+#  shop that finds the public site into a real customer.
+#
+#  This is the growth loop: the shop applies with its own details, the
+#  distributor reviews and approves, the shop can then sign in and order.
+#  Applications land as status='pending' - NOT 'active' - so an unapproved
+#  shop can never log in or see trade prices. shop_login() already filters
+#  logins to real shops; approval is what makes the row usable.
+#
+#  Tenant comes from the form's company code (validated against
+#  platform.db), same as shop_login - a public page has no session to
+#  read it from.
+# ══════════════════════════════════════════════════════════════════════
+@app.route("/shop/register", methods=["GET", "POST"])
+def shop_register():
+    company = (request.args.get("c") or "").strip().lower()
+    error = ""
+    if request.method == "POST":
+        import tenancy as T
+        d = request.form
+        company = (d.get("company") or "").strip().lower()
+        name = (d.get("name") or "").strip()
+        phone = (d.get("phone") or "").strip()
+
+        with T.platform_conn() as pc:
+            comp = pc.execute("SELECT * FROM companies WHERE slug=? AND status='active'",
+                              (company,)).fetchone()
+        if not comp:
+            error = "Unknown distributor code — check with your supplier."
+        elif not name or not phone:
+            error = "Shop name and phone number are required."
+        else:
+            from flask import g
+            g.tenant_slug, g.tenant_db = company, T.tenant_db_path(company)
+            with conn() as c:
+                dupe = c.execute(
+                    "SELECT id, status FROM retail_shops WHERE phone=? OR (name=? AND phone=?)",
+                    (phone, name, phone)).fetchone()
+                if dupe:
+                    # Don't leak whether the existing row is active vs pending -
+                    # just stop them creating a second one for the same shop.
+                    return render_template("shop_register_done.html",
+                                           company=company, existing=True,
+                                           comp_name=comp["name"])
+                cur = c.execute("""INSERT INTO retail_shops
+                    (code, name, contact_person, phone, whatsapp, email, address, city,
+                     pincode, gstin, drug_license, status, notes)
+                    VALUES (?,?,?,?,?,?,?,?,?,?,?,'pending',?)""",
+                    ("", name, (d.get("contact_person") or "").strip(), phone,
+                     (d.get("whatsapp") or phone).strip(), (d.get("email") or "").strip(),
+                     (d.get("address") or "").strip(), (d.get("city") or "").strip(),
+                     (d.get("pincode") or "").strip(), (d.get("gstin") or "").strip(),
+                     (d.get("drug_license") or "").strip(),
+                     "Self-registered from the public site"))
+                audit(name, "self_register", "shop", cur.lastrowid, phone)
+            return render_template("shop_register_done.html",
+                                   company=company, existing=False, comp_name=comp["name"])
+
+    return render_template("shop_register.html", company=company, error=error)
+
+
+@app.route("/shops/pending")
+@login_required
+def shops_pending():
+    with conn() as c:
+        # 'hold' as well as 'pending': a shop that ordered through the public
+        # catalog without an account is auto-created as 'hold', and since
+        # shop_login now (correctly) refuses anything but 'active', those
+        # rows would be stranded with no way to be activated if this page
+        # only listed self-registrations.
+        rows = c.execute("""SELECT * FROM retail_shops WHERE status IN ('pending','hold')
+                            ORDER BY id DESC""").fetchall()
+        routes = c.execute("SELECT * FROM delivery_routes ORDER BY name").fetchall()
+    return render_template("shops_pending.html", shops=rows, routes=routes)
+
+
+@app.route("/shops/<int:shop_id>/approve", methods=["POST"])
+@login_required
+def shop_approve(shop_id):
+    """
+    Approve a self-registered shop: assign a real shop code (the login
+    identifier), set commercial terms, activate. The code is what the
+    retailer types at /shop/login, so it must exist and be unique - a
+    pending row is created with an empty code precisely so an unapproved
+    application can't be used to sign in.
+    """
+    d = request.form
+    with conn() as c:
+        shop = c.execute("SELECT * FROM retail_shops WHERE id=?", (shop_id,)).fetchone()
+        if not shop:
+            abort(404)
+        if shop["status"] not in ("pending", "hold"):
+            flash("That application has already been handled.", "err")
+            return redirect(url_for("shops_pending"))
+
+        code = (d.get("code") or "").strip().upper()
+        if not code:
+            n = c.execute("SELECT COUNT(*) FROM retail_shops").fetchone()[0]
+            code = f"S{n + 1:04d}"
+        if c.execute("SELECT 1 FROM retail_shops WHERE code=? AND id!=?", (code, shop_id)).fetchone():
+            flash(f"Shop code '{code}' is already taken — pick another.", "err")
+            return redirect(url_for("shops_pending"))
+
+        route_id = d.get("route_id")
+        c.execute("""UPDATE retail_shops SET code=?, price_tier=?, credit_limit=?, credit_days=?,
+                     route_id=?, status='active' WHERE id=?""",
+                  (code, d.get("price_tier") or "A", float(d.get("credit_limit") or 0),
+                   int(d.get("credit_days") or 30), int(route_id) if route_id else None, shop_id))
+    audit(session.get("ws_user"), "approve_shop", "shop", shop_id, f"{shop['name']} → {code}")
+
+    # Tell them they're live and how to sign in. Best-effort: a missing
+    # Twilio config must never block an approval that already succeeded.
+    try:
+        import whatsapp
+        whatsapp.send_whatsapp(shop["whatsapp"] or shop["phone"],
+                         f"Your account with us is approved. Sign in at "
+                         f"{request.url_root.rstrip('/')}/shop/login with shop code {code} "
+                         f"and set your own PIN on first sign-in.")
+    except Exception:
+        pass
+
+    flash(f"{shop['name']} approved — shop code {code}. They can now sign in and order.", "ok")
+    return redirect(url_for("shops_pending"))
+
+
+@app.route("/shops/<int:shop_id>/reject", methods=["POST"])
+@login_required
+def shop_reject(shop_id):
+    with conn() as c:
+        shop = c.execute("SELECT * FROM retail_shops WHERE id=?", (shop_id,)).fetchone()
+        if not shop:
+            abort(404)
+        # Keep the row (status='rejected') rather than deleting: the duplicate
+        # check on re-registration relies on it, so a rejected applicant can't
+        # simply re-apply in a loop.
+        c.execute("UPDATE retail_shops SET status='rejected' WHERE id=?", (shop_id,))
+    audit(session.get("ws_user"), "reject_shop", "shop", shop_id, shop["name"])
+    flash(f"{shop['name']} rejected.", "ok")
+    return redirect(url_for("shops_pending"))
