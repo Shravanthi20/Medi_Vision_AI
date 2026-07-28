@@ -8386,17 +8386,18 @@ app.view_functions.pop('api_ws_stock', None)
 def api_ws_stock():                # noqa: F811
     limit = min(int(request.args.get("limit", 500)), 5000)
     q = (request.args.get("q") or "").strip()
+    cols = ("id, n as name, g as generic, c as category, p as mrp, s as stock, p_rate as cost, "
+            "batch, expiry, offer as scheme, p_packing as pack")
     with get_conn() as conn:
         if q:
             like = f"%{q}%"
             rows = conn.execute(
-                "SELECT id, n as name, g as generic, c as category, p as mrp, s as stock, p_rate as cost "
-                "FROM medicines WHERE n LIKE ? OR g LIKE ? ORDER BY n LIMIT ?",
+                f"SELECT {cols} FROM medicines WHERE n LIKE ? OR g LIKE ? ORDER BY n LIMIT ?",
                 (like, like, limit)
             ).fetchall()
         else:
             rows = conn.execute(
-                "SELECT id, n as name, g as generic, c as category, p as mrp, s as stock, p_rate as cost FROM medicines ORDER BY n LIMIT ?",
+                f"SELECT {cols} FROM medicines ORDER BY n LIMIT ?",
                 (limit,)
             ).fetchall()
         return jsonify({"items": [dict(r) for r in rows]})

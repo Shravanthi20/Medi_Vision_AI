@@ -160,6 +160,18 @@
   .hidden{display:none!important;}
   .mono{font-family:'JetBrains Mono',monospace;}
 
+  /* Order timeline (My Orders detail) */
+  .timeline{padding:4px 0}
+  .tl-item{display:flex;gap:12px;padding:9px 0;position:relative}
+  .tl-item::before{content:'';position:absolute;left:10px;top:26px;bottom:-3px;width:2px;background:var(--border)}
+  .tl-item:last-child::before{display:none}
+  .tl-dot{width:22px;height:22px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.68rem;margin-top:1px}
+  .tl-dot.blue{background:#dbeafe;color:var(--blue)}
+  .tl-dot.green{background:#dcfce7;color:var(--green)}
+  .tl-dot.orange{background:#ffedd5;color:var(--orange)}
+  .tl-text{font-size:.83rem;font-weight:600}
+  .tl-time{font-size:.72rem;color:var(--muted);margin-top:1px}
+
   @media(max-width:600px){.prod-grid{grid-template-columns:1fr 1fr;}.cart-panel{width:100%;top:auto;bottom:0;height:70vh;border-radius:16px 16px 0 0;}}
 </style>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -234,9 +246,17 @@
       </select>
     </div>
 
-    <!-- Grid -->
-    <div class="prod-grid" id="prodGrid">
-      <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted)">Loading medicines…</div>
+    <!-- Product table -->
+    <div class="tbl-wrap" style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+      <table>
+        <thead><tr>
+          <th>Product</th><th>Batch / Expiry</th><th>Scheme</th><th class="right">Stock</th>
+          <th class="right">MRP</th><th class="right">Rate</th><th></th>
+        </tr></thead>
+        <tbody id="prodGrid">
+          <tr><td colspan="7" style="text-align:center;padding:40px;color:var(--muted)">Loading medicines…</td></tr>
+        </tbody>
+      </table>
     </div>
   </div>
 
@@ -334,6 +354,18 @@
   </div>
 </div>
 
+<!-- Order Detail / Timeline Modal -->
+<div class="modal-bg hidden" id="orderDetailModal">
+  <div class="modal-box" style="max-width:560px;">
+    <div class="modal-head">
+      <h3 id="odTitle">Order</h3>
+      <button class="modal-close" onclick="closeOrderDetail()">✕</button>
+    </div>
+    <div class="modal-body" id="odBody">Loading…</div>
+    <div class="modal-foot"><button class="btn btn-outline" onclick="closeOrderDetail()">Close</button></div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -423,30 +455,28 @@ function cleanName(raw){
 function renderProds(meds){
   const grid = document.getElementById('prodGrid');
   if(!meds.length){
-    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted)">
-      No medicines match that search.</div>`;
+    grid.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--muted)">
+      No medicines match that search.</td></tr>`;
     return;
   }
   grid.innerHTML = meds.map(m=>{
     const ws = wsPrice(m);
-    const save = m.mrp>0 ? ((m.mrp-ws)/m.mrp*100).toFixed(0) : 0;
     const inCart = cart[m.id];
     const qty = inCart?.qty||1;
     const sch = schemes.find(s=>s.applies_to===m.category||s.applies_to==='all');
-    const schTag = sch ? `<span class="scheme-tag">🎁 ${sch.label}</span>` : '';
+    const schTag = sch ? `<span class="scheme-tag">🎁 ${sch.title}</span>`
+      : (m.scheme ? `<span class="scheme-tag">${m.scheme}</span>` : '<span style="color:var(--muted)">—</span>');
     const stockOk = (m.stock||0)>0;
     const name = cleanName(m.name);
-    return `<div class="prod-card" id="pc-${m.id}">
-      <div class="prod-name">${name}</div>
-      <div class="prod-generic">${m.generic||'—'}</div>
-      <span class="prod-cat">${m.category||'General'}</span>
-      <div class="prod-price">
-        <span class="price-ws">₹${ws.toFixed(2)}</span>
-        <span class="price-mrp">₹${(m.mrp||0).toFixed(2)}</span>
-        <span class="price-save">-${save}%</span>
-        ${schTag}
-      </div>
-      ${stockOk
+    const batchExp = [m.batch, m.expiry].filter(Boolean).join(' · ') || '—';
+    return `<tr id="pc-${m.id}">
+      <td><div class="prod-name">${name}</div><div class="prod-generic">${m.generic||m.pack||'—'}</div></td>
+      <td style="font-size:.78rem;color:var(--muted)">${batchExp}</td>
+      <td>${schTag}</td>
+      <td class="right">${stockOk ? m.stock : '<span class="out-tag">Out</span>'}</td>
+      <td class="right price-mrp">₹${(m.mrp||0).toFixed(2)}</td>
+      <td class="right price-ws" style="font-weight:800">₹${ws.toFixed(2)}</td>
+      <td>${stockOk
         ? `<div class="qty-row">
             <button class="qty-btn" onclick="changeQty(${m.id},-1)">−</button>
             <input class="qty-input" type="number" min="1" value="${qty}" id="qty-${m.id}" onchange="setQty(${m.id},this.value)">
@@ -454,11 +484,10 @@ function renderProds(meds){
             <button class="add-btn ${inCart?'added':''}" id="ab-${m.id}" onclick="addToCart(${m.id},'${name.replace(/'/g,"\\'")}','${(m.generic||'').replace(/'/g,"\\'")}',${ws.toFixed(2)},${m.mrp||0})">
               ${inCart?'✓ Added':'Add'}
             </button>
-          </div>
-          <div class="stock-tag">Stock: ${m.stock}</div>`
-        : `<div class="out-tag">❌ Out of Stock</div>`
-      }
-    </div>`;
+          </div>`
+        : ''
+      }</td>
+    </tr>`;
   }).join('');
 }
 
@@ -604,7 +633,7 @@ function renderMyOrders(orders){
     return;
   }
   const sBadge = s=>{const m={'pending':'b-yellow','confirmed':'b-blue','picking':'b-orange','dispatched':'b-purple','delivered':'b-green','invoiced':'b-gray'};return`<span class="badge ${m[s]||'b-gray'}">${s}</span>`;};
-  tbody.innerHTML = orders.map(o=>`<tr>
+  tbody.innerHTML = orders.map(o=>`<tr style="cursor:pointer" onclick="viewMyOrder(${o.id})">
     <td class="mono" style="color:var(--blue);font-weight:700;">${o.order_no}</td>
     <td>${o.created_at?o.created_at.slice(0,10):'—'}</td>
     <td>${o.item_count||'—'}</td>
@@ -613,6 +642,46 @@ function renderMyOrders(orders){
     <td style="color:var(--muted);font-size:.78rem;">${o.delivery_date||'—'}</td>
   </tr>`).join('');
 }
+
+// ── Order detail / timeline ─────────────────────────────────────
+// Same endpoint the internal wholesale dashboard already uses to track
+// orders (order + items + timeline) - shops get read access to their own
+// order's status history the same way staff do.
+async function viewMyOrder(id){
+  document.getElementById('orderDetailModal').classList.remove('hidden');
+  document.getElementById('odTitle').textContent = 'Order';
+  document.getElementById('odBody').innerHTML = 'Loading…';
+  const r = await fetch(`/api/ws/orders/${id}`);
+  const d = await r.json();
+  const o = d.order || {};
+  if (o.shop_id != shopUser.id) {
+    document.getElementById('odBody').innerHTML = '<div style="color:var(--red)">Order not found.</div>';
+    return;
+  }
+  const items = d.items || [];
+  const timeline = d.timeline || [];
+  document.getElementById('odTitle').textContent = `Order ${o.order_no}`;
+  const stageMap = {pending:'b-yellow',confirmed:'b-blue',picking:'b-orange',dispatched:'b-purple',delivered:'b-green',invoiced:'b-gray'};
+  document.getElementById('odBody').innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <span class="badge ${stageMap[o.status]||'b-gray'}" style="font-size:.8rem">${o.status||'—'}</span>
+      <span class="mono" style="font-weight:800;color:var(--blue)">₹${fmt(o.total||0)}</span>
+    </div>
+    <table style="width:100%;border-collapse:collapse;font-size:.82rem;margin-bottom:18px">
+      <thead><tr style="background:#f8fafc"><th style="padding:7px 10px;text-align:left">Medicine</th><th style="padding:7px 10px;text-align:right">Qty</th><th style="padding:7px 10px;text-align:right">Total</th></tr></thead>
+      <tbody>${items.map(i=>`<tr style="border-top:1px solid var(--border)">
+        <td style="padding:7px 10px">${i.medicine_name}</td>
+        <td style="padding:7px 10px;text-align:right" class="mono">${i.qty}</td>
+        <td style="padding:7px 10px;text-align:right" class="mono">₹${fmt((i.qty||0)*(i.ws_rate||0))}</td>
+      </tr>`).join('')}</tbody>
+    </table>
+    <div style="font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px">Status timeline</div>
+    <div class="timeline">${timeline.length
+      ? timeline.map(t=>`<div class="tl-item"><div class="tl-dot ${t.color||'blue'}">${t.icon||'•'}</div>
+          <div><div class="tl-text">${t.note}</div><div class="tl-time">${t.created_at?t.created_at.slice(0,16).replace('T',' '):'—'}</div></div></div>`).join('')
+      : '<div style="color:var(--muted);font-size:.82rem">No updates yet.</div>'}</div>`;
+}
+function closeOrderDetail(){ document.getElementById('orderDetailModal').classList.add('hidden'); }
 
 // ── Account / Ledger ──────────────────────────────────────────
 async function loadAccount(){
