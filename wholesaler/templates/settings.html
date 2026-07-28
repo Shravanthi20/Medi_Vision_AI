@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Settings — Wholesale{% endblock %}
+{% block body %}
+<h1>Settings</h1>
+<p class="sub">Company details used on invoices. Edit /var/www/wholesaler/.env on the server to change these permanently.</p>
+
+<div class="card">
+  <h3>Company (from environment)</h3>
+  <div class="row two">
+    <div class="field"><label>Name</label><input value="{{ company.name }}" disabled></div>
+    <div class="field"><label>GSTIN</label><input value="{{ company.gstin }}" disabled></div>
+  </div>
+  <div class="row two">
+    <div class="field"><label>Address</label><input value="{{ company.address }}" disabled></div>
+    <div class="field"><label>Phone</label><input value="{{ company.phone }}" disabled></div>
+  </div>
+  <p style="color:var(--dim);font-size:12px">Set <code>WS_COMPANY_NAME</code>, <code>WS_COMPANY_GSTIN</code>, <code>WS_COMPANY_ADDRESS</code>, <code>WS_COMPANY_PHONE</code> in <code>{{ '/var/www/wholesaler/.env' }}</code> and restart <code>wholesaler.service</code>.</p>
+</div>
+
+<div class="card">
+  <h3>Storage</h3>
+  <p>Database file: <code>{{ db_path }}</code></p>
+  <p style="color:var(--dim);font-size:12.5px">Back this file up regularly. It contains every shop, item, order and payment.</p>
+</div>
+
+<div class="card">
+  <h3>Modules</h3>
+  <p style="color:var(--dim);font-size:13px">Coming next: Staff & payroll, Purchase orders, Expenses, Custom fields, WhatsApp order bot, Reports. See <code>WHOLESALER_V2_README.md</code> for the roadmap.</p>
+</div>
+{% endblock %}

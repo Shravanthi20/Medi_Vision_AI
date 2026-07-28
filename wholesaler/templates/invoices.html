@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Invoices — Wholesale{% endblock %}
+{% block body %}
+<h1>Invoices</h1>
+<p class="sub">{{ invoices|length }} shown{% if status %} · filter: <b>{{ status }}</b>{% endif %}</p>
+
+<div class="searchbar">
+  <a class="btn {{ 'primary' if not status else '' }}" href="{{ url_for('invoices') }}">All</a>
+  <a class="btn {{ 'primary' if status=='open' else '' }}" href="{{ url_for('invoices', status='open') }}">Open</a>
+  <a class="btn {{ 'primary' if status=='partial' else '' }}" href="{{ url_for('invoices', status='partial') }}">Partial</a>
+  <a class="btn {{ 'primary' if status=='paid' else '' }}" href="{{ url_for('invoices', status='paid') }}">Paid</a>
+  <a class="btn {{ 'primary' if status=='overdue' else '' }}" href="{{ url_for('invoices', status='overdue') }}" style="color:var(--red)">Overdue</a>
+</div>
+
+<div class="card" style="padding:0;overflow:auto">
+  <table>
+    <thead><tr><th>Invoice #</th><th>Date</th><th>Shop</th><th>Due</th><th>Status</th><th class="right">Total</th><th class="right">Balance</th><th></th></tr></thead>
+    <tbody>
+    {% for i in invoices %}
+      <tr>
+        <td class="nowrap"><a href="{{ url_for('invoice_detail', inv_id=i.id) }}"><b>{{ i.invoice_no }}</b></a></td>
+        <td>{{ i.invoice_date }}</td>
+        <td>{{ i.shop_name }}<div style="font-size:11.5px;color:var(--dim)">{{ i.shop_code }}</div></td>
+        <td>{{ i.due_date }}</td>
+        <td><span class="pill {{ i.status }}">{{ i.status }}</span></td>
+        <td class="right">{{ i.total | money }}</td>
+        <td class="right">{% set bal = i.total - i.paid %}<b style="color:{{ 'var(--red)' if bal > 0 else 'var(--dim)' }}">{{ bal | money }}</b></td>
+        <td><a class="btn sm" href="{{ url_for('invoice_detail', inv_id=i.id) }}">Open</a></td>
+      </tr>
+    {% else %}<tr><td colspan="8"><div class="empty"><div class="em">🧾</div>No invoices yet. Invoice a dispatched order to create one.</div></td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

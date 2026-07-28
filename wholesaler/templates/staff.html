@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Staff — Wholesale{% endblock %}
+{% block body %}
+<h1>Staff</h1>
+<p class="sub">{{ staff|length }} people on payroll.</p>
+
+<div class="card" style="padding:0;overflow:auto">
+  <table>
+    <thead><tr><th>Name</th><th>Role</th><th>Phone</th><th>Joined</th><th class="right">Base salary</th><th class="right">OT/hr</th><th>Status</th></tr></thead>
+    <tbody>
+    {% for s in staff %}
+      <tr>
+        <td><b>{{ s.name }}</b></td>
+        <td>{{ s.role or '' }}</td>
+        <td>{{ s.phone or '' }}</td>
+        <td>{{ s.join_date }}</td>
+        <td class="right">{{ s.base_salary | money }}</td>
+        <td class="right">₹{{ '%.0f' % (s.ot_rate_per_hr or 0) }}</td>
+        <td><span class="pill {{ s.status }}">{{ s.status }}</span></td>
+      </tr>
+    {% else %}<tr><td colspan="7"><div class="empty"><div class="em">👥</div>No staff yet. Add one below.</div></td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="card">
+  <h3>Add staff</h3>
+  <form method="POST" action="{{ url_for('staff_save') }}">
+    <div class="row three">
+      <div class="field"><label>Name *</label><input name="name" required></div>
+      <div class="field"><label>Role</label><input name="role" placeholder="Driver, Packer, Salesman…"></div>
+      <div class="field"><label>Phone</label><input name="phone"></div>
+    </div>
+    <div class="row three">
+      <div class="field"><label>Aadhaar / ID</label><input name="aadhar"></div>
+      <div class="field"><label>Joining date</label><input name="join_date" type="date"></div>
+      <div class="field"><label>Status</label><select name="status"><option>active</option><option>hold</option><option>terminated</option></select></div>
+    </div>
+    <div class="row two">
+      <div class="field"><label>Base salary ₹ / month</label><input name="base_salary" type="number" step="1" value="0"></div>
+      <div class="field"><label>Overtime rate ₹ / hour</label><input name="ot_rate_per_hr" type="number" step="1" value="0"></div>
+    </div>
+    <div class="field"><label>Notes</label><input name="notes"></div>
+    <button class="btn primary">Save staff</button>
+  </form>
+</div>
+{% endblock %}

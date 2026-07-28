@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}Customize — Wholesale{% endblock %}
+{% block body %}
+<h1>Customize</h1>
+<p class="sub">Toggle modules, add custom fields, and set company details — no code changes needed.</p>
+
+<form method="POST">
+  <div class="card">
+    <h3>Feature toggles</h3>
+    <div class="row three">
+      {% for name, val in feature_defaults.items() %}
+        <label style="display:flex;gap:8px;align-items:center;padding:8px 10px;background:var(--card-2);border-radius:8px">
+          <input type="checkbox" name="feature.{{ name }}" {% if features[name] %}checked{% endif %}>
+          <span style="text-transform:capitalize">{{ name }}</span>
+        </label>
+      {% endfor %}
+    </div>
+    <p style="color:var(--dim);font-size:12px;margin-top:10px">These control which nav links appear. Data isn't deleted when a module is off.</p>
+  </div>
+
+  <div class="card">
+    <h3>Company (used on invoices)</h3>
+    <div class="row two">
+      <div class="field"><label>Company name</label><input name="company.name" value="{{ settings.get('company.name', '') }}"></div>
+      <div class="field"><label>GSTIN</label><input name="company.gstin" value="{{ settings.get('company.gstin', '') }}"></div>
+    </div>
+    <div class="row two">
+      <div class="field"><label>Address</label><input name="company.address" value="{{ settings.get('company.address', '') }}"></div>
+      <div class="field"><label>Phone</label><input name="company.phone" value="{{ settings.get('company.phone', '') }}"></div>
+    </div>
+    <div class="field"><label>Invoice terms & conditions (footer)</label>
+      <textarea name="invoice.terms" rows="3">{{ settings.get('invoice.terms', 'Goods once sold cannot be taken back. Interest @ 24% p.a. on overdue bills.') }}</textarea>
+    </div>
+    <div class="field"><label>Bank / UPI details for invoices</label>
+      <textarea name="invoice.bank" rows="2">{{ settings.get('invoice.bank', '') }}</textarea>
+    </div>
+    <button class="btn primary">Save all</button>
+  </div>
+</form>
+
+<div class="split">
+  <div class="card">
+    <h3>Custom fields on shops</h3>
+    {% if cf_shop %}
+      <table>
+        <thead><tr><th>Key</th><th>Label</th><th>Type</th><th></th></tr></thead>
+        <tbody>
+        {% for f in cf_shop %}
+          <tr>
+            <td><code>{{ f.field_key }}</code></td>
+            <td>{{ f.field_label }}</td>
+            <td>{{ f.field_type }}</td>
+            <td>
+              <form method="POST" action="{{ url_for('custom_field_del', fid=f.id) }}" style="display:inline">
+                <button class="btn sm red">Remove</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    {% else %}<p style="color:var(--dim)">No custom shop fields yet.</p>{% endif %}
+    <form method="POST" action="{{ url_for('custom_field_add') }}" style="margin-top:12px">
+      <input type="hidden" name="entity" value="shop">
+      <div class="row three">
+        <div class="field"><label>Key</label><input name="key" required placeholder="chief_deity"></div>
+        <div class="field"><label>Label</label><input name="label" required placeholder="Chief deity"></div>
+        <div class="field"><label>Type</label><select name="type"><option>text</option><option>number</option><option>date</option></select></div>
+      </div>
+      <button class="btn">Add shop field</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <h3>Custom fields on items</h3>
+    {% if cf_item %}
+      <table>
+        <thead><tr><th>Key</th><th>Label</th><th>Type</th><th></th></tr></thead>
+        <tbody>
+        {% for f in cf_item %}
+          <tr>
+            <td><code>{{ f.field_key }}</code></td>
+            <td>{{ f.field_label }}</td>
+            <td>{{ f.field_type }}</td>
+            <td>
+              <form method="POST" action="{{ url_for('custom_field_del', fid=f.id) }}" style="display:inline">
+                <button class="btn sm red">Remove</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    {% else %}<p style="color:var(--dim)">No custom item fields yet.</p>{% endif %}
+    <form method="POST" action="{{ url_for('custom_field_add') }}" style="margin-top:12px">
+      <input type="hidden" name="entity" value="item">
+      <div class="row three">
+        <div class="field"><label>Key</label><input name="key" required placeholder="rack_no"></div>
+        <div class="field"><label>Label</label><input name="label" required placeholder="Rack number"></div>
+        <div class="field"><label>Type</label><select name="type"><option>text</option><option>number</option><option>date</option></select></div>
+      </div>
+      <button class="btn">Add item field</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

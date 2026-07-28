@@ -1,0 +1,21 @@
+{
+  "appId": "com.medivision.ai",
+  "appName": "MediVision AI",
+  "webDir": "www",
+  "backgroundColor": "#0E1117",
+  "android": {
+    "allowMixedContent": true
+  },
+  "plugins": {
+    "CapacitorHttp": {
+      "enabled": true
+    },
+    "BarcodeScanning": {
+      "formats": ["EAN_13", "EAN_8", "UPC_A", "UPC_E", "CODE_128", "CODE_39", "QR_CODE"]
+    }
+  },
+  "server": {
+    "androidScheme": "https",
+    "cleartext": true
+  }
+}

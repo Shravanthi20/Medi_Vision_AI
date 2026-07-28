@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Suppliers — Wholesale{% endblock %}
+{% block body %}
+<h1>Suppliers / Manufacturers</h1>
+<p class="sub">People you BUY from. {{ suppliers|length }} on file.</p>
+
+<div class="card" style="padding:0;overflow:auto">
+  <table>
+    <thead><tr><th>Code</th><th>Name</th><th>Contact</th><th>GSTIN</th><th>Terms</th></tr></thead>
+    <tbody>
+    {% for s in suppliers %}
+      <tr>
+        <td><b>{{ s.code }}</b></td>
+        <td>{{ s.name }}</td>
+        <td>{{ s.contact_person or '' }}<div style="font-size:11.5px;color:var(--dim)">{{ s.phone or '' }}</div></td>
+        <td>{{ s.gstin or '' }}</td>
+        <td>{{ s.payment_terms or '' }}</td>
+      </tr>
+    {% else %}<tr><td colspan="5"><div class="empty"><div class="em">🏭</div>No suppliers yet.</div></td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="card">
+  <h3>Add supplier</h3>
+  <form method="POST" action="{{ url_for('supplier_save') }}">
+    <div class="row two">
+      <div class="field"><label>Code (auto if blank)</label><input name="code"></div>
+      <div class="field"><label>Name *</label><input name="name" required></div>
+    </div>
+    <div class="row three">
+      <div class="field"><label>Contact person</label><input name="contact_person"></div>
+      <div class="field"><label>Phone</label><input name="phone"></div>
+      <div class="field"><label>Email</label><input name="email" type="email"></div>
+    </div>
+    <div class="field"><label>Address</label><input name="address"></div>
+    <div class="row three">
+      <div class="field"><label>GSTIN</label><input name="gstin"></div>
+      <div class="field"><label>Drug licence</label><input name="dl"></div>
+      <div class="field"><label>Payment terms</label><input name="payment_terms" value="30 days"></div>
+    </div>
+    <div class="field"><label>Notes</label><input name="notes"></div>
+    <button class="btn primary">Save supplier</button>
+  </form>
+</div>
+{% endblock %}

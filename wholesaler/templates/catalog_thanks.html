@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Order placed — MediVision Wholesale</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<main>
+  <div class="wrap" style="max-width:520px;margin:8vh auto;text-align:center">
+    <div class="card">
+      <div style="font-size:48px">✅</div>
+      <h1>Order placed</h1>
+      <p class="sub">We've received your order.</p>
+      <div style="margin:20px 0;padding:14px;background:var(--card-2);border-radius:10px">
+        <div style="color:var(--dim);font-size:12px;text-transform:uppercase">Order number</div>
+        <div style="font-size:20px;font-weight:700;letter-spacing:1px">{{ order_no }}</div>
+      </div>
+      <p style="color:var(--dim);font-size:13px">Shop: {{ shop_code }}<br>Our team will confirm shortly.</p>
+      <a class="btn primary" href="{{ url_for('catalog') }}">Place another order</a>
+    </div>
+  </div>
+</main>
+</body>
+</html>

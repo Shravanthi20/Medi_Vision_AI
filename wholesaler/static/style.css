@@ -1,0 +1,134 @@
+/* MediVision Wholesale — shared styles */
+:root{
+  --bg:#0E1117; --bg-2:#141925; --card:#161b25; --card-2:#1f2532;
+  --line:#2a3344; --line-2:#374151;
+  --txt:#f3f6fc; --dim:#9CA3AF; --mut:#6b7488;
+  --green:#22c55e; --green-d:#16a34a; --green-soft:rgba(34,197,94,.14);
+  --blue:#3B82F6; --blue-soft:rgba(59,130,246,.14);
+  --amber:#F59E0B; --amber-soft:rgba(245,158,11,.14);
+  --red:#ef4444; --red-soft:rgba(239,68,68,.14);
+  --shadow:0 8px 30px rgba(0,0,0,.45);
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{background:var(--bg);color:var(--txt);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,system-ui,sans-serif;
+  font-size:14.5px;line-height:1.5}
+a{color:var(--green);text-decoration:none}
+a:hover{text-decoration:underline}
+img{max-width:100%;display:block}
+
+.wrap{max-width:1240px;margin:0 auto;padding:0 20px}
+.topbar{display:flex;align-items:center;justify-content:space-between;
+  padding:14px 20px;background:#0b0f16;border-bottom:1px solid var(--line);
+  position:sticky;top:0;z-index:50}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:18px}
+.logo{width:34px;height:34px;border-radius:9px;
+  background:linear-gradient(135deg,var(--green),#0ea96b);
+  display:grid;place-items:center;color:#04140b;font-weight:900;font-size:19px}
+.brand .ai{color:var(--green)}
+.brand small{color:var(--dim);font-weight:600;font-size:11px;letter-spacing:.5px;
+  text-transform:uppercase;margin-left:6px}
+.nav{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.nav a{color:var(--txt);padding:8px 12px;border-radius:8px;font-weight:500;font-size:13.5px}
+.nav a:hover{background:var(--card-2);text-decoration:none}
+.nav a.active{background:var(--green-soft);color:var(--green)}
+.who{color:var(--dim);font-size:12.5px}
+
+main{padding:22px 0 60px}
+h1{font-size:22px;font-weight:800;margin:0 0 4px;letter-spacing:-.3px}
+h2{font-size:16px;font-weight:700;margin:22px 0 12px;color:var(--txt-dim);text-transform:uppercase;letter-spacing:.5px}
+.sub{color:var(--dim);font-size:13px;margin:0 0 22px}
+
+/* KPI cards */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:22px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.kpi .v{font-size:26px;font-weight:800;letter-spacing:-.5px}
+.kpi .l{color:var(--dim);font-size:12px;margin-top:2px;text-transform:uppercase;letter-spacing:.4px}
+.kpi.green .v{color:var(--green)}
+.kpi.amber .v{color:var(--amber)}
+.kpi.red .v{color:var(--red)}
+.kpi.blue .v{color:var(--blue)}
+
+/* Cards & sections */
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px}
+.card h3{margin:0 0 12px;font-size:14px;text-transform:uppercase;letter-spacing:.4px;color:var(--dim)}
+.grid-2{display:grid;grid-template-columns:1fr;gap:16px}
+@media (min-width:900px){.grid-2{grid-template-columns:1.4fr 1fr}}
+.split{display:grid;grid-template-columns:1fr;gap:16px}
+@media (min-width:800px){.split{grid-template-columns:1fr 1fr}}
+
+/* Tables */
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{padding:10px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{color:var(--dim);text-transform:uppercase;font-size:11.5px;letter-spacing:.4px;font-weight:700;background:#12171f}
+tbody tr:hover{background:#1a1f2a}
+tbody tr:last-child td{border-bottom:none}
+.right{text-align:right}
+.center{text-align:center}
+.nowrap{white-space:nowrap}
+
+/* Forms */
+.field{margin-bottom:10px}
+.field label{display:block;font-size:12.5px;color:var(--dim);margin-bottom:4px}
+.field input,.field select,.field textarea{
+  width:100%;padding:9px 12px;background:#141925;color:var(--txt);
+  border:1px solid var(--line);border-radius:8px;font-size:14px;font-family:inherit}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--green)}
+.row{display:grid;gap:10px;grid-template-columns:1fr}
+@media (min-width:640px){.row.two{grid-template-columns:1fr 1fr}.row.three{grid-template-columns:1fr 1fr 1fr}.row.four{grid-template-columns:1fr 1fr 1fr 1fr}}
+
+/* Buttons */
+.btn{display:inline-block;padding:9px 16px;border-radius:8px;border:1px solid var(--line);
+  background:var(--card-2);color:var(--txt);font-weight:600;font-size:13.5px;cursor:pointer;
+  text-decoration:none;font-family:inherit}
+.btn:hover{background:#252c3a;text-decoration:none}
+.btn.primary{background:var(--green);color:#04140b;border-color:var(--green)}
+.btn.primary:hover{background:var(--green-d)}
+.btn.blue{background:var(--blue);color:#fff;border-color:var(--blue)}
+.btn.red{background:transparent;color:var(--red);border-color:var(--red)}
+.btn.sm{padding:6px 11px;font-size:12.5px}
+.btn.wide{width:100%;text-align:center}
+
+/* Pills / badges */
+.pill{display:inline-block;padding:3px 10px;border-radius:999px;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.3px}
+.pill.draft{background:rgba(255,255,255,.06);color:var(--dim)}
+.pill.confirmed{background:var(--blue-soft);color:var(--blue)}
+.pill.dispatched{background:var(--amber-soft);color:var(--amber)}
+.pill.invoiced{background:var(--green-soft);color:var(--green)}
+.pill.paid{background:var(--green-soft);color:var(--green)}
+.pill.overdue,.pill.cancelled{background:var(--red-soft);color:var(--red)}
+.pill.partial,.pill.hold{background:var(--amber-soft);color:var(--amber)}
+.pill.open,.pill.active{background:var(--green-soft);color:var(--green)}
+
+/* Flashes */
+.flash{padding:11px 14px;border-radius:10px;margin-bottom:14px;font-size:13.5px}
+.flash.ok{background:var(--green-soft);color:var(--green);border:1px solid rgba(34,197,94,.3)}
+.flash.err{background:var(--red-soft);color:var(--red);border:1px solid rgba(239,68,68,.3)}
+
+/* Search bar */
+.searchbar{display:flex;gap:8px;align-items:center;margin-bottom:14px}
+.searchbar input{flex:1;padding:9px 14px;background:#141925;color:var(--txt);
+  border:1px solid var(--line);border-radius:8px;font-size:14px}
+
+/* Order line editor */
+.line-editor{overflow-x:auto}
+.line-editor table{min-width:640px}
+.line-editor input,.line-editor select{padding:6px 9px;font-size:13px}
+
+/* Empty state */
+.empty{text-align:center;padding:36px 20px;color:var(--dim);border:1px dashed var(--line);border-radius:12px}
+.empty .em{font-size:32px;margin-bottom:6px}
+
+/* Login */
+.login-wrap{max-width:400px;margin:12vh auto;padding:0 20px}
+.login-wrap .brand{justify-content:center;margin-bottom:14px}
+.login-wrap .card{padding:22px}
+
+/* Invoice print */
+@media print{
+  .topbar,.nav,.no-print,.btn{display:none!important}
+  body{background:#fff;color:#000}
+  .card{border-color:#ddd;box-shadow:none}
+  table th{background:#f3f6fc;color:#333}
+}

@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Wholesale{% endblock %}
+{% block body %}
+<h1>Dashboard</h1>
+<p class="sub">Hello {{ session.ws_user }} — here's how the distribution is doing today.</p>
+
+<div class="kpis">
+  <div class="kpi blue"><div class="v">{{ kpi.shops }}</div><div class="l">Active shops</div></div>
+  <div class="kpi"><div class="v">{{ kpi.items }}</div><div class="l">Items in catalog</div></div>
+  <div class="kpi amber"><div class="v">{{ kpi.orders_open }}</div><div class="l">Open orders</div></div>
+  <div class="kpi green"><div class="v">{{ kpi.today_sales | money }}</div><div class="l">Invoiced today</div></div>
+  <div class="kpi green"><div class="v">{{ kpi.month_sales | money }}</div><div class="l">Invoiced this month</div></div>
+  <div class="kpi amber"><div class="v">{{ kpi.outstanding | money }}</div><div class="l">Outstanding</div></div>
+  <div class="kpi red"><div class="v">{{ kpi.overdue | money }}</div><div class="l">Overdue</div></div>
+  <div class="kpi red"><div class="v">{{ kpi.low_stock }}</div><div class="l">Items low on stock</div></div>
+</div>
+
+<div class="grid-2">
+  <div class="card">
+    <h3>Recent orders</h3>
+    {% if recent_orders %}
+    <table>
+      <thead><tr><th>Order</th><th>Shop</th><th>Status</th><th class="right">Total</th></tr></thead>
+      <tbody>
+      {% for o in recent_orders %}
+        <tr>
+          <td>{{ o.order_no }}<div class="dim" style="font-size:11.5px;color:var(--dim)">{{ o.order_date }}</div></td>
+          <td>{{ o.shop_name }}</td>
+          <td><span class="pill {{ o.status }}">{{ o.status }}</span></td>
+          <td class="right">{{ o.total | money }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+      <div class="empty"><div class="em">📦</div>No orders yet. <a href="{{ url_for('order_new') }}">Create the first one →</a></div>
+    {% endif %}
+  </div>
+
+  <div>
+    <div class="card">
+      <h3>Top shops this month</h3>
+      {% if top_shops %}
+        <table>
+          <tbody>
+          {% for r in top_shops %}
+            <tr><td>{{ r.name }}</td><td class="right">{{ r.t | money }}</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <div class="empty" style="padding:14px 10px">No invoices yet.</div>
+      {% endif %}
+    </div>
+
+    <div class="card">
+      <h3>Overdue chasers</h3>
+      {% if overdue_shops %}
+        <table>
+          <tbody>
+          {% for r in overdue_shops %}
+            <tr><td><a href="{{ url_for('shop_detail', shop_id=r.id) }}">{{ r.name }}</a></td><td class="right"><span style="color:var(--red);font-weight:700">{{ r.o | money }}</span></td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <div class="empty" style="padding:14px 10px">Nothing overdue 🎉</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

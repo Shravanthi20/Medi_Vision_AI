@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Sign in — {{ company }}{% endblock %}
+{% block body %}
+<div class="login-wrap">
+  <div class="brand">
+    <div class="logo">W</div>
+    <div style="font-size:22px">MediVision <span class="ai">Wholesale</span></div>
+  </div>
+  <div class="card">
+    <h3 style="text-align:center;margin-top:0">Sign in</h3>
+    <form method="POST" autocomplete="on">
+      {% if error %}<div class="flash err">{{ error }}</div>{% endif %}
+      <div class="field">
+        <label>Your name</label>
+        <input name="name" required autocomplete="name" placeholder="e.g. Rishiikesh">
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <input name="password" type="password" required autocomplete="current-password">
+      </div>
+      <button type="submit" class="btn primary wide">Sign in</button>
+    </form>
+    <p class="sub" style="margin-top:14px;text-align:center">{{ company }}</p>
+  </div>
+</div>
+{% endblock %}

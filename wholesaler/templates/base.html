@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{% block title %}Wholesale — MediVision{% endblock %}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+{% if session.get('ws_user') %}
+<header class="topbar">
+  <div class="brand">
+    <div class="logo">W</div>
+    <div>MediVision <span class="ai">Wholesale</span> <small>Distributor Suite</small></div>
+  </div>
+  <nav class="nav">
+    <a href="{{ url_for('dashboard') }}" class="{{ 'active' if request.endpoint=='dashboard' else '' }}">Dashboard</a>
+    <a href="{{ url_for('orders') }}"    class="{{ 'active' if request.endpoint in ['orders','order_new','order_detail'] else '' }}">Orders</a>
+    <a href="{{ url_for('invoices') }}"  class="{{ 'active' if request.endpoint in ['invoices','invoice_detail'] else '' }}">Invoices</a>
+    <a href="{{ url_for('ledger') }}"    class="{{ 'active' if request.endpoint=='ledger' else '' }}">Ledger</a>
+    <a href="{{ url_for('shops') }}"     class="{{ 'active' if request.endpoint in ['shops','shop_detail'] else '' }}">Shops</a>
+    <a href="{{ url_for('items') }}"     class="{{ 'active' if request.endpoint=='items' else '' }}">Items</a>
+    <a href="{{ url_for('routes') }}"    class="{{ 'active' if request.endpoint=='routes' else '' }}">Routes</a>
+    {% if features.staff %}
+    <a href="{{ url_for('staff_list') }}" class="{{ 'active' if request.endpoint in ['staff_list','attendance','payroll'] else '' }}">Staff</a>
+    <a href="{{ url_for('attendance') }}" class="{{ 'active' if request.endpoint=='attendance' else '' }}" style="font-size:12.5px;color:var(--dim)">· Attendance</a>
+    <a href="{{ url_for('payroll') }}"    class="{{ 'active' if request.endpoint=='payroll' else '' }}" style="font-size:12.5px;color:var(--dim)">· Payroll</a>
+    {% endif %}
+    {% if features.purchases %}
+    <a href="{{ url_for('purchases') }}"  class="{{ 'active' if request.endpoint in ['purchases','purchase_new','purchase_detail','suppliers'] else '' }}">Purchases</a>
+    {% endif %}
+    {% if features.expenses %}
+    <a href="{{ url_for('expenses') }}"   class="{{ 'active' if request.endpoint=='expenses' else '' }}">Expenses</a>
+    {% endif %}
+    {% if features.reports %}
+    <a href="{{ url_for('reports') }}"    class="{{ 'active' if request.endpoint=='reports' else '' }}">Reports</a>
+    {% endif %}
+    {% if features.catalog %}
+    <a href="{{ url_for('catalog') }}"   target="_blank">Catalog ↗</a>
+    {% endif %}
+    {% if features.custom %}
+    <a href="{{ url_for('customize') }}" class="{{ 'active' if request.endpoint=='customize' else '' }}">Customize</a>
+    {% endif %}
+    <a href="{{ url_for('settings_page') }}">Settings</a>
+    <form method="POST" action="{{ url_for('logout') }}" style="display:inline">
+      <button class="btn sm" type="submit">Sign out</button>
+    </form>
+  </nav>
+</header>
+{% endif %}
+
+<main>
+  <div class="wrap">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for cat, msg in messages %}
+        <div class="flash {{ cat }}">{{ msg }}</div>
+      {% endfor %}
+    {% endwith %}
+    {% block body %}{% endblock %}
+  </div>
+</main>
+
+</body>
+</html>

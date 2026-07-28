@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}{{ order.order_no }} — Order{% endblock %}
+{% block body %}
+<p><a href="{{ url_for('orders') }}">← All orders</a></p>
+<h1>{{ order.order_no }}
+  <span class="pill {{ order.status }}" style="margin-left:8px">{{ order.status }}</span>
+</h1>
+<p class="sub">
+  <b>{{ order.shop_name }}</b> · {{ order.shop_code }} · {{ order.order_date }}
+  {% if order.shop_gstin %}· GSTIN {{ order.shop_gstin }}{% endif %}
+</p>
+
+<div class="grid-2">
+  <div class="card" style="padding:0">
+    <h3 style="padding:14px 18px 0">Line items</h3>
+    <table>
+      <thead><tr><th>Item</th><th class="right">Qty</th><th class="right">Free</th><th class="right">Rate</th><th class="right">GST</th><th class="right">Amount</th></tr></thead>
+      <tbody>
+      {% for l in lines %}
+        <tr>
+          <td>{{ l.item_name }}<div style="font-size:11.5px;color:var(--dim)">{{ l.pack_size or '' }}</div></td>
+          <td class="right">{{ l.qty }}</td>
+          <td class="right">{{ l.free_qty or 0 }}</td>
+          <td class="right">₹{{ '%.2f' % l.rate }}</td>
+          <td class="right">{{ l.gst_rate }}%</td>
+          <td class="right">{{ l.amount | money }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr><td colspan="5" class="right"><b>Subtotal</b></td><td class="right">{{ order.subtotal | money }}</td></tr>
+        <tr><td colspan="5" class="right">GST</td><td class="right">{{ order.gst_amount | money }}</td></tr>
+        <tr><td colspan="5" class="right"><b>Total</b></td><td class="right" style="font-size:16px"><b>{{ order.total | money }}</b></td></tr>
+      </tfoot>
+    </table>
+  </div>
+
+  <div>
+    <div class="card">
+      <h3>Actions</h3>
+      {% set next_actions = {'draft':'confirm', 'confirmed':'dispatch', 'dispatched':'invoice'} %}
+      {% if order.status in next_actions %}
+        <form method="POST" action="{{ url_for('order_action', order_id=order.id) }}">
+          <input type="hidden" name="action" value="{{ next_actions[order.status] }}">
+          <button class="btn primary wide">Mark {{ next_actions[order.status] }}ed</button>
+        </form>
+      {% endif %}
+      {% if order.status in ['draft','confirmed'] %}
+        <form method="POST" action="{{ url_for('order_action', order_id=order.id) }}" style="margin-top:8px">
+          <input type="hidden" name="action" value="cancel">
+          <button class="btn red wide">Cancel order</button>
+        </form>
+      {% endif %}
+      {% if order.status == 'invoiced' or order.status == 'paid' %}
+        <div class="flash ok">Order has been invoiced.</div>
+      {% endif %}
+      {% if order.notes %}
+        <p style="margin-top:14px;color:var(--dim);font-size:13px"><b>Notes:</b> {{ order.notes }}</p>
+      {% endif %}
+    </div>
+
+    <div class="card">
+      <h3>Timeline</h3>
+      <ul style="list-style:none;padding:0;margin:0;font-size:13px">
+        <li style="padding:4px 0">Created: {{ order.created_at or '—' }}</li>
+        {% if order.confirmed_at %}<li style="padding:4px 0">Confirmed: {{ order.confirmed_at }}</li>{% endif %}
+        {% if order.dispatched_at %}<li style="padding:4px 0">Dispatched: {{ order.dispatched_at }}</li>{% endif %}
+        {% if order.invoiced_at %}<li style="padding:4px 0">Invoiced: {{ order.invoiced_at }}</li>{% endif %}
+        {% if order.paid_at %}<li style="padding:4px 0">Paid: {{ order.paid_at }}</li>{% endif %}
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}

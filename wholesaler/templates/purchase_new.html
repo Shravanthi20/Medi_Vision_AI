@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}New PO — Wholesale{% endblock %}
+{% block body %}
+<h1>New purchase order</h1>
+<p class="sub">Goods you're buying from a supplier. Marking as received later will bump your stock.</p>
+
+<form method="POST">
+  <div class="card">
+    <div class="row two">
+      <div class="field">
+        <label>Supplier *</label>
+        <select name="supplier_id" required>
+          <option value="">Select…</option>
+          {% for s in suppliers %}<option value="{{ s.id }}">{{ s.name }} ({{ s.code }})</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field"><label>Notes</label><input name="notes"></div>
+    </div>
+  </div>
+
+  <div class="card line-editor">
+    <h3>Items being purchased</h3>
+    <table id="lines">
+      <thead><tr><th>Item name</th><th class="right">Qty</th><th class="right">Rate ₹</th><th class="right">GST %</th><th class="right">Amount</th><th></th></tr></thead>
+      <tbody id="lineBody"></tbody>
+      <tfoot><tr><td colspan="4" class="right"><b>Subtotal</b></td><td class="right" id="grandTotal">₹0.00</td><td></td></tr></tfoot>
+    </table>
+    <button type="button" class="btn" id="addLine">+ Add line</button>
+    <p style="color:var(--dim);font-size:12px;margin-top:6px">Tip: if the item already exists, type its exact name — stock will link back to it on receipt.</p>
+  </div>
+
+  <button class="btn primary">Create PO</button>
+</form>
+
+<script>
+function newRow(){
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><input name="item_name[]" placeholder="e.g. Dolo 650 10tab" required style="width:100%">
+        <input type="hidden" name="item_id[]"></td>
+    <td><input name="qty[]" type="number" min="1" value="1" class="qty" style="width:80px" required></td>
+    <td><input name="rate[]" type="number" step="0.01" class="rate" style="width:100px" required></td>
+    <td><input name="gst[]" type="number" step="0.1" value="12" class="gst" style="width:70px"></td>
+    <td class="right lineTotal">₹0.00</td>
+    <td><button type="button" class="btn sm red rm">✕</button></td>`;
+  tr.querySelector('.rm').onclick = () => { tr.remove(); recompute(); };
+  ['input','change'].forEach(e => tr.addEventListener(e, recompute));
+  return tr;
+}
+function recompute(){
+  let g = 0;
+  document.querySelectorAll('#lineBody tr').forEach(tr => {
+    const q = parseFloat(tr.querySelector('.qty').value)||0;
+    const r = parseFloat(tr.querySelector('.rate').value)||0;
+    const t = q*r;
+    tr.querySelector('.lineTotal').textContent = '₹' + t.toFixed(2);
+    g += t;
+  });
+  document.getElementById('grandTotal').textContent = '₹' + g.toFixed(2);
+}
+document.getElementById('addLine').onclick = () => document.getElementById('lineBody').appendChild(newRow());
+document.getElementById('lineBody').appendChild(newRow());
+</script>
+{% endblock %}

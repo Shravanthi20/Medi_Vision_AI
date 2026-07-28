@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Payroll — Wholesale{% endblock %}
+{% block body %}
+<h1>Payroll — {{ period }}</h1>
+<p class="sub">{{ working_days }} working days (excludes Sundays). Base ÷ working days = per-day rate.</p>
+
+<form method="GET" class="searchbar">
+  <input name="period" type="month" value="{{ period }}">
+  <button class="btn">Load month</button>
+</form>
+
+<div class="kpis">
+  <div class="kpi"><div class="v">{{ totals.base | money }}</div><div class="l">Base earned</div></div>
+  <div class="kpi blue"><div class="v">{{ totals.ot_amount | money }}</div><div class="l">Overtime</div></div>
+  <div class="kpi amber"><div class="v">{{ totals.advances | money }}</div><div class="l">Advances</div></div>
+  <div class="kpi green"><div class="v">{{ totals.net | money }}</div><div class="l">Net payable</div></div>
+</div>
+
+<div class="card" style="padding:0;overflow:auto">
+  <table>
+    <thead><tr><th>Staff</th><th class="right">Days</th><th class="right">Absent</th><th class="right">OT hrs</th><th class="right">Base</th><th class="right">OT ₹</th><th class="right">Advances</th><th class="right">Net</th></tr></thead>
+    <tbody>
+    {% for r in rows %}
+      <tr>
+        <td><b>{{ r.staff.name }}</b><div style="font-size:11.5px;color:var(--dim)">{{ r.staff.role }}</div></td>
+        <td class="right">{{ r.days_present }}</td>
+        <td class="right">{{ r.days_absent }}</td>
+        <td class="right">{{ r.ot_hours }}</td>
+        <td class="right">{{ r.base | money }}</td>
+        <td class="right">{{ r.ot_amount | money }}</td>
+        <td class="right">{{ r.advances | money }}</td>
+        <td class="right"><b>{{ r.net | money }}</b></td>
+      </tr>
+    {% else %}<tr><td colspan="8"><div class="empty">No active staff.</div></td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="card">
+  <h3>Give advance</h3>
+  <form method="POST" action="{{ url_for('payroll_advance') }}">
+    <div class="row four">
+      <div class="field"><label>Staff</label>
+        <select name="staff_id" required>
+          <option value="">Select…</option>
+          {% for r in rows %}<option value="{{ r.staff.id }}">{{ r.staff.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field"><label>Amount ₹</label><input name="amount" type="number" step="1" required></div>
+      <div class="field"><label>Deduct from month</label><input name="period" placeholder="{{ period }}" value="{{ period }}"></div>
+      <div class="field"><label>Notes</label><input name="notes"></div>
+    </div>
+    <button class="btn primary">Record advance</button>
+  </form>
+</div>
+{% endblock %}

@@ -4,10 +4,9 @@
 window.MV_CONFIG = {
   // STANDALONE: true = runs fully on the phone (no PC/server needed) using local.js.
   // Set false to use your hosted/PC backend (API_BASE) + owner dashboard (OWNER_BASE).
-  STANDALONE: true,
-  // CHANGE THIS to your deployed backend before building the APK.
-  // For local testing against a PC on the same Wi-Fi use http://<PC-LAN-IP>:5001
-  API_BASE: "http://192.168.0.101:5001",
+  STANDALONE: false,
+  // Production backend on the VPS. Works from any network with internet.
+  API_BASE: "https://selvammedicals.in",
   // Central owner registry (heartbeat + license). Set this to your VPS URL once it's
   // deployed (see owner/DEPLOY.md) and rebuild — the app will then require a live
   // check-in to run, on top of the local device code below.

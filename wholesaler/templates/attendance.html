@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Attendance — Wholesale{% endblock %}
+{% block body %}
+<h1>Attendance</h1>
+<p class="sub">Mark for one day at a time. Feeds monthly payroll.</p>
+
+<form method="GET" class="searchbar">
+  <input name="day" type="date" value="{{ day }}">
+  <button class="btn">Load day</button>
+</form>
+
+<form method="POST">
+  <input type="hidden" name="day" value="{{ day }}">
+  <div class="card" style="padding:0;overflow:auto">
+    <table>
+      <thead><tr><th>Staff</th><th>Role</th><th>Status</th><th class="right">OT hours</th></tr></thead>
+      <tbody>
+      {% for s in staff %}
+        {% set current = att.get(s.id) %}
+        <tr>
+          <td><b>{{ s.name }}</b>
+              <input type="hidden" name="staff_id[]" value="{{ s.id }}"></td>
+          <td>{{ s.role or '' }}</td>
+          <td>
+            <select name="status[]" style="width:auto;padding:5px 9px">
+              {% set cur = (current.status if current else 'present') %}
+              <option value="present" {% if cur=='present' %}selected{% endif %}>Present</option>
+              <option value="half"    {% if cur=='half'    %}selected{% endif %}>Half day</option>
+              <option value="absent"  {% if cur=='absent'  %}selected{% endif %}>Absent</option>
+              <option value="leave"   {% if cur=='leave'   %}selected{% endif %}>Leave</option>
+            </select>
+          </td>
+          <td class="right"><input name="ot_hours[]" type="number" step="0.5" value="{{ '%.1f' % (current.ot_hours if current else 0) }}" style="width:80px;text-align:right"></td>
+        </tr>
+      {% else %}<tr><td colspan="4"><div class="empty">No active staff. <a href="{{ url_for('staff_list') }}">Add some</a>.</div></td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if staff %}<button class="btn primary">Save attendance for {{ day }}</button>{% endif %}
+</form>
+{% endblock %}

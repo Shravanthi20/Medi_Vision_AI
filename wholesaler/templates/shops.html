@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Shops — Wholesale{% endblock %}
+{% block body %}
+<h1>Retail shops</h1>
+<p class="sub">Your B2B customers. {{ shops|length }} in list.</p>
+
+<form method="GET" class="searchbar">
+  <input name="q" value="{{ q or '' }}" placeholder="Search by name, code, phone…" autofocus>
+  <button class="btn">Search</button>
+  <a class="btn primary" href="#new-shop">+ New shop</a>
+</form>
+
+<div class="card" style="padding:0;overflow:auto">
+  <table>
+    <thead>
+      <tr>
+        <th>Code</th><th>Shop</th><th>Contact</th><th>City</th><th>Tier</th><th class="right">Credit</th><th class="right">Outstanding</th><th></th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for s in shops %}
+      <tr>
+        <td class="nowrap"><b>{{ s.code }}</b></td>
+        <td><a href="{{ url_for('shop_detail', shop_id=s.id) }}">{{ s.name }}</a>
+          <div style="font-size:11.5px;color:var(--dim)">{{ s.gstin or '' }} {% if s.status != 'active' %}<span class="pill {{ s.status }}">{{ s.status }}</span>{% endif %}</div>
+        </td>
+        <td>{{ s.contact_person or '' }}<div style="font-size:11.5px;color:var(--dim)">{{ s.phone or '' }}</div></td>
+        <td>{{ s.city or '' }}</td>
+        <td>{{ s.price_tier }}</td>
+        <td class="right">{{ s.credit_limit | money }}<div style="font-size:11.5px;color:var(--dim)">{{ s.credit_days }}d</div></td>
+        <td class="right">{% if s.outstanding > 0 %}<span style="color:var(--amber);font-weight:700">{{ s.outstanding | money }}</span>{% else %}—{% endif %}</td>
+        <td><a class="btn sm" href="{{ url_for('shop_detail', shop_id=s.id) }}">Open</a></td>
+      </tr>
+    {% else %}
+      <tr><td colspan="8"><div class="empty"><div class="em">🏪</div>No shops yet. Add your first one below.</div></td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="card" id="new-shop">
+  <h3>Add / edit shop</h3>
+  <form method="POST" action="{{ url_for('shop_save') }}">
+    <div class="row two">
+      <div class="field"><label>Shop code (leave blank to auto)</label><input name="code" placeholder="e.g. SEL001"></div>
+      <div class="field"><label>Shop name *</label><input name="name" required></div>
+    </div>
+    <div class="row three">
+      <div class="field"><label>Contact person</label><input name="contact_person"></div>
+      <div class="field"><label>Phone</label><input name="phone"></div>
+      <div class="field"><label>WhatsApp</label><input name="whatsapp"></div>
+    </div>
+    <div class="row two">
+      <div class="field"><label>Email</label><input name="email" type="email"></div>
+      <div class="field"><label>City</label><input name="city"></div>
+    </div>
+    <div class="field"><label>Address</label><input name="address"></div>
+    <div class="row three">
+      <div class="field"><label>Pincode</label><input name="pincode"></div>
+      <div class="field"><label>GSTIN</label><input name="gstin"></div>
+      <div class="field"><label>Drug licence</label><input name="drug_license"></div>
+    </div>
+    <div class="row four">
+      <div class="field"><label>Credit limit ₹</label><input name="credit_limit" type="number" step="1" value="0"></div>
+      <div class="field"><label>Credit days</label><input name="credit_days" type="number" value="30"></div>
+      <div class="field"><label>Price tier</label>
+        <select name="price_tier"><option>A</option><option>B</option><option>C</option></select>
+      </div>
+      <div class="field"><label>Route</label>
+        <select name="route_id"><option value="">— none —</option>{% for r in routes %}<option value="{{ r.id }}">{{ r.name }}</option>{% endfor %}</select>
+      </div>
+    </div>
+    <div class="field"><label>Notes</label><input name="notes"></div>
+    <button class="btn primary">Save shop</button>
+  </form>
+</div>
+{% endblock %}

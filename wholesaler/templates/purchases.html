@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Purchases — Wholesale{% endblock %}
+{% block body %}
+<h1>Purchase orders</h1>
+<p class="sub">Goods you buy from suppliers. {{ purchases|length }} shown.</p>
+
+<div class="searchbar">
+  <a class="btn primary" href="{{ url_for('purchase_new') }}">+ New PO</a>
+  <a class="btn" href="{{ url_for('suppliers') }}">Manage suppliers</a>
+</div>
+
+<div class="card" style="padding:0;overflow:auto">
+  <table>
+    <thead><tr><th>PO #</th><th>Date</th><th>Supplier</th><th>Status</th><th class="right">Total</th><th></th></tr></thead>
+    <tbody>
+    {% for p in purchases %}
+      <tr>
+        <td class="nowrap"><a href="{{ url_for('purchase_detail', po_id=p.id) }}"><b>{{ p.po_no }}</b></a></td>
+        <td>{{ p.po_date }}</td>
+        <td>{{ p.supplier_name }}</td>
+        <td><span class="pill {{ p.status }}">{{ p.status }}</span></td>
+        <td class="right">{{ p.total | money }}</td>
+        <td><a class="btn sm" href="{{ url_for('purchase_detail', po_id=p.id) }}">Open</a></td>
+      </tr>
+    {% else %}<tr><td colspan="6"><div class="empty"><div class="em">📥</div>No purchase orders yet.</div></td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

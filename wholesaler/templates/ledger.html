@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Ledger — Wholesale{% endblock %}
+{% block body %}
+<h1>Outstanding ledger</h1>
+<p class="sub">Everyone who owes money.</p>
+
+<div class="kpis">
+  <div class="kpi amber"><div class="v">{{ total_out | money }}</div><div class="l">Total outstanding</div></div>
+  <div class="kpi red"><div class="v">{{ total_over | money }}</div><div class="l">Total overdue</div></div>
+  <div class="kpi"><div class="v">{{ rows|length }}</div><div class="l">Shops with balance</div></div>
+</div>
+
+<div class="card" style="padding:0;overflow:auto">
+  <table>
+    <thead><tr><th>Code</th><th>Shop</th><th>Phone</th><th class="right">Open bills</th><th class="right">Credit limit</th><th class="right">Outstanding</th><th class="right">Overdue</th><th></th></tr></thead>
+    <tbody>
+    {% for r in rows %}
+      <tr>
+        <td><b>{{ r.code }}</b></td>
+        <td><a href="{{ url_for('shop_detail', shop_id=r.id) }}">{{ r.name }}</a></td>
+        <td>{% if r.phone %}<a href="https://wa.me/91{{ r.phone|replace('-','')|replace(' ','') }}?text={{ ('MediVision Wholesale: You have an outstanding balance of ' + (r.outstanding|money) + '. Please arrange payment. Thank you.')|urlencode }}" target="_blank">{{ r.phone }}</a>{% endif %}</td>
+        <td class="right">{{ r.open_bills }}</td>
+        <td class="right">{{ r.credit_limit | money }}</td>
+        <td class="right"><b>{{ r.outstanding | money }}</b></td>
+        <td class="right"><b style="color:var(--red)">{{ r.overdue | money }}</b></td>
+        <td><a class="btn sm" href="{{ url_for('shop_detail', shop_id=r.id) }}">Open</a></td>
+      </tr>
+    {% else %}<tr><td colspan="8"><div class="empty"><div class="em">🎉</div>No outstanding. All shops are square.</div></td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

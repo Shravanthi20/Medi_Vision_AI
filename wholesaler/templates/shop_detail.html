@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}{{ shop.name }} — Shop{% endblock %}
+{% block body %}
+<p><a href="{{ url_for('shops') }}">← All shops</a></p>
+<h1>{{ shop.name }} <small style="color:var(--dim);font-size:14px;font-weight:500">· {{ shop.code }}</small></h1>
+<p class="sub">
+  {% if shop.status != 'active' %}<span class="pill {{ shop.status }}">{{ shop.status }}</span>{% endif %}
+  Tier {{ shop.price_tier }} · credit ₹{{ '{:,.0f}'.format(shop.credit_limit or 0) }} for {{ shop.credit_days }} days.
+</p>
+
+<div class="kpis">
+  <div class="kpi"><div class="v">{{ shop.phone or '—' }}</div><div class="l">Phone</div></div>
+  <div class="kpi"><div class="v">{{ shop.city or '—' }}</div><div class="l">City</div></div>
+  <div class="kpi"><div class="v">{{ shop.gstin or '—' }}</div><div class="l">GSTIN</div></div>
+  <div class="kpi amber"><div class="v">{{ outstanding | money }}</div><div class="l">Outstanding</div></div>
+</div>
+
+<div class="split">
+  <div class="card" style="padding:0">
+    <h3 style="padding:14px 18px 0">Recent orders</h3>
+    <table>
+      <thead><tr><th>Order</th><th>Date</th><th>Status</th><th class="right">Total</th></tr></thead>
+      <tbody>
+      {% for o in orders %}
+        <tr>
+          <td><a href="{{ url_for('order_detail', order_id=o.id) }}">{{ o.order_no }}</a></td>
+          <td>{{ o.order_date }}</td>
+          <td><span class="pill {{ o.status }}">{{ o.status }}</span></td>
+          <td class="right">{{ o.total | money }}</td>
+        </tr>
+      {% else %}<tr><td colspan="4" style="padding:20px;text-align:center;color:var(--dim)">No orders yet.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card" style="padding:0">
+    <h3 style="padding:14px 18px 0">Invoices</h3>
+    <table>
+      <thead><tr><th>Invoice</th><th>Due</th><th>Status</th><th class="right">Balance</th></tr></thead>
+      <tbody>
+      {% for i in invoices %}
+        <tr>
+          <td><a href="{{ url_for('invoice_detail', inv_id=i.id) }}">{{ i.invoice_no }}</a></td>
+          <td>{{ i.due_date }}</td>
+          <td><span class="pill {{ i.status }}">{{ i.status }}</span></td>
+          <td class="right">{{ (i.total - i.paid) | money }}</td>
+        </tr>
+      {% else %}<tr><td colspan="4" style="padding:20px;text-align:center;color:var(--dim)">No invoices yet.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <h3>Payments received</h3>
+  <table>
+    <thead><tr><th>Date</th><th>Amount</th><th>Method</th><th>Reference</th><th>Invoice</th></tr></thead>
+    <tbody>
+    {% for p in payments %}
+      <tr>
+        <td>{{ p.paid_on }}</td>
+        <td>{{ p.amount | money }}</td>
+        <td>{{ p.method }}</td>
+        <td>{{ p.reference or '—' }}</td>
+        <td>{{ p.invoice_id or 'on account' }}</td>
+      </tr>
+    {% else %}<tr><td colspan="5" style="padding:20px;text-align:center;color:var(--dim)">No payments recorded.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

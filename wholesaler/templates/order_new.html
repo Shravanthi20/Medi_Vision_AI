@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block title %}New order — Wholesale{% endblock %}
+{% block body %}
+<h1>Create sales order</h1>
+<p class="sub">Add items, set quantities, save. You can adjust rate per line if the shop has a special deal.</p>
+
+<form method="POST" id="orderForm">
+  <div class="card">
+    <div class="row two">
+      <div class="field">
+        <label>Shop *</label>
+        <select name="shop_id" required id="shopSelect">
+          <option value="">Select shop…</option>
+          {% for s in shops %}
+            <option value="{{ s.id }}" data-tier="{{ s.price_tier }}">{{ s.name }} ({{ s.code }}) · tier {{ s.price_tier }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field"><label>Notes</label><input name="notes"></div>
+    </div>
+  </div>
+
+  <div class="card line-editor">
+    <h3>Items</h3>
+    <table id="lines">
+      <thead><tr><th style="min-width:280px">Item</th><th class="right">Qty</th><th class="right">Rate ₹</th><th class="right">Total</th><th></th></tr></thead>
+      <tbody id="lineBody"></tbody>
+      <tfoot>
+        <tr><td colspan="3" class="right"><b>Grand total (before GST)</b></td><td class="right" id="grandTotal">₹0.00</td><td></td></tr>
+      </tfoot>
+    </table>
+    <button type="button" class="btn" id="addLine">+ Add item</button>
+  </div>
+
+  <button type="submit" class="btn primary">Save draft order</button>
+</form>
+
+<script>
+const searchItem = async (q) => {
+  const r = await fetch('/items?q=' + encodeURIComponent(q));
+  const html = await r.text();
+  // Extract item rows from the returned HTML — simpler: use a JSON endpoint later.
+  const rows = [];
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  doc.querySelectorAll('tbody tr').forEach(tr => {
+    const tds = tr.querySelectorAll('td');
+    if (tds.length < 6) return;
+    const code = tds[0]?.textContent.trim();
+    const name = tds[1]?.childNodes[0]?.textContent.trim();
+    const rateRaw = tds[5]?.textContent.trim().split('/')[0].trim();
+    rows.push({ id: null, code, name, rate: parseFloat(rateRaw) || 0 });
+  });
+  return rows;
+};
+// Simple: no live search — just typeable item name + rate. Prefill from full item list JSON.
+const ITEMS = {{ items|default([]) | tojson if items is defined else '[]' | safe }};
+
+let idx = 0;
+function newRow() {
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><input list="itemsList" name="item_name_display" placeholder="Type item name…" class="itemInput" autocomplete="off" style="width:100%">
+        <input type="hidden" name="item_id[]" class="itemIdField"></td>
+    <td><input name="qty[]" type="number" min="1" value="1" class="qty" style="width:80px" required></td>
+    <td><input name="rate[]" type="number" step="0.01" class="rate" style="width:100px"></td>
+    <td class="right lineTotal">₹0.00</td>
+    <td><button type="button" class="btn sm red rm">✕</button></td>`;
+  tr.querySelector('.rm').onclick = () => { tr.remove(); recompute(); };
+  ['input','change'].forEach(e => tr.addEventListener(e, recompute));
+  return tr;
+}
+function recompute(){
+  let g = 0;
+  document.querySelectorAll('#lineBody tr').forEach(tr => {
+    const q = parseFloat(tr.querySelector('.qty').value)||0;
+    const r = parseFloat(tr.querySelector('.rate').value)||0;
+    const t = q*r;
+    tr.querySelector('.lineTotal').textContent = '₹' + t.toFixed(2);
+    g += t;
+  });
+  document.getElementById('grandTotal').textContent = '₹' + g.toFixed(2);
+}
+document.getElementById('addLine').onclick = () => {
+  document.getElementById('lineBody').appendChild(newRow());
+};
+// Autocomplete via /catalog JSON
+async function loadItems(){
+  try {
+    const r = await fetch('/api/items?limit=500');
+    if (!r.ok) return [];
+    return await r.json();
+  } catch (e){ return []; }
+}
+loadItems().then(items => {
+  const dl = document.createElement('datalist');
+  dl.id = 'itemsList';
+  items.forEach(it => {
+    const opt = document.createElement('option');
+    opt.value = it.name + ' — ' + it.code;
+    opt.dataset.id = it.id;
+    opt.dataset.rate = it.ptr;
+    dl.appendChild(opt);
+  });
+  document.body.appendChild(dl);
+  document.addEventListener('input', ev => {
+    if (ev.target.classList.contains('itemInput')){
+      const v = ev.target.value;
+      const opts = dl.querySelectorAll('option');
+      for (const o of opts) {
+        if (o.value === v) {
+          const tr = ev.target.closest('tr');
+          tr.querySelector('.itemIdField').value = o.dataset.id;
+          if (!tr.querySelector('.rate').value) tr.querySelector('.rate').value = o.dataset.rate;
+          recompute();
+          break;
+        }
+      }
+    }
+  });
+});
+// Start with one empty row
+document.getElementById('lineBody').appendChild(newRow());
+</script>
+{% endblock %}

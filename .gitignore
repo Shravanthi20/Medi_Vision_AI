@@ -50,3 +50,8 @@ build/
 face_debug.txt
 flake8_output.txt
 routes.txt
+
+# Wholesaler app — runtime data & secrets (live copies are on the VPS)
+wholesaler/wholesaler.db
+wholesaler/.env
+wholesaler/venv/

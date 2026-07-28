@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Reports — Wholesale{% endblock %}
+{% block body %}
+<h1>Reports — {{ period }}</h1>
+<p class="sub">Sales, aging, profitability and GST at a glance.</p>
+
+<form method="GET" class="searchbar">
+  <input name="period" type="month" value="{{ period }}">
+  <button class="btn">Load month</button>
+</form>
+
+<div class="kpis">
+  <div class="kpi green"><div class="v">{{ rev_total | money }}</div><div class="l">Revenue (invoiced)</div></div>
+  <div class="kpi red"><div class="v">{{ exp_total | money }}</div><div class="l">Expenses</div></div>
+  <div class="kpi {{ 'green' if profit >= 0 else 'red' }}"><div class="v">{{ profit | money }}</div><div class="l">Rough profit</div></div>
+  <div class="kpi blue"><div class="v">{{ gst_out | money }}</div><div class="l">Output GST</div></div>
+  <div class="kpi blue"><div class="v">{{ gst_in | money }}</div><div class="l">Input GST</div></div>
+  <div class="kpi amber"><div class="v">{{ gst_net | money }}</div><div class="l">Net GST payable</div></div>
+</div>
+
+<div class="split">
+  <div class="card" style="padding:0">
+    <h3 style="padding:14px 18px 0">Top items sold</h3>
+    <table>
+      <thead><tr><th>Item</th><th class="right">Qty</th><th class="right">Revenue</th></tr></thead>
+      <tbody>
+      {% for r in sales_by_item %}
+        <tr><td>{{ r.item_name }}</td><td class="right">{{ r.qty }}</td><td class="right">{{ r.revenue | money }}</td></tr>
+      {% else %}<tr><td colspan="3" style="text-align:center;color:var(--dim);padding:16px">No sales yet.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card" style="padding:0">
+    <h3 style="padding:14px 18px 0">Top shops</h3>
+    <table>
+      <thead><tr><th>Shop</th><th class="right">Invoices</th><th class="right">Revenue</th></tr></thead>
+      <tbody>
+      {% for r in sales_by_shop %}
+        <tr><td>{{ r.name }}</td><td class="right">{{ r.invoices }}</td><td class="right">{{ r.revenue | money }}</td></tr>
+      {% else %}<tr><td colspan="3" style="text-align:center;color:var(--dim);padding:16px">No invoices this month.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <h3>Ageing (outstanding split by how old)</h3>
+  <table>
+    <thead><tr><th>Bucket</th><th class="right">Amount</th></tr></thead>
+    <tbody>
+      <tr><td>Not yet due</td><td class="right">{{ (aging.current or 0) | money }}</td></tr>
+      <tr><td>1–30 days overdue</td><td class="right" style="color:var(--amber)">{{ (aging.d30 or 0) | money }}</td></tr>
+      <tr><td>31–60 days overdue</td><td class="right" style="color:var(--amber)">{{ (aging.d60 or 0) | money }}</td></tr>
+      <tr><td>61–90 days overdue</td><td class="right" style="color:var(--red)">{{ (aging.d90 or 0) | money }}</td></tr>
+      <tr><td>Over 90 days</td><td class="right" style="color:var(--red);font-weight:700">{{ (aging.d90plus or 0) | money }}</td></tr>
+    </tbody>
+  </table>
+</div>
+{% endblock %}
