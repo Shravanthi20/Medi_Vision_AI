@@ -120,6 +120,9 @@ tbody tr:last-child td{border-bottom:none}
 .empty{text-align:center;padding:36px 20px;color:var(--dim);border:1px dashed var(--line);border-radius:12px}
 .empty .em{font-size:32px;margin-bottom:6px}
 
+/* JS visibility toggle */
+.hide{display:none!important}
+
 /* Login */
 .login-wrap{max-width:400px;margin:12vh auto;padding:0 20px}
 .login-wrap .brand{justify-content:center;margin-bottom:14px}

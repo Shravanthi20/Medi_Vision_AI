@@ -816,8 +816,48 @@ def catalog():
             rows = c.execute("SELECT * FROM wholesale_items WHERE status='active' AND category=? ORDER BY name LIMIT 200", (category,)).fetchall()
         else:
             rows = c.execute("SELECT * FROM wholesale_items WHERE status='active' ORDER BY name LIMIT 100").fetchall()
+    # Lazy import: website.py does `from app import app, conn, ...` at module
+    # level, so app.py importing it at import time would be circular. By the
+    # time a request is being handled, website.py has long since finished
+    # loading. sv() carries the same DEFAULTS fallback /company uses, so the
+    # catalog header shows the tenant's real name instead of the env-var
+    # COMPANY_NAME meant only for the pre-multi-tenant fallback DB.
+    import website
+    company_name = website.sv("site.company")
     return render_template("catalog.html", items=rows, categories=cats, q=q, category=category,
-                           company=COMPANY_NAME, public_catalog_slug=getattr(g, "public_catalog_slug", None))
+                           company=company_name, public_catalog_slug=getattr(g, "public_catalog_slug", None))
+
+
+@app.route("/catalog/search")
+def catalog_search():
+    """
+    JSON search for the catalog page's live-search box.
+
+    Deliberately does NOT reuse /api/items: that endpoint resolves its
+    tenant from session["tenant"], but an anonymous catalog visitor never
+    has one — enter_tenant() (called by public_catalog() on the initial
+    page load) only binds g for that single request, not the session, so a
+    follow-up fetch() from the browser would silently fall back to the
+    empty pre-multi-tenant DB and return zero results. Take the slug
+    explicitly instead, exactly like public_catalog()/public_catalog_order()
+    already do.
+    """
+    slug = (request.args.get("slug") or "").strip()
+    if slug:
+        import tenancy
+        tenancy.enter_tenant(slug)
+    q = (request.args.get("q") or "").strip()
+    limit = min(int(request.args.get("limit") or 15), 50)
+    if len(q) < 2:
+        return jsonify([])
+    like = f"%{q}%"
+    with conn() as c:
+        rows = c.execute(
+            "SELECT id, name, generic, manufacturer, pack_size, mrp, ptr, scheme FROM wholesale_items "
+            "WHERE status='active' AND (name LIKE ? OR generic LIKE ?) ORDER BY name LIMIT ?",
+            (like, like, limit),
+        ).fetchall()
+    return jsonify([dict(r) for r in rows])
 
 
 def _catalog_redirect():
