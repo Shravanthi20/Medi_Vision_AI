@@ -1,7 +1,9 @@
 {% extends "shop_base.html" %}
 {% block title %}{{ inv.invoice_no }}{% endblock %}
 {% block body %}
-<p><a href="{{ url_for('shop_bills') }}">← All my bills</a></p>
+<p><a href="{{ url_for('shop_bills') }}">← All my bills</a>
+  <a class="btn sm primary" href="{{ url_for('shop_bill_pdf', inv_id=inv.id) }}" target="_blank" style="float:right">⬇ Download PDF</a>
+</p>
 <h1>{{ inv.invoice_no }} <span class="pill {{ inv.status }}" style="margin-left:6px">{{ inv.status }}</span></h1>
 <p class="sub">{{ inv.invoice_date }} · due {{ inv.due_date }}</p>
 

@@ -58,3 +58,5 @@ wholesaler/venv/
 
 wholesaler/tenants/
 wholesaler/platform.db
+
+wholesaler/uploads/

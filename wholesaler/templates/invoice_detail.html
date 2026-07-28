@@ -2,7 +2,8 @@
 {% block title %}{{ inv.invoice_no }} — Invoice{% endblock %}
 {% block body %}
 <p class="no-print"><a href="{{ url_for('invoices') }}">← All invoices</a>
-  <button class="btn sm" onclick="window.print()" style="float:right">🖨 Print / PDF</button>
+  <a class="btn sm primary" href="{{ url_for('invoice_pdf', inv_id=inv.id) }}" target="_blank" style="float:right;margin-left:8px">⬇ Download PDF</a>
+  <button class="btn sm" onclick="window.print()" style="float:right">🖨 Print</button>
 </p>
 
 <div class="card">

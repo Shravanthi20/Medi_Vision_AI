@@ -243,6 +243,10 @@ try:
     import users as _users; _users.conn = _tenant_aware_conn
 except ImportError:
     pass
+try:
+    import pdf as _pdf; _pdf.conn = _tenant_aware_conn
+except ImportError:
+    pass
 
 
 def provision_tenant(slug: str):
