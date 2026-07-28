@@ -44,6 +44,16 @@
           <input type="hidden" name="action" value="{{ next_actions[order.status] }}">
           <button class="btn primary wide">Mark {{ next_actions[order.status] }}ed</button>
         </form>
+        {% if order.status == 'confirmed' %}
+          {# Dispatch is credit-checked (see billing.py). This is the deliberate
+             override for when the owner knows something the ledger doesn't. #}
+          <form method="POST" action="{{ url_for('order_action', order_id=order.id) }}" style="margin-top:8px"
+                onsubmit="return confirm('Dispatch even though this shop is over its credit limit?')">
+            <input type="hidden" name="action" value="dispatch">
+            <input type="hidden" name="credit_override" value="1">
+            <button class="btn wide" style="border-color:var(--amber);color:var(--amber)">Dispatch anyway (over limit)</button>
+          </form>
+        {% endif %}
       {% endif %}
       {% if order.status in ['draft','confirmed'] %}
         <form method="POST" action="{{ url_for('order_action', order_id=order.id) }}" style="margin-top:8px">

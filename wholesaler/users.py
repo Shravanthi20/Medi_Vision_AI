@@ -170,7 +170,11 @@ def users_action(uid, action):
 #  below already exists in app.view_functions.
 # ══════════════════════════════════════════════════════════════════════
 _FINANCIAL_ENDPOINTS = ["invoices", "invoice_detail", "invoice_pay", "ledger",
-                        "expenses", "expense_save", "payroll", "payroll_advance", "reports"]
+                        "expenses", "expense_save", "payroll", "payroll_advance", "reports",
+                        # Counter billing raises an invoice and moves stock, and
+                        # the credit endpoint exposes a shop's debt position -
+                        # both are financial, not general operations.
+                        "billing", "api_shop_credit"]
 _OWNER_ONLY_ENDPOINTS = ["customize", "custom_field_add", "custom_field_del", "site_admin",
                          "activity_log"]
 

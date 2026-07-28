@@ -20,6 +20,9 @@
     <a href="{{ url_for('dashboard') }}" class="{{ 'active' if request.endpoint=='dashboard' else '' }}">Dashboard</a>
     <a href="{{ url_for('orders') }}"    class="{{ 'active' if request.endpoint in ['orders','order_new','order_detail'] else '' }}">Orders</a>
     {% if is_financial %}
+    <a href="{{ url_for('billing') }}"   class="{{ 'active' if request.endpoint=='billing' else '' }}">🧾 Bill now</a>
+    {% endif %}
+    {% if is_financial %}
     <a href="{{ url_for('invoices') }}"  class="{{ 'active' if request.endpoint in ['invoices','invoice_detail'] else '' }}">Invoices</a>
     <a href="{{ url_for('ledger') }}"    class="{{ 'active' if request.endpoint=='ledger' else '' }}">Ledger</a>
     {% endif %}

@@ -244,6 +244,10 @@ try:
 except ImportError:
     pass
 try:
+    import billing as _billing; _billing.conn = _tenant_aware_conn
+except ImportError:
+    pass
+try:
     import pdf as _pdf; _pdf.conn = _tenant_aware_conn
 except ImportError:
     pass
