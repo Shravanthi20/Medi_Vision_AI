@@ -19,8 +19,21 @@
         <input name="company" required autocapitalize="none" autocorrect="off"
                placeholder="e.g. rathna" style="text-transform:lowercase">
       </div>
-      <div class="field"><label>Your name</label>
-        <input name="name" autocomplete="name" placeholder="Who's signing in"></div>
+
+      <label style="display:flex;gap:8px;align-items:center;font-size:13px;color:var(--dim);margin:4px 0 14px">
+        <input type="checkbox" id="hasLogin" onchange="document.getElementById('ownerFields').classList.toggle('hide',this.checked);document.getElementById('staffFields').classList.toggle('hide',!this.checked)">
+        I have a personal staff login
+      </label>
+
+      <div id="ownerFields">
+        <div class="field"><label>Your name</label>
+          <input name="name" autocomplete="name" placeholder="Who's signing in"></div>
+      </div>
+      <div id="staffFields" class="hide">
+        <div class="field"><label>Username</label>
+          <input name="username" autocapitalize="none" autocomplete="username" placeholder="e.g. ramesh"></div>
+      </div>
+
       <div class="field"><label>Password</label>
         <input name="password" type="password" required autocomplete="current-password"></div>
       <button class="btn primary wide">Sign in</button>

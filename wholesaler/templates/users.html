@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Staff logins — Wholesale{% endblock %}
+{% block body %}
+<h1>Staff logins</h1>
+<p class="sub">Give staff their own login instead of sharing the company password. Each role sees a different slice of the app.</p>
+
+<div class="card" style="padding:0;overflow:auto">
+  <table>
+    <thead><tr><th>Name</th><th>Username</th><th>Role</th><th>Status</th><th>Last login</th><th></th></tr></thead>
+    <tbody>
+    {% for u in users %}
+      <tr>
+        <td><b>{{ u.name }}</b></td>
+        <td><code>{{ u.username }}</code></td>
+        <td>{{ roles[u.role] }}</td>
+        <td>{% if u.status=='suspended' %}<span class="pill overdue">suspended</span>{% else %}<span class="pill active">active</span>{% endif %}</td>
+        <td style="font-size:12px;color:var(--dim)">{{ u.last_login[:16] if u.last_login else 'never' }}</td>
+        <td>
+          <div style="display:flex;gap:5px;flex-wrap:wrap">
+            {% if u.status=='active' %}
+              <form method="POST" action="{{ url_for('users_action', uid=u.id, action='suspend') }}"><button class="btn sm red">Suspend</button></form>
+            {% else %}
+              <form method="POST" action="{{ url_for('users_action', uid=u.id, action='activate') }}"><button class="btn sm primary">Activate</button></form>
+            {% endif %}
+            <form method="POST" action="{{ url_for('users_action', uid=u.id, action='resetpw') }}"><button class="btn sm">Reset pw</button></form>
+          </div>
+        </td>
+      </tr>
+    {% else %}<tr><td colspan="6"><div class="empty"><div class="em">👤</div>No staff logins yet — everyone still shares the company password.</div></td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="card">
+  <h3>Add a staff login</h3>
+  <form method="POST" action="{{ url_for('users_save') }}">
+    <div class="row three">
+      <div class="field"><label>Full name *</label><input name="name" required></div>
+      <div class="field"><label>Username *</label><input name="username" required autocapitalize="none" placeholder="e.g. ramesh"></div>
+      <div class="field"><label>Role *</label>
+        <select name="role">
+          {% for k, label in roles.items() %}<option value="{{ k }}">{{ label }}</option>{% endfor %}
+        </select>
+      </div>
+    </div>
+    <div class="field" style="max-width:340px"><label>Password *</label><input name="password" type="password" required minlength="4"></div>
+    <button class="btn primary">Create login</button>
+    <p style="color:var(--dim);font-size:12px;margin-top:8px">
+      They sign in at the same /portal page as you, but tick "I have a personal login" and use this username + password instead of the company password.
+    </p>
+  </form>
+</div>
+{% endblock %}

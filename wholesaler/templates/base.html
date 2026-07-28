@@ -9,6 +9,8 @@
 <body>
 
 {% if session.get('ws_user') %}
+{% set role = session.get('role', 'owner') %}
+{% set is_financial = role in ['owner', 'accountant'] %}
 <header class="topbar">
   <div class="brand">
     <div class="logo">W</div>
@@ -17,37 +19,45 @@
   <nav class="nav">
     <a href="{{ url_for('dashboard') }}" class="{{ 'active' if request.endpoint=='dashboard' else '' }}">Dashboard</a>
     <a href="{{ url_for('orders') }}"    class="{{ 'active' if request.endpoint in ['orders','order_new','order_detail'] else '' }}">Orders</a>
+    {% if is_financial %}
     <a href="{{ url_for('invoices') }}"  class="{{ 'active' if request.endpoint in ['invoices','invoice_detail'] else '' }}">Invoices</a>
     <a href="{{ url_for('ledger') }}"    class="{{ 'active' if request.endpoint=='ledger' else '' }}">Ledger</a>
+    {% endif %}
     <a href="{{ url_for('shops') }}"     class="{{ 'active' if request.endpoint in ['shops','shop_detail'] else '' }}">Shops</a>
     <a href="{{ url_for('items') }}"     class="{{ 'active' if request.endpoint=='items' else '' }}">Items</a>
     <a href="{{ url_for('routes') }}"    class="{{ 'active' if request.endpoint=='routes' else '' }}">Routes</a>
     {% if features.staff %}
     <a href="{{ url_for('staff_list') }}" class="{{ 'active' if request.endpoint in ['staff_list','attendance','payroll'] else '' }}">Staff</a>
     <a href="{{ url_for('attendance') }}" class="{{ 'active' if request.endpoint=='attendance' else '' }}" style="font-size:12.5px;color:var(--dim)">· Attendance</a>
-    <a href="{{ url_for('payroll') }}"    class="{{ 'active' if request.endpoint=='payroll' else '' }}" style="font-size:12.5px;color:var(--dim)">· Payroll</a>
+    {% if is_financial %}<a href="{{ url_for('payroll') }}" class="{{ 'active' if request.endpoint=='payroll' else '' }}" style="font-size:12.5px;color:var(--dim)">· Payroll</a>{% endif %}
     {% endif %}
     {% if features.purchases %}
     <a href="{{ url_for('purchases') }}"  class="{{ 'active' if request.endpoint in ['purchases','purchase_new','purchase_detail','suppliers'] else '' }}">Purchases</a>
     {% endif %}
-    {% if features.expenses %}
+    {% if features.expenses and is_financial %}
     <a href="{{ url_for('expenses') }}"   class="{{ 'active' if request.endpoint=='expenses' else '' }}">Expenses</a>
     {% endif %}
     <a href="{{ url_for('wanted') }}" class="{{ 'active' if request.endpoint in ['wanted','wanted_review'] else '' }}">🪄 Wanted</a>
     <a href="{{ url_for('demand') }}" class="{{ 'active' if request.endpoint=='demand' else '' }}">Demand</a>
     <a href="{{ url_for('aliases') }}" class="{{ 'active' if request.endpoint=='aliases' else '' }}" style="font-size:12.5px;color:var(--dim)">· Names</a>
     <a href="{{ url_for('reorder') }}" class="{{ 'active' if request.endpoint=='reorder' else '' }}">🤖 Reorder</a>
+    {% if role == 'owner' %}
     <a href="{{ url_for('site_admin') }}" class="{{ 'active' if request.endpoint=='site_admin' else '' }}">Website</a>
-    {% if features.reports %}
+    {% endif %}
+    {% if features.reports and is_financial %}
     <a href="{{ url_for('reports') }}"    class="{{ 'active' if request.endpoint=='reports' else '' }}">Reports</a>
     {% endif %}
     {% if features.catalog %}
     <a href="{{ url_for('public_catalog', slug=session.tenant) }}" target="_blank">Catalog ↗</a>
     {% endif %}
-    {% if features.custom %}
+    {% if features.custom and role == 'owner' %}
     <a href="{{ url_for('customize') }}" class="{{ 'active' if request.endpoint=='customize' else '' }}">Customize</a>
     {% endif %}
+    {% if role == 'owner' %}
+    <a href="{{ url_for('users_list') }}" class="{{ 'active' if request.endpoint=='users_list' else '' }}">Staff logins</a>
+    {% endif %}
     <a href="{{ url_for('settings_page') }}">Settings</a>
+    <span style="font-size:11.5px;color:var(--dim);padding:0 4px">{{ session.ws_user }} · {{ role }}</span>
     <form method="POST" action="{{ url_for('logout') }}" style="display:inline">
       <button class="btn sm" type="submit">Sign out</button>
     </form>

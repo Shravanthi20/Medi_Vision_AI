@@ -239,6 +239,10 @@ try:
     import upi as _upi; _upi.conn = _tenant_aware_conn
 except ImportError:
     pass
+try:
+    import users as _users; _users.conn = _tenant_aware_conn
+except ImportError:
+    pass
 
 
 def provision_tenant(slug: str):
@@ -250,6 +254,10 @@ def provision_tenant(slug: str):
         c.executescript(_erp.EXTRA_SCHEMA)
         try:
             import wanted as _w; c.executescript(_w.WANTED_SCHEMA)
+        except ImportError:
+            pass
+        try:
+            import users as _u; c.executescript(_u.USERS_SCHEMA)
         except ImportError:
             pass
         c.commit()
@@ -287,6 +295,7 @@ def portal_login():
     if request.method == "POST":
         slug = (request.form.get("company") or "").strip().lower()
         pw = request.form.get("password") or ""
+        username = (request.form.get("username") or "").strip().lower()
         name = (request.form.get("name") or "").strip() or "user"
 
         with platform_conn() as c:
@@ -296,18 +305,38 @@ def portal_login():
             error = "No company with that code."
         elif comp["status"] == "suspended":
             error = "This account is suspended. Please contact support."
-        elif not comp["pass_hash"] or hash_pw(pw, comp["pass_salt"]) != comp["pass_hash"]:
-            error = "Wrong password."
         else:
-            session.clear()
-            session["tenant"] = slug
-            session["tenant_name"] = comp["name"]
-            session["ws_user"] = name
-            with platform_conn() as c:
-                c.execute("UPDATE companies SET last_login=datetime('now') WHERE slug=?", (slug,))
+            # Bind the tenant DB BEFORE any staff-account lookup, or that
+            # lookup would hit the same no-tenant fallback trap fixed
+            # elsewhere in this file.
             g.tenant_slug, g.tenant_db = slug, tenant_db_path(slug)
-            push_usage(slug)
-            return redirect(url_for("dashboard"))
+
+            staff_row = None
+            if username:
+                import users as _users
+                staff_row = _users.find_staff_user(username, pw)
+
+            if username and not staff_row:
+                error = "Wrong username or password."
+            elif not username and (not comp["pass_hash"] or hash_pw(pw, comp["pass_salt"]) != comp["pass_hash"]):
+                error = "Wrong password."
+            else:
+                session.clear()
+                session["tenant"] = slug
+                session["tenant_name"] = comp["name"]
+                if staff_row:
+                    session["ws_user"] = staff_row["name"]
+                    session["role"] = staff_row["role"]
+                    with _tenant_aware_conn() as tc:
+                        tc.execute("UPDATE staff_users SET last_login=datetime('now') WHERE id=?", (staff_row["id"],))
+                else:
+                    session["ws_user"] = name
+                    session["role"] = "owner"
+                with platform_conn() as c:
+                    c.execute("UPDATE companies SET last_login=datetime('now') WHERE slug=?", (slug,))
+                g.tenant_slug, g.tenant_db = slug, tenant_db_path(slug)
+                push_usage(slug)
+                return redirect(url_for("dashboard"))
 
     return render_template("portal_login.html", error=error)
 
