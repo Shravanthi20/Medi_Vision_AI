@@ -1,0 +1,89 @@
+{% extends "shop_base.html" %}
+{% block title %}Review list #{{ up.id }}{% endblock %}
+{% block body %}
+<h1>Review your list</h1>
+<p class="sub">{{ up.filename }} · {{ up.total_lines }} lines · {{ up.auto_matched }} matched instantly, {{ up.needs_review }} need your pick, {{ up.not_stocked }} we don't stock.</p>
+
+<form method="POST" action="{{ url_for('shop_wanted_order', upload_id=up.id) }}" id="reviewForm">
+<div class="card" style="padding:0;overflow:auto">
+  <table>
+    <thead><tr><th>You wrote</th><th>Qty</th><th>Match</th><th class="right">Rate</th><th></th></tr></thead>
+    <tbody>
+    {% for ln in lines %}
+      <tr>
+        <td><b>{{ ln.raw_name }}</b>
+          {% if ln.match_type == 'alias' or ln.match_type == 'global' %}
+            <div style="font-size:11px;color:var(--green)">remembered from before</div>
+          {% elif ln.match_type == 'exact' %}
+            <div style="font-size:11px;color:var(--green)">exact match</div>
+          {% elif ln.match_type == 'fuzzy' %}
+            <div style="font-size:11px;color:var(--amber)">closest match — check this one</div>
+          {% elif ln.match_type == 'none' %}
+            <div style="font-size:11px;color:var(--dim)">not in our catalogue — we've logged the request</div>
+          {% endif %}
+        </td>
+        {% if ln.item or ln.suggestions %}
+          <td><input type="hidden" name="line_id[]" value="{{ ln.id }}">
+              <input type="number" name="qty[]" min="1" value="{{ ln.qty }}" class="input qtyIn" style="width:64px;text-align:right"
+                     data-row="{{ loop.index0 }}"></td>
+          <td>
+            <select name="item_choice[]" class="input choiceSel" data-row="{{ loop.index0 }}">
+              {% if ln.item %}
+                <option value="{{ ln.item_id }}" data-rate="{{ ln.rate }}" selected>
+                  {{ ln.item.name }} — {{ ln.item.pack_size or '' }} (₹{{ '%.2f' % ln.rate }})</option>
+              {% endif %}
+              {% for s in ln.suggestions %}
+                {% if s.id != ln.item_id %}
+                  <option value="{{ s.id }}" data-rate="{{ s.rate }}" {{ 'selected' if not ln.item and loop.first else '' }}>
+                    {{ s.name }} — {{ s.pack or '' }} ({{ (s.score*100)|round|int }}% match, ₹{{ '%.2f' % s.rate }})</option>
+                {% endif %}
+              {% endfor %}
+              <option value="skip">Don't order this line</option>
+            </select>
+          </td>
+          <td class="right lineTotal" data-row="{{ loop.index0 }}">₹0.00</td>
+          <td></td>
+        {% else %}
+          <td colspan="4" style="color:var(--dim)">—</td>
+        {% endif %}
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="card" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+  <div>
+    <div style="font-size:11px;color:var(--dim);text-transform:uppercase">Order total</div>
+    <div id="grandTotal" style="font-size:22px;font-weight:800;color:var(--green)">₹0.00</div>
+  </div>
+  <button type="submit" class="btn primary" style="padding:12px 24px">Place order →</button>
+</div>
+</form>
+
+<script>
+(() => {
+  const money = n => '₹' + n.toFixed(2);
+  function recompute() {
+    let grand = 0;
+    document.querySelectorAll('.choiceSel').forEach(sel => {
+      const row = sel.dataset.row;
+      const qtyInput = document.querySelector(`.qtyIn[data-row="${row}"]`);
+      const totalCell = document.querySelector(`.lineTotal[data-row="${row}"]`);
+      const opt = sel.options[sel.selectedIndex];
+      const rate = parseFloat(opt.dataset.rate || 0);
+      const qty = parseInt(qtyInput.value, 10) || 0;
+      const skipped = sel.value === 'skip';
+      const line = skipped ? 0 : rate * qty;
+      qtyInput.disabled = skipped;
+      if (totalCell) totalCell.textContent = money(line);
+      grand += line;
+    });
+    document.getElementById('grandTotal').textContent = money(grand);
+  }
+  document.querySelectorAll('.choiceSel, .qtyIn').forEach(el => el.addEventListener('input', recompute));
+  document.querySelectorAll('.choiceSel').forEach(el => el.addEventListener('change', recompute));
+  recompute();
+})();
+</script>
+{% endblock %}

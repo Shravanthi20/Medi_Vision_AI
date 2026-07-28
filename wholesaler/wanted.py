@@ -731,13 +731,131 @@ def shop_wanted():
         with conn() as c:
             up = c.execute("SELECT * FROM wanted_uploads WHERE id=?", (upload_id,)).fetchone()
         flash(f"Received {up['total_lines']} lines — {up['auto_matched']} matched automatically. "
-              f"Our team will confirm and call you.", "ok")
-        return redirect(url_for("shop_wanted"))
+              f"Review and place your order below.", "ok")
+        return redirect(url_for("shop_wanted_review", upload_id=upload_id))
 
     with conn() as c:
         ups = c.execute("""SELECT * FROM wanted_uploads WHERE shop_id=? ORDER BY id DESC LIMIT 20""",
                         (session["shop_id"],)).fetchall()
     return render_template("shop_wanted.html", uploads=ups, have_xlsx=HAVE_XLSX)
+
+
+@app.route("/shop/wanted/<int:upload_id>")
+@shop_required
+def shop_wanted_review(upload_id):
+    """
+    Self-serve review of a shop's own upload. The admin equivalent
+    (wanted_review) exists for staff to resolve on a shop's behalf; this is
+    the same matched-lines view, scoped to the shop's own session so they
+    can confirm quantities and place the order themselves instead of
+    waiting on a callback.
+    """
+    with conn() as c:
+        up = c.execute("SELECT * FROM wanted_uploads WHERE id=? AND shop_id=?",
+                       (upload_id, session["shop_id"])).fetchone()
+        if not up:
+            abort(404)
+        lines = c.execute("SELECT * FROM wanted_lines WHERE upload_id=? ORDER BY id", (upload_id,)).fetchall()
+        items = {r["id"]: dict(r) for r in c.execute(
+            "SELECT id, name, pack_size, ptr, ptr_b, ptr_c, scheme, stock FROM wholesale_items").fetchall()}
+    shop = _shop_ctx()
+
+    parsed = []
+    for ln in lines:
+        d = dict(ln)
+        d["suggestions"] = json.loads(ln["suggestions"] or "[]")
+        d["item"] = items.get(ln["item_id"])
+        if d["item"]:
+            d["rate"] = rate_for_shop(d["item"], shop["price_tier"])
+        for s in d["suggestions"]:
+            si = items.get(s["id"])
+            s["rate"] = rate_for_shop(si, shop["price_tier"]) if si else 0
+        parsed.append(d)
+    return render_template("shop_wanted_review.html", up=up, lines=parsed, shop=shop)
+
+
+@app.route("/shop/wanted/<int:upload_id>/order", methods=["POST"])
+@shop_required
+def shop_wanted_order(upload_id):
+    """
+    Turn confirmed lines straight into a placed order - no staff round trip.
+    Same order-building logic as wanted_create_order(), but scoped to the
+    shop's own upload (re-checked here, not just trusted from the review
+    page) and driven by whatever the shop actually ticked/edited rather
+    than blindly re-using the original matched qty.
+    """
+    line_ids = request.form.getlist("line_id[]")
+    item_choices = request.form.getlist("item_choice[]")
+    qtys = request.form.getlist("qty[]")
+
+    with conn() as c:
+        up = c.execute("SELECT * FROM wanted_uploads WHERE id=? AND shop_id=?",
+                       (upload_id, session["shop_id"])).fetchone()
+        if not up:
+            abort(404)
+        shop = c.execute("SELECT * FROM retail_shops WHERE id=?", (session["shop_id"],)).fetchone()
+
+        order_lines = []
+        for lid, choice, q_str in zip(line_ids, item_choices, qtys):
+            if not choice or choice == "skip":
+                continue
+            qty = int(q_str or 0)
+            if qty <= 0:
+                continue
+            item = c.execute("SELECT * FROM wholesale_items WHERE id=?", (int(choice),)).fetchone()
+            if not item:
+                continue
+            order_lines.append((int(lid), item, qty))
+
+        if not order_lines:
+            flash("Nothing selected — tick at least one item to order.", "err")
+            return redirect(url_for("shop_wanted_review", upload_id=upload_id))
+
+        order_no = next_order_no()
+        cur = c.execute("""INSERT INTO sales_orders (order_no, shop_id, notes, source, created_by)
+                           VALUES (?,?,?,?,?)""",
+                        (order_no, session["shop_id"], f"From wanted list #{upload_id} ({up['filename']})",
+                         "wanted", shop["name"]))
+        order_id = cur.lastrowid
+
+        for lid, item, qty in order_lines:
+            rate = rate_for_shop(item, shop["price_tier"])
+            free = 0
+            if item["scheme"] and "+" in (item["scheme"] or ""):
+                try:
+                    b, bs = item["scheme"].split("+")
+                    b, bs = int(b), int(bs)
+                    if b > 0:
+                        free = (qty // b) * bs
+                except Exception:
+                    pass
+            c.execute("""INSERT INTO sales_order_items
+                (order_id, item_id, item_name, pack_size, qty, free_qty, rate, gst_rate, amount)
+                VALUES (?,?,?,?,?,?,?,?,?)""",
+                (order_id, item["id"], item["name"], item["pack_size"], qty, free,
+                 rate, item["gst_rate"], qty * rate))
+
+            # Remember the shop's choice as an alias too, same as the staff
+            # resolve flow - their next upload matches this line instantly.
+            ln = c.execute("SELECT * FROM wanted_lines WHERE id=?", (lid,)).fetchone()
+            if ln:
+                c.execute("UPDATE wanted_lines SET item_id=?, match_type='confirmed', qty=?, confidence=1.0 WHERE id=?",
+                          (item["id"], qty, lid))
+                try:
+                    c.execute("""INSERT INTO item_aliases (shop_id, alias_norm, alias_raw, item_id)
+                                 VALUES (?,?,?,?)""",
+                              (session["shop_id"], ln["norm_name"], ln["raw_name"], item["id"]))
+                except Exception:
+                    c.execute("""UPDATE item_aliases SET item_id=?, hits=hits+1
+                                 WHERE shop_id=? AND alias_norm=?""",
+                              (item["id"], session["shop_id"], ln["norm_name"]))
+
+        c.execute("UPDATE wanted_uploads SET status='ordered', order_id=? WHERE id=?", (order_id, upload_id))
+
+    compute_order_totals(order_id)
+    audit(shop["name"], "shop_wanted_to_order", "order", order_id, order_no)
+    flash(f"Order {order_no} placed — {len(order_lines)} item(s). We'll confirm shortly.", "ok")
+    return redirect(url_for("shop_orders"))
 
 
 # ══════════════════════════════════════════════════════════════════════
