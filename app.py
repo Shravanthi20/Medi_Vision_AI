@@ -29,7 +29,29 @@ app = Flask(
 )
 app.secret_key = os.environ.get("SECRET_KEY", "medivision-secret-key-2026")
 CORS(app)
+# Returns API (isolated; never blocks startup)
+try:
+    from returns_api import returns_bp
+    app.register_blueprint(returns_bp)
+except Exception as _returns_err:
+    print("[MediVision] returns module not loaded:", _returns_err)
 app.config["MAX_CONTENT_LENGTH"] = 32 * 1024 * 1024
+
+
+# ── Platform-admin route guard ───────────────────────────────────────
+# Runs before every request — blocks unauthenticated access to all
+# /admin/saas-master and /api/admin/saas/* routes in a single place.
+@app.before_request
+def _guard_admin_paths():
+    path = request.path
+    protected_prefixes = ("/admin/saas-master", "/api/admin/saas/")
+    for prefix in protected_prefixes:
+        if path == prefix or path.startswith(prefix):
+            if not session.get("is_platform_admin"):
+                if path.startswith("/api/"):
+                    return json_error("Forbidden — platform admin login required", 403)
+                return redirect("/admin")   # shows login form
+            break
 
 
 def get_conn() -> sqlite3.Connection:
@@ -2020,6 +2042,7 @@ def admin_login():
         ).fetchone()
     if admin and check_password_hash(admin["password_hash"], password):
         session["is_platform_admin"] = True
+        session["admin_user"] = admin["username"]   # backward-compat for older route guards
         session["admin_name"] = admin["name"]
         session["admin_id"] = admin["id"]
         return jsonify({"status": "success", "name": admin["name"]})
@@ -2636,6 +2659,371 @@ def import_stock_file():
 
     return jsonify({"status": "success", "created": created, "updated": updated,
                     "skipped": skipped, "total": len(items)})
+
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# LEGACY DBF IMPORTER — reads FoxPro/dBase pharmacy data files
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+_DBF_TEMP: dict = {}   # token → (fields, records, filename)
+
+
+def _parse_dbf_bytes(raw: bytes):
+    """Pure-Python DBF III/IV/FoxPro reader. No external deps."""
+    import struct, io as _io
+    if len(raw) < 32:
+        raise ValueError("File too small to be a valid DBF")
+    buf = _io.BytesIO(raw)
+    hdr      = buf.read(32)
+    num_rec  = struct.unpack_from('<I', hdr, 4)[0]
+    hdr_size = struct.unpack_from('<H', hdr, 8)[0]
+    rec_size = struct.unpack_from('<H', hdr, 10)[0]
+    if rec_size == 0 or hdr_size < 32:
+        raise ValueError("Invalid DBF header")
+
+    fields = []
+    while buf.tell() < hdr_size - 1:
+        fd = buf.read(32)
+        if not fd or fd[0] in (0x0D, 0x00):
+            break
+        name  = fd[0:11].replace(b'\x00', b'').decode('ascii', errors='replace').strip()
+        ftype = chr(fd[11]) if fd[11] >= 32 else 'C'
+        flen  = fd[16]
+        if name and flen > 0:
+            fields.append({'name': name.upper(), 'type': ftype, 'length': flen})
+
+    buf.seek(hdr_size)
+
+    def _dec(b, t):
+        for enc in ('cp1252', 'latin-1'):
+            try:
+                s = b.decode(enc).strip()
+                break
+            except Exception:
+                s = ''
+        if t in ('N', 'F'):
+            try:
+                return round(float(s), 4) if '.' in s else (int(s) if s.lstrip('-').isdigit() else None)
+            except Exception:
+                return None
+        if t == 'D':
+            return f"{s[:4]}-{s[4:6]}-{s[6:8]}" if (len(s) == 8 and s.isdigit()) else ''
+        if t == 'L':
+            return s.upper() in ('T', 'Y', '1')
+        return s
+
+    records = []
+    for _ in range(min(num_rec, 60000)):
+        rec = buf.read(rec_size)
+        if not rec or len(rec) < rec_size:
+            break
+        if rec[0] == 0x2A:
+            continue
+        row, pos = {}, 1
+        for f in fields:
+            row[f['name']] = _dec(rec[pos:pos + f['length']], f['type'])
+            pos += f['length']
+        records.append(row)
+    return fields, records
+
+
+def _auto_detect_dbf_mapping(field_names):
+    """Guess DBF-field → medicine-attribute mapping from field names."""
+    HINTS = {
+        'name':          ['ITEMNAME','MEDNAME','DRUGNAME','PRODNAME','PRODUCT','ITEMDESC',
+                          'DESCRIPTION','DESC','NAME','ITEM','ITEMNAME1'],
+        'generic':       ['GENERIC','GENERICS','COMPOSITION','COMP','GEN','GENERICNAME'],
+        'category':      ['CATEGORY','CAT','GROUP','TYPE','GRP','DEPT','GRPNAME','CATNAME','ITEMGROUP'],
+        'mrp':           ['MRP','MRPRICE','SELRATE','SALERATE','SP','RETAILPRICE','SELPRICE','PRICE'],
+        'purchase_rate': ['PRATE','PURATE','PURCHRATE','COSTPRICE','PR','BUYPRICE','LANDCOST','PURRATE'],
+        'stock':         ['STOCK','AVLSTOCK','CURRSTOCK','QTY','AVAILABLE','BALANCE','BAL','OPENSTOCK','CLSTOCK'],
+        'batch':         ['BATCH','BATCHNO','BATCHNUM','BNO','LOTNO','BATCHNUMBER','BATCHCODE'],
+        'expiry':        ['EXPIRY','EXP','EXPDT','EXPDATE','EXPIRYDATE','EXPIRYDT','EXPIRYMONTH','EXPIRYYR'],
+        'reorder':       ['REORDER','MINSTOCK','REORDLEVEL','MINQTY','ROQTY','MINLEVEL'],
+        'hsn':           ['HSN','HSNCDE','HSNCODE','HSNNO'],
+        'sgst':          ['SGST','GST','GSTRATE','TAXRATE','TAX','TAXPCT'],
+        'manufacturer':  ['COMPANY','MFR','MFCODE','MANUFACTURER','BRAND','MFGNAME','COMPNAME'],
+        'bill_no':       ['BILLNO','INVNO','VCHNO','SALENO','DOCNO','INVOICENO'],
+        'qty':           ['QTY','QUANTITY','SALEQTY','SOLDQTY','BQTY'],
+        'rate':          ['RATE','SRATE','PRICE','AMOUNT1','ITEMRATE'],
+        'date':          ['DATE','SALEDATE','BILLDATE','INVDATE','TRANSDATE'],
+    }
+    uf = {f.upper(): f for f in field_names}
+    mapping = {}
+    for attr, candidates in HINTS.items():
+        for c in candidates:
+            if c in uf:
+                mapping[attr] = uf[c]
+                break
+    return mapping
+
+
+def _detect_dbf_type(filename, field_names):
+    fn = filename.upper()
+    uf = {f.upper() for f in field_names}
+    if any(x in fn for x in ('TRAN', 'TRANS', 'SALE', 'BILL', 'INVOI')):
+        return 'transactions'
+    if any(x in fn for x in ('DET', 'BATCH')):
+        return 'batches'
+    if {'BILLNO', 'INVNO', 'VCHNO', 'SALENO', 'DOCNO'} & uf:
+        return 'transactions'
+    return 'medicines'
+
+
+@app.route("/import-legacy")
+def page_import_legacy():
+    if not session.get("portal_user"):
+        return redirect("/portal-login")
+    return render_template("import_legacy.html")
+
+
+@app.route("/api/import-dbf/preview", methods=["POST"])
+def api_import_dbf_preview():
+    if not session.get("portal_user"):
+        return json_error("Login required", 401)
+    if "file" not in request.files:
+        return json_error("No file provided")
+    f = request.files["file"]
+    filename = f.filename or "upload.dbf"
+    raw = f.read()
+    if len(raw) < 64:
+        return json_error("File is too small or empty")
+    try:
+        fields, records = _parse_dbf_bytes(raw)
+    except Exception as e:
+        return json_error(f"Cannot read DBF: {e}")
+    if not fields:
+        return json_error("No fields found — may not be a valid DBF file")
+
+    token = hashlib.md5(raw[:512]).hexdigest()[:14]
+    _DBF_TEMP[token] = (fields, records, filename)
+
+    field_names = [f["name"] for f in fields]
+    return jsonify({
+        "status": "ok",
+        "token": token,
+        "filename": filename,
+        "field_count": len(fields),
+        "record_count": len(records),
+        "fields": fields,
+        "sample": records[:15],
+        "suggested_mapping": _auto_detect_dbf_mapping(field_names),
+        "file_type": _detect_dbf_type(filename, field_names),
+    })
+
+
+@app.route("/api/import-dbf/run", methods=["POST"])
+def api_import_dbf_run():
+    import re as _re
+    if not session.get("portal_user"):
+        return json_error("Login required", 401)
+    data = request.get_json(silent=True) or {}
+    token          = data.get("token", "")
+    mapping        = data.get("mapping", {})
+    file_type      = data.get("file_type", "medicines")
+    update_existing = data.get("update_existing", True)
+
+    if token not in _DBF_TEMP:
+        return json_error("Session expired — please re-upload the file", 400)
+
+    _, records, _ = _DBF_TEMP[token]
+
+    def _gv(row, key, default=""):
+        fn = mapping.get(key, "")
+        if not fn:
+            return default
+        v = row.get(fn)
+        return v if v is not None else default
+
+    def _sf(v, d=0.0):
+        try:
+            return float(v) if v not in (None, "") else d
+        except Exception:
+            return d
+
+    def _si(v, d=0):
+        try:
+            return int(float(v)) if v not in (None, "") else d
+        except Exception:
+            return d
+
+    def _norm_expiry(s):
+        s = str(s).strip()
+        if _re.match(r'^\d{8}$', s):
+            return f"{s[:4]}-{s[4:6]}-{s[6:8]}"
+        if _re.match(r'^\d{2}/\d{2,4}$', s):
+            mm, yyyy = s.split('/')
+            if len(yyyy) == 2:
+                yyyy = '20' + yyyy  # Indian pharmacy batch dates are almost always MM/YY
+            return f"{yyyy}-{mm}-01"
+        if _re.match(r'^\d{4}-\d{2}$', s):
+            return s + "-01"
+        if _re.match(r'^\d{2}-\d{2}-\d{4}$', s):
+            d, m, y = s.split('-')
+            return f"{y}-{m}-{d}"
+        return s
+
+    created = updated = skipped = 0
+    errors = []
+
+    if file_type == "medicines":
+        with get_conn() as conn:
+            for i, row in enumerate(records):
+                name = str(_gv(row, "name", "")).strip()
+                if not name or len(name) < 2:
+                    skipped += 1
+                    continue
+                generic  = str(_gv(row, "generic",  "")).strip()
+                category = str(_gv(row, "category", "")).strip() or _guess_category(name)
+                mrp      = _sf(_gv(row, "mrp", 0))
+                prate    = _sf(_gv(row, "purchase_rate", 0))
+                stock    = _si(_gv(row, "stock", 0))
+                batch    = str(_gv(row, "batch",   "")).strip()
+                expiry   = _norm_expiry(_gv(row, "expiry", "")) if _gv(row, "expiry") else ""
+                reorder  = max(_si(_gv(row, "reorder", 5)), 5)
+                sgst     = _sf(_gv(row, "sgst", 0))
+                try:
+                    existing = conn.execute("SELECT id FROM medicines WHERE n=?", (name,)).fetchone()
+                    if existing:
+                        if update_existing:
+                            conn.execute(
+                                """UPDATE medicines SET
+                                   g=COALESCE(NULLIF(?,''),g), c=?,
+                                   p=CASE WHEN ?>0 THEN ? ELSE p END,
+                                   p_rate=CASE WHEN ?>0 THEN ? ELSE p_rate END,
+                                   s=?, batch=COALESCE(NULLIF(?,''),batch),
+                                   expiry=COALESCE(NULLIF(?,''),expiry),
+                                   reorder=CASE WHEN ?>0 THEN ? ELSE reorder END
+                                   WHERE id=?""",
+                                (generic, category,
+                                 mrp, mrp, prate, prate,
+                                 stock, batch, expiry,
+                                 reorder, reorder, existing["id"])
+                            )
+                            updated += 1
+                        else:
+                            skipped += 1
+                    else:
+                        nid = "dbf_" + hashlib.md5(name.encode()).hexdigest()[:8]
+                        conn.execute(
+                            """INSERT OR IGNORE INTO medicines
+                               (id,n,g,c,p,s,p_rate,batch,expiry,reorder,max_qty,
+                                p_packing,s_packing,p_gst,s_gst)
+                               VALUES (?,?,?,?,?,?,?,?,?,?,0,1,1,?,?)""",
+                            (nid, name, generic, category, mrp, stock,
+                             prate, batch, expiry, reorder, sgst, sgst)
+                        )
+                        created += 1
+                except Exception as e:
+                    errors.append(f"Row {i+1} ({name[:25]}): {e}")
+                    skipped += 1
+                    if len(errors) > 20:
+                        break
+
+    elif file_type == "transactions":
+        bill_map: dict = {}
+        for row in records:
+            bno  = str(_gv(row, "bill_no", "")).strip() or f"DBF_{_uuid_mod.uuid4().hex[:6]}"
+            name = str(_gv(row, "name",    "")).strip()
+            qty  = _si(_gv(row, "qty", 0))
+            rate = _sf(_gv(row, "rate", 0))
+            date = str(_gv(row, "date", "")).strip()
+            if not name or qty <= 0:
+                skipped += 1
+                continue
+            if bno not in bill_map:
+                bill_map[bno] = {"date": date, "items": [], "total": 0.0}
+            line_amt = qty * rate
+            bill_map[bno]["items"].append({"name": name, "qty": qty, "rate": rate, "amount": round(line_amt, 2)})
+            bill_map[bno]["total"] += line_amt
+            if date:
+                bill_map[bno]["date"] = date
+
+        with get_conn() as conn:
+            for bno, bill in bill_map.items():
+                if not bill["items"]:
+                    continue
+                bd = bill["date"] or datetime.now().strftime("%Y-%m-%d")
+                if _re.match(r'^\d{8}$', bd):
+                    bd = f"{bd[:4]}-{bd[4:6]}-{bd[6:8]}"
+                try:
+                    if not conn.execute("SELECT id FROM bills WHERE id=?", (bno,)).fetchone():
+                        conn.execute(
+                            "INSERT OR IGNORE INTO bills (id,items,amount,date,type,status) VALUES (?,?,?,?,?,?)",
+                            (bno, json.dumps(bill["items"]),
+                             round(bill["total"], 2), bd, "retail", "saved")
+                        )
+                        created += 1
+                    else:
+                        skipped += 1
+                except Exception as e:
+                    errors.append(str(e)[:80])
+                    skipped += 1
+
+    del _DBF_TEMP[token]
+    return jsonify({
+        "status": "ok",
+        "file_type": file_type,
+        "created": created,
+        "updated": updated,
+        "skipped": skipped,
+        "total": created + updated + skipped,
+        "errors": errors[:10],
+    })
+
+
+@app.route("/api/reorder/wholesaler-message", methods=["POST"])
+def api_reorder_wholesaler_message():
+    """Generate WhatsApp/Email formatted order message from A+B items."""
+    if not session.get("portal_user"):
+        return json_error("Login required", 401)
+    data  = request.get_json(silent=True) or {}
+    items = data.get("items", [])
+    shop  = data.get("shop_name", "Selvam Medicals")
+
+    a_items = [i for i in items if i.get("order_category") == "A" and i.get("reorder_qty", 0) > 0]
+    b_items = [i for i in items if i.get("order_category") == "B" and i.get("reorder_qty", 0) > 0]
+
+    today = datetime.now().strftime("%d-%b-%Y")
+    lines = [f"*Medicine Order — {shop}*", f"📅 Date: {today}", ""]
+
+    if a_items:
+        lines.append(f"*🔴 URGENT — Must Buy ({len(a_items)} items):*")
+        for idx, it in enumerate(a_items[:35], 1):
+            d = it.get('days_to_stockout', 0)
+            d_str = f" ({d}d left)" if d < 9999 else ""
+            lines.append(f"  {idx}. {it['name']} × {it['reorder_qty']}{d_str}")
+
+    if b_items:
+        lines.append("")
+        lines.append(f"*🟡 Regular Order ({len(b_items)} items):*")
+        for idx, it in enumerate(b_items[:35], 1):
+            lines.append(f"  {idx}. {it['name']} × {it['reorder_qty']}")
+
+    if len(a_items) > 35 or len(b_items) > 35:
+        lines.append(f"\n_(+more items — download full CSV from MediVision AI)_")
+
+    total_val = sum(i.get("reorder_value", 0) for i in a_items + b_items)
+    lines += ["", f"*Est. Order Value: ₹{total_val:,.0f}*",
+              "", "_Sent via MediVision AI — Smart Pharmacy_"]
+
+    msg = "\n".join(lines)
+    return jsonify({
+        "status": "ok",
+        "message": msg,
+        "whatsapp_url": "https://wa.me/?text=" + urllib.parse.quote(msg),
+        "email_url": "mailto:?subject=" + urllib.parse.quote(f"Medicine Order — {shop} — {today}") +
+                     "&body=" + urllib.parse.quote(msg.replace("*", "").replace("_", "")),
+        "item_count": len(a_items) + len(b_items),
+        "total_value": round(total_val, 2),
+    })
+
+
+@app.route("/invite")
+def page_invite():
+    """Public shop invite landing page."""
+    ref = request.args.get("ref", "selvam")
+    return render_template("invite.html", ref=ref)
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -6017,6 +6405,8 @@ def page_prescription():
 
 @app.route("/smart-reorder")
 def page_smart_reorder():
+    if not session.get("portal_user"):
+        return redirect("/portal-login")
     return render_template("smart_reorder.html")
 
 
@@ -6068,27 +6458,26 @@ def api_prescription_extract():
     })
 
 
-# ── Smart Reorder Analysis API ───────────────────────────────────────────────
+# ── Smart Reorder Analysis API — Enhanced (A-D scoring, margin, alternates) ──
 @app.route("/api/smart-reorder/analysis")
 def api_smart_reorder_analysis():
+    if not session.get("portal_user"):
+        return jsonify({"status": "error", "message": "Login required"}), 401
     from datetime import datetime, timedelta
 
     days_window = int(request.args.get("days", 90))
     cutoff_date = (datetime.utcnow() - timedelta(days=days_window)).strftime("%Y-%m-%d")
 
     with get_conn() as conn:
-        # All medicines with stock data
         medicines = conn.execute(
             "SELECT id, n, g, c, p, s, p_rate, reorder, max_qty FROM medicines"
         ).fetchall()
-
-        # Recent bills for sales velocity
         recent_bills = conn.execute(
             "SELECT items, date FROM bills WHERE date >= ? AND items IS NOT NULL",
             (cutoff_date,)
         ).fetchall()
 
-    # Tally qty sold per medicine id over the window
+    # Sales velocity map  {medicine_id: total_qty_sold}
     sales_map: dict[str, float] = {}
     for bill in recent_bills:
         try:
@@ -6102,9 +6491,26 @@ def api_smart_reorder_analysis():
         except (json.JSONDecodeError, TypeError, AttributeError):
             continue
 
+    # Build generic → best-margin medicine map for alternate suggestions
+    # {generic_upper: (name, margin_pct, item_id)}
+    generic_best: dict[str, tuple] = {}
+    for m in medicines:
+        g = (m["g"] or "").strip().upper()
+        if not g:
+            continue
+        mrp_g = float(m["p"] or 0)
+        pr_g = float(m["p_rate"] or 0)
+        margin_g = round(((mrp_g - pr_g) / mrp_g) * 100, 1) if mrp_g > 0 else 0.0
+        existing = generic_best.get(g)
+        if existing is None or margin_g > existing[1]:
+            generic_best[g] = (m["n"], margin_g, str(m["id"]))
+
     items_out = []
-    summary = {"critical": 0, "warning": 0, "attention": 0, "ok": 0,
-               "total": 0, "reorder_value": 0.0}
+    summary = {
+        "critical": 0, "warning": 0, "attention": 0, "ok": 0,
+        "total": 0, "reorder_value": 0.0,
+        "cat_a": 0, "cat_b": 0, "cat_c": 0, "cat_d": 0,
+    }
 
     for m in medicines:
         mid = str(m["id"])
@@ -6113,67 +6519,149 @@ def api_smart_reorder_analysis():
         purchase_rate = float(m["p_rate"] or 0)
         min_reorder = int(m["reorder"] or 10)
         max_qty = int(m["max_qty"] or 0)
+        default_min = max(min_reorder, 15)
 
-        # Velocity: units sold / day
+        # Margin %
+        margin_pct = round(((mrp - purchase_rate) / mrp) * 100, 1) if mrp > 0 else 0.0
+
+        # Sales velocity & days to stockout
         total_sold = sales_map.get(mid, 0)
         velocity = round(total_sold / days_window, 3)
+        days_to_stockout = int(current_stock / velocity) if velocity > 0 else 9999
 
-        # Days to stockout
-        if velocity > 0:
-            days_to_stockout = int(current_stock / velocity)
-        else:
-            days_to_stockout = 9999  # no recent sales
-
-        # Stock pct (relative to max_qty or 100)
+        # Stock percentage (relative to max or a sensible cap)
         stock_cap = max_qty if max_qty > 0 else max(current_stock * 2, 50)
         stock_pct = min(100, int((current_stock / stock_cap) * 100)) if stock_cap else 0
 
-        # Default min stock threshold (portal uses 15)
-        default_min = max(min_reorder, 15)
+        # ── Multi-factor Priority Score (0-100) ─────────────────────────────
+        score = 0
 
-        # Priority: velocity-based when we have sales data; stock-level fallback otherwise
-        if velocity > 0:
-            if days_to_stockout <= 7:
-                priority = "critical"
-            elif days_to_stockout <= 14:
-                priority = "warning"
-            elif days_to_stockout <= 30:
-                priority = "attention"
-            else:
-                priority = "ok"
-            confidence_base = 75
+        # 1. Stock urgency (0-40 pts) — hardest driver
+        if current_stock == 0:
+            score += 40
+        elif days_to_stockout <= 7:
+            score += 35
+        elif days_to_stockout <= 14:
+            score += 25
+        elif days_to_stockout <= 30:
+            score += 15
+        elif current_stock < default_min:
+            score += 8
+
+        # 2. Sales velocity (0-30 pts) — demand signal
+        if velocity > 5:
+            score += 30          # Fast mover
+        elif velocity >= 1:
+            score += 20          # Medium mover
+        elif velocity > 0.1:
+            score += 10          # Slow mover
+        elif velocity > 0:
+            score += 3
+
+        # 3. Profit margin (0-20 pts) — high-margin items preferred
+        if margin_pct > 30:
+            score += 20
+        elif margin_pct > 20:
+            score += 15
+        elif margin_pct > 10:
+            score += 10
+        elif margin_pct > 0:
+            score += 5
+
+        # 4. Stock value / ABC class (0-10 pts)
+        stock_value = mrp * current_stock
+        if stock_value > 50000:
+            score += 10
+            abc_class = "A"
+        elif stock_value > 10000:
+            score += 7
+            abc_class = "B"
+        elif stock_value > 1000:
+            score += 4
+            abc_class = "C"
         else:
-            # No sales history — use stock vs default_min
-            if current_stock == 0:
-                priority = "critical"
-            elif current_stock < 5:
-                priority = "warning"
-            elif current_stock < default_min:
-                priority = "attention"
-            else:
-                priority = "ok"
-            confidence_base = 40
+            abc_class = "D"
 
-        # Reorder qty: velocity-based when possible, else fill to default_min
+        # ── Order Category A-D ───────────────────────────────────────────────
+        if current_stock == 0 or score >= 75:
+            order_cat = "A"
+            priority = "critical"
+        elif score >= 50:
+            order_cat = "B"
+            priority = "warning"
+        elif score >= 25:
+            order_cat = "C"
+            priority = "attention"
+        else:
+            order_cat = "D"
+            priority = "ok"
+
+        # ── Reorder quantity ─────────────────────────────────────────────────
         if velocity > 0:
             reorder_qty = max(int(velocity * 30) - current_stock, min_reorder)
         elif current_stock < default_min:
             reorder_qty = default_min - current_stock
         else:
             reorder_qty = 0
+        if order_cat == "D" and current_stock > 0:
+            reorder_qty = 0  # skip D-category if stock present
 
         reorder_value = round(reorder_qty * purchase_rate, 2)
 
-        # Confidence: higher when more sales data exists
-        data_points = min(int(total_sold), 100)
-        confidence = min(95, confidence_base + int(data_points * 0.55))
+        # ── Confidence ──────────────────────────────────────────────────────
+        if velocity > 0:
+            confidence = min(95, 65 + min(30, int(total_sold * 0.4)))
+        else:
+            confidence = max(30, min(65, 30 + int(score * 0.5)))
 
-        # Skip items with adequate stock and no recent sales (noise reduction)
+        # ── High-margin alternate suggestion ────────────────────────────────
+        high_margin_alt = None
+        generic = (m["g"] or "").strip().upper()
+        if generic:
+            best = generic_best.get(generic)
+            if best and best[2] != mid and best[1] > margin_pct + 5:
+                high_margin_alt = {
+                    "name": best[0],
+                    "margin_pct": best[1],
+                }
+
+        # ── Decision text ────────────────────────────────────────────────────
+        vel_desc = (
+            "fast-mover" if velocity > 5
+            else "medium-mover" if velocity >= 1
+            else f"{velocity:.2f}/day"
+        )
+        if current_stock == 0:
+            decision = "ORDER NOW"
+            decision_reason = f"Zero stock — {vel_desc}, {margin_pct:.0f}% margin"
+        elif order_cat == "A":
+            if velocity > 0:
+                decision = "ORDER NOW"
+                decision_reason = f"{vel_desc}, {days_to_stockout}d left, {margin_pct:.0f}% margin (score {score})"
+            else:
+                decision = "ORDER NOW"
+                decision_reason = f"Stock critically low ({current_stock} units), {margin_pct:.0f}% margin"
+        elif order_cat == "B":
+            decision = "ORDER SOON"
+            decision_reason = f"{days_to_stockout}d cover, {vel_desc}, {margin_pct:.0f}% margin"
+        elif order_cat == "C" and high_margin_alt:
+            decision = "BUY ALTERNATE"
+            alt_short = high_margin_alt["name"][:30]
+            decision_reason = f"Try '{alt_short}' — {high_margin_alt['margin_pct']:.0f}% vs {margin_pct:.0f}%"
+        elif order_cat == "C":
+            decision = "MONITOR"
+            decision_reason = f"Adequate stock, {vel_desc}, {margin_pct:.0f}% margin"
+        else:
+            decision = "SKIP"
+            decision_reason = f"Low priority — {current_stock} units, {vel_desc}"
+
+        # Skip items with zero stock AND zero sales (no data)
         if current_stock == 0 and total_sold == 0:
             continue
 
         summary[priority] += 1
         summary["total"] += 1
+        summary[f"cat_{order_cat.lower()}"] += 1
         if reorder_qty > 0:
             summary["reorder_value"] += reorder_value
 
@@ -6182,7 +6670,6 @@ def api_smart_reorder_analysis():
             "name": m["n"],
             "generic": m["g"] or "",
             "category": m["c"] or "",
-            "supplier": "",  # suppliers table not linked in SQLite demo
             "current_stock": current_stock,
             "min_stock": min_reorder,
             "stock_pct": stock_pct,
@@ -6190,17 +6677,21 @@ def api_smart_reorder_analysis():
             "total_sold_90d": int(total_sold),
             "days_to_stockout": days_to_stockout,
             "priority": priority,
+            "order_category": order_cat,
+            "score": score,
+            "margin_pct": margin_pct,
             "reorder_qty": reorder_qty,
             "purchase_rate": purchase_rate,
             "mrp": mrp,
             "reorder_value": reorder_value,
             "confidence": confidence,
+            "high_margin_alt": high_margin_alt,
+            "decision": decision,
+            "decision_reason": decision_reason,
         })
 
-    # Sort by priority urgency then days
-    priority_order = {"critical": 0, "warning": 1, "attention": 2, "ok": 3}
-    items_out.sort(key=lambda x: (priority_order[x["priority"]], x["days_to_stockout"]))
-
+    # Sort: highest score first, then fewest days left
+    items_out.sort(key=lambda x: (-x["score"], x["days_to_stockout"]))
     summary["reorder_value"] = round(summary["reorder_value"], 2)
 
     return jsonify({"status": "ok", "summary": summary, "items": items_out})
@@ -7414,7 +7905,11 @@ def api_ws_payments_record():
 def api_ws_ledger(shop_id):
     with get_conn() as conn:
         entries = []
-        # Invoices as debits
+        # Invoices as debits only — payments are recorded once below, from
+        # ws_payments, since recording a payment already updates
+        # ws_invoices.paid_amount for the same money (see /api/ws/payments).
+        # Synthesizing a second credit from paid_amount here double-counted
+        # every payment against the shop's real balance.
         invoices = conn.execute(
             "SELECT invoice_date as date, invoice_no, total, paid_amount FROM ws_invoices WHERE shop_id=? ORDER BY invoice_date",
             (shop_id,)
@@ -7425,13 +7920,7 @@ def api_ws_ledger(shop_id):
                 "description": f"Invoice {inv['invoice_no']}",
                 "debit": inv["total"], "credit": 0
             })
-            if inv["paid_amount"] > 0:
-                entries.append({
-                    "date": inv["date"], "type": "payment",
-                    "description": f"Payment against {inv['invoice_no']}",
-                    "debit": 0, "credit": inv["paid_amount"]
-                })
-        # Extra payments
+        # Payments (the single source of truth for credits)
         payments = conn.execute(
             "SELECT created_at as date, amount, mode, reference FROM ws_payments WHERE shop_id=? ORDER BY created_at",
             (shop_id,)
@@ -7896,11 +8385,20 @@ app.view_functions.pop('api_ws_stock', None)
 @app.route("/api/ws/stock")
 def api_ws_stock():                # noqa: F811
     limit = min(int(request.args.get("limit", 500)), 5000)
+    q = (request.args.get("q") or "").strip()
     with get_conn() as conn:
-        rows = conn.execute(
-            "SELECT id, n as name, g as generic, c as category, p as mrp, s as stock FROM medicines ORDER BY n LIMIT ?",
-            (limit,)
-        ).fetchall()
+        if q:
+            like = f"%{q}%"
+            rows = conn.execute(
+                "SELECT id, n as name, g as generic, c as category, p as mrp, s as stock, p_rate as cost "
+                "FROM medicines WHERE n LIKE ? OR g LIKE ? ORDER BY n LIMIT ?",
+                (like, like, limit)
+            ).fetchall()
+        else:
+            rows = conn.execute(
+                "SELECT id, n as name, g as generic, c as category, p as mrp, s as stock, p_rate as cost FROM medicines ORDER BY n LIMIT ?",
+                (limit,)
+            ).fetchall()
         return jsonify({"items": [dict(r) for r in rows]})
 
 
@@ -12636,15 +13134,35 @@ def init_stage20_db():
 
 # ─── HARDWARE FINGERPRINT (for license binding) ────────────────────
 def get_hw_fingerprint():
-    """Build a stable hardware fingerprint from MAC + node name + platform."""
+    """Stable hardware fingerprint.
+
+    Old approach used uuid.getnode() (MAC), which returns a RANDOM value when
+    the real MAC can't be read — making the fingerprint change on every restart
+    and breaking the license. New approach: persist a machine-id file on first
+    run and reuse it forever. The file lives next to the DB so it survives
+    restarts but is unique per physical install.
+    """
     try:
-        mac = _uuid.getnode()
-        node = _platform.node() or ""
-        plat = _platform.platform() or ""
-        raw = f"{mac}|{node}|{plat}"
+        id_path = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), ".machine_id")
+        if _os.path.exists(id_path):
+            with open(id_path, "r") as f:
+                machine_uuid = f.read().strip()
+            if machine_uuid:
+                # Bind to node name too (so copying the file to another PC w/ same name still differs by platform)
+                raw = f"{machine_uuid}|{_platform.node()}"
+                return hashlib.sha256(raw.encode()).hexdigest()[:32]
+        # First run — generate a persistent UUID and save it
+        machine_uuid = str(_uuid.uuid4())
+        try:
+            with open(id_path, "w") as f:
+                f.write(machine_uuid)
+        except Exception:
+            pass
+        raw = f"{machine_uuid}|{_platform.node()}"
         return hashlib.sha256(raw.encode()).hexdigest()[:32]
     except Exception:
-        return "fallback-fingerprint-" + hashlib.sha256(str(time.time()).encode()).hexdigest()[:16]
+        # Last-resort stable fallback based only on node name (no random MAC)
+        return hashlib.sha256((_platform.node() or "medivision").encode()).hexdigest()[:32]
 
 
 def get_machine_code():
@@ -12695,6 +13213,11 @@ def check_license():
 _LICENSE_FREE_PATHS = {
     "/license", "/api/license/info", "/api/license/activate",
     "/sw.js", "/manifest.json", "/offline", "/static/",
+    # Vendor/owner controls — always accessible so you can manage even if a shop's license lapses
+    "/admin", "/api/admin/", "/admin/saas", "/admin/saas-master",
+    # Public marketing + subscription pages — must be reachable to acquire new customers
+    "/welcome", "/register", "/subscribe", "/api/saas/plans/public", "/api/saas/proof/submit",
+    "/portal-login", "/api/portal/login", "/wholesale-login", "/api/ws/shop-auth",
 }
 
 @app.before_request
@@ -13887,4 +14410,6 @@ init_stage21_db()
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", debug=True, port=5001)
+    _port  = int(os.environ.get("PORT", 5001))
+    _debug = os.environ.get("FLASK_DEBUG", "0") == "1"
+    app.run(host="0.0.0.0", port=_port, debug=_debug)

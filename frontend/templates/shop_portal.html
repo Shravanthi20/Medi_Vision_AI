@@ -225,11 +225,8 @@
 
     <!-- Toolbar -->
     <div class="browse-toolbar">
-      <input type="text" id="browseSearch" placeholder="🔍  Search medicines, generics…" oninput="applyBrowseFilter()">
-      <select id="browseCat" onchange="applyBrowseFilter()">
-        <option value="">All Categories</option>
-      </select>
-      <select id="browseSort" onchange="applyBrowseFilter()">
+      <input type="text" id="browseSearch" placeholder="🔍  Search medicines, generics… (type at least 2 letters)" oninput="applyBrowseFilter()" autofocus>
+      <select id="browseSort" onchange="sortAndRender()">
         <option value="name">A–Z</option>
         <option value="price_asc">Price ↑</option>
         <option value="price_desc">Price ↓</option>
@@ -240,9 +237,6 @@
     <!-- Grid -->
     <div class="prod-grid" id="prodGrid">
       <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted)">Loading medicines…</div>
-    </div>
-    <div id="loadMoreWrap" style="text-align:center;margin-bottom:20px;display:none;">
-      <button onclick="showMoreProds()" style="background:var(--card);border:1.5px solid var(--border);border-radius:9px;padding:10px 28px;font-family:var(--font);font-size:.88rem;font-weight:600;cursor:pointer;color:var(--text);">Load More ↓</button>
     </div>
   </div>
 
@@ -345,11 +339,12 @@
 <script>
 // ── State ─────────────────────────────────────────────────────
 let shopUser = null;
-let allMeds = [], filteredMeds = [], shownCount = 24;
+let currentMeds = [];     // whatever the last search/browse returned - small, server-filtered
 let cart = {};            // {med_id: {item, qty}}
 let myOrders = [];
 let schemes = [];
 let myOrderFilter = '';
+let browseDebounce = null;
 
 // ── Boot ──────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async ()=>{
@@ -379,41 +374,60 @@ function switchSection(name, el){
 }
 
 // ── Medicines ─────────────────────────────────────────────────
+// The catalog is 25,000+ rows - loading it all client-side (the old
+// behaviour) meant every page load shipped megabytes of JSON just to
+// filter it in the browser. Search server-side instead, same pattern as
+// the wholesale Terminal: type -> debounced query -> small result set.
 async function loadMeds(){
-  const r = await fetch('/api/ws/stock?limit=2000');
+  const r = await fetch('/api/ws/stock?limit=40');
   const d = await r.json();
-  allMeds = d.items||[];
-  const cats = [...new Set(allMeds.map(m=>m.category).filter(Boolean))].sort();
-  const sel = document.getElementById('browseCat');
-  sel.innerHTML = '<option value="">All Categories</option>'+cats.map(c=>`<option>${c}</option>`).join('');
-  applyBrowseFilter();
+  currentMeds = d.items||[];
+  sortAndRender();
 }
 
 function applyBrowseFilter(){
-  const q = document.getElementById('browseSearch').value.toLowerCase();
-  const cat = document.getElementById('browseCat').value;
+  clearTimeout(browseDebounce);
+  browseDebounce = setTimeout(async ()=>{
+    const q = document.getElementById('browseSearch').value.trim();
+    const url = q ? `/api/ws/stock?q=${encodeURIComponent(q)}&limit=60` : '/api/ws/stock?limit=40';
+    const r = await fetch(url);
+    const d = await r.json();
+    currentMeds = d.items||[];
+    sortAndRender();
+  }, 220);
+}
+
+function sortAndRender(){
   const srt = document.getElementById('browseSort').value;
-  filteredMeds = allMeds.filter(m=>{
-    if(cat && m.category!==cat) return false;
-    if(q && !(m.name||'').toLowerCase().includes(q) && !(m.generic||'').toLowerCase().includes(q)) return false;
-    return true;
-  });
-  if(srt==='name') filteredMeds.sort((a,b)=>(a.name||'').localeCompare(b.name||''));
-  else if(srt==='price_asc') filteredMeds.sort((a,b)=>wsPrice(a)-wsPrice(b));
-  else if(srt==='price_desc') filteredMeds.sort((a,b)=>wsPrice(b)-wsPrice(a));
-  else if(srt==='stock') filteredMeds.sort((a,b)=>(b.stock||0)-(a.stock||0));
-  shownCount = 24;
-  renderProds();
+  const meds = currentMeds.slice();
+  if(srt==='name') meds.sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+  else if(srt==='price_asc') meds.sort((a,b)=>wsPrice(a)-wsPrice(b));
+  else if(srt==='price_desc') meds.sort((a,b)=>wsPrice(b)-wsPrice(a));
+  else if(srt==='stock') meds.sort((a,b)=>(b.stock||0)-(a.stock||0));
+  renderProds(meds);
 }
 
 function wsPrice(m){ return (m.mrp||0)*0.85*(1-(shopUser?.discount||0)/100); }
 
-function showMoreProds(){ shownCount+=24; renderProds(); }
+// Warehouse-import names carry batch/expiry noise, e.g.
+// "0181727 - 250 Col-Colin Trg Reg 250Ml ( Vg665 - 1,Expdt: 12/27)".
+// Strip that for display only - the underlying name is never rewritten,
+// so nothing downstream (cart, order, invoice) is affected.
+function cleanName(raw){
+  return (raw||'')
+    .replace(/^\d{5,}\s*-\s*/, '')
+    .replace(/\(\s*[A-Za-z0-9]+\s*-\s*\d+\s*,?\s*Expdt:[^)]*\)/i, '')
+    .trim() || raw || '';
+}
 
-function renderProds(){
-  const page = filteredMeds.slice(0,shownCount);
+function renderProds(meds){
   const grid = document.getElementById('prodGrid');
-  grid.innerHTML = page.map(m=>{
+  if(!meds.length){
+    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted)">
+      No medicines match that search.</div>`;
+    return;
+  }
+  grid.innerHTML = meds.map(m=>{
     const ws = wsPrice(m);
     const save = m.mrp>0 ? ((m.mrp-ws)/m.mrp*100).toFixed(0) : 0;
     const inCart = cart[m.id];
@@ -421,8 +435,9 @@ function renderProds(){
     const sch = schemes.find(s=>s.applies_to===m.category||s.applies_to==='all');
     const schTag = sch ? `<span class="scheme-tag">🎁 ${sch.label}</span>` : '';
     const stockOk = (m.stock||0)>0;
+    const name = cleanName(m.name);
     return `<div class="prod-card" id="pc-${m.id}">
-      <div class="prod-name">${m.name}</div>
+      <div class="prod-name">${name}</div>
       <div class="prod-generic">${m.generic||'—'}</div>
       <span class="prod-cat">${m.category||'General'}</span>
       <div class="prod-price">
@@ -436,7 +451,7 @@ function renderProds(){
             <button class="qty-btn" onclick="changeQty(${m.id},-1)">−</button>
             <input class="qty-input" type="number" min="1" value="${qty}" id="qty-${m.id}" onchange="setQty(${m.id},this.value)">
             <button class="qty-btn" onclick="changeQty(${m.id},1)">+</button>
-            <button class="add-btn ${inCart?'added':''}" id="ab-${m.id}" onclick="addToCart(${m.id},'${m.name.replace(/'/g,"\\'")}','${(m.generic||'').replace(/'/g,"\\'")}',${ws.toFixed(2)},${m.mrp||0})">
+            <button class="add-btn ${inCart?'added':''}" id="ab-${m.id}" onclick="addToCart(${m.id},'${name.replace(/'/g,"\\'")}','${(m.generic||'').replace(/'/g,"\\'")}',${ws.toFixed(2)},${m.mrp||0})">
               ${inCart?'✓ Added':'Add'}
             </button>
           </div>
@@ -445,7 +460,6 @@ function renderProds(){
       }
     </div>`;
   }).join('');
-  document.getElementById('loadMoreWrap').style.display = shownCount<filteredMeds.length?'block':'none';
 }
 
 function changeQty(id, delta){
