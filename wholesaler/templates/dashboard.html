@@ -15,6 +15,20 @@
   <div class="kpi red"><div class="v">{{ kpi.low_stock }}</div><div class="l">Items low on stock</div></div>
 </div>
 
+<div class="card" style="padding:14px 18px">
+  <h3 style="margin-top:0">Order pipeline</h3>
+  <div style="display:flex;gap:0;border:1px solid var(--line);border-radius:10px;overflow:hidden">
+    {% for st in ['draft','confirmed','dispatched','invoiced'] %}
+      <a href="{{ url_for('orders', status=st) }}"
+         style="flex:1;text-align:center;padding:12px 8px;text-decoration:none;color:inherit;
+                {% if not loop.first %}border-left:1px solid var(--line){% endif %}">
+        <div style="font-size:22px;font-weight:800">{{ pipeline.get(st, 0) }}</div>
+        <div style="font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.4px;margin-top:2px">{{ st }}</div>
+      </a>
+    {% endfor %}
+  </div>
+</div>
+
 <div class="grid-2">
   <div class="card">
     <h3>Recent orders</h3>

@@ -24,7 +24,25 @@
         <td>{{ o.shop_name }}<div style="font-size:11.5px;color:var(--dim)">{{ o.shop_code }}</div></td>
         <td><span class="pill {{ o.status }}">{{ o.status }}</span></td>
         <td class="right">{{ o.total | money }}</td>
-        <td><a class="btn sm" href="{{ url_for('order_detail', order_id=o.id) }}">Open</a></td>
+        <td class="nowrap" style="display:flex;gap:6px">
+          <a class="btn sm" href="{{ url_for('order_detail', order_id=o.id) }}">Open</a>
+          {% if o.status == 'draft' %}
+          <form method="POST" action="{{ url_for('order_action', order_id=o.id) }}">
+            <input type="hidden" name="action" value="confirm">
+            <button class="btn sm primary" type="submit">Confirm</button>
+          </form>
+          {% elif o.status == 'confirmed' %}
+          <form method="POST" action="{{ url_for('order_action', order_id=o.id) }}">
+            <input type="hidden" name="action" value="dispatch">
+            <button class="btn sm primary" type="submit">Dispatch</button>
+          </form>
+          {% elif o.status == 'dispatched' %}
+          <form method="POST" action="{{ url_for('order_action', order_id=o.id) }}">
+            <input type="hidden" name="action" value="invoice">
+            <button class="btn sm primary" type="submit">Invoice</button>
+          </form>
+          {% endif %}
+        </td>
       </tr>
     {% else %}<tr><td colspan="6"><div class="empty"><div class="em">📋</div>No orders yet.</div></td></tr>
     {% endfor %}

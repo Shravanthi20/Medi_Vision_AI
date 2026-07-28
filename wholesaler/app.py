@@ -328,6 +328,9 @@ def dashboard():
         shops_count = c.execute("SELECT COUNT(*) FROM retail_shops WHERE status='active'").fetchone()[0]
         items_count = c.execute("SELECT COUNT(*) FROM wholesale_items WHERE status='active'").fetchone()[0]
         orders_open = c.execute("SELECT COUNT(*) FROM sales_orders WHERE status IN ('draft','confirmed','dispatched')").fetchone()[0]
+        pipeline = {r["status"]: r["n"] for r in c.execute(
+            "SELECT status, COUNT(*) n FROM sales_orders WHERE status IN ('draft','confirmed','dispatched','invoiced') GROUP BY status"
+        ).fetchall()}
         today_sales = c.execute("SELECT COALESCE(SUM(total),0) t FROM invoices WHERE invoice_date=date('now')").fetchone()["t"]
         month_sales = c.execute("SELECT COALESCE(SUM(total),0) t FROM invoices WHERE substr(invoice_date,1,7)=strftime('%Y-%m','now')").fetchone()["t"]
         outstanding = c.execute("SELECT COALESCE(SUM(total-paid),0) o FROM invoices WHERE status!='paid'").fetchone()["o"]
@@ -369,6 +372,7 @@ def dashboard():
         top_shops=top_shops,
         recent_orders=recent_orders,
         overdue_shops=overdue_shops,
+        pipeline=pipeline,
     )
 
 
