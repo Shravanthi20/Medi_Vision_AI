@@ -32,7 +32,7 @@ them tick a box, and log who overrode it.
 """
 from __future__ import annotations
 
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
 from flask import (request, redirect, url_for, render_template, session,
                    flash, jsonify, abort)
@@ -220,3 +220,161 @@ def _wrap_order_action():
 
 
 _wrap_order_action()
+
+
+# ══════════════════════════════════════════════════════════════════════
+#  PARTIAL DISPATCH → BACK-ORDER
+#
+#  Real distribution rarely ships an order complete. Until now dispatch was
+#  all-or-nothing: the whole order went out at the ordered quantities, so a
+#  short supply meant either invoicing for goods that never left, or
+#  editing the order by hand and losing the record of what the shop still
+#  wants.
+#
+#  Now: enter what's actually going out per line. The order is trimmed to
+#  what shipped (so the invoice bills exactly that), and the shortfall
+#  becomes a NEW draft order flagged as a back-order against the original.
+#  The shop's unmet demand stays visible and orderable instead of quietly
+#  disappearing.
+#
+#  Lines dropped to zero are removed from the dispatched order entirely
+#  rather than left as zero-qty noise on the invoice - but they still carry
+#  into the back-order, because "we sent none of it" is exactly the case
+#  where the shop most needs it remembered.
+# ══════════════════════════════════════════════════════════════════════
+def _ensure_backorder_column():
+    """
+    Add sales_orders.backorder_of if this tenant's DB predates it.
+
+    Done lazily per tenant rather than at import: module-level schema runs
+    against whatever DB is bound at import time (the default one), which is
+    how existing tenants have been missed by migrations before in this
+    codebase. A PRAGMA check per dispatch is cheap and self-heals every
+    tenant on first use.
+    """
+    with conn() as c:
+        cols = {r["name"] for r in c.execute("PRAGMA table_info(sales_orders)").fetchall()}
+        if "backorder_of" not in cols:
+            c.execute("ALTER TABLE sales_orders ADD COLUMN backorder_of INTEGER")
+
+
+@app.route("/orders/<int:order_id>/dispatch", methods=["GET", "POST"])
+@login_required
+def order_dispatch(order_id):
+    _ensure_backorder_column()
+
+    with conn() as c:
+        order = c.execute("""SELECT o.*, s.name shop_name, s.code shop_code
+                             FROM sales_orders o JOIN retail_shops s ON s.id=o.shop_id
+                             WHERE o.id=?""", (order_id,)).fetchone()
+        if not order:
+            abort(404)
+        lines = c.execute("""SELECT l.*, i.stock available
+                             FROM sales_order_items l
+                             LEFT JOIN wholesale_items i ON i.id=l.item_id
+                             WHERE l.order_id=?""", (order_id,)).fetchall()
+
+    if order["status"] != "confirmed":
+        flash("Only a confirmed order can be dispatched.", "err")
+        return redirect(url_for("order_detail", order_id=order_id))
+
+    if request.method == "GET":
+        return render_template("order_dispatch.html", order=order, lines=lines,
+                               credit=credit_status(order["shop_id"]))
+
+    # ── POST ──────────────────────────────────────────────────────────
+    if not request.form.get("credit_override"):
+        cs = credit_status(order["shop_id"])
+        if cs and cs["over"]:
+            flash(f"⚠ {cs['name']} owes ₹{cs['outstanding']:,.2f} against a ₹{cs['limit']:,.2f} limit. "
+                  f"Tick the override to release these goods.", "err")
+            return redirect(url_for("order_dispatch", order_id=order_id))
+
+    line_ids = request.form.getlist("line_id[]")
+    send_qtys = request.form.getlist("send_qty[]")
+    sending = {}
+    for lid, q in zip(line_ids, send_qtys):
+        try:
+            sending[int(lid)] = max(0, int(q or 0))
+        except ValueError:
+            continue
+
+    if not any(sending.values()):
+        flash("Nothing to dispatch — enter at least one quantity.", "err")
+        return redirect(url_for("order_dispatch", order_id=order_id))
+
+    now = datetime.now().isoformat(timespec="seconds")
+    shortfall = []
+
+    with conn() as c:
+        for ln in lines:
+            ordered = ln["qty"] or 0
+            send = min(sending.get(ln["id"], 0), ordered)
+            short = ordered - send
+
+            if short > 0:
+                shortfall.append({"item_id": ln["item_id"], "item_name": ln["item_name"],
+                                  "pack_size": ln["pack_size"], "qty": short,
+                                  "rate": ln["rate"], "gst_rate": ln["gst_rate"]})
+
+            if send == 0:
+                c.execute("DELETE FROM sales_order_items WHERE id=?", (ln["id"],))
+                continue
+
+            # Recompute the free-goods scheme against what actually ships -
+            # a 10+1 on an order of 20 that only half-ships is 1 free, not 2.
+            free = 0
+            if ln["item_id"]:
+                item = c.execute("SELECT scheme FROM wholesale_items WHERE id=?", (ln["item_id"],)).fetchone()
+                if item and item["scheme"] and "+" in (item["scheme"] or ""):
+                    try:
+                        b, bs = item["scheme"].split("+")
+                        b, bs = int(b), int(bs)
+                        if b > 0:
+                            free = (send // b) * bs
+                    except Exception:
+                        pass
+            c.execute("UPDATE sales_order_items SET qty=?, free_qty=?, amount=? WHERE id=?",
+                      (send, free, send * (ln["rate"] or 0), ln["id"]))
+            if ln["item_id"]:
+                c.execute("UPDATE wholesale_items SET stock=MAX(0, stock-?) WHERE id=?",
+                          (send + free, ln["item_id"]))
+
+        c.execute("UPDATE sales_orders SET status='dispatched', dispatched_at=? WHERE id=?",
+                  (now, order_id))
+
+    compute_order_totals(order_id)
+
+    back_no = None
+    if shortfall:
+        with conn() as c:
+            back_no = next_order_no()
+            cur = c.execute(
+                """INSERT INTO sales_orders (order_no, shop_id, notes, source, created_by, status, backorder_of)
+                   VALUES (?,?,?,?,?,?,?)""",
+                (back_no, order["shop_id"],
+                 f"Back-order — short supply on {order['order_no']}",
+                 "backorder", session.get("ws_user") or "admin", "draft", order_id))
+            back_id = cur.lastrowid
+            for s in shortfall:
+                c.execute("""INSERT INTO sales_order_items
+                    (order_id, item_id, item_name, pack_size, qty, free_qty, rate, gst_rate, amount)
+                    VALUES (?,?,?,?,?,0,?,?,?)""",
+                    (back_id, s["item_id"], s["item_name"], s["pack_size"], s["qty"],
+                     s["rate"], s["gst_rate"], s["qty"] * (s["rate"] or 0)))
+        compute_order_totals(back_id)
+
+    audit(session.get("ws_user"), "dispatch", "order", order_id,
+          f"{order['order_no']}" + (f" · back-order {back_no}" if back_no else " · complete"))
+
+    try:
+        import whatsapp
+        whatsapp.notify_order_confirmed(order_id)
+    except Exception:
+        pass
+
+    if back_no:
+        flash(f"Dispatched {order['order_no']} short — back-order {back_no} created for the balance.", "ok")
+    else:
+        flash(f"Dispatched {order['order_no']} in full.", "ok")
+    return redirect(url_for("order_detail", order_id=order_id))

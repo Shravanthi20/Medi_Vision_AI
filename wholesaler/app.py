@@ -115,6 +115,9 @@ CREATE TABLE IF NOT EXISTS sales_orders (
     dispatched_at   TEXT,
     invoiced_at     TEXT,
     paid_at         TEXT,
+    -- set when this order was raised to cover a short supply on another
+    -- order; billing.py also adds it to older tenant DBs on first dispatch
+    backorder_of    INTEGER,
     FOREIGN KEY(shop_id) REFERENCES retail_shops(id)
 );
 

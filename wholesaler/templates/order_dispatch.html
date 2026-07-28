@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Dispatch {{ order.order_no }}{% endblock %}
+{% block body %}
+<h1>Dispatch {{ order.order_no }}</h1>
+<p class="sub">{{ order.shop_name }} · {{ order.shop_code }} — enter what's actually going out. Anything short becomes a back-order automatically.</p>
+
+{% if credit and credit.over %}
+  <div class="flash err">
+    ⚠ {{ credit.name }} owes {{ credit.outstanding | money }} against a {{ credit.limit | money }} limit.
+  </div>
+{% endif %}
+
+<form method="POST">
+<div class="card" style="padding:0;overflow:auto">
+  <table>
+    <thead><tr>
+      <th>Item</th><th class="right">Ordered</th><th class="right">In stock</th>
+      <th class="right">Sending now</th><th class="right">Back-order</th>
+    </tr></thead>
+    <tbody>
+    {% for l in lines %}
+      <tr>
+        <td><b>{{ l.item_name }}</b><div style="font-size:11.5px;color:var(--dim)">{{ l.pack_size or '' }}</div>
+            <input type="hidden" name="line_id[]" value="{{ l.id }}"></td>
+        <td class="right">{{ l.qty }}</td>
+        <td class="right {{ 'nowrap' if l.available is not none else '' }}"
+            style="color:{{ 'var(--red)' if (l.available or 0) < l.qty else 'var(--dim)' }}">
+          {{ l.available if l.available is not none else '—' }}</td>
+        <td class="right">
+          <input type="number" name="send_qty[]" min="0" max="{{ l.qty }}" value="{{ l.qty }}"
+                 data-ordered="{{ l.qty }}" class="sendQ" style="width:78px;text-align:right"></td>
+        <td class="right shortCell" style="color:var(--amber);font-weight:600">0</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="card">
+  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">
+    <button type="button" class="btn sm" id="sendAll">Send everything</button>
+    <button type="button" class="btn sm" id="sendStock">Send only what's in stock</button>
+    <button type="button" class="btn sm" id="sendNone">Send nothing</button>
+  </div>
+  {% if credit and credit.over %}
+  <label style="display:flex;gap:8px;align-items:center;font-size:13px;color:var(--amber);margin-bottom:12px">
+    <input type="checkbox" name="credit_override" value="1"> Release anyway — shop is over its credit limit
+  </label>
+  {% endif %}
+  <p id="summary" style="color:var(--dim);font-size:13px;margin:0 0 12px"></p>
+  <button class="btn primary wide" style="padding:13px">Dispatch &amp; create back-order if short</button>
+</div>
+</form>
+
+<script>
+(() => {
+  const rows = [...document.querySelectorAll('.sendQ')];
+  function recalc() {
+    let short = 0, sending = 0;
+    rows.forEach(inp => {
+      const ordered = +inp.dataset.ordered;
+      let v = parseInt(inp.value, 10);
+      if (isNaN(v) || v < 0) v = 0;
+      if (v > ordered) { v = ordered; inp.value = v; }
+      const s = ordered - v;
+      sending += v; short += s;
+      inp.closest('tr').querySelector('.shortCell').textContent = s;
+    });
+    document.getElementById('summary').textContent = short
+      ? `Sending ${sending} unit(s) · ${short} will go to a back-order.`
+      : `Sending all ${sending} unit(s) — nothing left over.`;
+  }
+  rows.forEach(i => i.addEventListener('input', recalc));
+  document.getElementById('sendAll').onclick = () => { rows.forEach(i => i.value = i.dataset.ordered); recalc(); };
+  document.getElementById('sendNone').onclick = () => { rows.forEach(i => i.value = 0); recalc(); };
+  document.getElementById('sendStock').onclick = () => {
+    rows.forEach(i => {
+      const avail = i.closest('tr').children[2].textContent.trim();
+      const a = parseInt(avail, 10);
+      i.value = isNaN(a) ? i.dataset.ordered : Math.min(+i.dataset.ordered, Math.max(0, a));
+    });
+    recalc();
+  };
+  recalc();
+})();
+</script>
+{% endblock %}
