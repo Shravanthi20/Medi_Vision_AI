@@ -11,7 +11,7 @@
     {% for r in rows %}
       {% set bal = r.total - r.paid %}
       <tr>
-        <td><b>{{ r.invoice_no }}</b></td><td>{{ r.invoice_date }}</td><td>{{ r.due_date }}</td>
+        <td><a href="{{ url_for('shop_bill_detail', inv_id=r.id) }}"><b>{{ r.invoice_no }}</b></a></td><td>{{ r.invoice_date }}</td><td>{{ r.due_date }}</td>
         <td><span class="pill {{ r.status }}">{{ r.status }}</span></td>
         <td class="right">{{ r.total | money }}</td>
         <td class="right">{{ r.paid | money }}</td>

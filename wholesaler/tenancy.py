@@ -235,6 +235,10 @@ try:
     import whatsapp as _whatsapp; _whatsapp.conn = _tenant_aware_conn
 except ImportError:
     pass
+try:
+    import upi as _upi; _upi.conn = _tenant_aware_conn
+except ImportError:
+    pass
 
 
 def provision_tenant(slug: str):

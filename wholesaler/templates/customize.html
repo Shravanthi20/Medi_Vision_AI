@@ -28,6 +28,10 @@
       <div class="field"><label>Address</label><input name="company.address" value="{{ settings.get('company.address', '') }}"></div>
       <div class="field"><label>Phone</label><input name="company.phone" value="{{ settings.get('company.phone', '') }}"></div>
     </div>
+    <div class="field"><label>UPI ID (VPA) — for the Pay Now QR on invoices</label>
+      <input name="company.upi" value="{{ settings.get('company.upi', '') }}" placeholder="yourbusiness@okhdfcbank">
+      <span style="font-size:11.5px;color:var(--dim)">Blank = no Pay Now button shown. This is just your own UPI ID, not a payment gateway — no account setup needed.</span>
+    </div>
     <div class="field"><label>Invoice terms & conditions (footer)</label>
       <textarea name="invoice.terms" rows="3">{{ settings.get('invoice.terms', 'Goods once sold cannot be taken back. Interest @ 24% p.a. on overdue bills.') }}</textarea>
     </div>

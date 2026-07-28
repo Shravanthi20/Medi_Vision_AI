@@ -639,7 +639,7 @@ def customize():
             setting_set(f"feature.{name}", "1" if request.form.get(f"feature.{name}") else "0")
         # Company details (persisted in DB in addition to .env; DB wins if set)
         for k in ("company.name", "company.gstin", "company.address", "company.phone",
-                  "invoice.terms", "invoice.bank"):
+                  "company.upi", "invoice.terms", "invoice.bank"):
             v = request.form.get(k)
             if v is not None:
                 setting_set(k, v.strip())
@@ -650,7 +650,13 @@ def customize():
         cf_shop = c.execute("SELECT * FROM custom_fields WHERE entity='shop' ORDER BY sort_order, id").fetchall()
         cf_item = c.execute("SELECT * FROM custom_fields WHERE entity='item' ORDER BY sort_order, id").fetchall()
         all_settings = {r["key"]: r["value"] for r in c.execute("SELECT key, value FROM settings").fetchall()}
+    try:
+        import whatsapp
+        wa_configured = whatsapp.whatsapp_configured()
+    except ImportError:
+        wa_configured = False
     return render_template("customize.html",
+                           wa_configured=wa_configured,
                            features=features(),
                            feature_defaults=DEFAULT_FEATURES,
                            cf_shop=cf_shop, cf_item=cf_item,

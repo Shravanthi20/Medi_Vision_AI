@@ -680,6 +680,31 @@ def shop_bills():
     return render_template("shop_bills.html", rows=rows)
 
 
+@app.route("/shop/bills/<int:inv_id>")
+@shop_required
+def shop_bill_detail(inv_id):
+    with conn() as c:
+        # shop_id=? in the WHERE, not just the lookup - a shop must never be
+        # able to view another shop's invoice by guessing an id in the URL.
+        inv = c.execute("SELECT * FROM invoices WHERE id=? AND shop_id=?",
+                        (inv_id, session["shop_id"])).fetchone()
+        if not inv:
+            abort(404)
+        lines = c.execute("SELECT * FROM sales_order_items WHERE order_id=?",
+                          (inv["order_id"],)).fetchall() if inv["order_id"] else []
+
+    upi_configured, upi_link = False, ""
+    try:
+        import upi
+        upi_configured = upi.upi_configured()
+        if upi_configured:
+            upi_link = upi.build_upi_link(round((inv["total"] or 0) - (inv["paid"] or 0), 2), inv["invoice_no"])
+    except ImportError:
+        pass
+    return render_template("shop_bill_detail.html", inv=inv, lines=lines,
+                           upi_configured=upi_configured, upi_link=upi_link)
+
+
 @app.route("/shop/orders")
 @shop_required
 def shop_orders():

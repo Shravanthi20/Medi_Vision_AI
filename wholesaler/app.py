@@ -704,7 +704,16 @@ def invoice_detail(inv_id):
         "name": COMPANY_NAME, "gstin": COMPANY_GSTIN,
         "address": COMPANY_ADDRESS, "phone": COMPANY_PHONE,
     }
-    return render_template("invoice_detail.html", inv=inv, lines=lines, pays=pays, company=company)
+    upi_configured, upi_link = False, ""
+    try:
+        import upi
+        upi_configured = upi.upi_configured()
+        if upi_configured:
+            upi_link = upi.build_upi_link(round((inv["total"] or 0) - (inv["paid"] or 0), 2), inv["invoice_no"])
+    except ImportError:
+        pass
+    return render_template("invoice_detail.html", inv=inv, lines=lines, pays=pays, company=company,
+                           upi_configured=upi_configured, upi_link=upi_link)
 
 
 @app.route("/invoices/<int:inv_id>/pay", methods=["POST"])

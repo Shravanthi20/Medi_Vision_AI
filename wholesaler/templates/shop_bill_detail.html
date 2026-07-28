@@ -1,0 +1,37 @@
+{% extends "shop_base.html" %}
+{% block title %}{{ inv.invoice_no }}{% endblock %}
+{% block body %}
+<p><a href="{{ url_for('shop_bills') }}">← All my bills</a></p>
+<h1>{{ inv.invoice_no }} <span class="pill {{ inv.status }}" style="margin-left:6px">{{ inv.status }}</span></h1>
+<p class="sub">{{ inv.invoice_date }} · due {{ inv.due_date }}</p>
+
+<div class="card" style="padding:0;overflow:auto">
+  <table>
+    <thead><tr><th>Item</th><th class="right">Qty</th><th class="right">Rate</th><th class="right">Amount</th></tr></thead>
+    <tbody>
+    {% for l in lines %}
+      <tr>
+        <td>{{ l.item_name }}<div style="font-size:11.5px;color:var(--dim)">{{ l.pack_size or '' }}</div></td>
+        <td class="right">{{ l.qty }}</td>
+        <td class="right">₹{{ '%.2f' % l.rate }}</td>
+        <td class="right">{{ l.amount | money }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr><td colspan="3" class="right"><b>Total</b></td><td class="right"><b>{{ inv.total | money }}</b></td></tr>
+      <tr><td colspan="3" class="right">Paid</td><td class="right">{{ inv.paid | money }}</td></tr>
+      <tr><td colspan="3" class="right"><b>Balance due</b></td><td class="right"><b style="color:var(--red)">{{ (inv.total - inv.paid) | money }}</b></td></tr>
+    </tfoot>
+  </table>
+</div>
+
+{% if upi_configured and (inv.total - inv.paid) > 0 %}
+<div class="card" style="text-align:center">
+  <h3>Pay via UPI</h3>
+  <img src="{{ url_for('upi_qr_png', inv_id=inv.id) }}" alt="UPI QR" style="width:200px;height:200px;border-radius:10px;margin:8px auto;display:block">
+  <p style="color:var(--dim);font-size:12.5px;margin:6px 0">Scan with any UPI app</p>
+  <a class="btn primary wide" href="{{ upi_link }}">Open UPI app — pay {{ (inv.total - inv.paid) | money }}</a>
+</div>
+{% endif %}
+{% endblock %}
