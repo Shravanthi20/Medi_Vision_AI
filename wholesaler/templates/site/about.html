@@ -35,7 +35,7 @@
     <div class="sec-head"><h2>How we work</h2></div>
     <div class="cards">
       {% for s in services %}
-        <div class="card"><div class="ic">✦</div><h3>{{ s.title }}</h3><p>{{ s.desc }}</p></div>
+        <div class="card"><div class="ic">{{ s.icon or '✦' }}</div><h3>{{ s.title }}</h3><p>{{ s.desc }}</p></div>
       {% endfor %}
     </div>
   </div>
