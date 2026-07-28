@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Wanted #{{ up.id }} — Review{% endblock %}
+{% block body %}
+<p><a href="{{ url_for('wanted') }}">← All wanted lists</a></p>
+<h1>Wanted list #{{ up.id }} — {{ up.shop_name }}</h1>
+<p class="sub">{{ up.filename }} · {{ up.total_lines }} lines · uploaded {{ up.created_at[:16] }}
+  {% if up.status=='ordered' %}· <a href="{{ url_for('order_detail', order_id=up.order_id) }}">order created →</a>{% endif %}</p>
+
+<div class="kpis">
+  <div class="kpi green"><div class="v">{{ up.auto_matched }}</div><div class="l">Matched automatically</div></div>
+  <div class="kpi amber"><div class="v">{{ up.needs_review }}</div><div class="l">Need your confirmation</div></div>
+  <div class="kpi red"><div class="v">{{ up.not_stocked }}</div><div class="l">Not in your catalog</div></div>
+  <div class="kpi blue"><div class="v">{{ up.total_lines }}</div><div class="l">Total lines</div></div>
+</div>
+
+{% set unsure = lines | selectattr('match_type','equalto','fuzzy') | list %}
+{% if unsure %}
+<form method="POST" action="{{ url_for('wanted_resolve', upload_id=up.id) }}">
+  <div class="card" style="padding:0;overflow:auto">
+    <h3 style="padding:14px 18px 0">Confirm these — each answer is remembered forever</h3>
+    <table>
+      <thead><tr><th style="width:26%">They wrote</th><th class="right">Qty</th><th>Best guesses (pick one)</th></tr></thead>
+      <tbody>
+      {% for l in unsure %}
+        <tr>
+          <td><b>{{ l.raw_name }}</b>
+              <input type="hidden" name="line_id[]" value="{{ l.id }}"></td>
+          <td class="right">{{ l.qty }}</td>
+          <td>
+            <select name="choice[]" style="width:100%;max-width:520px">
+              <option value="">— choose —</option>
+              {% for s in l.suggestions %}
+                <option value="{{ s.id }}" {% if loop.first and s.score >= 0.8 %}selected{% endif %}>
+                  {{ s.name }}{% if s.pack %} ({{ s.pack }}){% endif %} — {{ (s.score*100)|round|int }}% match
+                </option>
+              {% endfor %}
+              <option value="skip">✗ Not any of these / skip</option>
+            </select>
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <button class="btn primary">Save &amp; learn these names</button>
+</form>
+{% endif %}
+
+<div class="card" style="padding:0;overflow:auto">
+  <h3 style="padding:14px 18px 0">All lines</h3>
+  <table>
+    <thead><tr><th>They wrote</th><th class="right">Qty</th><th>Matched to</th><th>How</th><th class="right">Stock</th></tr></thead>
+    <tbody>
+    {% for l in lines %}
+      <tr>
+        <td>{{ l.raw_name }}</td>
+        <td class="right">{{ l.qty }}</td>
+        <td>{% if l.item %}<b>{{ l.item.name }}</b><div style="font-size:11.5px;color:var(--dim)">{{ l.item.pack_size or '' }}</div>
+            {% elif l.suggestions %}<span style="color:var(--amber)">awaiting your confirmation</span>
+              <div style="font-size:11.5px;color:var(--dim)">best guess: {{ l.suggestions[0].name }}</div>
+            {% elif l.match_type == 'skipped' %}<span style="color:var(--dim)">skipped</span>
+            {% else %}<span style="color:var(--red)">— not in your catalog —</span>{% endif %}</td>
+        <td>
+          {% if l.match_type in ['alias','global'] %}<span class="pill paid">remembered</span>
+          {% elif l.match_type=='exact' %}<span class="pill paid">exact</span>
+          {% elif l.match_type=='confirmed' %}<span class="pill paid">you confirmed</span>
+          {% elif l.match_type=='fuzzy' and l.item %}<span class="pill due">close ({{ (l.confidence*100)|round|int }}%)</span>
+          {% elif l.match_type=='fuzzy' %}<span class="pill due">needs review</span>
+          {% elif l.match_type=='skipped' %}<span class="pill draft">skipped</span>
+          {% else %}<span class="pill overdue">not stocked</span>{% endif %}
+        </td>
+        <td class="right">{% if l.item %}{{ l.item.stock }}{% endif %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if up.status != 'ordered' %}
+<form method="POST" action="{{ url_for('wanted_create_order', upload_id=up.id) }}">
+  <button class="btn primary">Create sales order from matched lines →</button>
+  <span style="color:var(--dim);font-size:12.5px;margin-left:10px">Unmatched lines are already logged in the
+    <a href="{{ url_for('demand') }}">Demand report</a>.</span>
+</form>
+{% endif %}
+{% endblock %}

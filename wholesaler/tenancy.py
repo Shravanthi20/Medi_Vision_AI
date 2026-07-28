@@ -196,6 +196,10 @@ try:
     import reorder as _re; _re.conn = _tenant_aware_conn
 except ImportError:
     pass
+try:
+    import wanted as _wanted; _wanted.conn = _tenant_aware_conn
+except ImportError:
+    pass
 
 
 def provision_tenant(slug: str):
@@ -205,6 +209,10 @@ def provision_tenant(slug: str):
     try:
         c.executescript(core.SCHEMA)
         c.executescript(_erp.EXTRA_SCHEMA)
+        try:
+            import wanted as _w; c.executescript(_w.WANTED_SCHEMA)
+        except ImportError:
+            pass
         c.commit()
     finally:
         c.close()

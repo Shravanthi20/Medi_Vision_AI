@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Demand report — Wholesale{% endblock %}
+{% block body %}
+<h1>Demand report — what shops want that you don't stock</h1>
+<p class="sub">Every line we couldn't match, aggregated. This is real, asked-for demand — not a guess.</p>
+
+<div class="searchbar">
+  {% for s in ['open','sourcing','added','ignored','all'] %}
+    <a class="btn {{ 'primary' if status==s else '' }}" href="{{ url_for('demand', status=s) }}">{{ s|capitalize }}</a>
+  {% endfor %}
+  <span style="flex:1"></span>
+  <a class="btn" href="{{ url_for('demand_export') }}">↓ Export CSV</a>
+</div>
+
+<div class="kpis">
+  <div class="kpi amber"><div class="v">{{ totals.lines }}</div><div class="l">Products asked for</div></div>
+  <div class="kpi blue"><div class="v">{{ totals.shops }}</div><div class="l">Shops asking</div></div>
+</div>
+
+<div class="card" style="padding:0;overflow:auto">
+  <table>
+    <thead><tr><th>Product asked for</th><th class="right">Times asked</th><th class="right">Total qty</th>
+      <th class="right">Shops</th><th>Who asked</th><th>Last</th><th>Status</th><th>Action</th></tr></thead>
+    <tbody>
+    {% for r in rows %}
+      <tr>
+        <td><b>{{ r.raw_name }}</b></td>
+        <td class="right"><b style="color:var(--amber)">{{ r.times_asked }}</b></td>
+        <td class="right">{{ r.total_qty }}</td>
+        <td class="right">{{ r.shop_count }}</td>
+        <td style="font-size:12px;color:var(--dim)">{{ r.shop_names }}</td>
+        <td style="font-size:12px">{{ r.last_asked }}</td>
+        <td><span class="pill {{ {'open':'due','sourcing':'confirmed','added':'paid','ignored':'draft'}.get(r.status,'draft') }}">{{ r.status }}</span></td>
+        <td>
+          <div style="display:flex;gap:5px;flex-wrap:wrap">
+            {% for a, lbl in [('sourcing','Sourcing'),('added','Added'),('ignored','Ignore')] %}
+              {% if r.status != a %}
+              <form method="POST" action="{{ url_for('demand_action', did=r.id, action=a) }}">
+                <button class="btn sm">{{ lbl }}</button></form>
+              {% endif %}
+            {% endfor %}
+          </div>
+        </td>
+      </tr>
+    {% else %}<tr><td colspan="8"><div class="empty"><div class="em">✅</div>
+      Nothing unmatched — every product your shops asked for is already in your catalog.</div></td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="card" style="background:rgba(59,130,246,.07);border-color:rgba(59,130,246,.3)">
+  <b style="color:var(--blue)">How to use this</b>
+  <p style="color:var(--dim);font-size:13.5px;margin:6px 0 0;line-height:1.7">
+    Sort by <b>times asked</b> — the top of this list is money you're turning away every week.
+    Mark a product <b>Sourcing</b> when you ask a supplier for it, and <b>Added</b> once it's in your
+    item master. Anything you deliberately don't want to carry, mark <b>Ignore</b> so it stops
+    cluttering the list.
+  </p>
+</div>
+{% endblock %}

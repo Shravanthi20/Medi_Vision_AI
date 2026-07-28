@@ -1,0 +1,666 @@
+"""
+Retail Shop Portal + Smart "Wanted List" Engine
+===============================================
+
+Two things live here.
+
+1. SHOP PORTAL (/shop/*) — the retailer's own login. Dashboard, place order,
+   my bills, acknowledge bill, credit notes, outstanding. A shop sees ONLY
+   its own rows; every query is filtered by the shop_id in their session.
+
+2. WANTED-LIST ENGINE — the reason this exists.
+
+   The old way: a shop sends a list of what they want, written in THEIR
+   names ("dolo650", "PAN-40", "augmentin 625 tab"). Someone at the
+   distributor reads each line, hunts for it in the item master, and types
+   an order. 1 to 1.5 hours.
+
+   The new way:
+     * FIRST upload from a shop — we auto-match what we can, and ask a human
+       to resolve only the uncertain ones. Every decision is remembered as
+       an ALIAS against that shop.
+     * EVERY LATER upload — those aliases hit instantly. A shop that always
+       writes "dolo650" never has to be asked again. Minutes, not hours.
+
+   Matching ladder, cheapest first:
+     1. alias      — this shop has used this exact text before  → instant
+     2. global alias — another shop taught us this text          → instant
+     3. exact      — normalised text equals an item's name/code  → instant
+     4. fuzzy      — close enough; top 3 shown for one-click confirm
+     5. none       — we don't stock it → goes to the DEMAND REPORT
+
+   The demand report is the second half of the customer's ask: the lines we
+   could NOT match are usually not typos, they're products the distributor
+   simply doesn't carry. Aggregated across every shop, that becomes a
+   ranked "what should we start stocking" list — real demand, with the
+   number of shops asking and the quantity they wanted.
+"""
+from __future__ import annotations
+
+import io
+import re
+import csv
+import json
+import secrets
+import functools
+from difflib import SequenceMatcher
+from datetime import date, datetime
+
+from flask import (request, redirect, url_for, render_template, session,
+                   flash, abort, jsonify, Response)
+
+from app import app, conn, login_required, audit, compute_order_totals, next_order_no, rate_for_shop
+
+try:
+    from openpyxl import load_workbook
+    HAVE_XLSX = True
+except ImportError:
+    HAVE_XLSX = False
+
+
+# ══════════════════════════════════════════════════════════════════════
+#  SCHEMA
+# ══════════════════════════════════════════════════════════════════════
+WANTED_SCHEMA = r"""
+CREATE TABLE IF NOT EXISTS item_aliases (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    shop_id     INTEGER,                 -- NULL = learned globally
+    alias_norm  TEXT NOT NULL,
+    alias_raw   TEXT DEFAULT '',
+    item_id     INTEGER NOT NULL,
+    hits        INTEGER DEFAULT 1,
+    created_at  TEXT DEFAULT (datetime('now'))
+);
+CREATE UNIQUE INDEX IF NOT EXISTS ix_alias ON item_aliases(IFNULL(shop_id,0), alias_norm);
+
+CREATE TABLE IF NOT EXISTS wanted_uploads (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    shop_id      INTEGER NOT NULL,
+    filename     TEXT DEFAULT '',
+    total_lines  INTEGER DEFAULT 0,
+    auto_matched INTEGER DEFAULT 0,
+    needs_review INTEGER DEFAULT 0,
+    not_stocked  INTEGER DEFAULT 0,
+    status       TEXT DEFAULT 'review',   -- review | ordered
+    order_id     INTEGER,
+    source       TEXT DEFAULT 'admin',    -- admin | shop
+    created_at   TEXT DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS wanted_lines (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    upload_id   INTEGER NOT NULL,
+    raw_name    TEXT DEFAULT '',
+    norm_name   TEXT DEFAULT '',
+    qty         INTEGER DEFAULT 0,
+    item_id     INTEGER,
+    match_type  TEXT DEFAULT 'none',      -- alias | global | exact | fuzzy | none
+    confidence  REAL DEFAULT 0,
+    suggestions TEXT DEFAULT '[]'
+);
+
+CREATE TABLE IF NOT EXISTS demand_log (
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    norm_name      TEXT UNIQUE NOT NULL,
+    raw_name       TEXT DEFAULT '',
+    times_asked    INTEGER DEFAULT 0,
+    total_qty      INTEGER DEFAULT 0,
+    shops_json     TEXT DEFAULT '[]',
+    last_asked     TEXT DEFAULT (date('now')),
+    status         TEXT DEFAULT 'open',   -- open | sourcing | added | ignored
+    note           TEXT DEFAULT ''
+);
+
+CREATE TABLE IF NOT EXISTS shop_logins (
+    shop_id     INTEGER PRIMARY KEY,
+    pin         TEXT DEFAULT '',
+    last_login  TEXT DEFAULT ''
+);
+"""
+
+with conn() as _c:
+    _c.executescript(WANTED_SCHEMA)
+
+
+# ══════════════════════════════════════════════════════════════════════
+#  NORMALISATION + MATCHING
+# ══════════════════════════════════════════════════════════════════════
+# Pack/format noise that shops write but which never distinguishes a product.
+_NOISE = re.compile(
+    r"\b(tab|tabs|tablet|tablets|cap|caps|capsule|capsules|syp|syrup|susp|suspension|"
+    r"inj|injection|oint|ointment|cream|gel|drops?|sachet|strip|strips|bottle|btl|"
+    r"pcs|pc|nos|no|box|pkt|packet|pack)\b", re.I)
+_UNIT = re.compile(r"\b\d+\s*(mg|ml|gm|g|mcg|iu|%)\b", re.I)
+
+
+def norm(s: str) -> str:
+    """
+    Normalise a product name so 'Dolo 650 Tab', 'dolo-650', 'DOLO650 tablets'
+    all collapse to the same key. Strength (650) is KEPT — it distinguishes
+    real products. Dosage form (tab/syrup) is dropped — it doesn't.
+    """
+    s = (s or "").lower().strip()
+    s = re.sub(r"[^\w\s%]+", " ", s)     # punctuation → space
+    s = _NOISE.sub(" ", s)
+    s = re.sub(r"\s+", " ", s).strip()
+    return s
+
+
+def _sim(a: str, b: str) -> float:
+    return SequenceMatcher(None, a, b).ratio()
+
+
+def load_catalog(c):
+    rows = c.execute("""SELECT id, code, name, generic, manufacturer, pack_size, ptr, ptr_b, ptr_c,
+                               gst_rate, scheme, moq, stock, mrp
+                        FROM wholesale_items WHERE status='active'""").fetchall()
+    cat = []
+    for r in rows:
+        d = dict(r)
+        d["_norm"] = norm(r["name"])
+        d["_gnorm"] = norm(r["generic"] or "")
+        cat.append(d)
+    return cat
+
+
+def match_line(c, catalog, shop_id, raw_name):
+    """Return (item_id, match_type, confidence, suggestions[])."""
+    n = norm(raw_name)
+    if not n:
+        return None, "none", 0.0, []
+
+    # 1 & 2 — learned aliases (this shop first, then anything learned globally)
+    row = c.execute("""SELECT item_id FROM item_aliases
+                       WHERE alias_norm=? AND shop_id=? LIMIT 1""", (n, shop_id)).fetchone()
+    if row:
+        return row["item_id"], "alias", 1.0, []
+    row = c.execute("""SELECT item_id FROM item_aliases
+                       WHERE alias_norm=? AND shop_id IS NULL LIMIT 1""", (n,)).fetchone()
+    if row:
+        return row["item_id"], "global", 1.0, []
+
+    # 3 — exact on normalised name, or on SKU code
+    for it in catalog:
+        if it["_norm"] == n or (it["code"] or "").lower() == n.replace(" ", ""):
+            return it["id"], "exact", 1.0, []
+
+    # 4 — fuzzy. Score against name and generic, keep the best per item.
+    scored = []
+    for it in catalog:
+        s = _sim(n, it["_norm"])
+        if it["_gnorm"]:
+            s = max(s, _sim(n, it["_gnorm"]) * 0.95)   # generic match is slightly weaker evidence
+        # a shared leading token is a strong hint ("pan 40" vs "pantop 40")
+        if n.split()[:1] and it["_norm"].split()[:1] and n.split()[0] == it["_norm"].split()[0]:
+            s = min(1.0, s + 0.12)
+        if s > 0.55:
+            scored.append((s, it))
+    scored.sort(key=lambda x: -x[0])
+
+    if scored and scored[0][0] >= 0.88:
+        best = scored[0]
+        return best[1]["id"], "fuzzy", round(best[0], 3), [
+            {"id": i["id"], "name": i["name"], "pack": i["pack_size"], "score": round(s, 3)}
+            for s, i in scored[:3]]
+    if scored:
+        return None, "fuzzy", round(scored[0][0], 3), [
+            {"id": i["id"], "name": i["name"], "pack": i["pack_size"], "score": round(s, 3)}
+            for s, i in scored[:3]]
+
+    # 5 — genuinely not in our catalogue
+    return None, "none", 0.0, []
+
+
+def parse_wanted_file(fs):
+    """Accept .xlsx/.csv with (name, qty). Very forgiving about column names."""
+    fname = (fs.filename or "").lower()
+    raw = fs.read()
+    rows = []
+
+    if fname.endswith(".csv"):
+        rdr = csv.reader(io.StringIO(raw.decode("utf-8-sig", errors="replace")))
+        table = list(rdr)
+    elif fname.endswith((".xlsx", ".xlsm")):
+        if not HAVE_XLSX:
+            return [], "openpyxl not installed — save the file as CSV and retry."
+        wb = load_workbook(io.BytesIO(raw), data_only=True, read_only=True)
+        table = [[("" if v is None else str(v).strip()) for v in r]
+                 for r in wb.active.iter_rows(values_only=True)]
+    else:
+        return [], "Please upload a .xlsx or .csv file."
+
+    if not table:
+        return [], "That file is empty."
+
+    # Find the name/qty columns from a header row if there is one; otherwise
+    # assume col0 = name and the first numeric-looking column = qty.
+    head = [str(x).lower().strip() for x in table[0]]
+    name_i = qty_i = None
+    for i, h in enumerate(head):
+        if name_i is None and any(k in h for k in ("item", "name", "product", "particular", "description", "medicine")):
+            name_i = i
+        if qty_i is None and any(k in h for k in ("qty", "quantity", "nos", "count", "req")):
+            qty_i = i
+    body = table[1:] if (name_i is not None or qty_i is not None) else table
+    if name_i is None:
+        name_i = 0
+    if qty_i is None:
+        qty_i = 1 if (body and len(body[0]) > 1) else None
+
+    for r in body:
+        if not r or name_i >= len(r):
+            continue
+        nm = str(r[name_i]).strip()
+        if not nm:
+            continue
+        q = 1
+        if qty_i is not None and qty_i < len(r):
+            m = re.search(r"\d+", str(r[qty_i]))
+            if m:
+                q = int(m.group())
+        rows.append({"name": nm, "qty": max(1, q)})
+    return rows, None
+
+
+def record_demand(c, line_rows, shop_id):
+    """Fold unmatched lines into the aggregate 'we should stock this' report."""
+    for ln in line_rows:
+        n, rawname, q = ln["norm"], ln["raw"], ln["qty"]
+        if not n:
+            continue
+        row = c.execute("SELECT * FROM demand_log WHERE norm_name=?", (n,)).fetchone()
+        if row:
+            shops = set(json.loads(row["shops_json"] or "[]"))
+            shops.add(shop_id)
+            c.execute("""UPDATE demand_log SET times_asked=times_asked+1, total_qty=total_qty+?,
+                         shops_json=?, last_asked=date('now'), raw_name=?
+                         WHERE norm_name=?""",
+                      (q, json.dumps(sorted(shops)), rawname, n))
+        else:
+            c.execute("""INSERT INTO demand_log (norm_name, raw_name, times_asked, total_qty, shops_json)
+                         VALUES (?,?,1,?,?)""", (n, rawname, q, json.dumps([shop_id])))
+
+
+# ══════════════════════════════════════════════════════════════════════
+#  ADMIN: upload a shop's wanted list
+# ══════════════════════════════════════════════════════════════════════
+@app.route("/wanted", methods=["GET", "POST"])
+@login_required
+def wanted():
+    with conn() as c:
+        shops = c.execute("SELECT id, code, name FROM retail_shops WHERE status='active' ORDER BY name").fetchall()
+        recent = c.execute("""SELECT u.*, s.name shop_name, s.code shop_code
+                              FROM wanted_uploads u JOIN retail_shops s ON s.id=u.shop_id
+                              ORDER BY u.id DESC LIMIT 15""").fetchall()
+
+    if request.method == "POST":
+        shop_id = int(request.form.get("shop_id") or 0)
+        f = request.files.get("file")
+        if not shop_id or not f or not f.filename:
+            flash("Pick a shop and a file.", "err")
+            return redirect(url_for("wanted"))
+
+        rows, err = parse_wanted_file(f)
+        if err:
+            flash(err, "err")
+            return redirect(url_for("wanted"))
+        if not rows:
+            flash("Couldn't find any item rows in that file.", "err")
+            return redirect(url_for("wanted"))
+
+        upload_id = process_wanted(shop_id, rows, f.filename, source="admin")
+        return redirect(url_for("wanted_review", upload_id=upload_id))
+
+    return render_template("wanted.html", shops=shops, recent=recent, have_xlsx=HAVE_XLSX)
+
+
+def process_wanted(shop_id, rows, filename, source="admin"):
+    """Shared by the admin upload and the shop-portal upload."""
+    with conn() as c:
+        catalog = load_catalog(c)
+        cur = c.execute("""INSERT INTO wanted_uploads (shop_id, filename, total_lines, source)
+                           VALUES (?,?,?,?)""", (shop_id, filename, len(rows), source))
+        upload_id = cur.lastrowid
+
+        auto = review = missing = 0
+        demand_rows = []
+        for r in rows:
+            item_id, mtype, conf, sugg = match_line(c, catalog, shop_id, r["name"])
+            c.execute("""INSERT INTO wanted_lines
+                (upload_id, raw_name, norm_name, qty, item_id, match_type, confidence, suggestions)
+                VALUES (?,?,?,?,?,?,?,?)""",
+                (upload_id, r["name"], norm(r["name"]), r["qty"], item_id, mtype, conf, json.dumps(sugg)))
+            if item_id and mtype in ("alias", "global", "exact"):
+                auto += 1
+            elif sugg:
+                review += 1
+            else:
+                missing += 1
+                demand_rows.append({"norm": norm(r["name"]), "raw": r["name"], "qty": r["qty"]})
+
+        if demand_rows:
+            record_demand(c, demand_rows, shop_id)
+
+        c.execute("""UPDATE wanted_uploads SET auto_matched=?, needs_review=?, not_stocked=?
+                     WHERE id=?""", (auto, review, missing, upload_id))
+    return upload_id
+
+
+@app.route("/wanted/<int:upload_id>")
+@login_required
+def wanted_review(upload_id):
+    with conn() as c:
+        up = c.execute("""SELECT u.*, s.name shop_name, s.code shop_code, s.price_tier
+                          FROM wanted_uploads u JOIN retail_shops s ON s.id=u.shop_id
+                          WHERE u.id=?""", (upload_id,)).fetchone()
+        if not up:
+            abort(404)
+        lines = c.execute("SELECT * FROM wanted_lines WHERE upload_id=? ORDER BY id", (upload_id,)).fetchall()
+        items = {r["id"]: dict(r) for r in c.execute(
+            "SELECT id, name, pack_size, ptr, ptr_b, ptr_c, stock FROM wholesale_items").fetchall()}
+
+    parsed = []
+    for ln in lines:
+        d = dict(ln)
+        d["suggestions"] = json.loads(ln["suggestions"] or "[]")
+        d["item"] = items.get(ln["item_id"])
+        parsed.append(d)
+    return render_template("wanted_review.html", up=up, lines=parsed, items=items)
+
+
+@app.route("/wanted/<int:upload_id>/resolve", methods=["POST"])
+@login_required
+def wanted_resolve(upload_id):
+    """
+    Human confirms the uncertain lines. Each confirmation is REMEMBERED as an
+    alias so this shop never gets asked about that spelling again — this is
+    what turns the second upload from an hour into a couple of minutes.
+    """
+    line_ids = request.form.getlist("line_id[]")
+    chosen = request.form.getlist("choice[]")
+    learned = 0
+    with conn() as c:
+        up = c.execute("SELECT * FROM wanted_uploads WHERE id=?", (upload_id,)).fetchone()
+        if not up:
+            abort(404)
+        for lid, ch in zip(line_ids, chosen):
+            if not ch:
+                continue
+            ln = c.execute("SELECT * FROM wanted_lines WHERE id=?", (int(lid),)).fetchone()
+            if not ln:
+                continue
+            if ch == "skip":
+                c.execute("UPDATE wanted_lines SET item_id=NULL, match_type='skipped' WHERE id=?", (ln["id"],))
+                continue
+            item_id = int(ch)
+            c.execute("UPDATE wanted_lines SET item_id=?, match_type='confirmed', confidence=1.0 WHERE id=?",
+                      (item_id, ln["id"]))
+            try:
+                c.execute("""INSERT INTO item_aliases (shop_id, alias_norm, alias_raw, item_id)
+                             VALUES (?,?,?,?)""",
+                          (up["shop_id"], ln["norm_name"], ln["raw_name"], item_id))
+                learned += 1
+            except Exception:
+                c.execute("""UPDATE item_aliases SET item_id=?, hits=hits+1
+                             WHERE shop_id=? AND alias_norm=?""",
+                          (item_id, up["shop_id"], ln["norm_name"]))
+    flash(f"Saved. Learned {learned} new name(s) for this shop — next upload they'll match instantly.", "ok")
+    return redirect(url_for("wanted_review", upload_id=upload_id))
+
+
+@app.route("/wanted/<int:upload_id>/create-order", methods=["POST"])
+@login_required
+def wanted_create_order(upload_id):
+    with conn() as c:
+        up = c.execute("SELECT * FROM wanted_uploads WHERE id=?", (upload_id,)).fetchone()
+        if not up:
+            abort(404)
+        shop = c.execute("SELECT * FROM retail_shops WHERE id=?", (up["shop_id"],)).fetchone()
+        lines = c.execute("""SELECT w.*, i.* FROM wanted_lines w
+                             JOIN wholesale_items i ON i.id=w.item_id
+                             WHERE w.upload_id=? AND w.item_id IS NOT NULL""", (upload_id,)).fetchall()
+        if not lines:
+            flash("Nothing matched yet — resolve some lines first.", "err")
+            return redirect(url_for("wanted_review", upload_id=upload_id))
+
+        order_no = next_order_no()
+        cur = c.execute("""INSERT INTO sales_orders (order_no, shop_id, notes, source, created_by)
+                           VALUES (?,?,?,?,?)""",
+                        (order_no, up["shop_id"], f"From wanted list #{upload_id} ({up['filename']})",
+                         "wanted", session.get("ws_user") or "admin"))
+        order_id = cur.lastrowid
+
+        for ln in lines:
+            rate = rate_for_shop(ln, shop["price_tier"])
+            free = 0
+            if ln["scheme"] and "+" in (ln["scheme"] or ""):
+                try:
+                    b, bs = ln["scheme"].split("+"); b, bs = int(b), int(bs)
+                    if b > 0:
+                        free = (ln["qty"] // b) * bs
+                except Exception:
+                    pass
+            c.execute("""INSERT INTO sales_order_items
+                (order_id, item_id, item_name, pack_size, qty, free_qty, rate, gst_rate, amount)
+                VALUES (?,?,?,?,?,?,?,?,?)""",
+                (order_id, ln["item_id"], ln["name"], ln["pack_size"], ln["qty"], free,
+                 rate, ln["gst_rate"], ln["qty"] * rate))
+
+        c.execute("UPDATE wanted_uploads SET status='ordered', order_id=? WHERE id=?", (order_id, upload_id))
+
+    compute_order_totals(order_id)
+    audit(session.get("ws_user"), "wanted_to_order", "order", order_id, order_no)
+    flash(f"Created order {order_no} from the wanted list.", "ok")
+    return redirect(url_for("order_detail", order_id=order_id))
+
+
+# ══════════════════════════════════════════════════════════════════════
+#  DEMAND REPORT — what shops want that we don't stock
+# ══════════════════════════════════════════════════════════════════════
+@app.route("/demand")
+@login_required
+def demand():
+    status = request.args.get("status") or "open"
+    with conn() as c:
+        if status == "all":
+            rows = c.execute("SELECT * FROM demand_log ORDER BY times_asked DESC, total_qty DESC").fetchall()
+        else:
+            rows = c.execute("SELECT * FROM demand_log WHERE status=? ORDER BY times_asked DESC, total_qty DESC",
+                             (status,)).fetchall()
+        shop_names = {r["id"]: r["name"] for r in c.execute("SELECT id, name FROM retail_shops").fetchall()}
+
+    out = []
+    for r in rows:
+        d = dict(r)
+        ids = json.loads(r["shops_json"] or "[]")
+        d["shop_count"] = len(ids)
+        d["shop_names"] = ", ".join(shop_names.get(i, f"#{i}") for i in ids[:6])
+        out.append(d)
+    totals = {"lines": len(out), "shops": len({s for r in rows for s in json.loads(r["shops_json"] or "[]")})}
+    return render_template("demand.html", rows=out, status=status, totals=totals)
+
+
+@app.route("/demand/<int:did>/<action>", methods=["POST"])
+@login_required
+def demand_action(did, action):
+    if action not in ("sourcing", "added", "ignored", "open"):
+        abort(400)
+    with conn() as c:
+        c.execute("UPDATE demand_log SET status=? WHERE id=?", (action, did))
+    flash("Updated.", "ok")
+    return redirect(url_for("demand"))
+
+
+@app.route("/demand/export.csv")
+@login_required
+def demand_export():
+    out = io.StringIO()
+    w = csv.writer(out)
+    w.writerow(["product_asked_for", "times_asked", "total_qty", "shops_asking", "last_asked", "status"])
+    with conn() as c:
+        for r in c.execute("SELECT * FROM demand_log ORDER BY times_asked DESC").fetchall():
+            w.writerow([r["raw_name"], r["times_asked"], r["total_qty"],
+                        len(json.loads(r["shops_json"] or "[]")), r["last_asked"], r["status"]])
+    return Response(out.getvalue(), mimetype="text/csv",
+                    headers={"Content-Disposition": "attachment; filename=demand-not-stocked.csv"})
+
+
+@app.route("/aliases")
+@login_required
+def aliases():
+    with conn() as c:
+        rows = c.execute("""SELECT a.*, i.name item_name, s.name shop_name
+                            FROM item_aliases a
+                            LEFT JOIN wholesale_items i ON i.id=a.item_id
+                            LEFT JOIN retail_shops s ON s.id=a.shop_id
+                            ORDER BY a.hits DESC, a.id DESC LIMIT 400""").fetchall()
+    return render_template("aliases.html", rows=rows)
+
+
+@app.route("/aliases/<int:aid>/delete", methods=["POST"])
+@login_required
+def alias_delete(aid):
+    with conn() as c:
+        c.execute("DELETE FROM item_aliases WHERE id=?", (aid,))
+    flash("Alias removed — that name will be asked about again next time.", "ok")
+    return redirect(url_for("aliases"))
+
+
+# ══════════════════════════════════════════════════════════════════════
+#  SHOP PORTAL — the retailer's own login
+# ══════════════════════════════════════════════════════════════════════
+def shop_required(f):
+    @functools.wraps(f)
+    def wrap(*a, **k):
+        if not session.get("shop_id") or not session.get("tenant"):
+            return redirect(url_for("shop_login"))
+        return f(*a, **k)
+    return wrap
+
+
+def _shop_ctx():
+    with conn() as c:
+        shop = c.execute("SELECT * FROM retail_shops WHERE id=?", (session["shop_id"],)).fetchone()
+    return shop
+
+
+@app.route("/shop/login", methods=["GET", "POST"])
+def shop_login():
+    error = ""
+    company = request.args.get("c") or session.get("tenant") or ""
+    if request.method == "POST":
+        company = (request.form.get("company") or "").strip().lower()
+        code = (request.form.get("shop_code") or "").strip().upper()
+        pin = (request.form.get("pin") or "").strip()
+
+        import tenancy as T
+        with T.platform_conn() as pc:
+            comp = pc.execute("SELECT * FROM companies WHERE slug=? AND status='active'", (company,)).fetchone()
+        if not comp:
+            error = "Unknown or inactive company code."
+        else:
+            session["tenant"] = company           # bind DB before querying shops
+            from flask import g
+            g.tenant_slug, g.tenant_db = company, T.tenant_db_path(company)
+            with conn() as c:
+                shop = c.execute("SELECT * FROM retail_shops WHERE code=? OR phone=?", (code, code)).fetchone()
+                row = c.execute("SELECT * FROM shop_logins WHERE shop_id=?",
+                                (shop["id"],)).fetchone() if shop else None
+            if not shop:
+                session.pop("tenant", None)
+                error = "No shop with that code."
+            elif row and row["pin"] and row["pin"] != pin:
+                session.pop("tenant", None)
+                error = "Wrong PIN."
+            elif not row or not row["pin"]:
+                # first sign-in sets the PIN
+                if len(pin) < 4:
+                    session.pop("tenant", None)
+                    error = "Choose a PIN of at least 4 digits for your first sign-in."
+                else:
+                    with conn() as c:
+                        c.execute("""INSERT INTO shop_logins (shop_id, pin, last_login)
+                                     VALUES (?,?,datetime('now'))
+                                     ON CONFLICT(shop_id) DO UPDATE SET pin=excluded.pin,
+                                       last_login=datetime('now')""", (shop["id"], pin))
+                    session["shop_id"], session["shop_name"] = shop["id"], shop["name"]
+                    return redirect(url_for("shop_home"))
+            else:
+                with conn() as c:
+                    c.execute("UPDATE shop_logins SET last_login=datetime('now') WHERE shop_id=?", (shop["id"],))
+                session["shop_id"], session["shop_name"] = shop["id"], shop["name"]
+                return redirect(url_for("shop_home"))
+
+    return render_template("shop_login.html", error=error, company=company)
+
+
+@app.route("/shop/logout", methods=["POST"])
+def shop_logout():
+    session.clear()
+    return redirect(url_for("shop_login"))
+
+
+@app.route("/shop")
+@shop_required
+def shop_home():
+    sid = session["shop_id"]
+    with conn() as c:
+        shop = c.execute("SELECT * FROM retail_shops WHERE id=?", (sid,)).fetchone()
+        recent = c.execute("""SELECT invoice_no, invoice_date, total, status
+                              FROM invoices WHERE shop_id=? ORDER BY id DESC LIMIT 8""", (sid,)).fetchall()
+        outstanding = c.execute("""SELECT COALESCE(SUM(total-paid),0) o FROM invoices
+                                   WHERE shop_id=? AND status!='paid'""", (sid,)).fetchone()["o"]
+        overdue = c.execute("""SELECT COALESCE(SUM(total-paid),0) o FROM invoices
+                               WHERE shop_id=? AND status!='paid' AND due_date<date('now')""", (sid,)).fetchone()["o"]
+        open_orders = c.execute("""SELECT COUNT(*) n FROM sales_orders
+                                   WHERE shop_id=? AND status IN ('draft','confirmed','dispatched')""",
+                                (sid,)).fetchone()["n"]
+        month_spend = c.execute("""SELECT COALESCE(SUM(total),0) t FROM invoices
+                                   WHERE shop_id=? AND substr(invoice_date,1,7)=strftime('%Y-%m','now')""",
+                                (sid,)).fetchone()["t"]
+    return render_template("shop_home.html", shop=shop, recent=recent, outstanding=outstanding,
+                           overdue=overdue, open_orders=open_orders, month_spend=month_spend)
+
+
+@app.route("/shop/bills")
+@shop_required
+def shop_bills():
+    with conn() as c:
+        rows = c.execute("""SELECT * FROM invoices WHERE shop_id=? ORDER BY id DESC LIMIT 200""",
+                         (session["shop_id"],)).fetchall()
+    return render_template("shop_bills.html", rows=rows)
+
+
+@app.route("/shop/orders")
+@shop_required
+def shop_orders():
+    with conn() as c:
+        rows = c.execute("""SELECT * FROM sales_orders WHERE shop_id=? ORDER BY id DESC LIMIT 200""",
+                         (session["shop_id"],)).fetchall()
+    return render_template("shop_orders.html", rows=rows)
+
+
+@app.route("/shop/wanted", methods=["GET", "POST"])
+@shop_required
+def shop_wanted():
+    """The shop uploads its own wanted list — same engine, self-service."""
+    if request.method == "POST":
+        f = request.files.get("file")
+        if not f or not f.filename:
+            flash("Choose a file first.", "err")
+            return redirect(url_for("shop_wanted"))
+        rows, err = parse_wanted_file(f)
+        if err:
+            flash(err, "err")
+            return redirect(url_for("shop_wanted"))
+        upload_id = process_wanted(session["shop_id"], rows, f.filename, source="shop")
+        with conn() as c:
+            up = c.execute("SELECT * FROM wanted_uploads WHERE id=?", (upload_id,)).fetchone()
+        flash(f"Received {up['total_lines']} lines — {up['auto_matched']} matched automatically. "
+              f"Our team will confirm and call you.", "ok")
+        return redirect(url_for("shop_wanted"))
+
+    with conn() as c:
+        ups = c.execute("""SELECT * FROM wanted_uploads WHERE shop_id=? ORDER BY id DESC LIMIT 20""",
+                        (session["shop_id"],)).fetchall()
+    return render_template("shop_wanted.html", uploads=ups, have_xlsx=HAVE_XLSX)

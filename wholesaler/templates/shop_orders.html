@@ -1,0 +1,21 @@
+{% extends "shop_base.html" %}
+{% block title %}My orders{% endblock %}
+{% block body %}
+<h1>My orders</h1>
+<p class="sub">{{ rows|length }} orders.</p>
+<div class="card" style="padding:0;overflow:auto">
+  <table>
+    <thead><tr><th>Order</th><th>Date</th><th>Status</th><th class="right">Total</th></tr></thead>
+    <tbody>
+    {% for r in rows %}
+      <tr><td><b>{{ r.order_no }}</b>{% if r.source=='wanted' %}<div style="font-size:11px;color:var(--dim)">from your wanted list</div>{% endif %}</td>
+          <td>{{ r.order_date }}</td>
+          <td><span class="pill {{ r.status }}">{{ r.status }}</span></td>
+          <td class="right">{{ r.total | money }}</td></tr>
+    {% else %}<tr><td colspan="4"><div class="empty"><div class="em">📦</div>No orders yet.
+      <a href="{{ url_for('catalog') }}">Place your first →</a></div></td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

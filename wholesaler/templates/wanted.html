@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Wanted List — Wholesale{% endblock %}
+{% block body %}
+<h1>Wanted list → order 🪄</h1>
+<p class="sub">Upload what a shop asked for, in <b>their</b> words. We match it to your catalog and remember every name we learn.</p>
+
+<div class="card" style="background:rgba(34,197,94,.07);border-color:rgba(34,197,94,.3)">
+  <b style="color:var(--green)">Why the second upload is fast</b>
+  <p style="color:var(--dim);font-size:13.5px;margin:6px 0 0;line-height:1.7">
+    A shop writes "dolo650", "PAN 40", "augmentin625". The first time, you confirm the handful we're unsure of.
+    Each confirmation is saved as that shop's alias — so <b>every later upload from them matches instantly</b>.
+    Anything we don't stock at all drops into the <a href="{{ url_for('demand') }}">Demand report</a>
+    so you can decide whether to start carrying it.
+  </p>
+</div>
+
+<div class="card">
+  <h3>Upload a wanted list</h3>
+  <form method="POST" enctype="multipart/form-data">
+    <div class="row three">
+      <div class="field"><label>Shop *</label>
+        <select name="shop_id" required>
+          <option value="">Select shop…</option>
+          {% for s in shops %}<option value="{{ s.id }}">{{ s.name }} ({{ s.code }})</option>{% endfor %}
+        </select></div>
+      <div class="field"><label>File (.xlsx or .csv) *</label><input type="file" name="file" accept=".xlsx,.xlsm,.csv" required></div>
+      <div class="field"><label>&nbsp;</label><button class="btn primary wide">Match &amp; review →</button></div>
+    </div>
+    <p style="color:var(--dim);font-size:12.5px">
+      Any two columns work — item name and quantity. Headers optional; we detect them.
+      {% if not have_xlsx %}<b style="color:var(--amber)">(.xlsx reader unavailable — use CSV)</b>{% endif %}
+    </p>
+  </form>
+</div>
+
+<div class="card" style="padding:0;overflow:auto">
+  <h3 style="padding:14px 18px 0">Recent uploads</h3>
+  <table>
+    <thead><tr><th>#</th><th>Shop</th><th>File</th><th class="right">Lines</th><th class="right">Auto</th>
+      <th class="right">Review</th><th class="right">Not stocked</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+    {% for u in recent %}
+      <tr>
+        <td>{{ u.id }}<div style="font-size:11px;color:var(--dim)">{{ u.created_at[:10] }}</div></td>
+        <td>{{ u.shop_name }}<div style="font-size:11.5px;color:var(--dim)">{{ u.shop_code }}{% if u.source=='shop' %} · self-service{% endif %}</div></td>
+        <td style="font-size:12.5px">{{ u.filename }}</td>
+        <td class="right">{{ u.total_lines }}</td>
+        <td class="right"><b style="color:var(--green)">{{ u.auto_matched }}</b></td>
+        <td class="right">{% if u.needs_review %}<b style="color:var(--amber)">{{ u.needs_review }}</b>{% else %}0{% endif %}</td>
+        <td class="right">{% if u.not_stocked %}<b style="color:var(--red)">{{ u.not_stocked }}</b>{% else %}0{% endif %}</td>
+        <td><span class="pill {{ 'invoiced' if u.status=='ordered' else 'draft' }}">{{ u.status }}</span></td>
+        <td><a class="btn sm" href="{{ url_for('wanted_review', upload_id=u.id) }}">Open</a></td>
+      </tr>
+    {% else %}<tr><td colspan="9"><div class="empty"><div class="em">📄</div>No wanted lists uploaded yet.</div></td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

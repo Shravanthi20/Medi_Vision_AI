@@ -1,0 +1,39 @@
+{% extends "shop_base.html" %}
+{% block title %}Wanted list{% endblock %}
+{% block body %}
+<h1>Send us your wanted list</h1>
+<p class="sub">Upload your list exactly as you keep it. We'll match it to our stock and call you to confirm.</p>
+
+<div class="card">
+  <form method="POST" enctype="multipart/form-data">
+    <div class="row two">
+      <div class="field"><label>Your list (.xlsx or .csv)</label>
+        <input type="file" name="file" accept=".xlsx,.xlsm,.csv" required></div>
+      <div class="field"><label>&nbsp;</label><button class="btn primary wide">Send list</button></div>
+    </div>
+    <p style="color:var(--dim);font-size:12.5px">
+      Two columns is all we need — the medicine name and how many. Write names however you normally do;
+      we learn your spellings after the first time.
+      {% if not have_xlsx %}<b style="color:var(--amber)">(Please use CSV.)</b>{% endif %}
+    </p>
+  </form>
+</div>
+
+<div class="card" style="padding:0;overflow:auto">
+  <h3 style="padding:14px 18px 0">Your previous lists</h3>
+  <table>
+    <thead><tr><th>#</th><th>File</th><th>Sent</th><th class="right">Lines</th><th class="right">Matched</th><th>Status</th></tr></thead>
+    <tbody>
+    {% for u in uploads %}
+      <tr><td>{{ u.id }}</td><td style="font-size:12.5px">{{ u.filename }}</td>
+          <td>{{ u.created_at[:16] }}</td><td class="right">{{ u.total_lines }}</td>
+          <td class="right">{{ u.auto_matched }}</td>
+          <td><span class="pill {{ 'invoiced' if u.status=='ordered' else 'draft' }}">
+            {{ 'ordered' if u.status=='ordered' else 'with our team' }}</span></td></tr>
+    {% else %}<tr><td colspan="6" style="text-align:center;color:var(--dim);padding:22px">
+      Nothing sent yet.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

@@ -1,0 +1,52 @@
+{% extends "shop_base.html" %}
+{% block title %}Dashboard — {{ shop.name }}{% endblock %}
+{% block body %}
+<h1>Hello, {{ shop.name }}</h1>
+<p class="sub">Everything about your account with us, in one place.</p>
+
+<div class="tiles">
+  <a class="tile t-blue"   href="{{ url_for('catalog') }}"><div>Place Order<small>Browse the live catalog</small></div><span class="arw">→</span></a>
+  <a class="tile t-purple" href="{{ url_for('shop_wanted') }}"><div>Wanted List<small>Upload your list, we match it</small></div><span class="arw">→</span></a>
+  <a class="tile t-cyan"   href="{{ url_for('shop_bills') }}"><div>My Bills<small>Recent invoices</small></div><span class="arw">→</span></a>
+  <a class="tile t-green"  href="{{ url_for('shop_orders') }}"><div>My Orders<small>Track what's coming</small></div><span class="arw">→</span></a>
+  <a class="tile t-amber"  href="{{ url_for('shop_bills') }}"><div>Outstanding<small>Account balance</small></div><span class="arw">→</span></a>
+  <a class="tile t-red"    href="{{ url_for('shop_bills') }}"><div>Overdue<small>Please clear these</small></div><span class="arw">→</span></a>
+</div>
+
+<div class="kpis">
+  <div class="kpi amber"><div class="v">{{ outstanding | money }}</div><div class="l">Outstanding</div></div>
+  <div class="kpi red"><div class="v">{{ overdue | money }}</div><div class="l">Overdue</div></div>
+  <div class="kpi blue"><div class="v">{{ open_orders }}</div><div class="l">Orders in progress</div></div>
+  <div class="kpi green"><div class="v">{{ month_spend | money }}</div><div class="l">Purchased this month</div></div>
+</div>
+
+<div class="split">
+  <div class="card" style="padding:0">
+    <h3 style="padding:14px 18px 0">Recent bills</h3>
+    <table>
+      <thead><tr><th>Invoice</th><th>Date</th><th>Status</th><th class="right">Amount</th></tr></thead>
+      <tbody>
+      {% for r in recent %}
+        <tr><td><b>{{ r.invoice_no }}</b></td><td>{{ r.invoice_date }}</td>
+            <td><span class="pill {{ r.status }}">{{ r.status }}</span></td>
+            <td class="right">{{ r.total | money }}</td></tr>
+      {% else %}<tr><td colspan="4" style="text-align:center;color:var(--dim);padding:22px">No bills yet.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="shopcard">
+    <div class="cd">Your details</div>
+    <p style="margin:8px 0 0"><b style="font-size:16px">{{ shop.name }}</b><br>
+      <span style="color:var(--dim);font-size:13px">Code {{ shop.code }}</span></p>
+    <p style="color:var(--dim);font-size:13px;margin:10px 0 0">
+      {{ shop.address or '' }} {{ shop.city or '' }}<br>
+      {% if shop.phone %}{{ shop.phone }}<br>{% endif %}
+      {% if shop.gstin %}GSTIN {{ shop.gstin }}<br>{% endif %}
+      Credit: {{ shop.credit_limit | money }} / {{ shop.credit_days }} days<br>
+      Price tier {{ shop.price_tier }}
+    </p>
+  </div>
+</div>
+{% endblock %}

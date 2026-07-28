@@ -1,0 +1,25 @@
+{% extends "shop_base.html" %}
+{% block title %}My bills{% endblock %}
+{% block body %}
+<h1>My bills</h1>
+<p class="sub">{{ rows|length }} invoices.</p>
+<div class="card" style="padding:0;overflow:auto">
+  <table>
+    <thead><tr><th>Invoice</th><th>Date</th><th>Due</th><th>Status</th>
+      <th class="right">Total</th><th class="right">Paid</th><th class="right">Balance</th></tr></thead>
+    <tbody>
+    {% for r in rows %}
+      {% set bal = r.total - r.paid %}
+      <tr>
+        <td><b>{{ r.invoice_no }}</b></td><td>{{ r.invoice_date }}</td><td>{{ r.due_date }}</td>
+        <td><span class="pill {{ r.status }}">{{ r.status }}</span></td>
+        <td class="right">{{ r.total | money }}</td>
+        <td class="right">{{ r.paid | money }}</td>
+        <td class="right"><b style="color:{{ 'var(--red)' if bal > 0 else 'var(--dim)' }}">{{ bal | money }}</b></td>
+      </tr>
+    {% else %}<tr><td colspan="7"><div class="empty"><div class="em">🧾</div>No bills yet.</div></td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

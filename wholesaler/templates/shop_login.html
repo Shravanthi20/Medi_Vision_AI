@@ -1,0 +1,25 @@
+{% extends "shop_base.html" %}
+{% block title %}Shop sign-in{% endblock %}
+{% block body %}
+<div class="login-wrap">
+  <div class="brand" style="justify-content:center">
+    <div class="logo">🏪</div><div style="font-size:21px">Customer Portal</div>
+  </div>
+  <div class="card">
+    <form method="POST" autocomplete="on">
+      {% if error %}<div class="flash err">{{ error }}</div>{% endif %}
+      <div class="field"><label>Distributor code</label>
+        <input name="company" required value="{{ company }}" placeholder="e.g. rathna"
+               autocapitalize="none" style="text-transform:lowercase"></div>
+      <div class="field"><label>Your shop code or phone</label>
+        <input name="shop_code" required placeholder="e.g. SEL001" autocapitalize="characters"></div>
+      <div class="field"><label>PIN</label>
+        <input name="pin" type="password" inputmode="numeric" required
+               placeholder="4+ digits — you set this on first sign-in"></div>
+      <button class="btn primary wide">Sign in</button>
+    </form>
+    <p style="color:var(--dim);font-size:12.5px;margin-top:12px;text-align:center">
+      First time? Enter the PIN you'd like and it's saved for next time.</p>
+  </div>
+</div>
+{% endblock %}

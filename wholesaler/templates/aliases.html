@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Learned names — Wholesale{% endblock %}
+{% block body %}
+<h1>Learned names</h1>
+<p class="sub">Every shop spelling the system has been taught. These are what make repeat uploads instant.</p>
+
+<div class="card" style="padding:0;overflow:auto">
+  <table>
+    <thead><tr><th>Shop wrote</th><th>Means</th><th>For shop</th><th class="right">Used</th><th></th></tr></thead>
+    <tbody>
+    {% for r in rows %}
+      <tr>
+        <td><code>{{ r.alias_raw or r.alias_norm }}</code></td>
+        <td><b>{{ r.item_name or '(item deleted)' }}</b></td>
+        <td>{{ r.shop_name or 'everyone' }}</td>
+        <td class="right">{{ r.hits }}</td>
+        <td><form method="POST" action="{{ url_for('alias_delete', aid=r.id) }}">
+          <button class="btn sm red">Forget</button></form></td>
+      </tr>
+    {% else %}<tr><td colspan="5"><div class="empty"><div class="em">🧠</div>
+      Nothing learned yet. Upload a wanted list and confirm a few matches.</div></td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
