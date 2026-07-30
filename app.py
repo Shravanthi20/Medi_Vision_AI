@@ -1570,10 +1570,17 @@ def get_meds():
     q = request.args.get("q", "").strip()
     limit = request.args.get("limit", type=int)
     offset = request.args.get("offset", 0, type=int)
+    # `SELECT *` column order and this list must match exactly - they're
+    # joined by position (dict(zip(keys, row))), not by name. Columns
+    # added later via ALTER TABLE (location, extra_json, item_code, hsn)
+    # land at the end of `SELECT *`'s output; missing them here doesn't
+    # error, zip() just silently truncates and drops them from every
+    # response - which is what was happening to item_code/hsn until now.
     keys = [
         "id", "n", "g", "c", "p", "s", "batch", "expiry",
         "p_rate", "p_packing", "s_packing", "p_gst", "s_gst",
-        "disc", "offer", "reorder", "max_qty",
+        "disc", "offer", "reorder", "max_qty", "location",
+        "extra_json", "item_code", "hsn",
     ]
     with get_conn() as conn:
         if q and limit is not None:

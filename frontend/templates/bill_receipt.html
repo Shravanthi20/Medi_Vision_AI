@@ -90,6 +90,32 @@ body{font-family:Inter,sans-serif;background:#f1f5f9;color:#0f172a;min-height:10
   body.print-58 .bill-head{font-size:9px;}
   body.print-58 @page{size:58mm auto;margin:2mm;}
 }
+
+/* PRINT — DOT-MATRIX (TVS MSP 250 Star, pre-printed continuous stationery)
+   Character-grid layout, not a modern receipt: every field is placed at a
+   fixed row+column, monospace, matching this pharmacy's real legacy print
+   template (PBLTMP.DBF - a genuine field-position table pulled from their
+   16-year FoxPro system, not a guess). 10 CPI (10 chars/inch) is the
+   standard dot-matrix pitch this class of pre-printed stationery is
+   designed around, which is why the page width below is columns/10 inches.
+   This WILL need one real test print on the actual printer with actual
+   paper loaded to confirm margins - character positions came from a data
+   file, physical paper alignment did not. */
+@media print {
+  body.print-matrix .bill{display:none;}
+  body.print-matrix .matrix-bill{display:block !important;}
+  body.print-matrix{background:#fff;padding:0;}
+  .matrix-bill{
+    display:none;
+    font-family:'Courier New',monospace;
+    font-size:10pt;
+    line-height:1.15;
+    white-space:pre;
+    color:#000;
+  }
+  body.print-matrix @page{size:9.5in 5.5in;margin:0.2in;}
+}
+.matrix-bill{display:none;}
 </style>
 </head>
 <body>
@@ -101,6 +127,7 @@ body{font-family:Inter,sans-serif;background:#f1f5f9;color:#0f172a;min-height:10
       <button class="wa" onclick="sendWA()"><i class="fab fa-whatsapp"></i> WhatsApp</button>
       <button class="print" onclick="printBill('80')"><i class="fas fa-print"></i> Print 80mm</button>
       <button class="print" onclick="printBill('58')" style="background:#0ea5e9;border-color:#0ea5e9;"><i class="fas fa-mobile-alt"></i> Print 58mm</button>
+      <button class="print" onclick="printBill('matrix')" style="background:#7c3aed;border-color:#7c3aed;"><i class="fas fa-print"></i> Print Dot-Matrix</button>
       <button onclick="toggleDosage()" id="doseBtn" style="background:#fef3c7;color:#92400e;border-color:#fbbf24;"><i class="fas fa-pills"></i> + Dosage</button>
       <a href="/internal"><i class="fas fa-arrow-left"></i> New Bill</a>
     {% endif %}
@@ -196,11 +223,27 @@ body{font-family:Inter,sans-serif;background:#f1f5f9;color:#0f172a;min-height:10
 
 </div>
 
+<!-- DOT-MATRIX LAYOUT — built by JS at print time from matrixBillData,
+     positioned to match PBLTMP.DBF's real row/column field layout. -->
+<pre class="matrix-bill" id="matrixBill"></pre>
+
 <script>
 const billPhone = "{{ bill.phone or '' }}";
 const billId = "{{ bill.id }}";
 const billTotal = "{{ '%.2f'|format(bill.total or 0) }}";
 const billItemNames = [{% for it in items %}"{{ it.name|replace('"','') }}"{% if not loop.last %},{% endif %}{% endfor %}];
+const matrixBillData = {
+  doctor: {{ (bill.doctor or '')|tojson }}, cust: {{ (bill.cust or '')|tojson }},
+  date: {{ (bill.date or '')|tojson }}, id: {{ (bill.id or '')|tojson }},
+  sub: {{ bill.sub or 0 }}, disc: {{ bill.disc or 0 }}, tax: {{ bill.tax or 0 }}, total: {{ bill.total or 0 }},
+  items: [
+    {% for it in items %}
+    { name: {{ (it.name or '')|tojson }}, qty: {{ it.qty or 0 }}, mrp: {{ it.price or 0 }},
+      amount: {{ it.amount or 0 }}, batch: {{ (it.batch or '')|tojson }},
+      expiry: {{ (it.expiry or '')|tojson }}, itemCode: {{ (it.itemCode or '')|tojson }} }{% if not loop.last %},{% endif %}
+    {% endfor %}
+  ]
+};
 
 // Dosage cache
 let dosageData = {};  // {medName: {dosage_en, dosage_ta}}
@@ -239,10 +282,83 @@ async function toggleDosage(){
   btn.style.background = dosageVisible ? '#fbbf24' : '#fef3c7';
 }
 
+// ── Dot-matrix layout builder ──────────────────────────────────
+// Row/column positions below come directly from this pharmacy's real
+// PBLTMP.DBF (their FoxPro system's own print-template table), not
+// guessed - HEADER row 0/1, BODY starting row 3 (one line per item,
+// each subsequent item advances a row), FOOTER from row ~10. Columns
+// are 0-indexed character offsets, matching 10-CPI dot-matrix pitch.
+function place(lineArr, col, text, width) {
+  const s = String(text ?? '').slice(0, width);
+  for (let i = 0; i < s.length; i++) lineArr[col + i] = s[i];
+}
+function blankLine(len) { return new Array(len).fill(' '); }
+function lineStr(lineArr) { return lineArr.join('').replace(/\s+$/, ''); }
+// PBLTMP.DBF's own MEXPDT field is only 5 chars wide - the original
+// system printed expiry as MM/YY, not a full date, which is exactly
+// what fits. Converting our stored YYYY-MM-DD to that short form instead
+// of truncating it (truncating "2014-07-01" to 5 chars leaves a
+// dangling "2014-", worse than useless).
+function shortExpiry(iso) {
+  const m = /^(\d{4})-(\d{2})/.exec(iso || '');
+  return m ? `${m[2]}/${m[1].slice(2)}` : (iso || '').slice(0, 5);
+}
+
+function buildMatrixBill() {
+  const d = matrixBillData;
+  const W = 92;   // widest column used (MITVAL1 at col90) + margin
+  const out = [];
+
+  const h0 = blankLine(W);
+  place(h0, 4, 'Dr: ' + (d.doctor || ''), 25);
+  place(h0, 38, 'Bill No: ' + (d.id || ''), 20);
+  place(h0, 62, 'Date: ' + (d.date || ''), 22);
+  out.push(lineStr(h0));
+
+  const h1 = blankLine(W);
+  place(h1, 7, 'Customer: ' + (d.cust || 'Walk-in'), 60);
+  out.push(lineStr(h1));
+  out.push('');
+
+  const colHead = blankLine(W);
+  place(colHead, 1, 'Qty', 5); place(colHead, 12, 'Item Name', 25);
+  place(colHead, 42, 'M.R.P.', 10); place(colHead, 59, 'Batch', 10);
+  place(colHead, 73, 'Exp', 5); place(colHead, 80, 'Value', 10);
+  out.push(lineStr(colHead));
+  out.push('-'.repeat(W));
+
+  (d.items || []).forEach(it => {
+    const row = blankLine(W);
+    place(row, 1, it.qty, 5);
+    place(row, 12, it.name, 25);
+    place(row, 42, (it.mrp || 0).toFixed(2), 10);
+    place(row, 59, it.batch || '-', 10);
+    place(row, 73, shortExpiry(it.expiry), 5);
+    place(row, 80, (it.amount || 0).toFixed(2), 10);
+    out.push(lineStr(row));
+  });
+
+  out.push('-'.repeat(W));
+  const f1 = blankLine(W);
+  place(f1, 0, 'Items: ' + (d.items || []).length, 15);
+  place(f1, 30, 'Subtotal: ' + (d.sub || 0).toFixed(2), 25);
+  place(f1, 60, 'Discount: ' + (d.disc || 0).toFixed(2), 25);
+  out.push(lineStr(f1));
+
+  const f2 = blankLine(W);
+  place(f2, 30, 'GST: ' + (d.tax || 0).toFixed(2), 25);
+  place(f2, 60, 'TOTAL: Rs.' + (d.total || 0).toFixed(2), 30);
+  out.push(lineStr(f2));
+
+  document.getElementById('matrixBill').textContent = out.join('\n');
+}
+
 function printBill(width){
-  document.body.classList.toggle('print-58', width === '58');
+  document.body.classList.remove('print-58', 'print-matrix');
+  if (width === 'matrix') { buildMatrixBill(); document.body.classList.add('print-matrix'); }
+  else document.body.classList.toggle('print-58', width === '58');
   setTimeout(() => window.print(), 100);
-  setTimeout(() => document.body.classList.remove('print-58'), 2000);
+  setTimeout(() => document.body.classList.remove('print-58', 'print-matrix'), 2000);
 }
 
 async function sendWA(){

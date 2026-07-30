@@ -134,12 +134,20 @@
     <div class="sb-section">Main</div>
     <a class="nav-item" href="/portal"><span class="icon">🏠</span> Dashboard</a>
     <a class="nav-item active" href="/portal/billing"><span class="icon">🧾</span> Billing</a>
+    <a class="nav-item" href="/bills/history"><span class="icon">📋</span> View Bills</a>
     <div class="sb-section">Stock &amp; AI</div>
     <a class="nav-item" href="/portal/stock"><span class="icon">📊</span> Stock &amp; Import</a>
     <a class="nav-item" href="/portal/ai-reorder"><span class="icon">🤖</span> AI Reorder</a>
-    <div class="sb-section">Reports</div>
-    <a class="nav-item" href="/reports/daily_sales.html" target="_blank"><span class="icon">📈</span> Daily Sales</a>
-    <a class="nav-item" href="/reports/low_stock.html" target="_blank"><span class="icon">⚠️</span> Low Stock</a>
+    <div class="sb-section">Cash &amp; Reports</div>
+    <a class="nav-item" href="/cash-drawer"><span class="icon">💵</span> Cash Drawer</a>
+    <a class="nav-item" href="/expenses"><span class="icon">📂</span> Expenses</a>
+    <a class="nav-item" href="/reports"><span class="icon">📈</span> Reports Universe</a>
+    <a class="nav-item" href="/gst"><span class="icon">🧮</span> GST Returns</a>
+    <div class="sb-section">Smart Tools</div>
+    <a class="nav-item" href="/combinations" target="_blank"><span class="icon">💊</span> Combination Checker</a>
+    <a class="nav-item" href="/staff-commission" target="_blank"><span class="icon">💰</span> My Commission</a>
+    <div class="sb-section">Switch View</div>
+    <a class="nav-item" href="/mobile-billing"><span class="icon">📱</span> Phone Mode</a>
   </nav>
   <div class="sb-footer">
     <button class="logout-btn" onclick="fetch('/api/portal/logout',{method:'POST'}).then(()=>location.href='/')">Sign Out</button>
@@ -180,7 +188,7 @@
         <table class="bill-table" id="billTable" style="display:none">
           <thead>
             <tr>
-              <th>#</th><th>Medicine</th><th>Batch</th><th>Exp.</th>
+              <th>#</th><th>Code</th><th>Medicine</th><th>Batch</th><th>Exp.</th>
               <th>MRP</th><th>Qty</th><th>Disc%</th><th>GST%</th>
               <th>Amount</th><th></th>
             </tr>
@@ -225,7 +233,62 @@
         <div style="margin-top:14px;padding:10px;background:var(--gray-light);border-radius:8px;font-size:.78rem;color:var(--gray)">
           <div style="display:flex;justify-content:space-between"><span>Items</span><span id="itemCount">0</span></div>
           <div style="display:flex;justify-content:space-between;margin-top:4px"><span>Payment</span><span id="payDisplay">Cash</span></div>
+          <div id="commissionRow" style="display:none;margin-top:6px;padding-top:6px;border-top:1px dashed #d1d5db;">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span style="color:#7c3aed;font-weight:700;">💰 Your Commission</span>
+              <span id="commissionAmt" style="color:#7c3aed;font-weight:800;font-size:.9rem;">₹0</span>
+            </div>
+            <div style="font-size:.67rem;color:#9ca3af;margin-top:2px" id="commissionRate"></div>
+          </div>
         </div>
+        <!-- CASH CALCULATOR (shows only for Cash payment) -->
+        <div id="cashCalc" style="margin-top:10px;padding:12px;background:#fffbeb;border:1.5px solid #fde68a;border-radius:8px;">
+          <div style="font-size:.72rem;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">💵 Cash Calculator</div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+            <label style="font-size:.82rem;color:#78350f;flex:1;">Cash Received</label>
+            <input type="number" id="cashReceived" placeholder="0" oninput="calcBalance()"
+                   style="width:110px;padding:8px 10px;border:1.5px solid #fbbf24;border-radius:7px;font-size:1rem;font-weight:700;text-align:right;color:#92400e;" />
+          </div>
+          <!-- Quick cash buttons -->
+          <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px;" id="quickCash"></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:#fff;border-radius:7px;border:1px dashed #fbbf24;">
+            <span style="font-size:.85rem;color:#78350f;font-weight:600;">Balance to Return</span>
+            <span id="balanceReturn" style="font-size:1.3rem;font-weight:800;color:#16a34a;font-family:monospace;">₹0</span>
+          </div>
+          <div id="balanceHint" style="font-size:.75rem;color:#dc2626;margin-top:6px;display:none;"></div>
+        </div>
+
+        <!-- UPI / GPay QR Panel (shows only when UPI selected) -->
+        <div id="upiPanel" style="display:none;margin-top:10px;padding:12px;background:#eef2ff;border:1.5px solid #c7d2fe;border-radius:8px;">
+          <div style="font-size:.72rem;font-weight:700;color:#3730a3;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">📱 GPay / UPI Payment</div>
+          <!-- QR image display -->
+          <div style="text-align:center;margin-bottom:8px;">
+            <div id="upiQrImg" onclick="document.getElementById('qrFileInput').click()"
+                 style="width:190px;height:190px;margin:0 auto;border:2px dashed #a5b4fc;border-radius:10px;display:flex;align-items:center;justify-content:center;background:#f0f4ff;cursor:pointer;overflow:hidden;">
+              <div style="text-align:center;color:#6366f1;">
+                <div style="font-size:2.2rem;">📷</div>
+                <div style="font-size:.72rem;margin-top:4px;font-weight:600;">Tap to upload<br>GPay QR</div>
+              </div>
+            </div>
+            <div id="upiAmtOverlay" style="display:none;margin-top:7px;font-size:.88rem;color:#4338ca;font-weight:800;letter-spacing:.3px;"></div>
+            <div style="margin-top:5px;">
+              <a href="#" onclick="document.getElementById('qrFileInput').click();return false;"
+                 style="font-size:.72rem;color:#6366f1;text-decoration:underline;">📷 Change QR image</a>
+            </div>
+          </div>
+          <!-- hidden file input -->
+          <input type="file" id="qrFileInput" accept="image/*" style="display:none;" onchange="loadQR(event)" />
+          <!-- UPI Txn ID -->
+          <div style="margin-top:8px;">
+            <label style="font-size:.75rem;font-weight:700;color:#3730a3;display:block;margin-bottom:4px;">UPI / Txn Reference (optional)</label>
+            <input type="text" id="upiTxnId" placeholder="e.g. 12345678901 or GPAY..." maxlength="50"
+                   style="width:100%;box-sizing:border-box;padding:8px 10px;border:1.5px solid #c7d2fe;border-radius:7px;font-size:.85rem;color:#3730a3;background:#fff;" />
+          </div>
+          <div style="font-size:.72rem;color:#6366f1;margin-top:7px;text-align:center;line-height:1.4;">
+            Ask customer to scan &amp; confirm<br>before tapping Save Bill
+          </div>
+        </div>
+
         <div style="margin-top:10px;padding:10px;background:#f0fdf4;border:1px solid #dcfce7;border-radius:8px;font-size:.8rem;">
           <label style="display:flex;align-items:center;gap:6px;cursor:pointer;margin-bottom:6px;">
             <input type="checkbox" id="autoWA" checked style="width:14px;height:14px;"/>
@@ -259,6 +322,23 @@
 let allMeds = [];
 let billItems = [];
 let payMode = 'Cash';
+let staffCommPct = 0; // loaded from commission summary
+
+// Load staff commission % on page init
+(async function loadStaffComm() {
+  try {
+    const r = await fetch('/api/stage14/commission-summary');
+    const d = await r.json();
+    // Find the logged-in staff entry (first active staff with commission set)
+    const me = (d.results || d)[0];
+    if (me && me.commission_pct > 0) {
+      staffCommPct = parseFloat(me.commission_pct);
+      const row = document.getElementById('commissionRow');
+      const rate = document.getElementById('commissionRate');
+      if (rate) rate.textContent = `${staffCommPct}% commission · ${me.staff_name || ''}`;
+    }
+  } catch(e) {}
+})();
 let searchTimeout = null;
 let focusedSearchIdx = -1;
 
@@ -268,42 +348,200 @@ let focusedSearchIdx = -1;
   document.getElementById('billDateDisplay').textContent =
     d.toLocaleDateString('en-IN', {weekday:'short', day:'2-digit', month:'short', year:'numeric'}) +
     ' ' + d.toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'});
-  const res = await fetch('/api/medicines?limit=2000');
-  allMeds = await res.json();
+  const res = await fetch('/api/medicines?limit=5000');
+  const medData = await res.json();
+  allMeds = Array.isArray(medData) ? medData : (medData.items || []);
 })();
 
 function setPayment(mode) {
   payMode = mode;
   document.getElementById('payDisplay').textContent = mode;
   document.querySelectorAll('.pay-btn').forEach(b => b.classList.toggle('active', b.textContent.includes(mode)));
+  // Show cash calculator only for Cash
+  const cc = document.getElementById('cashCalc');
+  if (cc) cc.style.display = (mode === 'Cash') ? 'block' : 'none';
+  if (mode === 'Cash') renderQuickCash();
+  // Show GPay/UPI panel only for UPI
+  const up = document.getElementById('upiPanel');
+  if (up) up.style.display = (mode === 'UPI') ? 'block' : 'none';
+  if (mode === 'UPI') updateUpiAmount();
 }
+
+function getGrandTotal() {
+  // Parse the displayed grand total back to a number
+  const t = document.getElementById('grandTotal').textContent.replace(/[^0-9.]/g, '');
+  return parseFloat(t) || 0;
+}
+
+function renderQuickCash() {
+  // Suggest common cash amounts >= total
+  const total = getGrandTotal();
+  if (total <= 0) { document.getElementById('quickCash').innerHTML = ''; return; }
+  const rounds = [];
+  // Exact, next 10, next 50, next 100, next 500
+  rounds.push(Math.ceil(total));
+  rounds.push(Math.ceil(total / 10) * 10);
+  rounds.push(Math.ceil(total / 50) * 50);
+  rounds.push(Math.ceil(total / 100) * 100);
+  rounds.push(Math.ceil(total / 500) * 500);
+  const unique = [...new Set(rounds)].filter(v => v > 0).slice(0, 5);
+  document.getElementById('quickCash').innerHTML = unique.map(v =>
+    `<button onclick="setCash(${v})" style="flex:1;min-width:60px;padding:6px;background:#fef3c7;border:1px solid #fbbf24;border-radius:6px;font-size:.82rem;font-weight:700;color:#92400e;cursor:pointer;">₹${v}</button>`
+  ).join('');
+}
+
+function setCash(v) {
+  document.getElementById('cashReceived').value = v;
+  calcBalance();
+}
+
+function calcBalance() {
+  const received = parseFloat(document.getElementById('cashReceived').value) || 0;
+  const total = getGrandTotal();
+  const balance = received - total;
+  const balEl = document.getElementById('balanceReturn');
+  const hint = document.getElementById('balanceHint');
+  if (received === 0) {
+    balEl.textContent = '₹0';
+    balEl.style.color = '#16a34a';
+    hint.style.display = 'none';
+    return;
+  }
+  if (balance < 0) {
+    balEl.textContent = '−₹' + Math.abs(balance).toFixed(0);
+    balEl.style.color = '#dc2626';
+    hint.style.display = 'block';
+    hint.textContent = '⚠ Short by ₹' + Math.abs(balance).toFixed(2) + ' — collect more';
+  } else {
+    balEl.textContent = '₹' + balance.toFixed(0);
+    balEl.style.color = '#16a34a';
+    hint.style.display = 'none';
+  }
+}
+
+// ── GPay / UPI QR helpers ──────────────────────────────────────
+function loadQR(evt) {
+  const file = evt.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try { localStorage.setItem('mv_gpay_qr', e.target.result); } catch(ex) {}
+    renderQR(e.target.result);
+  };
+  reader.readAsDataURL(file);
+}
+
+function renderQR(dataUrl) {
+  const wrap = document.getElementById('upiQrImg');
+  if (!wrap) return;
+  wrap.innerHTML = `<img src="${dataUrl}" style="width:186px;height:186px;object-fit:contain;border-radius:8px;cursor:pointer;" onclick="document.getElementById('qrFileInput').click()" title="Tap to change QR" />`;
+}
+
+function updateUpiAmount() {
+  const total = getGrandTotal();
+  const el = document.getElementById('upiAmtOverlay');
+  if (!el) return;
+  if (total > 0) {
+    el.style.display = 'block';
+    el.textContent = '💰 Amount: ₹' + total.toFixed(2);
+  } else {
+    el.style.display = 'none';
+  }
+}
+
+// Restore saved QR on page load
+(function restoreSavedQR() {
+  try {
+    const saved = localStorage.getItem('mv_gpay_qr');
+    if (saved) renderQR(saved);
+  } catch(e) {}
+})();
+// ──────────────────────────────────────────────────────────────
 
 function onSearch(q) {
   clearTimeout(searchTimeout);
   searchTimeout = setTimeout(() => doSearch(q), 120);
 }
 
-function doSearch(q) {
+async function doSearch(q) {
   const container = document.getElementById('searchResults');
   if (!q || q.length < 2) { container.classList.remove('open'); return; }
-  const lower = q.toLowerCase();
-  const results = allMeds.filter(m =>
-    m.n?.toLowerCase().includes(lower) || m.g?.toLowerCase().includes(lower)
-  ).slice(0, 12);
+  // Server-side search across all 36,000+ medicines
+  let results = [];
+  try {
+    const r = await fetch(`/api/medicines?q=${encodeURIComponent(q)}&limit=15`);
+    const d = await r.json();
+    results = Array.isArray(d) ? d : (d.items || []);
+    // Also keep local allMeds in sync with any found
+    results.forEach(m => { if (!allMeds.find(x => x.id === m.id)) allMeds.push(m); });
+  } catch(e) {
+    // fallback to local if API fails
+    const lower = q.toLowerCase();
+    results = allMeds.filter(m => m.n?.toLowerCase().includes(lower) || m.g?.toLowerCase().includes(lower)).slice(0,15);
+  }
   if (!results.length) { container.innerHTML = `<div class="search-item"><span style="color:var(--gray)">No medicines found for "${q}"</span></div>`; container.classList.add('open'); return; }
   focusedSearchIdx = -1;
-  container.innerHTML = results.map((m, i) => `
-    <div class="search-item" data-idx="${i}" data-id="${m.id}" onclick="addItem('${m.id}')">
-      <div>
-        <div class="name">${m.n}</div>
-        <div class="meta">${m.g || 'Generic'} · ${m.c || 'Tablet'} · Stock: ${m.s}</div>
+  container.innerHTML = results.map((m, i) => {
+    // Margin calculation
+    const mrp = parseFloat(m.p) || 0;
+    const pRate = parseFloat(m.p_rate) || 0;
+    let marginHtml = '';
+    if (mrp > 0 && pRate > 0) {
+      const marginPct = ((mrp - pRate) / mrp * 100).toFixed(0);
+      const marginColor = marginPct >= 30 ? '#16a34a' : marginPct >= 15 ? '#d97706' : '#6b7280';
+      const marginLabel = marginPct >= 30 ? '🟢' : marginPct >= 15 ? '🟡' : '⚪';
+      const commEst = staffCommPct > 0 ? ` · You earn ₹${(mrp * staffCommPct / 100).toFixed(1)}/unit` : '';
+      marginHtml = `<span style="font-size:.68rem;font-weight:700;color:${marginColor}">${marginLabel} ${marginPct}% margin${commEst}</span>`;
+    }
+    const stockColor = m.s <= 0 ? '#dc2626' : m.s <= 10 ? '#d97706' : '#16a34a';
+    // Expiry info — supports YYYY-MM, YYYY-MM-DD, MM/YYYY, MM/YY formats
+    let expiryHtml = '', expiredBg = '';
+    if (m.expiry) {
+      let expStr = m.expiry.trim();
+      // Normalise MM/YYYY or MM/YY → YYYY-MM-01. Real pharmacy batch data is
+      // almost always MM/YY (2-digit year) — without this branch those dates
+      // fall through to native Date() parsing, which misreads them and can
+      // flag perfectly good stock as expired (or vice versa).
+      if (/^\d{2}\/\d{2,4}$/.test(expStr)) {
+        let [mm, yyyy] = expStr.split('/');
+        if (yyyy.length === 2) yyyy = '20' + yyyy;
+        expStr = `${yyyy}-${mm}-01`;
+      } else if (/^\d{4}-\d{2}$/.test(expStr)) {
+        expStr = expStr + '-01';
+      }
+      const expDate = new Date(expStr);
+      const daysLeft = Math.round((expDate - new Date()) / 86400000);
+      if (daysLeft < 0) {
+        expiryHtml = `<span style="font-size:.63rem;font-weight:700;color:#dc2626;display:block;margin-top:2px">⛔ EXPIRED · ${m.expiry}</span>`;
+        expiredBg = 'background:#fff5f5;border-left:3px solid #dc2626;';
+      } else if (daysLeft <= 60) {
+        expiryHtml = `<span style="font-size:.63rem;font-weight:700;color:#dc2626;display:block;margin-top:2px">⚠️ Expires ${m.expiry} — ${daysLeft}d left!</span>`;
+        expiredBg = 'background:#fffbeb;border-left:3px solid #f97316;';
+      } else if (daysLeft <= 180) {
+        expiryHtml = `<span style="font-size:.63rem;color:#d97706;display:block;margin-top:2px">⏰ Exp ${m.expiry} (${Math.round(daysLeft/30)}mo)</span>`;
+      } else {
+        expiryHtml = `<span style="font-size:.63rem;color:#6b7280;display:block;margin-top:2px">✓ Exp ${m.expiry}</span>`;
+      }
+    }
+    const batchHtml = m.batch ? `<div style="font-size:.62rem;color:#6b7280;margin-top:1px">Batch: ${m.batch}</div>` : '';
+    return `
+    <div class="search-item" data-idx="${i}" data-id="${m.id}" onclick="addItem('${m.id}')" style="${expiredBg}">
+      <div style="flex:1;min-width:0">
+        <div class="name">${m.n}${m.item_code ? ` <span style="font-family:monospace;font-weight:400;font-size:.7rem;color:#9ca3af">[${m.item_code}]</span>` : ''}</div>
+        <div class="meta">${m.g || 'Generic'} · ${m.c || 'Tablet'}</div>
+        ${marginHtml}${expiryHtml}
       </div>
-      <div style="text-align:right">
+      <div style="text-align:right;flex-shrink:0;margin-left:10px">
         <div class="price-tag">₹${m.p}</div>
-        <div class="stock-tag">${m.batch ? 'Batch: '+m.batch : ''}</div>
+        <div class="stock-tag" style="color:${stockColor}">Stock: ${m.s}</div>
+        ${batchHtml}
+        <button onclick="event.stopPropagation();showAlts('${m.id}','${(m.g||m.n).replace(/'/g,'')}')"
+          style="font-size:.65rem;background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe;border-radius:5px;padding:1px 6px;cursor:pointer;margin-top:2px">
+          🔄 Alts
+        </button>
       </div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
   container._results = results;
   container.classList.add('open');
 }
@@ -343,7 +581,7 @@ function addItem(medId) {
       id: med.id, name: med.n, generic: med.g || '', category: med.c || 'Tablet',
       mrp: parseFloat(med.p) || 0, qty: 1, disc: parseFloat(med.disc) || 0,
       gst: parseFloat(med.s_gst) || 0, batch: med.batch || '', expiry: med.expiry || '',
-      stock: parseInt(med.s) || 0,
+      stock: parseInt(med.s) || 0, itemCode: med.item_code || '',
     });
   }
   renderBill();
@@ -368,6 +606,7 @@ function renderBill() {
     const lineTotal = (item.mrp * item.qty * (1 - item.disc/100)).toFixed(2);
     return `<tr>
       <td style="color:var(--gray)">${i+1}</td>
+      <td style="font-family:monospace;font-size:.76rem;color:var(--gray)">${item.itemCode||'—'}</td>
       <td>
         <div style="font-weight:600;font-size:.88rem">${item.name}</div>
         <div style="font-size:.72rem;color:var(--gray)">${item.generic}</div>
@@ -409,6 +648,79 @@ function recalc() {
   document.getElementById('discAmount').textContent = '-₹' + discAmt.toFixed(2);
   document.getElementById('grandTotal').textContent = '₹' + total.toFixed(2);
   document.getElementById('itemCount').textContent = billItems.reduce((a,b) => a+b.qty, 0);
+  // Refresh cash calculator suggestions + balance when total changes
+  if (payMode === 'Cash' && typeof renderQuickCash === 'function') { renderQuickCash(); calcBalance(); }
+  // Refresh UPI amount overlay when total changes
+  if (payMode === 'UPI') updateUpiAmount();
+  // Refresh staff commission
+  if (staffCommPct > 0) {
+    const comm = total * staffCommPct / 100;
+    const cr = document.getElementById('commissionRow');
+    const ca = document.getElementById('commissionAmt');
+    if (cr) cr.style.display = billItems.length ? 'block' : 'none';
+    if (ca) ca.textContent = '₹' + comm.toFixed(2);
+  }
+}
+
+// ── Alternatives (1mg-style) ─────────────────────────────────────────
+async function showAlts(medId, generic) {
+  let modal = document.getElementById('altsModal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'altsModal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;display:flex;align-items:center;justify-content:center;';
+    modal.innerHTML = `<div style="background:#fff;border-radius:14px;padding:22px;width:min(540px,95vw);max-height:80vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,.2);">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <h3 style="font-size:1rem;font-weight:800;color:#111827">🔄 Alternatives / Generic Options</h3>
+        <button onclick="document.getElementById('altsModal').remove()" style="background:none;border:none;font-size:1.3rem;cursor:pointer;color:#6b7280">✕</button>
+      </div>
+      <div id="altsBody">Loading…</div>
+    </div>`;
+    document.body.appendChild(modal);
+    modal.addEventListener('click', e => { if(e.target===modal) modal.remove(); });
+  }
+  const body = document.getElementById('altsBody');
+  body.innerHTML = '<div style="color:#6b7280;padding:20px;text-align:center">Searching for alternatives…</div>';
+  try {
+    const r = await fetch('/api/alternatives?q=' + encodeURIComponent(generic));
+    const alts = await r.json();
+    // Also search local stock for same generic
+    const localMatches = allMeds.filter(m =>
+      m.g?.toLowerCase().includes(generic.toLowerCase()) || m.n?.toLowerCase().includes(generic.toLowerCase())
+    ).slice(0, 10);
+    let html = '';
+    if (localMatches.length) {
+      html += `<div style="font-size:.72rem;font-weight:700;color:#16a34a;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">✅ In Your Stock (${localMatches.length})</div>`;
+      html += localMatches.map(m => {
+        const mrp = parseFloat(m.p)||0; const pr = parseFloat(m.p_rate)||0;
+        const mg = pr>0 ? Math.round((mrp-pr)/mrp*100)+'%' : '—';
+        const mgColor = pr>0 && (mrp-pr)/mrp>=0.3 ? '#16a34a' : '#d97706';
+        return `<div onclick="addItem('${m.id}');document.getElementById('altsModal').remove()"
+          style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border:1.5px solid #e5e7eb;border-radius:8px;margin-bottom:6px;cursor:pointer;transition:border-color .15s"
+          onmouseover="this.style.borderColor='#16a34a'" onmouseout="this.style.borderColor='#e5e7eb'">
+          <div>
+            <div style="font-weight:700;font-size:.88rem">${m.n}</div>
+            <div style="font-size:.72rem;color:#6b7280">${m.g||''} · Stock: ${m.s}</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-weight:800;color:#16a34a">₹${mrp}</div>
+            <div style="font-size:.7rem;font-weight:700;color:${mgColor}">${mg} margin</div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+    if (alts.length) {
+      html += `<div style="font-size:.72rem;font-weight:700;color:#2563eb;text-transform:uppercase;letter-spacing:.5px;margin:12px 0 8px">📋 Drug Database Alternatives</div>`;
+      html += alts.slice(0,5).map(a => `
+        <div style="padding:10px 12px;border:1px solid #e5e7eb;border-radius:8px;margin-bottom:6px;background:#f8fafc">
+          <div style="font-weight:700;font-size:.86rem">${a.brand_name||a.n}</div>
+          <div style="font-size:.72rem;color:#6b7280;margin-top:2px">${(a.generic_names||[]).join(', ')||''}</div>
+          ${a.alternatives?.length ? `<div style="font-size:.72rem;color:#2563eb;margin-top:2px">Also: ${a.alternatives.slice(0,3).join(', ')}</div>` : ''}
+        </div>`).join('');
+    }
+    if (!html) html = '<div style="color:#6b7280;padding:20px;text-align:center">No alternatives found in database</div>';
+    body.innerHTML = html;
+  } catch(e) { body.innerHTML = '<div style="color:#dc2626;padding:16px">Failed to load alternatives</div>'; }
 }
 
 async function saveBill(doPrint) {
@@ -435,8 +747,15 @@ async function saveBill(doPrint) {
     phone: document.getElementById('custPhone').value || '0000000000',
     pay: payMode, sub: parseFloat(sub.toFixed(2)), disc: parseFloat(discAmt.toFixed(2)),
     tax: parseFloat(gst.toFixed(2)), total: parseFloat(total.toFixed(2)),
+    upi_txn: (payMode === 'UPI' ? (document.getElementById('upiTxnId')?.value.trim() || '') : ''),
     doctor: document.getElementById('doctorName').value || 'Self',
-    items: billItems.map(i => ({ id: i.id, name: i.name, qty: i.qty, price: i.mrp, disc: i.disc, amount: +(i.mrp * i.qty * (1-i.disc/100)).toFixed(2) })),
+    // batch/expiry/itemCode were being dropped here even though the cart
+    // has them - fine for the modern receipt (never showed them), but the
+    // dot-matrix print layout (matches this pharmacy's real pre-printed
+    // stationery) needs all three, so they're saved with the bill now.
+    items: billItems.map(i => ({ id: i.id, name: i.name, qty: i.qty, price: i.mrp, disc: i.disc,
+      amount: +(i.mrp * i.qty * (1-i.disc/100)).toFixed(2),
+      batch: i.batch || '', expiry: i.expiry || '', itemCode: i.itemCode || '' })),
   };
   try {
     const res = await fetch('/api/bills', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
@@ -472,42 +791,84 @@ async function saveBill(doPrint) {
 
 function printReceipt(bill) {
   const shopName = document.querySelector('.sb-logo .row')?.textContent?.trim() || 'MediVision AI';
-  const lines = bill.items.map(i => `
-    <tr>
-      <td style="padding:3px 0;font-size:12px">${i.name}</td>
-      <td style="padding:3px 4px;font-size:12px;text-align:center">${i.qty}</td>
-      <td style="padding:3px 0;font-size:12px;text-align:right">₹${i.amount.toFixed(2)}</td>
+  const lines = bill.items.map(i =>
+    `<tr>
+      <td style="padding:3px 0;font-size:11px;word-break:break-word">${i.name}</td>
+      <td style="padding:3px 4px;font-size:11px;text-align:center;white-space:nowrap">${i.qty}</td>
+      <td style="padding:3px 0;font-size:11px;text-align:right;white-space:nowrap">₹${i.amount.toFixed(2)}</td>
     </tr>`).join('');
-  const html = `
-    <div style="max-width:300px;margin:0 auto;font-family:monospace;padding:10px">
-      <h2 style="text-align:center;font-size:14px;margin-bottom:4px">${shopName}</h2>
-      <p style="text-align:center;font-size:11px;color:#666">MediVision AI Platform</p>
-      <hr style="margin:6px 0;border:1px dashed #ccc"/>
-      <p style="font-size:11px">Bill: <strong>${bill.id}</strong></p>
-      <p style="font-size:11px">Date: ${bill.date}</p>
-      <p style="font-size:11px">Customer: ${bill.cust} · ${bill.phone}</p>
-      <p style="font-size:11px">Doctor: ${bill.doctor}</p>
-      <hr style="margin:6px 0;border:1px dashed #ccc"/>
-      <table style="width:100%">
-        <thead><tr>
-          <th style="text-align:left;font-size:11px">Item</th>
-          <th style="font-size:11px;text-align:center">Qty</th>
-          <th style="font-size:11px;text-align:right">Amt</th>
-        </tr></thead>
-        <tbody>${lines}</tbody>
-      </table>
-      <hr style="margin:6px 0;border:1px dashed #ccc"/>
-      <p style="font-size:12px;display:flex;justify-content:space-between"><span>Subtotal</span><span>₹${bill.sub.toFixed(2)}</span></p>
-      <p style="font-size:12px;display:flex;justify-content:space-between"><span>Discount</span><span>-₹${bill.disc.toFixed(2)}</span></p>
-      <p style="font-size:12px;display:flex;justify-content:space-between"><span>GST</span><span>₹${bill.tax.toFixed(2)}</span></p>
-      <p style="font-size:14px;font-weight:bold;display:flex;justify-content:space-between;margin-top:4px"><span>TOTAL</span><span>₹${bill.total.toFixed(2)}</span></p>
-      <p style="font-size:12px;margin-top:4px">Payment: ${bill.pay}</p>
-      <hr style="margin:6px 0;border:1px dashed #ccc"/>
-      <p style="text-align:center;font-size:10px;color:#666">Thank you for your purchase!<br>Powered by MediVision AI</p>
-    </div>`;
-  const w = window.open('','_blank','width=350,height=600');
-  w.document.write(`<html><body>${html}</body></html>`);
-  w.document.close(); w.print();
+
+  const upiLine = bill.upi_txn ? `<div class="row"><span>UPI Ref</span><span>${bill.upi_txn}</span></div>` : '';
+
+  const fullHtml = `<!DOCTYPE html><html><head>
+<meta charset="UTF-8"/>
+<title>Bill ${bill.id}</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Courier New',Courier,monospace;font-size:12px;color:#000;background:#fff;padding:8px 10px;}
+  @page{margin:4mm;size:80mm auto;}
+  h2{text-align:center;font-size:14px;font-weight:900;letter-spacing:.5px;margin-bottom:2px;}
+  .sub{text-align:center;font-size:10px;color:#444;margin-bottom:6px;}
+  hr{border:none;border-top:1px dashed #888;margin:5px 0;}
+  .row{display:flex;justify-content:space-between;margin:2px 0;font-size:11px;}
+  table{width:100%;border-collapse:collapse;margin:4px 0;}
+  thead th{font-size:10px;border-bottom:1px solid #555;padding-bottom:3px;font-weight:700;}
+  th:first-child,td:first-child{text-align:left;}
+  th:nth-child(2),td:nth-child(2){text-align:center;}
+  th:last-child,td:last-child{text-align:right;}
+  .total-row{display:flex;justify-content:space-between;font-size:14px;font-weight:900;border-top:1px solid #000;padding-top:5px;margin-top:3px;}
+  .footer{text-align:center;font-size:10px;color:#555;margin-top:6px;line-height:1.5;}
+</style>
+</head><body>
+<h2>${shopName}</h2>
+<div class="sub">MediVision AI Pharmacy</div>
+<hr/>
+<div class="row"><span>Bill #</span><span><b>${bill.id}</b></span></div>
+<div class="row"><span>Date</span><span>${bill.date}</span></div>
+<div class="row"><span>Customer</span><span>${bill.cust}</span></div>
+${bill.phone && bill.phone !== '0000000000' ? `<div class="row"><span>Phone</span><span>${bill.phone}</span></div>` : ''}
+${bill.doctor && bill.doctor !== 'Self' ? `<div class="row"><span>Doctor</span><span>Dr. ${bill.doctor}</span></div>` : ''}
+<hr/>
+<table>
+  <thead><tr><th>Item</th><th>Qty</th><th>Amt</th></tr></thead>
+  <tbody>${lines}</tbody>
+</table>
+<hr/>
+<div class="row"><span>Subtotal</span><span>₹${bill.sub.toFixed(2)}</span></div>
+${bill.disc > 0 ? `<div class="row"><span>Discount</span><span>-₹${bill.disc.toFixed(2)}</span></div>` : ''}
+${bill.tax > 0 ? `<div class="row"><span>GST</span><span>₹${bill.tax.toFixed(2)}</span></div>` : ''}
+<div class="total-row"><span>TOTAL</span><span>₹${bill.total.toFixed(2)}</span></div>
+<div class="row" style="margin-top:4px;"><span>Payment</span><span>${bill.pay}</span></div>
+${upiLine}
+<hr/>
+<div class="footer">Thank you for your purchase! 🙏<br/>Powered by MediVision AI</div>
+</body></html>`;
+
+  // Hidden iframe — avoids popup blockers and blank-window race condition
+  let frame = document.getElementById('mv-print-frame');
+  if (!frame) {
+    frame = document.createElement('iframe');
+    frame.id = 'mv-print-frame';
+    frame.setAttribute('aria-hidden', 'true');
+    frame.style.cssText = 'position:fixed;right:-2px;bottom:-2px;width:1px;height:1px;border:0;opacity:0;pointer-events:none;';
+    document.body.appendChild(frame);
+  }
+
+  // Set onload BEFORE writing so it fires when document closes
+  frame.onload = function() {
+    frame.onload = null;
+    try {
+      frame.contentWindow.focus();
+      frame.contentWindow.print();
+    } catch(e) {
+      showToast('Print failed — check browser permissions', 'err');
+    }
+  };
+
+  const fdoc = frame.contentDocument || frame.contentWindow.document;
+  fdoc.open();
+  fdoc.write(fullHtml);
+  fdoc.close();
 }
 
 function newBill() {
@@ -516,9 +877,14 @@ function newBill() {
   document.getElementById('custPhone').value = '';
   document.getElementById('doctorName').value = '';
   document.getElementById('globalDisc').value = '0';
+  const cr = document.getElementById('cashReceived'); if (cr) cr.value = '';
+  if (typeof calcBalance === 'function') calcBalance();
+  const ut = document.getElementById('upiTxnId'); if (ut) ut.value = '';
+  const qfi = document.getElementById('qrFileInput'); if (qfi) qfi.value = '';
   setPayment('Cash');
   renderBill();
   document.getElementById('savePrintBtn').disabled = true;
+  const sb = document.getElementById('saveBtn'); if (sb) sb.disabled = true;
   document.getElementById('medSearch').focus();
 }
 
