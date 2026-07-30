@@ -2913,19 +2913,33 @@ def _parse_dbf_bytes(raw: bytes):
 def _auto_detect_dbf_mapping(field_names):
     """Guess DBF-field → medicine-attribute mapping from field names."""
     HINTS = {
+        # I_DESC/IT_DESC come from a real 36,000-item DOS/FoxPro pharmacy
+        # master (2026-07-30 field diagnostic) - "_DESC" suffixed to a
+        # short code prefix is a common item-master naming convention this
+        # list didn't cover at all, which meant 100% of that file's rows
+        # were silently skipped (no name = no import, by design in
+        # _run_dbf_import - but with no col matching, that design fires on
+        # every single row).
         'name':          ['ITEMNAME','MEDNAME','DRUGNAME','PRODNAME','PRODUCT','ITEMDESC',
-                          'DESCRIPTION','DESC','NAME','ITEM','ITEMNAME1'],
+                          'DESCRIPTION','DESC','NAME','ITEM','ITEMNAME1','I_DESC','IT_DESC',
+                          'ITEM_DESC','PDESC','PRODDESC','MEDDESC'],
         'generic':       ['GENERIC','GENERICS','COMPOSITION','COMP','GEN','GENERICNAME'],
         'category':      ['CATEGORY','CAT','GROUP','TYPE','GRP','DEPT','GRPNAME','CATNAME','ITEMGROUP'],
         'mrp':           ['MRP','MRPRICE','SELRATE','SALERATE','SP','RETAILPRICE','SELPRICE','PRICE'],
-        'purchase_rate': ['PRATE','PURATE','PURCHRATE','COSTPRICE','PR','BUYPRICE','LANDCOST','PURRATE'],
+        'purchase_rate': ['PRATE','PURATE','PURCHRATE','COSTPRICE','PR','BUYPRICE','LANDCOST','PURRATE','NETRATE'],
         'stock':         ['STOCK','AVLSTOCK','CURRSTOCK','QTY','AVAILABLE','BALANCE','BAL','OPENSTOCK','CLSTOCK'],
         'batch':         ['BATCH','BATCHNO','BATCHNUM','BNO','LOTNO','BATCHNUMBER','BATCHCODE'],
         'expiry':        ['EXPIRY','EXP','EXPDT','EXPDATE','EXPIRYDATE','EXPIRYDT','EXPIRYMONTH','EXPIRYYR'],
         'reorder':       ['REORDER','MINSTOCK','REORDLEVEL','MINQTY','ROQTY','MINLEVEL'],
-        'hsn':           ['HSN','HSNCDE','HSNCODE','HSNNO'],
+        'hsn':           ['HSN','HSNCDE','HSNCODE','HSNNO','HSN_SAC'],
         'sgst':          ['SGST','GST','GSTRATE','TAXRATE','TAX','TAXPCT'],
         'manufacturer':  ['COMPANY','MFR','MFCODE','MANUFACTURER','BRAND','MFGNAME','COMPNAME'],
+        # I_CODE is this database's real primary key - every other table
+        # (ITBM/BILL1/WANT/etc) references items BY THIS, not by name.
+        # Captured so extra_json / a future code-based lookup can use it;
+        # _run_dbf_import doesn't dedupe by it yet (still name-based) -
+        # that's a real follow-up, not solved by this hint alone.
+        'item_code':     ['I_CODE','ITEM_CODE','ICODE','ITEMCODE','ITEMID','I_ID'],
         'bill_no':       ['BILLNO','INVNO','VCHNO','SALENO','DOCNO','INVOICENO'],
         'qty':           ['QTY','QUANTITY','SALEQTY','SOLDQTY','BQTY'],
         'rate':          ['RATE','SRATE','PRICE','AMOUNT1','ITEMRATE'],
@@ -2958,6 +2972,18 @@ def _ensure_extra_json_columns():
             cols = {r["name"] for r in conn.execute(f"PRAGMA table_info({table})").fetchall()}
             if "extra_json" not in cols:
                 conn.execute(f"ALTER TABLE {table} ADD COLUMN extra_json TEXT DEFAULT '{{}}'")
+        # item_code: this legacy database's REAL primary key - I_CODE links
+        # ITEM.DBF (the name/price master) to every other table (ITEM1,
+        # ITBM, BILL1, WANT, PTEMP...) that has no name of its own, only a
+        # code reference. Matching medicines by this instead of by name
+        # text is what makes those code-only files usable at all - see the
+        # item_code branch below.
+        mcols = {r["name"] for r in conn.execute("PRAGMA table_info(medicines)").fetchall()}
+        if "item_code" not in mcols:
+            conn.execute("ALTER TABLE medicines ADD COLUMN item_code TEXT DEFAULT ''")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_medicines_item_code ON medicines(item_code)")
+        if "hsn" not in mcols:
+            conn.execute("ALTER TABLE medicines ADD COLUMN hsn TEXT DEFAULT ''")
         conn.commit()
 
 
@@ -3094,11 +3120,20 @@ def _run_dbf_import(records, mapping, file_type, update_existing):
         with get_conn() as conn:
             for i, row in enumerate(records):
                 name = str(_gv(row, "name", "")).strip()
-                if not name or len(name) < 2:
+                item_code = str(_gv(row, "item_code", "")).strip()
+                hsn = str(_gv(row, "hsn", "")).strip()
+                # A row with no name but a real item_code is exactly the
+                # "detail/child table" case (ITEM1.DBF, ITBM.DBF, WANT.DBF,
+                # ...) - I_CODE is this legacy database's real key, and the
+                # name only lives in the master (ITEM.DBF). Previously this
+                # skipped unconditionally, which is why every one of those
+                # files reported 100% skipped with no way to enrich the
+                # medicine that DOES already exist under that code.
+                if (not name or len(name) < 2) and not item_code:
                     skipped += 1
                     continue
                 generic  = str(_gv(row, "generic",  "")).strip()
-                category = str(_gv(row, "category", "")).strip() or _guess_category(name)
+                category = str(_gv(row, "category", "")).strip() or (_guess_category(name) if name else "")
                 mrp      = _sf(_gv(row, "mrp", 0))
                 prate    = _sf(_gv(row, "purchase_rate", 0))
                 stock    = _si(_gv(row, "stock", 0))
@@ -3112,38 +3147,58 @@ def _run_dbf_import(records, mapping, file_type, update_existing):
                 # float/bool/None directly.
                 raw_json = json.dumps(row, default=str)
                 try:
-                    existing = conn.execute("SELECT id, extra_json FROM medicines WHERE n=?", (name,)).fetchone()
+                    # item_code takes priority when present: it's the
+                    # stable business key, unlike name text which can
+                    # differ subtly between two files describing the same
+                    # item (I_DESC vs IT_DESC, trailing spaces, etc).
+                    existing = None
+                    if item_code:
+                        existing = conn.execute("SELECT id, extra_json FROM medicines WHERE item_code=?",
+                                                (item_code,)).fetchone()
+                    if not existing and name:
+                        existing = conn.execute("SELECT id, extra_json FROM medicines WHERE n=?", (name,)).fetchone()
+
                     if existing:
                         if update_existing:
                             conn.execute(
                                 """UPDATE medicines SET
-                                   g=COALESCE(NULLIF(?,''),g), c=?,
+                                   n=COALESCE(NULLIF(?,''),n),
+                                   g=COALESCE(NULLIF(?,''),g), c=COALESCE(NULLIF(?,''),c),
                                    p=CASE WHEN ?>0 THEN ? ELSE p END,
                                    p_rate=CASE WHEN ?>0 THEN ? ELSE p_rate END,
-                                   s=?, batch=COALESCE(NULLIF(?,''),batch),
+                                   s=CASE WHEN ?>0 THEN ? ELSE s END,
+                                   batch=COALESCE(NULLIF(?,''),batch),
                                    expiry=COALESCE(NULLIF(?,''),expiry),
                                    reorder=CASE WHEN ?>0 THEN ? ELSE reorder END,
+                                   item_code=COALESCE(NULLIF(item_code,''), NULLIF(?,'')),
+                                   hsn=COALESCE(NULLIF(?,''),hsn),
                                    extra_json=?
                                    WHERE id=?""",
-                                (generic, category,
+                                (name, generic, category,
                                  mrp, mrp, prate, prate,
-                                 stock, batch, expiry,
-                                 reorder, reorder, raw_json, existing["id"])
+                                 stock, stock, batch, expiry,
+                                 reorder, reorder, item_code, hsn, raw_json, existing["id"])
                             )
                             updated += 1
                         else:
                             skipped += 1
-                    else:
+                    elif name:
+                        # Only a code-matched row with NO name creates
+                        # nothing - a batch/transaction line for an item
+                        # this import has never seen isn't enough
+                        # information to invent a catalog entry from.
                         nid = "dbf_" + hashlib.md5(name.encode()).hexdigest()[:8]
                         conn.execute(
                             """INSERT OR IGNORE INTO medicines
                                (id,n,g,c,p,s,p_rate,batch,expiry,reorder,max_qty,
-                                p_packing,s_packing,p_gst,s_gst,extra_json)
-                               VALUES (?,?,?,?,?,?,?,?,?,?,0,1,1,?,?,?)""",
+                                p_packing,s_packing,p_gst,s_gst,item_code,hsn,extra_json)
+                               VALUES (?,?,?,?,?,?,?,?,?,?,0,1,1,?,?,?,?,?)""",
                             (nid, name, generic, category, mrp, stock,
-                             prate, batch, expiry, reorder, sgst, sgst, raw_json)
+                             prate, batch, expiry, reorder, sgst, sgst, item_code, hsn, raw_json)
                         )
                         created += 1
+                    else:
+                        skipped += 1
                 except Exception as e:
                     errors.append(f"Row {i+1} ({name[:25]}): {e}")
                     skipped += 1
