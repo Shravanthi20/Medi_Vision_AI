@@ -2669,7 +2669,56 @@ def import_stock_file():
 # LEGACY DBF IMPORTER — reads FoxPro/dBase pharmacy data files
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-_DBF_TEMP: dict = {}   # token → (fields, records, filename)
+_DBF_TEMP: dict = {}   # in-process fallback only; see _dbf_temp_* below
+
+# gunicorn runs this app with 3 worker PROCESSES (-w 3), each with its own
+# Python memory. The upload step (/preview) and the run step (/run) are two
+# separate HTTP requests, routed round-robin with no session affinity - so
+# roughly 2 times out of 3 they land on a DIFFERENT worker, and a plain
+# in-process dict here just doesn't have the token the other worker wrote.
+# That's the actual cause of "Session expired" on /run despite a fresh
+# upload, which the frontend didn't guard against and crashed on trying to
+# read .toLocaleString() off the errored response. Persisting to disk,
+# keyed by token, makes it visible to every worker.
+_DBF_TEMP_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "backups", "_dbf_temp")
+os.makedirs(_DBF_TEMP_DIR, exist_ok=True)
+
+
+def _dbf_temp_put(token, fields, records, filename):
+    import pickle
+    path = os.path.join(_DBF_TEMP_DIR, f"{token}.pkl")
+    with open(path, "wb") as fh:
+        pickle.dump((fields, records, filename), fh)
+
+
+def _dbf_temp_get(token):
+    import pickle
+    path = os.path.join(_DBF_TEMP_DIR, f"{token}.pkl")
+    if not os.path.exists(path):
+        return None
+    with open(path, "rb") as fh:
+        return pickle.load(fh)
+
+
+def _dbf_temp_delete(token):
+    path = os.path.join(_DBF_TEMP_DIR, f"{token}.pkl")
+    try:
+        os.remove(path)
+    except FileNotFoundError:
+        pass
+
+
+def _dbf_temp_gc(max_age_hours=6):
+    """Sweep stale uploads that were never completed (closed tab, etc)."""
+    import time as _time
+    cutoff = _time.time() - max_age_hours * 3600
+    try:
+        for fn in os.listdir(_DBF_TEMP_DIR):
+            p = os.path.join(_DBF_TEMP_DIR, fn)
+            if os.path.isfile(p) and os.path.getmtime(p) < cutoff:
+                os.remove(p)
+    except Exception:
+        pass
 
 
 def _parse_dbf_bytes(raw: bytes):
@@ -2799,8 +2848,15 @@ def api_import_dbf_preview():
     if not fields:
         return json_error("No fields found — may not be a valid DBF file")
 
-    token = hashlib.md5(raw[:512]).hexdigest()[:14]
-    _DBF_TEMP[token] = (fields, records, filename)
+    # Hash the FULL content, not just the first 512 bytes. A DBF header
+    # describes field names/types only - it's frequently byte-identical
+    # across different data files exported from the same FoxPro/Winman
+    # table structure (e.g. every month's ITEMTRAN.DBF from the same
+    # software), so a header-only hash could collide two genuinely
+    # different files onto the same token.
+    token = hashlib.md5(raw).hexdigest()[:16]
+    _dbf_temp_put(token, fields, records, filename)
+    _dbf_temp_gc()
 
     field_names = [f["name"] for f in fields]
     return jsonify({
@@ -2827,10 +2883,11 @@ def api_import_dbf_run():
     file_type      = data.get("file_type", "medicines")
     update_existing = data.get("update_existing", True)
 
-    if token not in _DBF_TEMP:
+    stored = _dbf_temp_get(token)
+    if stored is None:
         return json_error("Session expired — please re-upload the file", 400)
 
-    _, records, _ = _DBF_TEMP[token]
+    _, records, _ = stored
 
     def _gv(row, key, default=""):
         fn = mapping.get(key, "")
@@ -2964,7 +3021,7 @@ def api_import_dbf_run():
                     errors.append(str(e)[:80])
                     skipped += 1
 
-    del _DBF_TEMP[token]
+    _dbf_temp_delete(token)
     return jsonify({
         "status": "ok",
         "file_type": file_type,

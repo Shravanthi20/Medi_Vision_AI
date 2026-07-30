@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Import Legacy Data — MediVision AI</title>
+<style>
+:root{--bg:#0b0e16;--card:#141824;--card2:#1a1f2e;--brd:#2a3045;
+      --acc:#f97316;--red:#ef4444;--grn:#22c55e;--ylw:#eab308;
+      --blue:#3b82f6;--purple:#a855f7;--txt:#e2e8f0;--muted:#64748b;
+      --font:'Inter',system-ui,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--txt);font-family:var(--font);min-height:100vh}
+
+.topbar{display:flex;align-items:center;gap:12px;padding:12px 20px;
+        border-bottom:1px solid var(--brd);background:var(--card)}
+.topbar a{color:var(--muted);text-decoration:none;font-size:.85rem}
+.topbar a:hover{color:var(--txt)}
+.topbar h1{font-size:1.1rem;font-weight:700}
+
+.wrap{max-width:980px;margin:0 auto;padding:28px 20px}
+
+/* Steps indicator */
+.steps{display:flex;align-items:center;gap:0;margin-bottom:32px}
+.step-item{display:flex;align-items:center;gap:10px;flex:1}
+.step-item:last-child{flex:0}
+.step-dot{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+          font-size:.78rem;font-weight:800;flex-shrink:0;border:2px solid var(--brd);
+          background:var(--card);color:var(--muted);transition:.3s}
+.step-dot.active{background:var(--acc);border-color:var(--acc);color:#fff}
+.step-dot.done{background:var(--grn);border-color:var(--grn);color:#fff}
+.step-line{flex:1;height:2px;background:var(--brd);margin:0 4px;transition:.3s}
+.step-line.done{background:var(--grn)}
+.step-label{font-size:.72rem;color:var(--muted);white-space:nowrap;margin-top:4px}
+.step-label.active{color:var(--acc);font-weight:700}
+.step-label.done{color:var(--grn)}
+
+/* Cards */
+.card{background:var(--card);border:1px solid var(--brd);border-radius:14px;padding:24px;margin-bottom:20px}
+.card h2{font-size:1rem;font-weight:700;margin-bottom:6px}
+.card p{font-size:.82rem;color:var(--muted);margin-bottom:0}
+
+/* Step panels */
+.step-panel{display:none}
+.step-panel.active{display:block}
+
+/* Drop zone */
+.drop-zone{border:2px dashed var(--brd);border-radius:12px;padding:48px 24px;text-align:center;
+           cursor:pointer;transition:.25s;position:relative}
+.drop-zone:hover,.drop-zone.drag{border-color:var(--acc);background:rgba(249,115,22,.04)}
+.drop-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.drop-zone .icon{font-size:2.8rem;margin-bottom:12px;opacity:.6}
+.drop-zone h3{font-size:.95rem;font-weight:700;margin-bottom:6px}
+.drop-zone p{font-size:.78rem;color:var(--muted)}
+.drop-zone .formats{margin-top:12px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.fmt-tag{background:var(--card2);border:1px solid var(--brd);border-radius:5px;padding:3px 10px;
+         font-size:.7rem;font-weight:600;color:var(--muted)}
+
+/* File info chips */
+.file-chip{display:flex;align-items:center;gap:12px;background:var(--card2);border:1px solid var(--brd);
+           border-radius:10px;padding:12px 16px;margin-top:12px}
+.file-chip .ic{font-size:1.5rem}
+.file-chip .info{flex:1}
+.file-chip .name{font-weight:600;font-size:.88rem}
+.file-chip .meta{font-size:.72rem;color:var(--muted);margin-top:2px}
+.chip-remove{background:none;border:none;color:var(--muted);font-size:1.1rem;cursor:pointer}
+.chip-remove:hover{color:var(--red)}
+
+/* Software chips */
+.sw-chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.sw-chip{padding:6px 14px;background:var(--card2);border:1px solid var(--brd);border-radius:8px;
+         font-size:.76rem;font-weight:600;cursor:pointer;color:var(--muted);transition:.15s}
+.sw-chip:hover{border-color:var(--acc);color:var(--acc)}
+.sw-chip.active{background:var(--acc);border-color:var(--acc);color:#fff}
+
+/* Field mapping table */
+.map-table{width:100%;border-collapse:collapse;font-size:.8rem}
+.map-table th{padding:8px 10px;text-align:left;color:var(--muted);font-size:.68rem;font-weight:700;
+              text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--brd)}
+.map-table td{padding:9px 10px;border-bottom:1px solid rgba(42,48,69,.4);vertical-align:middle}
+.map-table tr:last-child td{border-bottom:none}
+.attr-lbl{font-weight:600;font-size:.82rem}
+.attr-sub{font-size:.68rem;color:var(--muted);margin-top:2px}
+.req-badge{background:rgba(239,68,68,.12);color:var(--red);border:1px solid rgba(239,68,68,.25);
+           font-size:.62rem;font-weight:700;padding:1px 6px;border-radius:4px}
+.opt-badge{background:rgba(100,116,139,.1);color:var(--muted);border:1px solid rgba(100,116,139,.2);
+           font-size:.62rem;padding:1px 6px;border-radius:4px}
+.map-table select{background:var(--card2);border:1px solid var(--brd);color:var(--txt);
+                  padding:5px 8px;border-radius:6px;font-size:.78rem;outline:none;width:100%}
+.map-table select:focus{border-color:var(--acc)}
+.map-table select.matched{border-color:var(--grn);color:var(--grn)}
+.sample-val{font-size:.7rem;color:var(--muted);font-style:italic;max-width:120px;overflow:hidden;
+            text-overflow:ellipsis;white-space:nowrap}
+
+/* Preview table */
+.preview-tbl-wrap{overflow-x:auto;margin-top:14px;border-radius:10px;border:1px solid var(--brd)}
+.preview-tbl{border-collapse:collapse;font-size:.75rem;white-space:nowrap}
+.preview-tbl th{padding:7px 10px;background:var(--card2);color:var(--muted);font-size:.66rem;
+                font-weight:700;text-transform:uppercase;border-bottom:1px solid var(--brd);
+                border-right:1px solid rgba(42,48,69,.4)}
+.preview-tbl td{padding:7px 10px;border-bottom:1px solid rgba(42,48,69,.3);
+                border-right:1px solid rgba(42,48,69,.3);max-width:160px;overflow:hidden;
+                text-overflow:ellipsis}
+.preview-tbl tr:last-child td{border-bottom:none}
+.preview-tbl tr:hover td{background:rgba(249,115,22,.04)}
+
+/* Buttons */
+.btn{padding:9px 20px;border-radius:8px;font-size:.82rem;font-weight:600;cursor:pointer;
+     border:none;display:inline-flex;align-items:center;gap:6px;transition:.15s}
+.btn-primary{background:var(--acc);color:#fff}.btn-primary:hover{opacity:.88}
+.btn-outline{background:transparent;border:1px solid var(--brd);color:var(--txt)}.btn-outline:hover{border-color:var(--acc);color:var(--acc)}
+.btn-grn{background:var(--grn);color:#fff}.btn-grn:hover{opacity:.88}
+.btn-row{display:flex;align-items:center;justify-content:space-between;margin-top:20px;gap:12px}
+
+/* Type selector */
+.type-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:14px}
+.type-card{background:var(--card2);border:2px solid var(--brd);border-radius:10px;padding:16px;
+           cursor:pointer;transition:.2s;text-align:center}
+.type-card:hover{border-color:var(--acc)}
+.type-card.selected{border-color:var(--acc);background:rgba(249,115,22,.06)}
+.type-card .ti{font-size:1.8rem;margin-bottom:8px}
+.type-card .tn{font-size:.85rem;font-weight:700}
+.type-card .td{font-size:.72rem;color:var(--muted);margin-top:4px}
+
+/* Progress */
+.progress-bar{height:6px;background:var(--brd);border-radius:3px;overflow:hidden;margin:14px 0}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--acc),var(--grn));border-radius:3px;
+               transition:width .4s}
+
+/* Result summary */
+.result-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:16px 0}
+.rg-card{background:var(--card2);border:1px solid var(--brd);border-radius:10px;padding:14px;text-align:center}
+.rg-card .rv{font-size:1.8rem;font-weight:800;font-family:'JetBrains Mono',monospace;margin-bottom:4px}
+.rg-card .rl{font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+.rv-grn{color:var(--grn)}.rv-ylw{color:var(--ylw)}.rv-muted{color:var(--muted)}.rv-red{color:var(--red)}
+
+/* Alert boxes */
+.info-box{background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.25);border-radius:8px;
+          padding:12px 16px;font-size:.8rem;color:var(--blue);margin-bottom:14px;display:flex;gap:10px}
+.warn-box{background:rgba(234,179,8,.08);border:1px solid rgba(234,179,8,.25);border-radius:8px;
+          padding:12px 16px;font-size:.8rem;color:var(--ylw);margin-bottom:14px}
+
+/* Spinner */
+.spin{display:inline-block;width:18px;height:18px;border:2px solid rgba(255,255,255,.25);
+      border-top-color:var(--acc);border-radius:50%;animation:sp .6s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.loading-state{text-align:center;padding:32px;color:var(--muted)}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a href="/portal">← Portal</a>
+  <span style="color:var(--brd)">|</span>
+  <span>📦</span>
+  <h1>Import Legacy Pharmacy Data</h1>
+  <span style="margin-left:8px;background:rgba(249,115,22,.15);color:var(--acc);font-size:.65rem;font-weight:700;padding:2px 8px;border-radius:10px">DBF / FoxPro / Winman / Medeil</span>
+</div>
+
+<div class="wrap">
+
+  <!-- Step Indicator -->
+  <div class="steps" id="stepsBar">
+    <div style="display:flex;flex-direction:column;align-items:center">
+      <div class="step-dot active" id="sd1">1</div>
+      <div class="step-label active" id="sl1">Upload</div>
+    </div>
+    <div class="step-line" id="sl12"></div>
+    <div style="display:flex;flex-direction:column;align-items:center">
+      <div class="step-dot" id="sd2">2</div>
+      <div class="step-label" id="sl2">Map Fields</div>
+    </div>
+    <div class="step-line" id="sl23"></div>
+    <div style="display:flex;flex-direction:column;align-items:center">
+      <div class="step-dot" id="sd3">3</div>
+      <div class="step-label" id="sl3">Preview</div>
+    </div>
+    <div class="step-line" id="sl34"></div>
+    <div style="display:flex;flex-direction:column;align-items:center">
+      <div class="step-dot" id="sd4">4</div>
+      <div class="step-label" id="sl4">Done</div>
+    </div>
+  </div>
+
+  <!-- ── STEP 1: Upload ── -->
+  <div class="step-panel active" id="step1">
+    <div class="card">
+      <h2>📂 Upload Your Pharmacy DBF File</h2>
+      <p>Supports .DBF files from Winman, Medeil, LS Retail, FoxPro-based pharmacy software</p>
+
+      <div style="margin:16px 0">
+        <p style="font-size:.78rem;margin-bottom:8px">Which software are you importing from?</p>
+        <div class="sw-chips">
+          <div class="sw-chip active" onclick="setSW(this,'winman')">Winman</div>
+          <div class="sw-chip" onclick="setSW(this,'medeil')">Medeil</div>
+          <div class="sw-chip" onclick="setSW(this,'ls')">LS Retail</div>
+          <div class="sw-chip" onclick="setSW(this,'tally')">Tally</div>
+          <div class="sw-chip" onclick="setSW(this,'other')">Other / Unknown</div>
+        </div>
+      </div>
+
+      <div class="info-box">
+        <span>ℹ️</span>
+        <span>Upload <strong>ITEM.DBF</strong> for medicine master data, <strong>ITEMDET.DBF</strong> for batch/expiry details, or <strong>ITEMTRAN.DBF</strong> for sales history. One file at a time — the system auto-detects the type.</span>
+      </div>
+
+      <div class="drop-zone" id="dropZone">
+        <input type="file" id="fileInput" accept=".dbf,.DBF" onchange="onFileSelect(event)">
+        <div class="icon">📁</div>
+        <h3>Drag & drop your .DBF file here</h3>
+        <p>or click to browse</p>
+        <div class="formats">
+          <span class="fmt-tag">ITEM.DBF</span>
+          <span class="fmt-tag">ITEM1.DBF</span>
+          <span class="fmt-tag">ITEMDET.DBF</span>
+          <span class="fmt-tag">ITEMTRAN.DBF</span>
+          <span class="fmt-tag">any .DBF</span>
+        </div>
+      </div>
+
+      <div id="fileChip" style="display:none"></div>
+      <div id="uploadStatus" style="margin-top:12px;font-size:.8rem;color:var(--muted)"></div>
+    </div>
+
+    <div class="btn-row">
+      <div></div>
+      <button class="btn btn-primary" id="nextToMap" onclick="goStep(2)" disabled>
+        Next: Map Fields →
+      </button>
+    </div>
+  </div>
+
+  <!-- ── STEP 2: Map Fields ── -->
+  <div class="step-panel" id="step2">
+    <div class="card">
+      <h2>🗂 Field Mapping</h2>
+      <p>We auto-detected these mappings. Adjust if any column is wrong.</p>
+
+      <div style="margin-top:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <div style="font-size:.8rem;color:var(--muted)">
+          File: <strong style="color:var(--txt)" id="m2Filename">—</strong> &nbsp;·&nbsp;
+          Records: <strong style="color:var(--acc)" id="m2Records">—</strong> &nbsp;·&nbsp;
+          Fields: <strong style="color:var(--blue)" id="m2Fields">—</strong>
+        </div>
+      </div>
+
+      <div style="margin-top:14px">
+        <p style="font-size:.78rem;margin-bottom:10px">Data type in this file:</p>
+        <div class="type-cards" id="typeCards">
+          <div class="type-card selected" data-type="medicines" onclick="selectType('medicines',this)">
+            <div class="ti">💊</div>
+            <div class="tn">Medicine Master</div>
+            <div class="td">Names, prices, stock, batch, expiry</div>
+          </div>
+          <div class="type-card" data-type="transactions" onclick="selectType('transactions',this)">
+            <div class="ti">🧾</div>
+            <div class="tn">Sales / Transactions</div>
+            <div class="td">Bill history, quantities sold</div>
+          </div>
+          <div class="type-card" data-type="batches" onclick="selectType('batches',this)">
+            <div class="ti">📦</div>
+            <div class="tn">Batch Details</div>
+            <div class="td">Expiry dates, batch numbers only</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:18px">
+        <table class="map-table">
+          <thead>
+            <tr>
+              <th style="width:160px">OUR FIELD</th>
+              <th style="width:100px">REQUIRED?</th>
+              <th>MAP TO YOUR COLUMN →</th>
+              <th style="width:130px">SAMPLE VALUE</th>
+            </tr>
+          </thead>
+          <tbody id="mapTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-outline" onclick="goStep(1)">← Back</button>
+      <button class="btn btn-primary" onclick="goStep(3)">Next: Preview →</button>
+    </div>
+  </div>
+
+  <!-- ── STEP 3: Preview ── -->
+  <div class="step-panel" id="step3">
+    <div class="card">
+      <h2>🔍 Preview — First 15 Records</h2>
+      <p>Check that the data looks correct before importing</p>
+
+      <div id="previewContent" style="margin-top:14px"></div>
+
+      <div style="margin-top:16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+        <label style="display:flex;align-items:center;gap:8px;font-size:.8rem;cursor:pointer">
+          <input type="checkbox" id="chkUpdate" checked style="accent-color:var(--acc)">
+          Update existing medicines (same name → overwrite price/stock/batch/expiry)
+        </label>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-outline" onclick="goStep(2)">← Back</button>
+      <button class="btn btn-grn" id="importBtn" onclick="runImport()">
+        ✅ Import All Records
+      </button>
+    </div>
+  </div>
+
+  <!-- ── STEP 4: Results ── -->
+  <div class="step-panel" id="step4">
+    <div class="card">
+      <h2 id="resultTitle">✅ Import Complete!</h2>
+      <p id="resultSub">Your data has been imported successfully.</p>
+
+      <div class="result-grid" id="resultGrid"></div>
+      <div id="resultErrors" style="display:none;margin-top:12px"></div>
+    </div>
+
+    <div style="margin-top:16px">
+      <div class="card" style="background:rgba(249,115,22,.04);border-color:rgba(249,115,22,.2)">
+        <h2 style="color:var(--acc);margin-bottom:10px">🚀 What's Next?</h2>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:12px">
+          <a href="/smart-reorder" style="display:block;background:var(--card2);border:1px solid var(--brd);
+             border-radius:10px;padding:14px;text-decoration:none;color:var(--txt);text-align:center;transition:.15s">
+            <div style="font-size:1.6rem;margin-bottom:6px">🤖</div>
+            <div style="font-weight:700;font-size:.84rem">Smart Reorder</div>
+            <div style="font-size:.7rem;color:var(--muted);margin-top:4px">AI order list from imported data</div>
+          </a>
+          <a href="/portal/billing" style="display:block;background:var(--card2);border:1px solid var(--brd);
+             border-radius:10px;padding:14px;text-decoration:none;color:var(--txt);text-align:center;transition:.15s">
+            <div style="font-size:1.6rem;margin-bottom:6px">🧾</div>
+            <div style="font-weight:700;font-size:.84rem">Start Billing</div>
+            <div style="font-size:.7rem;color:var(--muted);margin-top:4px">Bill with imported medicines</div>
+          </a>
+          <a href="/import-legacy" onclick="location.reload();return false" style="display:block;background:var(--card2);border:1px solid var(--brd);
+             border-radius:10px;padding:14px;text-decoration:none;color:var(--txt);text-align:center;transition:.15s">
+            <div style="font-size:1.6rem;margin-bottom:6px">📂</div>
+            <div style="font-weight:700;font-size:.84rem">Import Another File</div>
+            <div style="font-size:.7rem;color:var(--muted);margin-top:4px">ITEMDET.DBF or ITEMTRAN.DBF</div>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /wrap -->
+
+<script>
+// ── State ──
+let uploadToken = null, uploadFilename = '', uploadFields = [], uploadRecords = [];
+let currentMapping = {}, currentFileType = 'medicines', selectedSW = 'winman';
+
+// ── File upload attributes per type ──
+const ATTRS_MEDS = [
+  {key:'name',        label:'Medicine Name',    sub:'Main medicine / product name',  req:true},
+  {key:'generic',     label:'Generic / Composition', sub:'Active ingredient',        req:false},
+  {key:'category',    label:'Category / Group', sub:'Tablet, Syrup, Injection…',     req:false},
+  {key:'mrp',         label:'MRP / Sale Price', sub:'Maximum Retail Price',           req:false},
+  {key:'purchase_rate',label:'Purchase Rate',   sub:'Cost / buy price',              req:false},
+  {key:'stock',       label:'Current Stock',    sub:'Available quantity',            req:false},
+  {key:'batch',       label:'Batch Number',     sub:'Batch / lot number',            req:false},
+  {key:'expiry',      label:'Expiry Date',      sub:'YYYY-MM-DD / MM/YYYY',          req:false},
+  {key:'reorder',     label:'Reorder Level',    sub:'Minimum stock threshold',        req:false},
+  {key:'sgst',        label:'GST % / Tax Rate', sub:'SGST / GST percentage',          req:false},
+  {key:'manufacturer',label:'Manufacturer',     sub:'Company / brand name',          req:false},
+  {key:'hsn',         label:'HSN Code',         sub:'HS tariff / drug code',          req:false},
+];
+const ATTRS_TRAN = [
+  {key:'bill_no',  label:'Bill No / Invoice', sub:'Unique bill identifier', req:true},
+  {key:'name',     label:'Medicine Name',     sub:'Item name in the bill',  req:true},
+  {key:'qty',      label:'Quantity',          sub:'Units sold',             req:true},
+  {key:'rate',     label:'Rate / Price',      sub:'Unit selling price',     req:false},
+  {key:'date',     label:'Date',              sub:'Sale / bill date',       req:false},
+];
+
+function setSW(el, sw) {
+  selectedSW = sw;
+  document.querySelectorAll('.sw-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function selectType(type, el) {
+  currentFileType = type;
+  document.querySelectorAll('.type-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  renderMapTable();
+}
+
+// ── Drag & drop ──
+const dz = document.getElementById('dropZone');
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('drag'));
+dz.addEventListener('drop', e => {
+  e.preventDefault(); dz.classList.remove('drag');
+  const file = e.dataTransfer.files[0];
+  if (file) processFile(file);
+});
+
+function onFileSelect(evt) {
+  const file = evt.target.files[0];
+  if (file) processFile(file);
+}
+
+async function processFile(file) {
+  if (!file.name.toLowerCase().endsWith('.dbf')) {
+    showStatus('⚠️ Please upload a .DBF file', 'var(--red)');
+    return;
+  }
+  showStatus('⏳ Reading file…', 'var(--muted)');
+
+  const fd = new FormData();
+  fd.append('file', file);
+
+  try {
+    const res = await fetch('/api/import-dbf/preview', { method: 'POST', body: fd });
+    const d = await res.json();
+    if (d.status !== 'ok') { showStatus('❌ ' + d.message, 'var(--red)'); return; }
+
+    uploadToken    = d.token;
+    uploadFilename = d.filename;
+    uploadFields   = d.fields;
+    uploadRecords  = d.sample;
+    currentMapping = d.suggested_mapping || {};
+    currentFileType = d.file_type || 'medicines';
+
+    // Show file chip
+    document.getElementById('fileChip').style.display = 'block';
+    document.getElementById('fileChip').innerHTML = `
+      <div class="file-chip">
+        <div class="ic">📄</div>
+        <div class="info">
+          <div class="name">${esc(d.filename)}</div>
+          <div class="meta">${d.record_count.toLocaleString()} records · ${d.field_count} fields detected</div>
+        </div>
+        <button class="chip-remove" onclick="removeFile()" title="Remove">✕</button>
+      </div>`;
+
+    showStatus(`✅ ${d.record_count.toLocaleString()} records · ${d.field_count} fields found`, 'var(--grn)');
+    document.getElementById('nextToMap').disabled = false;
+  } catch(e) {
+    showStatus('❌ Upload error: ' + e.message, 'var(--red)');
+  }
+}
+
+function removeFile() {
+  uploadToken = null;
+  document.getElementById('fileChip').style.display = 'none';
+  document.getElementById('fileInput').value = '';
+  showStatus('', '');
+  document.getElementById('nextToMap').disabled = true;
+}
+
+function showStatus(msg, color) {
+  const el = document.getElementById('uploadStatus');
+  el.textContent = msg;
+  el.style.color = color;
+}
+
+// ── Step navigation ──
+function goStep(n) {
+  if (n === 2 && !uploadToken) return;
+  if (n === 3) buildPreview();
+  [1,2,3,4].forEach(i => {
+    document.getElementById('step'+i).classList.toggle('active', i===n);
+    const dot = document.getElementById('sd'+i);
+    const lbl = document.getElementById('sl'+i);
+    dot.classList.remove('active','done');
+    lbl.classList.remove('active','done');
+    if (i < n)  { dot.classList.add('done'); lbl.classList.add('done'); dot.textContent='✓'; }
+    if (i === n){ dot.classList.add('active'); lbl.classList.add('active'); dot.textContent=i; }
+    if (i > n)  { dot.textContent=i; }
+    if (i < 4) {
+      const line = document.getElementById('sl'+i+(i+1));
+      if (line) line.classList.toggle('done', i < n);
+    }
+  });
+  if (n === 2) {
+    document.getElementById('m2Filename').textContent = uploadFilename;
+    document.getElementById('m2Records').textContent  = (uploadRecords?.length||0)+' (preview)';
+    document.getElementById('m2Fields').textContent   = uploadFields.length;
+    // Set detected type
+    document.querySelectorAll('.type-card').forEach(c =>
+      c.classList.toggle('selected', c.dataset.type === currentFileType));
+    renderMapTable();
+  }
+}
+
+// ── Render mapping table ──
+function renderMapTable() {
+  const attrs = currentFileType === 'transactions' ? ATTRS_TRAN : ATTRS_MEDS;
+  const fieldNames = uploadFields.map(f => f.name);
+  const sample = uploadRecords[0] || {};
+
+  const opts = `<option value="">(not mapped)</option>` +
+    fieldNames.map(f => `<option value="${esc(f)}">${esc(f)}</option>`).join('');
+
+  document.getElementById('mapTableBody').innerHTML = attrs.map(attr => {
+    const mapped = currentMapping[attr.key] || '';
+    const sampleVal = mapped ? (sample[mapped] ?? '—') : '—';
+    const isMatched = !!mapped;
+    return `<tr>
+      <td>
+        <div class="attr-lbl">${attr.label}</div>
+        <div class="attr-sub">${attr.sub}</div>
+      </td>
+      <td>${attr.req
+        ? '<span class="req-badge">Required</span>'
+        : '<span class="opt-badge">Optional</span>'}</td>
+      <td>
+        <select class="${isMatched?'matched':''}" data-attr="${attr.key}"
+          onchange="updateMapping('${attr.key}',this.value,this)">
+          ${opts.replace(`value="${esc(mapped)}"`, `value="${esc(mapped)}" selected`)}
+        </select>
+      </td>
+      <td><div class="sample-val" title="${esc(String(sampleVal))}">${esc(String(sampleVal).slice(0,40))}</div></td>
+    </tr>`;
+  }).join('');
+}
+
+function updateMapping(attr, fieldName, sel) {
+  currentMapping[attr] = fieldName;
+  sel.classList.toggle('matched', !!fieldName);
+  // Update sample value
+  const sample = uploadRecords[0] || {};
+  const td = sel.closest('tr').querySelector('.sample-val');
+  const v = fieldName ? (sample[fieldName] ?? '—') : '—';
+  td.textContent = String(v).slice(0, 40);
+  td.title = String(v);
+}
+
+// ── Build preview ──
+function buildPreview() {
+  const attrs = currentFileType === 'transactions' ? ATTRS_TRAN : ATTRS_MEDS;
+  const mapped = attrs.filter(a => currentMapping[a.key]);
+  const rows = uploadRecords.slice(0, 15);
+
+  if (!mapped.length) {
+    document.getElementById('previewContent').innerHTML =
+      '<div style="color:var(--red);font-size:.82rem">⚠️ No fields mapped — please go back and map at least the Name field.</div>';
+    return;
+  }
+
+  let html = '<div class="preview-tbl-wrap"><table class="preview-tbl"><thead><tr>';
+  html += '<th>#</th>';
+  mapped.forEach(a => html += `<th>${esc(a.label)}</th>`);
+  html += '</tr></thead><tbody>';
+  rows.forEach((row, i) => {
+    html += `<tr><td style="color:var(--muted)">${i+1}</td>`;
+    mapped.forEach(a => {
+      const fn = currentMapping[a.key];
+      const v = fn ? (row[fn] ?? '') : '';
+      // Color-code expiry
+      let style = '';
+      if (a.key === 'expiry' && v) {
+        const exp = new Date(String(v).length===7 ? v+'-01' : v);
+        const days = Math.round((exp - new Date())/86400000);
+        style = days < 0 ? 'color:var(--red)' : days < 90 ? 'color:var(--ylw)' : 'color:var(--grn)';
+      }
+      if (a.key === 'mrp' || a.key === 'purchase_rate') style = 'color:var(--acc)';
+      if (a.key === 'stock') {
+        const n = parseInt(v) || 0;
+        style = n === 0 ? 'color:var(--red)' : n < 10 ? 'color:var(--ylw)' : 'color:var(--grn)';
+      }
+      html += `<td style="${style}">${esc(String(v).slice(0,30))}</td>`;
+    });
+    html += '</tr>';
+  });
+  html += '</tbody></table></div>';
+  html += `<div style="margin-top:10px;font-size:.75rem;color:var(--muted)">Showing first 15 of all records. All data will be imported.</div>`;
+  document.getElementById('previewContent').innerHTML = html;
+}
+
+// ── Run Import ──
+async function runImport() {
+  const btn = document.getElementById('importBtn');
+  btn.innerHTML = '<span class="spin"></span> Importing…';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch('/api/import-dbf/run', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        token: uploadToken,
+        mapping: currentMapping,
+        file_type: currentFileType,
+        update_existing: document.getElementById('chkUpdate').checked,
+      })
+    });
+    const d = await res.json();
+
+    // The backend returns {status:'error', message:...} with none of
+    // created/updated/skipped/total on failure (e.g. the upload token
+    // expired) - reading d.total off that crashed with a raw JS error
+    // instead of telling the user what actually happened.
+    if (!res.ok || d.status === 'error') {
+      btn.innerHTML = 'Run Import';
+      btn.disabled = false;
+      showStatus(`❌ Import failed: ${d.message || 'unknown error'}`, 'var(--red)');
+      return;
+    }
+
+    goStep(4);
+
+    document.getElementById('resultTitle').textContent =
+      d.created + d.updated > 0 ? '✅ Import Complete!' : '⚠️ Import Finished';
+    document.getElementById('resultSub').textContent =
+      `${(d.total || 0).toLocaleString()} records processed from ${uploadFilename}`;
+
+    const g = document.getElementById('resultGrid');
+    g.innerHTML = `
+      <div class="rg-card"><div class="rv rv-grn">${d.created}</div><div class="rl">New Added</div></div>
+      <div class="rg-card"><div class="rv rv-ylw">${d.updated}</div><div class="rl">Updated</div></div>
+      <div class="rg-card"><div class="rv rv-muted">${d.skipped}</div><div class="rl">Skipped</div></div>
+      <div class="rg-card"><div class="rv rv-muted">${d.total}</div><div class="rl">Total Records</div></div>`;
+
+    if (d.errors && d.errors.length) {
+      const errEl = document.getElementById('resultErrors');
+      errEl.style.display = 'block';
+      errEl.innerHTML = `<div class="warn-box">⚠️ ${d.errors.length} row(s) had errors:<br>
+        <ul style="margin-top:8px;padding-left:16px">${d.errors.map(e => `<li>${esc(e)}</li>`).join('')}</ul></div>`;
+    }
+  } catch(e) {
+    btn.innerHTML = '✅ Import All Records';
+    btn.disabled = false;
+    alert('Import failed: ' + e.message);
+  }
+}
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+</script>
+</body>
+</html>
