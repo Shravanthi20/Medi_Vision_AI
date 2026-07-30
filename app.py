@@ -4731,6 +4731,80 @@ def get_single_bill(bill_id):
     return jsonify(normalize_bill_row(row))
 
 
+@app.route("/api/bills/<bill_id>", methods=["PUT"])
+def update_bill(bill_id):
+    """
+    Edit a saved bill's items/qty/discount/payment - previously a bill
+    could only be viewed or fully cancelled, with no way to correct a
+    mistake (wrong qty typed, wrong discount, item added by accident)
+    short of voiding the whole thing and re-billing from scratch.
+
+    Same input contract as POST /api/bills (save_bill): sub/disc/tax/total
+    are computed client-side by the same cart logic the billing screen
+    already uses for a new bill, not recomputed here - this app has never
+    done server-side tax computation, and reimplementing India GST rules
+    (inclusive/exclusive, per-item rates) here would risk getting it
+    subtly wrong. The server's job is the part that's actually dangerous
+    to get wrong by hand: reconciling stock.
+    """
+    data = request.get_json(silent=True) or {}
+    required = ["cust", "phone", "pay", "sub", "disc", "tax", "total", "items"]
+    missing = required_fields(data, required)
+    if missing:
+        return json_error("Missing required bill fields", 400, missing)
+    if not isinstance(data["items"], list) or len(data["items"]) == 0:
+        return json_error("Bill must include at least one item", 400)
+
+    with get_conn() as conn:
+        old_row = conn.execute("SELECT * FROM bills WHERE id=?", (bill_id,)).fetchone()
+        if not old_row:
+            return json_error("Bill not found", 404)
+        old_bill = normalize_bill_row(old_row)
+
+        # Net stock delta per medicine: old qty on this bill was already
+        # deducted at save time, so putting it back and deducting the new
+        # qty in two separate clamped steps can drift if stock previously
+        # hit the floor at zero. One signed adjustment avoids that.
+        deltas: dict[str, int] = {}
+        for item in old_bill.get("items", []):
+            mid = str(item.get("id", "")).strip()
+            if mid:
+                deltas[mid] = deltas.get(mid, 0) + int(item.get("qty", 0) or 0)
+        for item in data["items"]:
+            mid = str(item.get("id", "")).strip()
+            if mid:
+                deltas[mid] = deltas.get(mid, 0) - int(item.get("qty", 0) or 0)
+
+        for mid, net_change in deltas.items():
+            if net_change == 0:
+                continue
+            med = conn.execute("SELECT s FROM medicines WHERE id=?", (mid,)).fetchone()
+            if not med:
+                continue
+            conn.execute("UPDATE medicines SET s=MAX(0, s+?) WHERE id=?", (net_change, mid))
+
+        cols = table_columns(conn, "bills")
+        if "edited_at" not in cols:
+            conn.execute("ALTER TABLE bills ADD COLUMN edited_at TEXT")
+        if "edit_count" not in cols:
+            conn.execute("ALTER TABLE bills ADD COLUMN edit_count INTEGER DEFAULT 0")
+
+        conn.execute("""
+            UPDATE bills SET cust=?, phone=?, pay=?, sub=?, disc=?, tax=?, total=?,
+                             items=?, doctor=?, edited_at=?, edit_count=COALESCE(edit_count,0)+1
+            WHERE id=?
+        """, (
+            data["cust"], data["phone"], data["pay"], data["sub"], data["disc"],
+            data["tax"], data["total"], json.dumps(data["items"]),
+            data.get("doctor", old_bill.get("doctor", "Self")),
+            datetime.now(timezone.utc).isoformat(), bill_id,
+        ))
+
+        updated = normalize_bill_row(conn.execute("SELECT * FROM bills WHERE id=?", (bill_id,)).fetchone())
+
+    return jsonify({"status": "success", "bill": updated})
+
+
 @app.route("/api/bills/<bill_id>", methods=["DELETE"])
 def cancel_bill(bill_id):
     """Cancel (soft-delete) a bill and restore stock."""

@@ -190,7 +190,8 @@ async function loadBills(){
     allBills.sort((a,b) => (b.ts||0) - (a.ts||0));
 
     // Year filter
-    const years = [...new Set(allBills.map(b => (b.date||'').slice(0,4)).filter(y => /^\d{4}$/.test(y)))];
+    // Date format: DD/MM/YYYY HH:MM — year at [6:10], month at [3:5]
+    const years = [...new Set(allBills.map(b => (b.date||'').slice(6,10)).filter(y => /^\d{4}$/.test(y)))];
     years.sort().reverse();
     const yf = document.getElementById('yearFilter');
     yf.innerHTML = '<option value="">All Years</option>' + years.map(y => `<option value="${y}">${y}</option>`).join('');
@@ -208,8 +209,8 @@ function applyFilters(){
   const pay = document.getElementById('payFilter').value;
 
   filtered = allBills.filter(b => {
-    if(year && !(b.date||'').startsWith(year)) return false;
-    if(month && (b.date||'').slice(5,7) !== month) return false;
+    if(year && (b.date||'').slice(6,10) !== year) return false;
+    if(month && (b.date||'').slice(3,5) !== month) return false;
     if(pay && (b.pay||'').toLowerCase() !== pay.toLowerCase()) return false;
     if(q){
       const hay = ((b.id||'') + ' ' + (b.cust||'') + ' ' + (b.phone||'') + ' ' + (b.doctor||'') + ' ' +
@@ -298,6 +299,7 @@ function renderDetail(id){
       <div><span class="lbl">Staff:</span> <span class="val">${b.staff_name || '-'}</span></div>
       <div><span class="lbl">Bill Type:</span> <span class="val">${b.bill_type || 'retail'}</span></div>
       <div><span class="lbl">Payment Verified:</span> <span class="val" style="color:${b.payment_verified?'#16a34a':'#dc2626'};">${b.payment_verified ? '✓ Yes' : '✗ Pending'}</span></div>
+      ${b.upi_txn ? `<div><span class="lbl">UPI Ref:</span> <span class="val mono" style="color:#1d4ed8;">${b.upi_txn}</span></div>` : ''}
     </div>
     <table class="items-tbl">
       <thead><tr><th>#</th><th>Medicine</th><th style="text-align:center;">Qty</th><th style="text-align:right;">Rate</th><th style="text-align:right;">Disc</th><th style="text-align:right;">Amount</th></tr></thead>
@@ -323,8 +325,134 @@ function renderDetail(id){
       <button class="btn btn-wa" onclick="sendWA('${id}')"><i class="fab fa-whatsapp"></i> Send to WhatsApp</button>
       <button class="btn btn-print" onclick="window.open('/bill/${id}','_blank')"><i class="fas fa-print"></i> Print</button>
       <a class="btn btn-blue" href="/bill/${id}" target="_blank"><i class="fas fa-external-link-alt"></i> Open Receipt</a>
-    </div>`;
+      <button class="btn" style="background:#f59e0b;color:#fff" onclick="openEdit('${id}')"><i class="fas fa-pen"></i> Edit Bill</button>
+    </div>
+    <div id="edit-${id}" style="display:none;margin-top:14px;border-top:2px dashed #e5e7eb;padding-top:14px"></div>`;
   document.getElementById('detail-content-' + id).innerHTML = html;
+}
+
+// ── Edit an existing bill ──
+// item shape stays {id, name, qty, price, disc, amount} to match what
+// save_bill/the printed receipt already expect - editing doesn't change
+// the shape, just lets qty/disc/items be corrected after the fact.
+let editCart = {};   // medId -> {id, name, qty, price, disc}
+
+function lineAmount(it) {
+  const gross = it.qty * it.price;
+  return gross - (gross * (it.disc || 0) / 100);
+}
+
+function openEdit(id) {
+  const b = filtered.find(x => x.id === id);
+  if (!b) return;
+  editCart = {};
+  (b.items || []).forEach(it => {
+    const key = it.id || it.name;
+    editCart[key] = { id: it.id || '', name: it.name, qty: it.qty || 1, price: it.price || 0, disc: it.disc || 0 };
+  });
+  const box = document.getElementById('edit-' + id);
+  box.style.display = '';
+  box.innerHTML = `
+    <div style="font-weight:700;margin-bottom:8px;color:#b45309"><i class="fas fa-pen"></i> Editing this bill</div>
+    <div style="display:flex;gap:8px;margin-bottom:10px">
+      <input type="text" id="editSearch-${id}" placeholder="Search medicine to add…" autocomplete="off"
+             style="flex:1;padding:8px 10px;border:1px solid #d1d5db;border-radius:8px;font-size:.85rem">
+    </div>
+    <div id="editSearchResults-${id}" style="margin-bottom:10px"></div>
+    <table class="items-tbl" id="editTbl-${id}">
+      <thead><tr><th>Medicine</th><th style="text-align:center">Qty</th><th style="text-align:right">Rate</th>
+        <th style="text-align:right">Disc %</th><th style="text-align:right">Amount</th><th></th></tr></thead>
+      <tbody id="editBody-${id}"></tbody>
+    </table>
+    <div style="text-align:right;margin-top:10px;font-weight:700" id="editTotal-${id}"></div>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="btn btn-blue" onclick="saveEdit('${id}')"><i class="fas fa-check"></i> Save changes</button>
+      <button class="btn btn-ghost" onclick="document.getElementById('edit-${id}').style.display='none'">Cancel</button>
+    </div>`;
+  renderEditRows(id);
+
+  let deb;
+  document.getElementById(`editSearch-${id}`).addEventListener('input', (e) => {
+    clearTimeout(deb);
+    const q = e.target.value.trim();
+    const results = document.getElementById(`editSearchResults-${id}`);
+    if (q.length < 2) { results.innerHTML = ''; return; }
+    deb = setTimeout(async () => {
+      const r = await fetch(`/api/medicines/search?q=${encodeURIComponent(q)}&limit=8`);
+      const d = await r.json();
+      const meds = d.medicines || [];
+      results.innerHTML = meds.map((m, i) => `
+        <div class="edit-result-row" data-i="${i}" style="padding:7px 10px;border:1px solid #e5e7eb;border-radius:6px;
+             margin-bottom:4px;cursor:pointer;display:flex;justify-content:space-between">
+          <span>${m.name}</span><span>₹${(m.mrp || 0).toFixed(2)}</span>
+        </div>`).join('') || '<div style="color:#6b7280;font-size:.8rem;padding:6px">No matches.</div>';
+      results.querySelectorAll('.edit-result-row').forEach(row => row.addEventListener('click', () => {
+        const m = meds[+row.dataset.i];
+        const key = m.id || m.name;
+        if (editCart[key]) editCart[key].qty += 1;
+        else editCart[key] = { id: m.id || '', name: m.name, qty: 1, price: m.mrp || 0, disc: 0 };
+        document.getElementById(`editSearch-${id}`).value = '';
+        results.innerHTML = '';
+        renderEditRows(id);
+      }));
+    }, 200);
+  });
+}
+
+function renderEditRows(id) {
+  const body = document.getElementById(`editBody-${id}`);
+  const keys = Object.keys(editCart);
+  let total = 0;
+  body.innerHTML = keys.map(key => {
+    const it = editCart[key];
+    const amt = lineAmount(it);
+    total += amt;
+    return `<tr>
+      <td><strong>${it.name}</strong></td>
+      <td style="text-align:center"><input type="number" min="1" value="${it.qty}" style="width:60px"
+          onchange="editCart['${key}'].qty=Math.max(1,parseInt(this.value)||1);renderEditRows('${id}')"></td>
+      <td style="text-align:right"><input type="number" min="0" step="0.01" value="${it.price}" style="width:80px;text-align:right"
+          onchange="editCart['${key}'].price=parseFloat(this.value)||0;renderEditRows('${id}')"></td>
+      <td style="text-align:right"><input type="number" min="0" max="100" value="${it.disc}" style="width:60px;text-align:right"
+          onchange="editCart['${key}'].disc=parseFloat(this.value)||0;renderEditRows('${id}')"></td>
+      <td style="text-align:right;font-family:monospace">₹${amt.toFixed(2)}</td>
+      <td><button class="btn-view" onclick="delete editCart['${key}'];renderEditRows('${id}')">✕</button></td>
+    </tr>`;
+  }).join('');
+  document.getElementById(`editTotal-${id}`).textContent = `Subtotal: ₹${total.toFixed(2)} (GST applied on save, same as original)`;
+}
+
+async function saveEdit(id) {
+  const b = filtered.find(x => x.id === id);
+  if (!b) return;
+  const items = Object.values(editCart).map(it => ({
+    id: it.id, name: it.name, qty: it.qty, price: it.price, disc: it.disc,
+    amount: Math.round(lineAmount(it) * 100) / 100,
+  }));
+  if (!items.length) { showToast('A bill needs at least one item', true); return; }
+
+  const sub = items.reduce((s, it) => s + it.amount, 0);
+  // GST rate inferred from the original bill's own sub/tax so editing
+  // doesn't have to re-derive per-item tax slabs this app never stored
+  // per line - it keeps whatever rate the bill was originally billed at.
+  const origSub = b.sub || (items.reduce((s, it) => s + it.qty * it.price, 0));
+  const gstRate = origSub > 0 ? (b.tax || 0) / origSub : 0;
+  const tax = Math.round(sub * gstRate * 100) / 100;
+  const total = Math.round((sub + tax) * 100) / 100;
+
+  try {
+    const res = await fetch(`/api/bills/${id}`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cust: b.cust, phone: b.phone, pay: b.pay, sub, disc: 0, tax, total, items, doctor: b.doctor })
+    });
+    const d = await res.json();
+    if (!res.ok || d.status !== 'success') { showToast(d.message || 'Save failed', true); return; }
+    showToast('Bill updated ✓');
+    document.getElementById('edit-' + id).style.display = 'none';
+    loadBills();
+  } catch (e) {
+    showToast('Save failed: ' + e.message, true);
+  }
 }
 
 function sendWA(id){
@@ -340,7 +468,8 @@ function sendWA(id){
 
   const items = b.items || [];
   const lines = [];
-  lines.push('🏥 *SELVAM MEDICALS*');
+  const shopName = (b.shop_name || document.title.replace(/[—–-].*/, '').trim() || 'MediVision AI').toUpperCase();
+  lines.push('🏥 *' + shopName + '*');
   lines.push('━━━━━━━━━━━━━━━');
   lines.push('Bill: ' + b.id);
   lines.push('Date: ' + b.date);
