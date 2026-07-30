@@ -113,13 +113,80 @@ CREATE TABLE IF NOT EXISTS demand_log (
 
 CREATE TABLE IF NOT EXISTS shop_logins (
     shop_id     INTEGER PRIMARY KEY,
-    pin         TEXT DEFAULT '',
+    pin         TEXT DEFAULT '',      -- legacy plaintext; emptied on first login after upgrade
+    pin_salt    TEXT DEFAULT '',
+    pin_hash    TEXT DEFAULT '',
     last_login  TEXT DEFAULT ''
 );
 """
 
 with conn() as _c:
     _c.executescript(WANTED_SCHEMA)
+
+
+# ══════════════════════════════════════════════════════════════════════
+#  SHOP CREDENTIALS
+#
+#  Retailer secrets used to be stored in shop_logins.pin as PLAIN TEXT and
+#  compared with `!=`. Anyone with a copy of a tenant DB - a backup, a
+#  support dump, the platform owner - could read every retailer's PIN, and
+#  people reuse PINs. Now salted-SHA256, same scheme as staff_users and
+#  company logins so there's one hashing story in the codebase.
+#
+#  Migration is lazy and non-breaking: a row that still has plaintext is
+#  verified against it once, then immediately rewritten as a hash (see
+#  shop_login). No retailer has to be reset, and the plaintext is gone
+#  after their next sign-in. ensure_shop_login_columns() adds the new
+#  columns to tenant DBs created before this change.
+# ══════════════════════════════════════════════════════════════════════
+def _hash_pin(pin: str, salt: str | None = None) -> tuple[str, str]:
+    import hashlib
+    salt = salt or secrets.token_hex(8)
+    return salt, hashlib.sha256((salt + pin).encode()).hexdigest()
+
+
+def _has_credential(row) -> bool:
+    """True if this shop has ever set a secret (hashed or legacy plaintext)."""
+    if not row:
+        return False
+    try:
+        if row["pin_hash"]:
+            return True
+    except (IndexError, KeyError):
+        pass
+    return bool(row["pin"])
+
+
+def verify_shop_pin(row, pin: str) -> bool:
+    import hmac
+    try:
+        stored_hash, stored_salt = row["pin_hash"], row["pin_salt"]
+    except (IndexError, KeyError):
+        stored_hash, stored_salt = "", ""
+    if stored_hash:
+        return hmac.compare_digest(stored_hash, _hash_pin(pin, stored_salt)[1])
+    # legacy plaintext row
+    return bool(row["pin"]) and hmac.compare_digest(row["pin"], pin)
+
+
+def ensure_shop_login_columns():
+    with conn() as c:
+        cols = {r["name"] for r in c.execute("PRAGMA table_info(shop_logins)").fetchall()}
+        for col in ("pin_salt", "pin_hash"):
+            if col not in cols:
+                c.execute(f"ALTER TABLE shop_logins ADD COLUMN {col} TEXT DEFAULT ''")
+
+
+def set_shop_pin(shop_id: int, pin: str):
+    """Set/reset a shop's password. Never stores it readable."""
+    ensure_shop_login_columns()
+    salt, h = _hash_pin(pin)
+    with conn() as c:
+        c.execute("""INSERT INTO shop_logins (shop_id, pin, pin_salt, pin_hash)
+                     VALUES (?,'',?,?)
+                     ON CONFLICT(shop_id) DO UPDATE SET pin='',
+                       pin_salt=excluded.pin_salt, pin_hash=excluded.pin_hash""",
+                  (shop_id, salt, h))
 
 
 # ══════════════════════════════════════════════════════════════════════
@@ -611,6 +678,7 @@ def shop_login():
             session["tenant"] = company           # bind DB before querying shops
             from flask import g
             g.tenant_slug, g.tenant_db = company, T.tenant_db_path(company)
+            ensure_shop_login_columns()           # self-heal pre-hash tenant DBs
             with conn() as c:
                 # status='active' is a SECURITY filter, not a tidiness one.
                 # Rows exist here that must never be able to sign in:
@@ -631,27 +699,41 @@ def shop_login():
                 # not yet approved - don't confirm to a stranger that a given
                 # phone number is registered with this distributor.
                 error = "No active shop with that code. If you've just applied, wait for approval."
-            elif row and row["pin"] and row["pin"] != pin:
-                session.pop("tenant", None)
-                error = "Wrong PIN."
-            elif not row or not row["pin"]:
-                # first sign-in sets the PIN
-                if len(pin) < 4:
+            elif _has_credential(row):
+                if not verify_shop_pin(row, pin):
                     session.pop("tenant", None)
-                    error = "Choose a PIN of at least 4 digits for your first sign-in."
+                    error = "Wrong password."
                 else:
                     with conn() as c:
-                        c.execute("""INSERT INTO shop_logins (shop_id, pin, last_login)
-                                     VALUES (?,?,datetime('now'))
-                                     ON CONFLICT(shop_id) DO UPDATE SET pin=excluded.pin,
-                                       last_login=datetime('now')""", (shop["id"], pin))
+                        # Upgrade a legacy plaintext row to a hash the moment
+                        # its owner proves they know the secret. Existing shops
+                        # keep working; the plaintext disappears on first login
+                        # rather than needing every retailer reset at once.
+                        if row["pin"]:
+                            salt, h = _hash_pin(pin)
+                            c.execute("UPDATE shop_logins SET pin='', pin_salt=?, pin_hash=? WHERE shop_id=?",
+                                      (salt, h, shop["id"]))
+                        c.execute("UPDATE shop_logins SET last_login=datetime('now') WHERE shop_id=?",
+                                  (shop["id"],))
                     session["shop_id"], session["shop_name"] = shop["id"], shop["name"]
                     return redirect(url_for("shop_home"))
             else:
-                with conn() as c:
-                    c.execute("UPDATE shop_logins SET last_login=datetime('now') WHERE shop_id=?", (shop["id"],))
-                session["shop_id"], session["shop_name"] = shop["id"], shop["name"]
-                return redirect(url_for("shop_home"))
+                # First sign-in sets the password. Stored hashed from the
+                # start - there is no code path that writes a new secret in
+                # readable form.
+                if len(pin) < 4:
+                    session.pop("tenant", None)
+                    error = "Choose a password of at least 4 characters for your first sign-in."
+                else:
+                    salt, h = _hash_pin(pin)
+                    with conn() as c:
+                        c.execute("""INSERT INTO shop_logins (shop_id, pin, pin_salt, pin_hash, last_login)
+                                     VALUES (?,'',?,?,datetime('now'))
+                                     ON CONFLICT(shop_id) DO UPDATE SET pin='',
+                                       pin_salt=excluded.pin_salt, pin_hash=excluded.pin_hash,
+                                       last_login=datetime('now')""", (shop["id"], salt, h))
+                    session["shop_id"], session["shop_name"] = shop["id"], shop["name"]
+                    return redirect(url_for("shop_home"))
 
     return render_template("shop_login.html", error=error, company=company)
 
@@ -1114,3 +1196,25 @@ def shop_reject(shop_id):
     audit(session.get("ws_user"), "reject_shop", "shop", shop_id, shop["name"])
     flash(f"{shop['name']} rejected.", "ok")
     return redirect(url_for("shops_pending"))
+
+
+@app.route("/shops/<int:shop_id>/resetpin", methods=["POST"])
+@login_required
+def shop_reset_pin(shop_id):
+    """
+    Generate a fresh password for a retailer and show it ONCE.
+
+    Shown once and never again because it is only stored hashed - there is
+    no query that can recover it later, for the distributor or for us. If
+    the shop loses it, it gets reset again; that's the intended trade.
+    """
+    with conn() as c:
+        shop = c.execute("SELECT id, name FROM retail_shops WHERE id=?", (shop_id,)).fetchone()
+    if not shop:
+        abort(404)
+    new_pin = secrets.token_hex(3).upper()   # 6 hex chars — readable over the phone
+    set_shop_pin(shop_id, new_pin)
+    audit(session.get("ws_user"), "reset_shop_pin", "shop", shop_id, shop["name"])
+    flash(f"New password for {shop['name']}: {new_pin} — send it to them now, "
+          f"it is stored hashed and cannot be shown again.", "ok")
+    return redirect(request.referrer or url_for("shops"))

@@ -8058,6 +8058,13 @@ def init_stage11_db():
             conn.execute("ALTER TABLE ws_shops ADD COLUMN shop_code TEXT")
         if "shop_password" not in cols:
             conn.execute("ALTER TABLE ws_shops ADD COLUMN shop_password TEXT")
+        if "shop_password_hash" not in cols:
+            # shop_password was stored PLAIN TEXT and compared with `=` in SQL -
+            # readable by anyone with a copy of the DB. New column holds a
+            # werkzeug hash (already used elsewhere in this file for
+            # platform_admins/retail_shops/wholesale_accounts); shop_password
+            # stays only as a legacy fallback for rows not yet migrated.
+            conn.execute("ALTER TABLE ws_shops ADD COLUMN shop_password_hash TEXT")
         # Add source column to ws_orders
         ocols = {r["name"] for r in conn.execute("PRAGMA table_info(ws_orders)").fetchall()}
         if "source" not in ocols:
@@ -8086,7 +8093,8 @@ def init_stage11_db():
         for i, s in enumerate(shops, 1):
             code = f"SHOP{i:03d}"
             pwd  = f"shop@{i:03d}"
-            conn.execute("UPDATE ws_shops SET shop_code=?, shop_password=? WHERE id=?", (code, pwd, s["id"]))
+            conn.execute("UPDATE ws_shops SET shop_code=?, shop_password_hash=? WHERE id=?",
+                        (code, generate_password_hash(pwd), s["id"]))
         conn.commit()
 
 
@@ -8118,15 +8126,47 @@ def api_ws_shop_auth():
         return jsonify({"error": "Missing credentials"}), 400
     with get_conn() as conn:
         shop = conn.execute(
-            "SELECT * FROM ws_shops WHERE UPPER(shop_code)=? AND shop_password=? AND is_active=1",
-            (code, pwd)
+            "SELECT * FROM ws_shops WHERE UPPER(shop_code)=? AND is_active=1", (code,)
         ).fetchone()
-        if not shop:
+        ok = False
+        if shop and shop["shop_password_hash"]:
+            ok = check_password_hash(shop["shop_password_hash"], pwd)
+        elif shop and shop["shop_password"]:
+            # Legacy plaintext row - verify against it once, then upgrade to a
+            # hash immediately so the readable copy doesn't outlive this login.
+            ok = shop["shop_password"] == pwd
+            if ok:
+                conn.execute("UPDATE ws_shops SET shop_password=NULL, shop_password_hash=? WHERE id=?",
+                            (generate_password_hash(pwd), shop["id"]))
+                conn.commit()
+        if not shop or not ok:
             return jsonify({"error": "Invalid shop code or password"}), 401
-        # Return safe shop info (no password)
+        # Return safe shop info (no password in any form)
         sd = dict(shop)
         sd.pop("shop_password", None)
+        sd.pop("shop_password_hash", None)
         return jsonify({"shop": sd})
+
+
+@app.route("/api/ws/shop-reset-password", methods=["POST"])
+def api_ws_shop_reset_password():
+    """Owner-facing reset: generate a fresh password, store it hashed, show it once."""
+    if not (session.get("portal_user") or session.get("admin_user") or session.get("is_platform_admin")):
+        return jsonify({"error": "Sign in required"}), 401
+    d = request.json or {}
+    shop_id = d.get("shop_id")
+    if not shop_id:
+        return jsonify({"error": "shop_id required"}), 400
+    import secrets as _secrets
+    new_pwd = _secrets.token_hex(3).upper()
+    with get_conn() as conn:
+        shop = conn.execute("SELECT id, name FROM ws_shops WHERE id=?", (shop_id,)).fetchone()
+        if not shop:
+            return jsonify({"error": "Not found"}), 404
+        conn.execute("UPDATE ws_shops SET shop_password=NULL, shop_password_hash=? WHERE id=?",
+                    (generate_password_hash(new_pwd), shop_id))
+        conn.commit()
+    return jsonify({"name": shop["name"], "password": new_pwd})
 
 
 # ── Schemes API ───────────────────────────────────────────────────
