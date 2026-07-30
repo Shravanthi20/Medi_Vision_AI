@@ -172,17 +172,25 @@
   <div class="billing-layout">
     <!-- LEFT: medicine search + items -->
     <div class="bill-left">
-      <div class="search-bar-wrap" style="position:relative">
-        <input
-          class="search-bar"
-          id="medSearch"
-          type="text"
-          placeholder="Type medicine name or generic (e.g. Dolo, Paracetamol)..."
-          autocomplete="off"
-          oninput="onSearch(this.value)"
-          onkeydown="onSearchKey(event)"
-        />
-        <div class="search-results" id="searchResults"></div>
+      <div class="search-bar-wrap" style="position:relative;display:flex;gap:8px;align-items:flex-start">
+        <div style="flex:1;position:relative">
+          <input
+            class="search-bar"
+            id="medSearch"
+            type="text"
+            placeholder="Type medicine name or generic (e.g. Dolo, Paracetamol)..."
+            autocomplete="off"
+            oninput="onSearch(this.value)"
+            onkeydown="onSearchKey(event)"
+          />
+          <div class="search-results" id="searchResults"></div>
+        </div>
+        <button onclick="openSymptomAdvisor()" title="Symptom Advisor"
+          style="flex-shrink:0;background:#ecfdf5;color:#047857;border:1.5px solid #6ee7b7;
+                 border-radius:8px;padding:0 14px;font-size:.85rem;font-weight:600;cursor:pointer;
+                 height:44px;white-space:nowrap">
+          🩺 Symptom Advisor
+        </button>
       </div>
 
       <div class="bill-items-wrap">
@@ -324,6 +332,33 @@
 
 <div class="toast" id="toast"></div>
 
+<!-- SYMPTOM ADVISOR MODAL -->
+<div id="symptomModalBg" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:300;
+     align-items:center;justify-content:center;padding:20px">
+  <div style="background:#fff;border-radius:14px;width:min(640px,95vw);max-height:85vh;overflow-y:auto;
+       box-shadow:0 24px 60px rgba(0,0,0,.25)">
+    <div style="padding:18px 22px;border-bottom:1px solid var(--gray-border);display:flex;
+         justify-content:space-between;align-items:center;position:sticky;top:0;background:#fff;z-index:1">
+      <h3 style="font-size:1.05rem;font-weight:700">🩺 Symptom Advisor</h3>
+      <button onclick="closeSymptomAdvisor()" style="background:none;border:none;font-size:1.2rem;
+              cursor:pointer;color:#6b7280">✕</button>
+    </div>
+    <div style="padding:18px 22px">
+      <p style="font-size:.82rem;color:#6b7280;margin-bottom:12px">
+        Select what the customer describes. Suggestions are from your own stock, not a diagnosis —
+        confirm before billing, same as you always would.
+      </p>
+      <div id="symptomChips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px"></div>
+      <button onclick="runSymptomSuggest()" id="symptomGoBtn"
+        style="background:var(--green);color:#fff;border:none;border-radius:8px;padding:10px 20px;
+               font-size:.88rem;font-weight:600;cursor:pointer;width:100%">
+        Get Suggestions →
+      </button>
+      <div id="symptomResults" style="margin-top:16px"></div>
+    </div>
+  </div>
+</div>
+
 <script>
 let allMeds = [];
 let billItems = [];
@@ -358,6 +393,120 @@ let focusedSearchIdx = -1;
   const medData = await res.json();
   allMeds = Array.isArray(medData) ? medData : (medData.items || []);
 })();
+
+// ── Symptom Advisor ──
+// Mirrors _SYMPTOM_MEDICINE_MAP's keys in app.py - kept as a small static
+// list here rather than fetched, since it almost never changes and this
+// avoids an extra round-trip every time the modal opens.
+const SYMPTOM_LIST = [
+  ['fever','Fever'],['cough_dry','Dry Cough'],['cough_wet','Productive Cough'],
+  ['cold','Cold / Runny Nose'],['headache','Headache'],['migraine','Migraine'],
+  ['body_pain','Body / Muscle Pain'],['sore_throat','Sore Throat'],
+  ['stomach_pain','Stomach Pain / Cramps'],['acidity','Acidity / Heartburn'],
+  ['nausea','Nausea / Vomiting'],['diarrhea','Diarrhea'],['constipation','Constipation'],
+  ['skin_rash','Skin Rash / Itching'],['eye_irritation','Eye Irritation'],
+  ['ear_pain','Ear Pain'],['toothache','Toothache'],['uti','UTI / Burning Urination'],
+  ['allergy','Allergy'],['back_pain','Back Pain'],['joint_pain','Joint Pain'],
+  ['insomnia','Insomnia / Poor Sleep'],['anxiety','Anxiety / Stress'],['wound','Wound / Cut'],
+  ['fungal','Fungal Infection'],['vitamin_def','Vitamin / Mineral Deficiency'],
+  ['menstrual','Menstrual Cramps'],['bp_high','High Blood Pressure'],
+  ['diabetes','Diabetes'],['insect_bite','Insect Bite'],
+];
+let selectedSymptoms = new Set();
+
+function openSymptomAdvisor() {
+  selectedSymptoms.clear();
+  document.getElementById('symptomChips').innerHTML = SYMPTOM_LIST.map(([id, label]) => `
+    <button class="symChip" data-sym="${id}"
+      style="font-size:.78rem;padding:6px 12px;border-radius:16px;border:1.5px solid #d1d5db;
+             background:#fff;color:#374151;cursor:pointer">${esc(label)}</button>
+  `).join('');
+  document.getElementById('symptomChips').querySelectorAll('.symChip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const id = chip.dataset.sym;
+      if (selectedSymptoms.has(id)) {
+        selectedSymptoms.delete(id);
+        chip.style.background = '#fff'; chip.style.color = '#374151'; chip.style.borderColor = '#d1d5db';
+      } else {
+        selectedSymptoms.add(id);
+        chip.style.background = 'var(--green)'; chip.style.color = '#fff'; chip.style.borderColor = 'var(--green)';
+      }
+    });
+  });
+  document.getElementById('symptomResults').innerHTML = '';
+  document.getElementById('symptomModalBg').style.display = 'flex';
+}
+
+function closeSymptomAdvisor() {
+  document.getElementById('symptomModalBg').style.display = 'none';
+}
+
+async function runSymptomSuggest() {
+  const resultsEl = document.getElementById('symptomResults');
+  if (!selectedSymptoms.size) {
+    resultsEl.innerHTML = `<div style="color:#dc2626;font-size:.85rem">Select at least one symptom first.</div>`;
+    return;
+  }
+  const btn = document.getElementById('symptomGoBtn');
+  btn.disabled = true; btn.textContent = 'Thinking…';
+  try {
+    const r = await fetch('/api/symptom/suggest', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ symptoms: [...selectedSymptoms] }),
+    });
+    const d = await r.json();
+    btn.disabled = false; btn.textContent = 'Get Suggestions →';
+    if (d.alert) { resultsEl.innerHTML = `<div style="color:#dc2626;font-size:.85rem">${esc(d.alert)}</div>`; return; }
+    if (!d.medicines || !d.medicines.length) {
+      resultsEl.innerHTML = `<div style="color:#6b7280;font-size:.85rem">No matches in your current stock for these symptoms.</div>`;
+      return;
+    }
+    resultsEl.innerHTML = d.medicines.slice(0, 20).map(m => `
+      <div style="border:1px solid var(--gray-border);border-radius:8px;padding:10px 12px;margin-bottom:8px;
+           display:flex;justify-content:space-between;align-items:center;gap:10px">
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:600;font-size:.88rem">${esc(m.name)}
+            <span style="font-size:.68rem;font-weight:400;color:${m.confidence>=70?'#16a34a':'#d97706'}">
+              ${m.confidence}% match</span></div>
+          <div style="font-size:.72rem;color:#6b7280">${esc(m.reason || '')}</div>
+          ${m.warnings && m.warnings.length ? `<div style="font-size:.7rem;color:#dc2626;margin-top:2px">⚠ ${esc(m.warnings.join('; '))}</div>` : ''}
+          ${m.stock <= 0 ? `<div style="font-size:.7rem;color:#dc2626">Out of stock</div>` : `<div style="font-size:.7rem;color:#6b7280">Stock: ${m.stock} · ₹${m.mrp}</div>`}
+        </div>
+        <button class="symAddBtn" data-name="${esc(m.name)}" ${m.stock<=0?'disabled':''}
+          style="flex-shrink:0;background:${m.stock<=0?'#e5e7eb':'#ecfdf5'};color:${m.stock<=0?'#9ca3af':'#047857'};
+                 border:1.5px solid ${m.stock<=0?'#e5e7eb':'#6ee7b7'};border-radius:6px;padding:6px 12px;
+                 font-size:.78rem;font-weight:600;cursor:${m.stock<=0?'default':'pointer'};white-space:nowrap">
+          + Add
+        </button>
+      </div>
+    `).join('');
+    resultsEl.querySelectorAll('.symAddBtn:not([disabled])').forEach(b => {
+      b.addEventListener('click', () => addSymptomSuggestion(b.dataset.name, b));
+    });
+  } catch (e) {
+    btn.disabled = false; btn.textContent = 'Get Suggestions →';
+    resultsEl.innerHTML = `<div style="color:#dc2626;font-size:.85rem">${esc(e.message)}</div>`;
+  }
+}
+
+// Suggestions come back as a name only (no medicine id - the advisor
+// scores by name/keyword, it doesn't carry a row id through). Look the
+// real row up by exact name before adding, same as any other add-to-bill
+// path needs a real id to reconcile stock against.
+async function addSymptomSuggestion(name, btnEl) {
+  try {
+    const r = await fetch(`/api/medicines?q=${encodeURIComponent(name)}&limit=5`);
+    const results = await r.json();
+    const list = Array.isArray(results) ? results : (results.items || []);
+    const exact = list.find(m => m.n === name) || list[0];
+    if (!exact) { showToast(`Could not find "${name}" to add`, 'red'); return; }
+    if (!allMeds.find(m => m.id === exact.id)) allMeds.push(exact);
+    addItem(exact.id);
+    if (btnEl) { btnEl.textContent = '✓ Added'; btnEl.disabled = true; btnEl.style.cursor = 'default'; }
+  } catch (e) {
+    showToast('Could not add: ' + e.message, 'red');
+  }
+}
 
 async function quickAddWanted(medicineName) {
   if (!medicineName) return;
