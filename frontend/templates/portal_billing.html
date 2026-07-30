@@ -359,6 +359,39 @@ let focusedSearchIdx = -1;
   allMeds = Array.isArray(medData) ? medData : (medData.items || []);
 })();
 
+async function quickAddWanted(medicineName) {
+  if (!medicineName) return;
+  const custEl = document.getElementById('custName');
+  const phoneEl = document.getElementById('custPhone');
+  try {
+    const r = await fetch('/api/wanted', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        medicine: medicineName,
+        customer: custEl && custEl.value.trim() !== 'Walk-in Customer' ? custEl.value.trim() : '',
+        phone: phoneEl ? phoneEl.value.trim() : '',
+        qty: 1, priority: 'medium',
+        notes: 'Asked for while billing - out of stock or not in catalog',
+      }),
+    });
+    const d = await r.json();
+    if (d.status === 'ok') {
+      document.getElementById('searchResults').classList.remove('open');
+      showToast(`Added "${medicineName}" to Wanted List ✓`, 'green');
+    } else {
+      showToast(d.error || 'Could not add to Wanted List', 'red');
+    }
+  } catch (e) {
+    alert('Could not add to Wanted List: ' + e.message);
+  }
+}
+
+function esc(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
 function setPayment(mode) {
   payMode = mode;
   document.getElementById('payDisplay').textContent = mode;
@@ -485,7 +518,28 @@ async function doSearch(q) {
     const lower = q.toLowerCase();
     results = allMeds.filter(m => m.n?.toLowerCase().includes(lower) || m.g?.toLowerCase().includes(lower)).slice(0,15);
   }
-  if (!results.length) { container.innerHTML = `<div class="search-item"><span style="color:var(--gray)">No medicines found for "${q}"</span></div>`; container.classList.add('open'); return; }
+  if (!results.length) {
+    // data-attribute + addEventListener rather than an inline onclick with
+    // interpolated text - an onclick="fn('...')" string needs BOTH JS-string
+    // escaping (for the quotes) and HTML-attribute escaping (for the outer
+    // onclick="..." itself) applied in the right order, and it's easy to get
+    // that wrong. A data-attribute is HTML-escaped once by esc() and the
+    // browser hands the original string straight back via .dataset - no
+    // second escaping layer to get wrong.
+    container.innerHTML = `<div class="search-item" style="display:block">
+      <span style="color:var(--gray)">No medicines found for "${esc(q)}"</span>
+      <button class="wantedAddBtn" data-query="${esc(q)}"
+        style="display:block;margin-top:8px;font-size:.75rem;background:#fef3c7;color:#92400e;
+               border:1px solid #fbbf24;border-radius:6px;padding:5px 10px;cursor:pointer;width:100%">
+        🔔 Add "${esc(q)}" to Wanted List
+      </button>
+    </div>`;
+    container.classList.add('open');
+    container.querySelector('.wantedAddBtn')?.addEventListener('click', (e) => {
+      quickAddWanted(e.currentTarget.dataset.query);
+    });
+    return;
+  }
   focusedSearchIdx = -1;
   container.innerHTML = results.map((m, i) => {
     // Margin calculation
@@ -529,7 +583,19 @@ async function doSearch(q) {
         expiryHtml = `<span style="font-size:.63rem;color:#6b7280;display:block;margin-top:2px">✓ Exp ${m.expiry}</span>`;
       }
     }
-    const batchHtml = m.batch ? `<div style="font-size:.62rem;color:#6b7280;margin-top:1px">Batch: ${m.batch}</div>` : '';
+    const batchHtml = m.batch ? `<div style="font-size:.62rem;color:#6b7280;margin-top:1px">Batch: ${esc(m.batch)}</div>` : '';
+    // Location is real column already returned by /api/medicines - just
+    // wasn't shown here. Empty for most rows until it's imported from the
+    // legacy data (no source DBF field for it has been identified yet), so
+    // this renders nothing rather than an empty "Location: " line.
+    const locationHtml = m.location ? `<div style="font-size:.62rem;color:#0369a1;margin-top:1px">📍 ${esc(m.location)}</div>` : '';
+    const outOfStock = (m.s || 0) <= 0;
+    const wantedHtml = outOfStock ? `
+        <button class="wantedAddBtn" data-query="${esc(m.n)}"
+          style="font-size:.65rem;background:#fef3c7;color:#92400e;border:1px solid #fbbf24;
+                 border-radius:5px;padding:1px 6px;cursor:pointer;margin-top:2px;display:block;width:100%">
+          🔔 Wanted
+        </button>` : '';
     return `
     <div class="search-item" data-idx="${i}" data-id="${m.id}" onclick="addItem('${m.id}')" style="${expiredBg}">
       <div style="flex:1;min-width:0">
@@ -540,16 +606,23 @@ async function doSearch(q) {
       <div style="text-align:right;flex-shrink:0;margin-left:10px">
         <div class="price-tag">₹${m.p}</div>
         <div class="stock-tag" style="color:${stockColor}">Stock: ${m.s}</div>
-        ${batchHtml}
+        ${batchHtml}${locationHtml}
         <button onclick="event.stopPropagation();showAlts('${m.id}','${(m.g||m.n).replace(/'/g,'')}')"
           style="font-size:.65rem;background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe;border-radius:5px;padding:1px 6px;cursor:pointer;margin-top:2px">
           🔄 Alts
         </button>
+        ${wantedHtml}
       </div>
     </div>`;
   }).join('');
   container._results = results;
   container.classList.add('open');
+  container.querySelectorAll('.wantedAddBtn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      quickAddWanted(e.currentTarget.dataset.query);
+    });
+  });
 }
 
 function onSearchKey(e) {
