@@ -871,3 +871,60 @@ def items_import():
         return redirect(url_for("items"))
 
     return render_template("items_import.html")
+
+
+@app.route("/items/import/template.xlsx")
+@login_required
+def items_import_template():
+    """
+    Downloadable starter workbook for /items/import, headers exactly
+    matching _IMPORT_FIELDS aliases so a distributor's staff can fill it
+    and re-upload with zero column-mapping guesswork.
+
+    Deliberately only ONE example row, and it's built to be harmless if
+    someone uploads the template unmodified rather than deleting it first
+    (an earlier version of this got that wrong twice: a real code like
+    "DOLO650" silently overwrote whatever item already had that code, and
+    a second "instructions" row had text in the Name column, so the
+    parser - correctly - treated it as a real product and created one.
+    _parse_stock_file() only skips a row when Name is BLANK, so anything
+    written into that column becomes an item; instructions belong in a
+    cell comment, never in the data itself.) The code below can't collide
+    with a real SKU and the name makes the row impossible to mistake for
+    real stock even if left in.
+    """
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill
+    from openpyxl.comments import Comment
+    from flask import send_file
+    import io as _io
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Stock upload"
+    headers = ["Code", "Name", "Generic", "Manufacturer", "Pack Size", "MRP",
+              "PTR", "PTR B", "PTR C", "GST", "HSN", "Scheme", "Stock",
+              "Reorder Level", "Category", "Batch", "Expiry"]
+    ws.append(headers)
+    for cell in ws[1]:
+        cell.font = Font(bold=True, color="FFFFFF")
+        cell.fill = PatternFill("solid", fgColor="0F766E")
+    ws["B1"].comment = Comment(
+        "Only Name is required - everything else is optional.\n"
+        "Row 2 below is a safe example: its code can't collide with a real "
+        "SKU, so it's fine to leave, but delete it once you've added your "
+        "own rows.\nScheme format: buy-quantity+free-quantity, e.g. 10+1.",
+        "Wholesale app")
+    ws.append(["EXAMPLE-DELETE-ME", "EXAMPLE ROW — delete or edit, do not leave as real stock",
+               "", "", "", 0, 0, 0, 0, 0, "", "", 0, 0, "", "", ""])
+    for cell in ws[2]:
+        cell.font = Font(italic=True, color="9CA3AF")
+    widths = [18, 40, 16, 18, 12, 9, 9, 9, 9, 7, 11, 10, 9, 12, 14, 14, 12]
+    for i, w in enumerate(widths, 1):
+        ws.column_dimensions[chr(64 + i)].width = w
+
+    buf = _io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    return send_file(buf, as_attachment=True, download_name="stock-upload-template.xlsx",
+                     mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")

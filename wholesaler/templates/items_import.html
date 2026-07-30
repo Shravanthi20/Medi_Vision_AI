@@ -2,7 +2,8 @@
 {% block title %}Import stock — Wholesale{% endblock %}
 {% block body %}
 <h1>Import stock</h1>
-<p class="sub">Upload a supplier price list or your own stock sheet. Re-uploading an updated file updates existing items instead of duplicating them.</p>
+<p class="sub">Upload a supplier price list or your own stock sheet. Re-uploading an updated file updates existing items instead of duplicating them.
+  <a href="{{ url_for('items_import_template') }}">Download a starter template →</a></p>
 
 <div class="card">
   <form method="POST" enctype="multipart/form-data">

@@ -1218,3 +1218,55 @@ def shop_reset_pin(shop_id):
     flash(f"New password for {shop['name']}: {new_pin} — send it to them now, "
           f"it is stored hashed and cannot be shown again.", "ok")
     return redirect(request.referrer or url_for("shops"))
+
+
+@app.route("/shop/wanted/template.xlsx")
+@shop_required
+def shop_wanted_template():
+    """
+    Downloadable starter workbook for a retailer's wanted list. Headers
+    match what parse_wanted_file() looks for (name/qty by column-heading
+    keyword, very forgiving), so this is a helper for shops who'd rather
+    start from a blank sheet than write column headers themselves - not a
+    strict requirement, the upload still works without it.
+
+    The example rows used to be real medicine names (dolo650, pan 40...)
+    followed by an "instructions" row with text in the Name column. Both
+    are the same mistake the stock template had: parse_wanted_file() only
+    skips a row when Name is blank, so real names would actually match
+    real stock if left in un-edited, and the instructions row would have
+    become a wanted-list line of its own. A wanted-list upload can't
+    silently place an order on its own - shop_wanted_review() requires the
+    shop to confirm each line before anything is ordered - but there's no
+    reason to rely on that safety net when the example can just not be a
+    real product name in the first place.
+    """
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill
+    from openpyxl.comments import Comment
+    from flask import send_file
+    import io as _io
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Wanted list"
+    ws.append(["Medicine Name", "Quantity"])
+    for cell in ws[1]:
+        cell.font = Font(bold=True, color="FFFFFF")
+        cell.fill = PatternFill("solid", fgColor="0F766E")
+    ws["A1"].comment = Comment(
+        "Write medicine names exactly how you normally would - "
+        "'dolo650', 'PAN 40', 'augmentin 625 tab' all work. "
+        "We learn your spellings after the first upload.",
+        "Wholesale app")
+    ws.append(["EXAMPLE — delete or edit this row, do not leave as a real request", 1])
+    for cell in ws[2]:
+        cell.font = Font(italic=True, color="9CA3AF")
+    ws.column_dimensions["A"].width = 46
+    ws.column_dimensions["B"].width = 12
+
+    buf = _io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    return send_file(buf, as_attachment=True, download_name="wanted-list-template.xlsx",
+                     mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
