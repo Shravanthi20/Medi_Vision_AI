@@ -77,7 +77,13 @@
     .empty-bill .icon { font-size: 2.5rem; margin-bottom: 12px; }
 
     /* RIGHT — summary */
-    .bill-right { width: 320px; flex-shrink: 0; display: flex; flex-direction: column; background: white; }
+    /* overflow-y:auto (not the default 'visible') is what makes this panel
+       independently scrollable - without it, content past the viewport was
+       clipped by the parent's overflow:hidden and only reachable by luck
+       of mouse-wheel scroll. With a real scroll container, browsers also
+       auto-scroll a Tab-focused field into view natively - that's the
+       actual fix for keyboard users, not JS scrollIntoView plumbing. */
+    .bill-right { width: 320px; flex-shrink: 0; display: flex; flex-direction: column; background: white; overflow-y: auto; }
     .customer-section { padding: 14px 16px; border-bottom: 1px solid var(--gray-border); }
     .customer-section label { font-size: .75rem; font-weight: 700; color: var(--gray); text-transform: uppercase; letter-spacing: .5px; display: block; margin-bottom: 6px; }
     .customer-section input { width: 100%; padding: 9px 12px; border: 1.5px solid var(--gray-border); border-radius: 8px; font-size: .88rem; outline: none; margin-bottom: 8px; font-family: inherit; }
