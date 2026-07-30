@@ -3247,6 +3247,19 @@ def api_import_dbf_bulk():
             outcome["field_count"] = len(fields)
             outcome["mapped_field_count"] = len(mapping)
             outcome["unmapped_field_count"] = len(fields) - len(mapping)
+            # Diagnostic: when a legacy DOS/FoxPro pharmacy's field names
+            # don't match any hint in _auto_detect_dbf_mapping (very common
+            # - field names are unique per software vendor, sometimes per
+            # installation), mapping ends up EMPTY, "name" is never found
+            # for any row, and every single record gets silently skipped -
+            # a file can report 36,000 skipped / 0 created with no visible
+            # cause. Surfacing the raw field names + one sample row here
+            # means that failure is diagnosable from the result JSON alone,
+            # without needing filesystem access to the file that caused it.
+            if outcome.get("created", 0) == 0 and outcome.get("updated", 0) == 0 and outcome.get("skipped", 0) > 0:
+                outcome["field_names"] = field_names
+                outcome["detected_mapping"] = mapping
+                outcome["sample_row"] = records[0] if records else None
             results.append(outcome)
         except Exception as e:
             results.append({"filename": filename, "status": "error", "message": str(e)})

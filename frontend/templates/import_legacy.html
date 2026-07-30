@@ -742,9 +742,26 @@ async function runBulkImport() {
       totals.updated += d.totals.updated;
       totals.skipped += d.totals.skipped;
       for (const r of d.results) {
-        allRows.push(r.status === 'error'
-          ? `<tr><td>${esc(r.filename)}</td><td colspan="4" style="color:var(--red)">${esc(r.message)}</td></tr>`
-          : `<tr><td>${esc(r.filename)}</td><td>${r.file_type}</td><td>${r.created}</td><td>${r.updated}</td><td>${r.skipped}</td></tr>`);
+        if (r.status === 'error') {
+          allRows.push(`<tr><td>${esc(r.filename)}</td><td colspan="4" style="color:var(--red)">${esc(r.message)}</td></tr>`);
+          continue;
+        }
+        allRows.push(`<tr><td>${esc(r.filename)}</td><td>${r.file_type}</td><td>${r.created}</td><td>${r.updated}</td><td>${r.skipped}</td></tr>`);
+        // Diagnostic row: 0 created/updated but records were read means the
+        // auto-mapping never found a usable "name" column for this file's
+        // field names, so every row silently skipped. Show what the parser
+        // actually saw so the real column name can be identified without
+        // needing the file itself.
+        if (r.field_names) {
+          allRows.push(`<tr><td colspan="5" style="background:#fffbeb;padding:10px;font-size:.78rem">
+            <b style="color:#b45309">⚠ Nothing matched for ${esc(r.filename)}</b> — every row was skipped because no column looked like a medicine name.<br>
+            <b>Columns in this file:</b> ${r.field_names.map(esc).join(', ')}<br>
+            <b>Auto-detected mapping:</b> ${Object.keys(r.detected_mapping || {}).length
+              ? Object.entries(r.detected_mapping).map(([k, v]) => `${k}→${esc(v)}`).join(', ')
+              : '<i>none — no column name matched any known hint</i>'}<br>
+            ${r.sample_row ? `<b>First row's raw data:</b> <code>${esc(JSON.stringify(r.sample_row))}</code>` : ''}
+          </td></tr>`);
+        }
       }
     } catch (e) {
       // One failed batch must not abandon the remaining files.
