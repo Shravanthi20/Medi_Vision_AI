@@ -663,59 +663,114 @@ async function runImport() {
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
 // ── Bulk folder import ──
+// Upload in BATCHES rather than one giant request. A real pharmacy folder
+// is 200+ files / ~100MB; sending that as a single POST hit both the
+// server's upload cap and held every parsed file in memory at once. Batches
+// keep each request small, bound server memory, survive one bad file
+// without losing the whole run, and let us show real progress.
+const BULK_BATCH_BYTES = 12 * 1024 * 1024;   // ~12MB per request
+const BULK_BATCH_MAX_FILES = 20;
+
+function buildBatches(files) {
+  const batches = [];
+  let cur = [], curBytes = 0;
+  for (const f of files) {
+    // A single file larger than the batch budget still goes on its own -
+    // never silently skip it.
+    if (cur.length && (curBytes + f.size > BULK_BATCH_BYTES || cur.length >= BULK_BATCH_MAX_FILES)) {
+      batches.push(cur); cur = []; curBytes = 0;
+    }
+    cur.push(f); curBytes += f.size;
+  }
+  if (cur.length) batches.push(cur);
+  return batches;
+}
+
+async function postBatch(batch, updateExisting) {
+  const fd = new FormData();
+  for (const f of batch) fd.append('files', f);
+  fd.append('update_existing', updateExisting ? '1' : '0');
+  const res = await fetch('/api/import-dbf/bulk', { method: 'POST', body: fd });
+
+  // A server/proxy error (upload too large, gateway timeout) returns an
+  // HTML page, not JSON - res.json() on that throws "Unexpected token '<'"
+  // and hides the real cause. Check content-type before parsing.
+  const ct = res.headers.get('content-type') || '';
+  if (!ct.includes('application/json')) {
+    const hint = res.status === 413
+      ? `upload rejected as too large (413)`
+      : res.status === 504 || res.status === 502
+      ? `server timed out (${res.status}) - this batch may still be processing`
+      : `unexpected HTTP ${res.status} response`;
+    throw new Error(hint);
+  }
+  const d = await res.json();
+  if (!res.ok || d.status === 'error') throw new Error(d.message || 'batch failed');
+  return d;
+}
+
 async function runBulkImport() {
   const input = document.getElementById('bulkFileInput');
-  const files = input.files;
+  const files = [...(input.files || [])];
   const statusEl = document.getElementById('bulkStatus');
-  if (!files || !files.length) {
+  if (!files.length) {
     statusEl.innerHTML = `<div class="warn-box">⚠️ Choose at least one .DBF file first.</div>`;
     return;
   }
   const btn = document.getElementById('bulkImportBtn');
+  const updateExisting = document.getElementById('bulkUpdateExisting').checked;
   btn.disabled = true;
-  btn.innerHTML = `<span class="spin"></span> Importing ${files.length} file(s)…`;
-  statusEl.innerHTML = '';
 
-  const fd = new FormData();
-  for (const f of files) fd.append('files', f);
-  fd.append('update_existing', document.getElementById('bulkUpdateExisting').checked ? '1' : '0');
+  const batches = buildBatches(files);
+  const totals = { created: 0, updated: 0, skipped: 0 };
+  const allRows = [];
+  let filesDone = 0, batchErrors = 0;
 
-  try {
-    const res = await fetch('/api/import-dbf/bulk', { method: 'POST', body: fd });
-    const d = await res.json();
-    btn.disabled = false;
-    btn.textContent = 'Import all selected files →';
+  const totalMB = (files.reduce((s, f) => s + f.size, 0) / 1048576).toFixed(1);
+  statusEl.innerHTML = `<div class="info-box"><span>⏳</span><span id="bulkProgress">
+    Starting — ${files.length} files (${totalMB} MB) in ${batches.length} batch(es)…</span></div>
+    <div id="bulkRows"></div>`;
 
-    if (!res.ok || d.status === 'error') {
-      statusEl.innerHTML = `<div class="warn-box">❌ ${esc(d.message || 'Bulk import failed')}</div>`;
-      return;
-    }
-
-    const rows = d.results.map(r => {
-      if (r.status === 'error') {
-        return `<tr><td>${esc(r.filename)}</td><td colspan="4" style="color:var(--red)">${esc(r.message)}</td></tr>`;
+  for (let i = 0; i < batches.length; i++) {
+    const batch = batches[i];
+    btn.innerHTML = `<span class="spin"></span> Batch ${i + 1} of ${batches.length}…`;
+    document.getElementById('bulkProgress').textContent =
+      `Batch ${i + 1} of ${batches.length} — ${filesDone} of ${files.length} files done`;
+    try {
+      const d = await postBatch(batch, updateExisting);
+      totals.created += d.totals.created;
+      totals.updated += d.totals.updated;
+      totals.skipped += d.totals.skipped;
+      for (const r of d.results) {
+        allRows.push(r.status === 'error'
+          ? `<tr><td>${esc(r.filename)}</td><td colspan="4" style="color:var(--red)">${esc(r.message)}</td></tr>`
+          : `<tr><td>${esc(r.filename)}</td><td>${r.file_type}</td><td>${r.created}</td><td>${r.updated}</td><td>${r.skipped}</td></tr>`);
       }
-      return `<tr><td>${esc(r.filename)}</td><td>${r.file_type}</td>
-        <td>${r.created}</td><td>${r.updated}</td><td>${r.skipped}</td></tr>`;
-    }).join('');
-
-    statusEl.innerHTML = `
-      <div class="info-box" style="background:rgba(34,197,94,.08);border-color:var(--grn)">
-        <span>✅</span><span><strong>${d.totals.created}</strong> new, <strong>${d.totals.updated}</strong> updated,
-        <strong>${d.totals.skipped}</strong> skipped across ${d.files_processed} file(s).</span>
-      </div>
+    } catch (e) {
+      // One failed batch must not abandon the remaining files.
+      batchErrors++;
+      allRows.push(`<tr><td colspan="5" style="color:var(--red)">Batch ${i + 1}
+        (${batch.map(f => esc(f.name)).join(', ').slice(0, 120)}): ${esc(e.message)}</td></tr>`);
+    }
+    filesDone += batch.length;
+    document.getElementById('bulkRows').innerHTML = `
       <table style="width:100%;margin-top:10px;font-size:.82rem;border-collapse:collapse">
         <thead><tr style="text-align:left;color:var(--muted)">
           <th style="padding:6px">File</th><th style="padding:6px">Type</th>
           <th style="padding:6px">New</th><th style="padding:6px">Updated</th><th style="padding:6px">Skipped</th>
-        </tr></thead>
-        <tbody>${rows}</tbody>
-      </table>`;
-  } catch (e) {
-    btn.disabled = false;
-    btn.textContent = 'Import all selected files →';
-    statusEl.innerHTML = `<div class="warn-box">❌ ${esc(e.message)}</div>`;
+        </tr></thead><tbody>${allRows.join('')}</tbody></table>`;
   }
+
+  btn.disabled = false;
+  btn.textContent = 'Import all selected files →';
+  const ok = batchErrors === 0;
+  statusEl.insertAdjacentHTML('afterbegin', `
+    <div class="info-box" style="background:${ok ? 'rgba(34,197,94,.08)' : 'rgba(234,179,8,.10)'};
+         border-color:${ok ? 'var(--grn)' : 'var(--ylw)'}">
+      <span>${ok ? '✅' : '⚠️'}</span><span><strong>${totals.created}</strong> new,
+      <strong>${totals.updated}</strong> updated, <strong>${totals.skipped}</strong> skipped
+      across ${files.length} file(s)${batchErrors ? ` — ${batchErrors} batch(es) failed, see below` : ''}.</span>
+    </div>`);
 }
 
 // ── Clear previous data ──

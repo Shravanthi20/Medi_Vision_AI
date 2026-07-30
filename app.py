@@ -35,7 +35,12 @@ try:
     app.register_blueprint(returns_bp)
 except Exception as _returns_err:
     print("[MediVision] returns module not loaded:", _returns_err)
-app.config["MAX_CONTENT_LENGTH"] = 32 * 1024 * 1024
+# 32MB was too small for legacy bulk import: a real pharmacy's DBF folder
+# is 200+ files / ~100MB total. The frontend uploads in batches so a single
+# request stays well under this, but the cap needs headroom above one batch
+# plus multipart overhead, or Flask rejects the POST with an HTML 413 page
+# (which is not JSON, and used to surface as a raw parse error in the UI).
+app.config["MAX_CONTENT_LENGTH"] = 256 * 1024 * 1024
 
 
 # ── Platform-admin route guard ───────────────────────────────────────

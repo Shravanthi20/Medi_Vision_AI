@@ -4,11 +4,18 @@ After=network.target
 
 [Service]
 Type=simple
-MemoryMax=512M
+# Bulk legacy-DBF import can hold hundreds of MB of parsed records in
+# memory for the duration of a single large file (a 6MB .DBF can parse
+# into 30-40MB of Python dicts) - 512M was tight enough to risk an
+# OOM-kill mid-import on a real bulk folder upload. VPS has 3.8G total.
+MemoryMax=2G
 User=root
 WorkingDirectory=/var/www/medivision
 EnvironmentFile=/var/www/medivision/.env
-ExecStart=/var/www/medivision/venv/bin/gunicorn wsgi:app -w 3 -b 127.0.0.1:3001 --timeout 120 --access-logfile /var/log/medivision-access.log --error-logfile /var/log/medivision-error.log
+# timeout 900s: a 200+ file bulk import processes sequentially in one
+# request and can genuinely take minutes, not the gunicorn default's
+# worker-recycle window.
+ExecStart=/var/www/medivision/venv/bin/gunicorn wsgi:app -w 3 -b 127.0.0.1:3001 --timeout 900 --access-logfile /var/log/medivision-access.log --error-logfile /var/log/medivision-error.log
 Restart=always
 RestartSec=5
 
