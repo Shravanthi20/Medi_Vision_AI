@@ -344,6 +344,19 @@
 </div>
 
 <script>
+// See register_retail.html for why: style="text-transform:uppercase" only
+// changes what's rendered, never el.value, so a lowercase-typed PAN/GSTIN/
+// IFSC looked correct on screen while still failing the uppercase regex
+// checks below (and would submit lowercase either way).
+['pan', 'gstin', 'bank_ifsc'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('input', () => {
+    const pos = el.selectionStart;
+    el.value = el.value.toUpperCase();
+    el.setSelectionRange(pos, pos);
+  });
+});
+
 let currentStep = 1;
 const totalSteps = 5;
 

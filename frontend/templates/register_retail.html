@@ -347,6 +347,21 @@
 </div>
 
 <script>
+// PAN/GSTIN inputs used style="text-transform:uppercase" for the
+// uppercase look, but that's CSS-only - it changes what's rendered on
+// screen, never el.value. A lowercase-typed PAN LOOKED right (matching
+// the placeholder's uppercase styling) while still failing the strict
+// uppercase regex below, and would have been submitted lowercase to the
+// backend either way. Uppercase the real value as it's typed instead.
+['pan', 'gstin'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('input', () => {
+    const pos = el.selectionStart;
+    el.value = el.value.toUpperCase();
+    el.setSelectionRange(pos, pos);
+  });
+});
+
 let currentStep = 1;
 function goStep(n) {
   if (n > currentStep && !validateStep(currentStep)) return;
