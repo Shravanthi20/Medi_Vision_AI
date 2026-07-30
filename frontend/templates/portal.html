@@ -169,6 +169,7 @@
     <a class="nav-item" href="/portal/receiving"><span class="icon">📦</span> Smart Receiving</a>
 
     <div class="sb-section">Accounts</div>
+    <a class="nav-item" href="/suppliers"><span class="icon">📇</span> Suppliers</a>
     <a class="nav-item" href="/portal/tally"><span class="icon">📒</span> Tally / Accounts</a>
     <a class="nav-item" href="/portal/subscription"><span class="icon">💎</span> Subscription</a>
 
@@ -193,6 +194,8 @@
     <div class="sb-section">AI Tools</div>
     <a class="nav-item" href="/prescription"><span class="icon">🤖</span> AI Prescription OCR</a>
     <a class="nav-item" href="/smart-reorder"><span class="icon">📊</span> Smart Reorder AI</a>
+    <a class="nav-item" href="/import-legacy"><span class="icon">📦</span> Import Legacy Data</a>
+    <a class="nav-item" href="/invite" target="_blank"><span class="icon">🚀</span> Invite Shops</a>
     <div class="sb-section">CRM</div>
     <a class="nav-item" href="/patients"><span class="icon">🏥</span> Patient Records</a>
     <a class="nav-item" href="/doctor-crm"><span class="icon">👨‍⚕️</span> Doctor CRM</a>
@@ -240,6 +243,9 @@
     <a class="nav-item" href="/voice-billing"><span class="icon">🎤</span> Voice Billing</a>
     <a class="nav-item" href="/mobile-bill"><span class="icon">📱</span> Mobile POS</a>
     <a class="nav-item" href="/manifest.json" target="_blank"><span class="icon">📲</span> Install PWA</a>
+    <div class="sb-section">👑 Owner / Admin</div>
+    <a class="nav-item" href="/admin/saas-master" style="color:#fbbf24;"><span class="icon">👑</span> Owner Dashboard</a>
+    <a class="nav-item" href="/subscribe"><span class="icon">💳</span> Subscription Plans</a>
   </nav>
   <div class="sb-footer">
     <div class="user-info">
@@ -261,13 +267,37 @@
   </div>
 
   <div class="content">
+    <!-- EXPIRY ALERT BANNER -->
+    <div id="expiryBanner" style="display:none;background:linear-gradient(135deg,#fef2f2,#fff7ed);border:1.5px solid #fca5a5;border-radius:12px;padding:12px 18px;margin-bottom:16px;display:none;align-items:center;gap:12px;flex-wrap:wrap;">
+      <span style="font-size:1.3rem;">⚠️</span>
+      <div style="flex:1;">
+        <strong style="color:#dc2626;" id="expiryBannerTitle">Medicines Expiring Soon</strong>
+        <div style="font-size:.82rem;color:#9a3412;margin-top:2px;" id="expiryBannerList">—</div>
+      </div>
+      <a href="/portal/stock" style="background:#dc2626;color:#fff;padding:6px 14px;border-radius:7px;font-size:.8rem;font-weight:700;text-decoration:none;white-space:nowrap;">View Stock →</a>
+      <button onclick="this.parentElement.style.display='none'" style="background:none;border:none;color:#9a3412;font-size:1.1rem;cursor:pointer;padding:2px 6px;">✕</button>
+    </div>
+
     <!-- KPIs -->
     <div class="kpi-grid">
-      <div class="kpi green"><div class="kpi-val" id="k-today">—</div><div class="kpi-lbl">Bills Today</div></div>
-      <div class="kpi green"><div class="kpi-val" id="k-rev">—</div><div class="kpi-lbl">Today's Revenue</div></div>
+      <div class="kpi green">
+        <div class="kpi-val" id="k-today">—</div>
+        <div class="kpi-lbl">Bills Today</div>
+        <div id="k-today-delta" style="font-size:.72rem;margin-top:4px;color:var(--gray)"></div>
+      </div>
+      <div class="kpi green">
+        <div class="kpi-val" id="k-rev">—</div>
+        <div class="kpi-lbl">Today's Revenue</div>
+        <div id="k-rev-delta" style="font-size:.72rem;margin-top:4px;color:var(--gray)"></div>
+      </div>
+      <div class="kpi blue">
+        <div class="kpi-val" id="k-cash">—</div>
+        <div class="kpi-lbl">Cash Collected</div>
+        <div style="font-size:.72rem;margin-top:4px;color:var(--gray)" id="k-pay-split"></div>
+      </div>
       <div class="kpi red"><div class="kpi-val" id="k-low">—</div><div class="kpi-lbl">Low Stock Items</div></div>
       <div class="kpi orange"><div class="kpi-val" id="k-expiry">—</div><div class="kpi-lbl">Expiring in 90d</div></div>
-      <div class="kpi blue"><div class="kpi-val" id="k-total">—</div><div class="kpi-lbl">Total Bills</div></div>
+      <div class="kpi blue"><div class="kpi-val" id="k-total">—</div><div class="kpi-lbl">Total Bills (All)</div></div>
     </div>
 
     <!-- QUICK ACTIONS -->
@@ -349,7 +379,7 @@
         </div>
         <div style="overflow-x:auto">
           <table>
-            <thead><tr><th>Bill ID</th><th>Customer</th><th>Amount</th><th>Time</th></tr></thead>
+            <thead><tr><th>Bill ID</th><th>Customer</th><th>Amount</th><th>Pay</th><th>Time</th></tr></thead>
             <tbody id="recentBills"></tbody>
           </table>
         </div>
@@ -415,17 +445,67 @@ function initPortal(name, type) {
   loadAlerts();
   loadRecentBills();
   loadReorderPreview();
+  loadPayBreakdown();
   startClock();
 }
 
 async function loadKPIs() {
   const res = await fetch('/api/kpis');
   const d = await res.json();
+
+  // Bills today + delta vs yesterday
   document.getElementById('k-today').textContent = d.today_bills ?? '—';
-  document.getElementById('k-rev').textContent = d.today_revenue ? '₹' + Math.round(d.today_revenue).toLocaleString('en-IN') : '₹0';
+  const billDiff = (d.today_bills || 0) - (d.yesterday_bills || 0);
+  document.getElementById('k-today-delta').textContent =
+    d.yesterday_bills != null ? (billDiff >= 0 ? `▲ ${billDiff} vs yesterday` : `▼ ${Math.abs(billDiff)} vs yesterday`) : '';
+  document.getElementById('k-today-delta').style.color = billDiff >= 0 ? 'var(--green)' : 'var(--err)';
+
+  // Revenue today + delta
+  document.getElementById('k-rev').textContent = '₹' + Math.round(d.today_revenue || 0).toLocaleString('en-IN');
+  const revDiff = (d.today_revenue || 0) - (d.yesterday_revenue || 0);
+  document.getElementById('k-rev-delta').textContent =
+    d.yesterday_revenue != null ? (revDiff >= 0 ? `▲ ₹${Math.round(Math.abs(revDiff)).toLocaleString('en-IN')} vs yesterday` : `▼ ₹${Math.round(Math.abs(revDiff)).toLocaleString('en-IN')} vs yesterday`) : '';
+  document.getElementById('k-rev-delta').style.color = revDiff >= 0 ? 'var(--green)' : 'var(--err)';
+
   document.getElementById('k-low').textContent = d.low_stock_count ?? '—';
   document.getElementById('k-expiry').textContent = d.expiry_alert_count ?? '—';
   document.getElementById('k-total').textContent = d.total_bills ?? '—';
+
+  // Show expiry banner if needed
+  if (d.expiry_alert_count > 0) loadExpiryBanner(d.expiry_alert_count);
+}
+
+async function loadExpiryBanner(count) {
+  const banner = document.getElementById('expiryBanner');
+  document.getElementById('expiryBannerTitle').textContent = `⚠ ${count} medicine${count>1?'s':''} expiring within 90 days!`;
+  // Fetch top 3 expiring names
+  try {
+    const r = await fetch('/api/medicines/alerts?expiry_days=90&low_stock=0');
+    const d = await r.json();
+    const names = (d.expiring_soon || []).slice(0, 3).map(m => `${m.n} (${m.days_left}d)`).join(' · ');
+    document.getElementById('expiryBannerList').textContent = names || 'Check stock page for details';
+  } catch(e) {}
+  banner.style.display = 'flex';
+}
+
+async function loadPayBreakdown() {
+  // Fetch today's bills and group by payment mode
+  try {
+    const today = `${String(new Date().getDate()).padStart(2,'0')}/${String(new Date().getMonth()+1).padStart(2,'0')}/${new Date().getFullYear()}`;
+    const r = await fetch('/api/bills?limit=500');
+    const raw = await r.json();
+    const bills = (raw.bills || raw).filter(b => (b.date||'').startsWith(today));
+    const breakdown = {};
+    let cashTotal = 0;
+    bills.forEach(b => {
+      const mode = b.pay || 'Cash';
+      breakdown[mode] = (breakdown[mode] || 0) + (b.total || 0);
+      if (mode === 'Cash') cashTotal += (b.total || 0);
+    });
+    document.getElementById('k-cash').textContent = '₹' + Math.round(cashTotal).toLocaleString('en-IN');
+    const parts = Object.entries(breakdown).map(([m,v]) => `${m} ₹${Math.round(v).toLocaleString('en-IN')}`);
+    document.getElementById('k-pay-split').textContent = parts.join(' · ') || 'No bills today';
+  } catch(e) {}
 }
 
 async function loadAlerts() {
@@ -455,17 +535,29 @@ async function loadAlerts() {
 }
 
 async function loadRecentBills() {
-  const res = await fetch('/api/bills?limit=6&offset=0');
-  const d = await res.json();
-  const bills = d.bills || d;
   const el = document.getElementById('recentBills');
-  if (!bills.length) { el.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--gray);padding:20px">No bills yet today</td></tr>'; return; }
-  el.innerHTML = bills.map(b => `<tr>
-    <td style="font-size:.75rem;color:var(--gray)"><code>${b.id?.slice(-6)||'—'}</code></td>
-    <td>${b.cust||'—'}</td>
-    <td><strong style="color:var(--green)">₹${Number(b.total||0).toFixed(0)}</strong></td>
-    <td style="font-size:.75rem;color:var(--gray)">${b.date?.slice(0,8)||'—'}</td>
-  </tr>`).join('');
+  try {
+    const today = `${String(new Date().getDate()).padStart(2,'0')}/${String(new Date().getMonth()+1).padStart(2,'0')}/${new Date().getFullYear()}`;
+    const res = await fetch('/api/bills?limit=200');
+    const d = await res.json();
+    const all = d.bills || d;
+    // Today's bills only, newest first
+    const bills = all.filter(b => (b.date||'').startsWith(today)).slice(0, 8);
+    if (!bills.length) {
+      el.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--gray);padding:20px">No bills yet today — <a href="/portal/billing" style="color:var(--green)">start billing →</a></td></tr>';
+      return;
+    }
+    const payColor = {Cash:'#16a34a', UPI:'#2563eb', Card:'#7c3aed', Credit:'#dc2626'};
+    el.innerHTML = bills.map(b => `<tr>
+      <td style="font-size:.74rem;color:var(--gray)"><code>${b.id?.slice(-6)||'—'}</code></td>
+      <td style="font-weight:600">${b.cust||'Walk-in'}</td>
+      <td><strong style="color:var(--green)">₹${Number(b.total||0).toFixed(0)}</strong></td>
+      <td style="font-size:.74rem;font-weight:700;color:${payColor[b.pay]||'#374151'}">${b.pay||'Cash'}</td>
+      <td style="font-size:.73rem;color:var(--gray)">${(b.date||'').slice(9,14)||'—'}</td>
+    </tr>`).join('');
+  } catch(e) {
+    el.innerHTML = '<tr><td colspan="5" style="color:var(--err);padding:16px">Failed to load bills</td></tr>';
+  }
 }
 
 async function loadReorderPreview() {

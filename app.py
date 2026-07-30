@@ -1793,20 +1793,22 @@ def add_purchase():
 def get_suppliers():
     """Get all suppliers"""
     with get_conn() as conn:
-        rows = conn.execute("SELECT * FROM suppliers").fetchall()
-    return jsonify(
-        [
-            {
-                "id": row["id"],
-                "name": row["name"],
-                "phone": row["phone"],
-                "gst": row["gst"],
-                "last_order": row["last_order"],
-                "status": row["status"],
-            }
-            for row in rows
-        ]
-    )
+        cols = table_columns(conn, "suppliers")
+        rows = conn.execute("SELECT * FROM suppliers ORDER BY name").fetchall()
+    out = []
+    for row in rows:
+        d = {
+            "id": row["id"], "name": row["name"], "phone": row["phone"],
+            "gst": row["gst"], "last_order": row["last_order"], "status": row["status"],
+        }
+        # code/address/credit_days/outstanding are additive columns (added
+        # for the SUPL.DBF import) - guarded so this endpoint doesn't break
+        # against an older suppliers table that predates them.
+        for extra in ("code", "address", "credit_days", "outstanding"):
+            if extra in cols:
+                d[extra] = row[extra]
+        out.append(d)
+    return jsonify(out)
 
 
 @app.route("/api/suppliers", methods=["POST"])
@@ -1818,20 +1820,32 @@ def add_supplier():
         return json_error("Missing required supplier fields", 400, missing)
     try:
         with get_conn() as conn:
-            conn.execute(
-                """
-                INSERT OR REPLACE INTO suppliers (id, name, phone, gst, last_order, status)
-                VALUES (?,?,?,?,?,?)
-                """,
-                (
-                    data.get("id"),
-                    data["name"],
-                    data["phone"],
-                    data.get("gst", ""),
-                    data.get("last_order", "-"),
-                    data.get("status", "Active"),
-                ),
-            )
+            cols = table_columns(conn, "suppliers")
+            existing = conn.execute("SELECT * FROM suppliers WHERE id=?", (data.get("id"),)).fetchone() \
+                if data.get("id") else None
+            # UPDATE-existing-fields-only rather than INSERT OR REPLACE:
+            # REPLACE deletes and re-inserts the whole row, so any column
+            # not in this statement's list (credit_days, outstanding,
+            # address, code - the SUPL.DBF import fields) would silently
+            # reset to its default the moment someone edited just a name
+            # or phone number here. That's real data loss on a save that
+            # looks unrelated to the fields being wiped.
+            fields = {
+                "name": data["name"], "phone": data["phone"],
+                "gst": data.get("gst", existing["gst"] if existing else ""),
+                "last_order": data.get("last_order", existing["last_order"] if existing else "-"),
+                "status": data.get("status", existing["status"] if existing else "Active"),
+            }
+            for extra in ("code", "address", "credit_days", "outstanding"):
+                if extra in cols and extra in data:
+                    fields[extra] = data[extra]
+            if existing:
+                sets = ", ".join(f"{k}=?" for k in fields)
+                conn.execute(f"UPDATE suppliers SET {sets} WHERE id=?", (*fields.values(), existing["id"]))
+            else:
+                cols_sql = ", ".join(fields.keys())
+                qs = ", ".join("?" * len(fields))
+                conn.execute(f"INSERT INTO suppliers ({cols_sql}) VALUES ({qs})", tuple(fields.values()))
         return jsonify({"status": "success"})
     except Exception as err:
         return json_error("Failed to save supplier", 500, str(err))
@@ -3435,6 +3449,13 @@ def portal_subscription():
     if not session.get("portal_user"):
         return redirect("/portal")
     return render_template("portal_subscription.html")
+
+@app.route("/suppliers")
+def page_suppliers():
+    if not session.get("portal_user"):
+        return redirect("/portal-login")
+    return render_template("suppliers.html")
+
 
 @app.route("/portal/tally")
 def portal_tally():

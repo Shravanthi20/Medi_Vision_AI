@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Suppliers — MediVision AI</title>
+<style>
+  :root{--green:#16a34a;--red:#dc2626;--amber:#d97706;--gray:#6b7280;--border:#e5e7eb;--bg:#f9fafb;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:#111827;}
+  .topbar{background:#fff;border-bottom:1px solid var(--border);padding:14px 22px;display:flex;
+    justify-content:space-between;align-items:center;position:sticky;top:0;z-index:10;}
+  .topbar h1{font-size:1.1rem;font-weight:700;}
+  .topbar a{color:var(--green);text-decoration:none;font-size:.85rem;font-weight:600;}
+  .wrap{max-width:1100px;margin:0 auto;padding:20px;}
+  .toolbar{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center;}
+  .toolbar input{flex:1;min-width:220px;padding:9px 14px;border:1.5px solid var(--border);
+    border-radius:8px;font-size:.88rem;}
+  .btn{padding:9px 16px;border-radius:8px;font-size:.85rem;font-weight:600;cursor:pointer;
+    border:none;font-family:inherit;}
+  .btn-green{background:var(--green);color:#fff;}
+  .btn-outline{background:#fff;border:1.5px solid var(--border);color:#111827;}
+  .kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:18px;}
+  .kpi{background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px 16px;}
+  .kpi .v{font-size:1.35rem;font-weight:800;}
+  .kpi .l{font-size:.72rem;color:var(--gray);margin-top:2px;text-transform:uppercase;letter-spacing:.4px;}
+  table{width:100%;background:#fff;border-collapse:collapse;border-radius:10px;overflow:hidden;
+    border:1px solid var(--border);}
+  th{background:#f3f4f6;text-align:left;padding:10px 14px;font-size:.72rem;text-transform:uppercase;
+    letter-spacing:.4px;color:var(--gray);font-weight:700;}
+  td{padding:10px 14px;font-size:.85rem;border-top:1px solid var(--border);vertical-align:middle;}
+  tr:hover td{background:#fafafa;}
+  .right{text-align:right;}
+  .mono{font-family:'JetBrains Mono',monospace;}
+  .badge{display:inline-block;padding:2px 9px;border-radius:12px;font-size:.7rem;font-weight:700;}
+  .b-green{background:#dcfce7;color:var(--green);}
+  .b-red{background:#fee2e2;color:var(--red);}
+  .b-gray{background:#f3f4f6;color:var(--gray);}
+  .edit-btn{background:none;border:none;color:var(--green);cursor:pointer;font-size:.8rem;font-weight:600;}
+  .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;
+    align-items:center;justify-content:center;padding:20px;}
+  .modal-bg.open{display:flex;}
+  .modal{background:#fff;border-radius:12px;width:min(480px,95vw);padding:20px 22px;
+    box-shadow:0 20px 50px rgba(0,0,0,.25);}
+  .modal h3{font-size:1rem;font-weight:700;margin-bottom:14px;}
+  .field{margin-bottom:12px;}
+  .field label{display:block;font-size:.75rem;color:var(--gray);margin-bottom:4px;font-weight:600;}
+  .field input{width:100%;padding:8px 12px;border:1.5px solid var(--border);border-radius:7px;font-size:.85rem;}
+  .modal-foot{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;}
+  .empty{text-align:center;padding:40px;color:var(--gray);}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>📇 Suppliers</h1>
+  <a href="/portal">← Back to Portal</a>
+</div>
+
+<div class="wrap">
+  <div class="kpi-row" id="kpiRow"></div>
+
+  <div class="toolbar">
+    <input type="text" id="searchBox" placeholder="Search supplier name, code, or phone..." oninput="renderTable()">
+    <button class="btn btn-green" onclick="openModal()">+ Add Supplier</button>
+  </div>
+
+  <div style="overflow-x:auto">
+    <table>
+      <thead><tr>
+        <th>Name</th><th>Code</th><th>Phone</th><th>GST</th>
+        <th class="right">Credit Days</th><th class="right">Outstanding</th><th>Status</th><th></th>
+      </tr></thead>
+      <tbody id="tbody"><tr><td colspan="8" class="empty">Loading…</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <h3 id="modalTitle">Add Supplier</h3>
+    <input type="hidden" id="fId">
+    <div class="field"><label>Name *</label><input id="fName"></div>
+    <div class="field"><label>Phone *</label><input id="fPhone"></div>
+    <div class="field"><label>Code</label><input id="fCode"></div>
+    <div class="field"><label>GSTIN</label><input id="fGst"></div>
+    <div class="field"><label>Address</label><input id="fAddress"></div>
+    <div class="field"><label>Credit Days</label><input id="fCreditDays" type="number" value="0"></div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-green" onclick="saveSupplier()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let suppliers = [];
+
+function fmt(n) { return (n || 0).toLocaleString('en-IN', {maximumFractionDigits: 0}); }
+function esc(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+async function loadSuppliers() {
+  const r = await fetch('/api/suppliers');
+  suppliers = await r.json();
+  renderKpis();
+  renderTable();
+}
+
+function renderKpis() {
+  const total = suppliers.length;
+  const totalOutstanding = suppliers.reduce((s, x) => s + (x.outstanding || 0), 0);
+  const active = suppliers.filter(x => x.status === 'Active').length;
+  const overdueCredit = suppliers.filter(x => (x.outstanding || 0) > 0 && (x.credit_days || 0) > 0).length;
+  document.getElementById('kpiRow').innerHTML = `
+    <div class="kpi"><div class="v">${total}</div><div class="l">Total Suppliers</div></div>
+    <div class="kpi"><div class="v">${active}</div><div class="l">Active</div></div>
+    <div class="kpi"><div class="v" style="color:var(--red)">₹${fmt(totalOutstanding)}</div><div class="l">Total Payable</div></div>
+    <div class="kpi"><div class="v" style="color:var(--amber)">${overdueCredit}</div><div class="l">With Balance Due</div></div>
+  `;
+}
+
+function renderTable() {
+  const q = document.getElementById('searchBox').value.toLowerCase();
+  const filtered = suppliers.filter(s =>
+    !q || (s.name || '').toLowerCase().includes(q) ||
+    (s.code || '').toLowerCase().includes(q) || (s.phone || '').toLowerCase().includes(q)
+  ).sort((a, b) => (b.outstanding || 0) - (a.outstanding || 0));
+
+  const tbody = document.getElementById('tbody');
+  if (!filtered.length) {
+    tbody.innerHTML = `<tr><td colspan="8" class="empty">No suppliers found.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = filtered.map(s => `
+    <tr>
+      <td><strong>${esc(s.name)}</strong></td>
+      <td class="mono" style="color:var(--gray)">${esc(s.code) || '—'}</td>
+      <td>${esc(s.phone) || '—'}</td>
+      <td class="mono" style="font-size:.78rem">${esc(s.gst) || '—'}</td>
+      <td class="right">${s.credit_days || 0}d</td>
+      <td class="right mono" style="color:${(s.outstanding||0)>0?'var(--red)':'var(--green)'};font-weight:700">
+        ₹${fmt(s.outstanding)}</td>
+      <td><span class="badge ${s.status==='Active'?'b-green':'b-gray'}">${esc(s.status)}</span></td>
+      <td><button class="edit-btn" onclick='openModal(${JSON.stringify(s).replace(/'/g,"&#39;")})'>Edit</button></td>
+    </tr>
+  `).join('');
+}
+
+function openModal(s) {
+  document.getElementById('modalTitle').textContent = s ? 'Edit Supplier' : 'Add Supplier';
+  document.getElementById('fId').value = s ? s.id : '';
+  document.getElementById('fName').value = s ? s.name || '' : '';
+  document.getElementById('fPhone').value = s ? s.phone || '' : '';
+  document.getElementById('fCode').value = s ? s.code || '' : '';
+  document.getElementById('fGst').value = s ? s.gst || '' : '';
+  document.getElementById('fAddress').value = s ? s.address || '' : '';
+  document.getElementById('fCreditDays').value = s ? s.credit_days || 0 : 0;
+  document.getElementById('modalBg').classList.add('open');
+}
+function closeModal() { document.getElementById('modalBg').classList.remove('open'); }
+
+async function saveSupplier() {
+  const name = document.getElementById('fName').value.trim();
+  const phone = document.getElementById('fPhone').value.trim();
+  if (!name || !phone) { alert('Name and phone are required.'); return; }
+  const id = document.getElementById('fId').value;
+  const payload = {
+    name, phone,
+    code: document.getElementById('fCode').value.trim(),
+    gst: document.getElementById('fGst').value.trim(),
+    address: document.getElementById('fAddress').value.trim(),
+    credit_days: parseInt(document.getElementById('fCreditDays').value) || 0,
+  };
+  if (id) payload.id = parseInt(id);
+  const r = await fetch('/api/suppliers', {
+    method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload)
+  });
+  const d = await r.json();
+  if (d.status === 'success') {
+    closeModal();
+    await loadSuppliers();
+  } else {
+    alert(d.message || 'Failed to save supplier');
+  }
+}
+
+loadSuppliers();
+</script>
+</body>
+</html>
