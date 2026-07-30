@@ -71,6 +71,10 @@
               {% else %}<span class="pill due">due</span>{% endif %}</td>
           <td>
             <div style="display:flex;gap:5px;flex-wrap:wrap">
+              {% if c.status != 'suspended' %}
+              <form method="POST" action="{{ url_for('platform_company_enter', cid=c.id) }}">
+                <button class="btn sm primary">Enter →</button></form>
+              {% endif %}
               {% if not c.paid_this_month %}
               <form method="POST" action="{{ url_for('platform_company_action', cid=c.id, action='pay') }}">
                 <input type="hidden" name="amount" value="{{ c.monthly_fee }}">

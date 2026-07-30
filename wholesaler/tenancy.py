@@ -491,6 +491,40 @@ def platform_company_action(cid, action):
     return redirect(url_for("platform_home"))
 
 
+@app.route("/platform/company/<int:cid>/enter", methods=["POST"])
+@platform_required
+def platform_company_enter(cid):
+    """
+    Jump straight into a company's own dashboard as its owner, without
+    typing (or knowing) their password.
+
+    This does NOT weaken the privacy boundary described on /platform: the
+    platform owner can already force a company into any password they
+    choose via 'resetpw' above, so a platform session already implies
+    full control over every company's login - this just skips typing the
+    password back in. It still does not open a company's data file from
+    the platform side; it hands the SAME session shape portal_login()
+    would after a normal sign-in, and every screen reached afterward goes
+    through the company's own tenant-scoped conn(), same as any owner
+    login. Logged like every other platform action.
+    """
+    with platform_conn() as c:
+        comp = c.execute("SELECT * FROM companies WHERE id=?", (cid,)).fetchone()
+    if not comp:
+        abort(404)
+    if comp["status"] == "suspended":
+        flash("Activate this company before entering it.", "err")
+        return redirect(url_for("platform_home"))
+
+    session.clear()   # never hold a platform session and a tenant session at once
+    session["tenant"] = comp["slug"]
+    session["tenant_name"] = comp["name"]
+    session["ws_user"] = "Platform Owner"
+    session["role"] = "owner"
+    plog("owner", "enter_company", comp["slug"], "")
+    return redirect(url_for("dashboard"))
+
+
 @app.route("/platform/log")
 @platform_required
 def platform_log_view():
