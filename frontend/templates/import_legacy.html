@@ -230,6 +230,35 @@ body{background:var(--bg);color:var(--txt);font-family:var(--font);min-height:10
     </div>
   </div>
 
+  <!-- ── BULK FOLDER IMPORT ── -->
+  <div class="card" style="margin-top:20px">
+    <h2>📦 Bulk import a whole folder</h2>
+    <p>Select every .DBF file at once — a year's worth of exports, ITEM.DBF plus every monthly ITEMTRAN.DBF, whatever you've got. Each file's type and column mapping are auto-detected and imported with no per-file review. Fields the auto-mapping doesn't recognise are never thrown away — every column from the file is kept and will be viewable/editable once you turn on the customization view (coming next).</p>
+    <div class="info-box">
+      <span>ℹ️</span>
+      <span>Use the single-file wizard above instead when you want to check the field mapping before it runs — bulk mode trusts the auto-detection completely.</span>
+    </div>
+    <input type="file" id="bulkFileInput" accept=".dbf,.DBF" multiple style="margin:12px 0">
+    <div class="field" style="margin:8px 0">
+      <label style="display:flex;align-items:center;gap:6px;font-size:.82rem">
+        <input type="checkbox" id="bulkUpdateExisting" checked> Update existing medicines (same name → overwrite price/stock/batch/expiry)
+      </label>
+    </div>
+    <button class="btn btn-primary" id="bulkImportBtn" onclick="runBulkImport()">Import all selected files →</button>
+    <div id="bulkStatus" style="margin-top:14px"></div>
+  </div>
+
+  <!-- ── DANGER ZONE: clear previous data ── -->
+  <div class="card" style="margin-top:20px;border-color:var(--red)">
+    <h2 style="color:var(--red)">⚠️ Clear previous data</h2>
+    <p>Deletes <strong>all medicines and all bills</strong> currently in the system — the placeholder/legacy-import data you no longer need, so this software can be the one real billing system going forward. Does not touch staff logins, settings, or licensing. <strong>This cannot be undone.</strong></p>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px">
+      <input type="text" id="clearConfirmInput" placeholder="Type CLEAR to confirm" style="padding:9px 12px;border:1.5px solid var(--brd);border-radius:8px;font-size:.85rem;width:220px">
+      <button class="btn" style="background:var(--red);color:#fff" onclick="runClearData()">Clear all medicines &amp; bills</button>
+    </div>
+    <div id="clearStatus" style="margin-top:10px;font-size:.82rem"></div>
+  </div>
+
   <!-- ── STEP 2: Map Fields ── -->
   <div class="step-panel" id="step2">
     <div class="card">
@@ -632,6 +661,89 @@ async function runImport() {
 }
 
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+// ── Bulk folder import ──
+async function runBulkImport() {
+  const input = document.getElementById('bulkFileInput');
+  const files = input.files;
+  const statusEl = document.getElementById('bulkStatus');
+  if (!files || !files.length) {
+    statusEl.innerHTML = `<div class="warn-box">⚠️ Choose at least one .DBF file first.</div>`;
+    return;
+  }
+  const btn = document.getElementById('bulkImportBtn');
+  btn.disabled = true;
+  btn.innerHTML = `<span class="spin"></span> Importing ${files.length} file(s)…`;
+  statusEl.innerHTML = '';
+
+  const fd = new FormData();
+  for (const f of files) fd.append('files', f);
+  fd.append('update_existing', document.getElementById('bulkUpdateExisting').checked ? '1' : '0');
+
+  try {
+    const res = await fetch('/api/import-dbf/bulk', { method: 'POST', body: fd });
+    const d = await res.json();
+    btn.disabled = false;
+    btn.textContent = 'Import all selected files →';
+
+    if (!res.ok || d.status === 'error') {
+      statusEl.innerHTML = `<div class="warn-box">❌ ${esc(d.message || 'Bulk import failed')}</div>`;
+      return;
+    }
+
+    const rows = d.results.map(r => {
+      if (r.status === 'error') {
+        return `<tr><td>${esc(r.filename)}</td><td colspan="4" style="color:var(--red)">${esc(r.message)}</td></tr>`;
+      }
+      return `<tr><td>${esc(r.filename)}</td><td>${r.file_type}</td>
+        <td>${r.created}</td><td>${r.updated}</td><td>${r.skipped}</td></tr>`;
+    }).join('');
+
+    statusEl.innerHTML = `
+      <div class="info-box" style="background:rgba(34,197,94,.08);border-color:var(--grn)">
+        <span>✅</span><span><strong>${d.totals.created}</strong> new, <strong>${d.totals.updated}</strong> updated,
+        <strong>${d.totals.skipped}</strong> skipped across ${d.files_processed} file(s).</span>
+      </div>
+      <table style="width:100%;margin-top:10px;font-size:.82rem;border-collapse:collapse">
+        <thead><tr style="text-align:left;color:var(--muted)">
+          <th style="padding:6px">File</th><th style="padding:6px">Type</th>
+          <th style="padding:6px">New</th><th style="padding:6px">Updated</th><th style="padding:6px">Skipped</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+  } catch (e) {
+    btn.disabled = false;
+    btn.textContent = 'Import all selected files →';
+    statusEl.innerHTML = `<div class="warn-box">❌ ${esc(e.message)}</div>`;
+  }
+}
+
+// ── Clear previous data ──
+async function runClearData() {
+  const input = document.getElementById('clearConfirmInput');
+  const statusEl = document.getElementById('clearStatus');
+  if (input.value.trim().toUpperCase() !== 'CLEAR') {
+    statusEl.innerHTML = `<span style="color:var(--red)">Type CLEAR in the box first to confirm.</span>`;
+    return;
+  }
+  if (!confirm('This permanently deletes ALL medicines and ALL bills. Continue?')) return;
+
+  try {
+    const res = await fetch('/api/import-dbf/clear', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ confirm: 'CLEAR' })
+    });
+    const d = await res.json();
+    if (!res.ok || d.status === 'error') {
+      statusEl.innerHTML = `<span style="color:var(--red)">❌ ${esc(d.message || 'Failed to clear data')}</span>`;
+      return;
+    }
+    statusEl.innerHTML = `<span style="color:var(--grn)">✅ Cleared ${d.medicines_deleted} medicines and ${d.bills_deleted} bills. Ready for fresh import.</span>`;
+    input.value = '';
+  } catch (e) {
+    statusEl.innerHTML = `<span style="color:var(--red)">❌ ${esc(e.message)}</span>`;
+  }
+}
 </script>
 </body>
 </html>

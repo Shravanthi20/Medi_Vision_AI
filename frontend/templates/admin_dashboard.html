@@ -73,6 +73,14 @@
     .card-header { padding: 16px 20px; border-bottom: 1px solid var(--gray-border); display: flex; align-items: center; justify-content: space-between; }
     .card-header h3 { font-size: .95rem; font-weight: 700; }
     .card-header .sub { font-size: .78rem; color: var(--gray); }
+    .usage-bar { background: var(--gray-light); border-radius: 8px; height: 10px; overflow: hidden; margin: 6px 0; }
+    .usage-bar-fill { height: 100%; border-radius: 8px; background: var(--green); transition: width .3s; }
+    .usage-bar-fill.warn { background: var(--orange); }
+    .usage-bar-fill.crit { background: var(--err); }
+    .usage-row { padding: 14px 20px; border-bottom: 1px solid var(--gray-border); }
+    .usage-row:last-child { border-bottom: none; }
+    .usage-label { display: flex; justify-content: space-between; font-size: .85rem; font-weight: 600; }
+    .usage-sub { font-size: .75rem; color: var(--gray); margin-top: 2px; }
     table { width: 100%; border-collapse: collapse; font-size: .85rem; }
     th { background: var(--gray-light); padding: 10px 16px; text-align: left; font-size: .75rem; font-weight: 700; color: var(--gray); text-transform: uppercase; letter-spacing: .5px; }
     td { padding: 12px 16px; border-bottom: 1px solid #f3f4f6; vertical-align: middle; }
@@ -176,6 +184,7 @@
 
     <div class="sb-section">System</div>
     <div class="nav-item" onclick="showPanel('catalog')"><span class="icon">📋</span> Wholesaler Catalog</div>
+    <div class="nav-item" onclick="showPanel('vps')"><span class="icon">🖥️</span> VPS Usage</div>
 
     <div class="sb-section">SaaS</div>
     <a class="nav-item" href="/admin/saas" style="color:rgba(255,255,255,.65);text-decoration:none"><span class="icon">💰</span> SaaS Billing</a>
@@ -321,6 +330,49 @@
         </div>
       </div>
     </div>
+
+    <!-- VPS USAGE PANEL -->
+    <div class="panel" id="panel-vps">
+      <div class="card">
+        <div class="card-header"><h3>Server health</h3><span class="sub">This VPS — disk, memory, CPU</span></div>
+        <div class="usage-row">
+          <div class="usage-label"><span>Disk</span><span id="vpsDiskText">—</span></div>
+          <div class="usage-bar"><div class="usage-bar-fill" id="vpsDiskBar" style="width:0%"></div></div>
+        </div>
+        <div class="usage-row">
+          <div class="usage-label"><span>Memory</span><span id="vpsMemText">—</span></div>
+          <div class="usage-bar"><div class="usage-bar-fill" id="vpsMemBar" style="width:0%"></div></div>
+        </div>
+        <div class="usage-row"><div class="usage-label"><span>CPU cores</span><span id="vpsCpuText">—</span></div>
+          <div class="usage-sub">Sizing note: a 1-vCPU box is fine for today's traffic but is the first thing to upgrade before onboarding more concurrent shops — see the capacity doc.</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h3>MediVision AI (this app)</h3><span class="sub">Single shared database — see note below</span></div>
+        <div class="usage-row">
+          <div class="usage-label"><span>Database file(s)</span><span id="mvDbText">—</span></div>
+        </div>
+        <div class="usage-row">
+          <div class="usage-label"><span>Backups folder</span><span id="mvBackupText">—</span></div>
+        </div>
+        <div class="usage-row">
+          <div class="usage-sub" id="mvRowCounts">—</div>
+        </div>
+        <div class="usage-row">
+          <div class="usage-sub">This app is single-tenant: every registered retail shop's data lives in one shared database file, not a separate one per shop — so there's no honest "disk used by SM46" figure to show here, only overall size and row counts. Registered shops with logins:</div>
+          <table style="margin-top:8px"><thead><tr><th>Shop</th><th>Username</th><th>Approved</th></tr></thead>
+            <tbody id="mvShopTbody"></tbody></table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h3>Wholesaler platform</h3><span class="sub">wholesale.selvammedicals.in — one database PER company, so this one is real per-tenant usage</span></div>
+        <table><thead><tr><th>Company</th><th>Slug</th><th>Database size</th></tr></thead>
+          <tbody id="wsCompanyTbody"></tbody>
+        </table>
+      </div>
+    </div>
   </div>
 </main>
 
@@ -415,7 +467,7 @@ function showPanel(name) {
   document.querySelectorAll('.nav-item').forEach(n => {
     if (n.textContent.trim().toLowerCase().startsWith(name === 'overview' ? 'dash' : name.slice(0,4))) n.classList.add('active');
   });
-  const titles = { overview:'Dashboard', pending:'Pending Registrations', approved:'Approved Registrations', rejected:'Rejected Registrations', wholesale:'Wholesale Accounts', retail:'Retail Shops', catalog:'Wholesaler Catalog' };
+  const titles = { overview:'Dashboard', pending:'Pending Registrations', approved:'Approved Registrations', rejected:'Rejected Registrations', wholesale:'Wholesale Accounts', retail:'Retail Shops', catalog:'Wholesaler Catalog', vps:'VPS Usage' };
   document.getElementById('panelTitle').textContent = titles[name] || name;
   if (name === 'pending') loadRegistrations('pending');
   else if (name === 'approved') loadRegistrations('approved');
@@ -423,6 +475,52 @@ function showPanel(name) {
   else if (name === 'wholesale') loadAccounts('wholesale');
   else if (name === 'retail') loadAccounts('retail');
   else if (name === 'catalog') loadCatalog();
+  else if (name === 'vps') loadVpsUsage();
+}
+
+function fmtBytes(n) {
+  if (n == null) return '—';
+  const units = ['B','KB','MB','GB','TB'];
+  let i = 0;
+  while (n >= 1024 && i < units.length - 1) { n /= 1024; i++; }
+  return n.toFixed(i === 0 ? 0 : 1) + ' ' + units[i];
+}
+
+async function loadVpsUsage() {
+  const res = await fetch('/api/admin/vps-usage');
+  const d = await res.json();
+  if (d.status === 'error') return;
+
+  const disk = d.vps;
+  document.getElementById('vpsDiskText').textContent =
+    `${fmtBytes(disk.disk_used)} / ${fmtBytes(disk.disk_total)} (${disk.disk_pct}%)`;
+  const diskBar = document.getElementById('vpsDiskBar');
+  diskBar.style.width = disk.disk_pct + '%';
+  diskBar.className = 'usage-bar-fill' + (disk.disk_pct > 85 ? ' crit' : disk.disk_pct > 65 ? ' warn' : '');
+
+  document.getElementById('vpsMemText').textContent =
+    `${fmtBytes(disk.mem_used)} / ${fmtBytes(disk.mem_total)} (${disk.mem_pct}%)`;
+  const memBar = document.getElementById('vpsMemBar');
+  memBar.style.width = disk.mem_pct + '%';
+  memBar.className = 'usage-bar-fill' + (disk.mem_pct > 85 ? ' crit' : disk.mem_pct > 65 ? ' warn' : '');
+
+  document.getElementById('vpsCpuText').textContent = disk.cpu_count + ' vCPU';
+
+  const mv = d.medivision;
+  document.getElementById('mvDbText').textContent =
+    mv.db_files.map(f => `${f.name} (${fmtBytes(f.bytes)})`).join(', ') || '—';
+  document.getElementById('mvBackupText').textContent = fmtBytes(mv.backups_bytes);
+  document.getElementById('mvRowCounts').textContent =
+    Object.entries(mv.row_counts).map(([k, v]) => `${k}: ${v ?? '—'}`).join(' · ');
+  document.getElementById('mvShopTbody').innerHTML = mv.per_shop.map(s => `
+    <tr><td>${s.shop_name || '—'}</td><td>${s.username || '—'}</td>
+        <td>${(s.approved_at || '').slice(0, 10) || '—'}</td></tr>
+  `).join('') || '<tr><td colspan="3" style="color:var(--gray)">No active shops yet</td></tr>';
+
+  const ws = d.wholesaler;
+  document.getElementById('wsCompanyTbody').innerHTML = ws.companies.map(c => `
+    <tr><td>${c.name}</td><td><code>${c.slug}</code></td><td>${fmtBytes(c.bytes)}</td></tr>
+  `).join('') || '<tr><td colspan="3" style="color:var(--gray)">No wholesaler companies found</td></tr>';
 }
 
 async function refreshAll() {

@@ -2252,6 +2252,131 @@ def admin_stats():
     })
 
 
+# ── VPS usage / capacity ─────────────────────────────────────────────
+#
+# Deliberately pure-stdlib (shutil.disk_usage, /proc/meminfo, os.path
+# sizes) rather than shelling out to df/free/du from a web request -
+# no subprocess surface to worry about, and these numbers change slowly
+# enough that exec overhead was never the reason to avoid it anyway.
+#
+# The retail app (this one) is single-tenant: every shop's data - Selvam
+# Medicals, SM46, any future retail SaaS client - lives in ONE shared
+# database.db. There is no per-shop disk figure to report honestly, so
+# this reports total DB size and, as the closest real proxy for a given
+# shop's footprint, its row counts across the tables that actually hold
+# its data (bills, medicines it added, customers). The wholesaler side
+# genuinely IS one-database-per-company, so that gets a real per-company
+# byte count.
+def _dir_size(path):
+    total = 0
+    for root, _dirs, files in os.walk(path):
+        for f in files:
+            try:
+                total += os.path.getsize(os.path.join(root, f))
+            except OSError:
+                pass
+    return total
+
+
+def _mem_info():
+    info = {}
+    try:
+        with open("/proc/meminfo") as f:
+            for line in f:
+                k, v = line.split(":", 1)
+                info[k.strip()] = int(v.strip().split()[0]) * 1024  # kB -> bytes
+    except Exception:
+        pass
+    total = info.get("MemTotal", 0)
+    avail = info.get("MemAvailable", 0)
+    return {"total": total, "available": avail, "used": max(0, total - avail)}
+
+
+@app.route("/api/admin/vps-usage")
+def api_admin_vps_usage():
+    if not session.get("is_platform_admin"):
+        return jsonify({"status": "error"}), 403
+
+    import shutil
+    disk = shutil.disk_usage("/")
+    mem = _mem_info()
+
+    base = os.path.dirname(os.path.abspath(__file__))
+    db_files = []
+    for fname in ("database.db", "pharmacy.db", "medivision.db"):
+        p = os.path.join(base, fname)
+        if os.path.exists(p):
+            db_files.append({"name": fname, "bytes": os.path.getsize(p)})
+    backups_bytes = _dir_size(os.path.join(base, "backups")) if os.path.isdir(os.path.join(base, "backups")) else 0
+
+    with get_conn() as conn:
+        row_counts = {}
+        for tbl in ("bills", "medicines", "retail_shops", "wholesale_accounts", "platform_registrations"):
+            try:
+                row_counts[tbl] = conn.execute(f"SELECT COUNT(*) c FROM {tbl}").fetchone()["c"]
+            except Exception:
+                row_counts[tbl] = None
+        # bills has no shop_id - this app doesn't yet partition billing
+        # data per registered retail SaaS client, only Selvam Medicals'
+        # own. A per-shop bill count would be fabricated, so this lists
+        # the registered shops themselves without pretending to know
+        # which bills belong to which.
+        per_shop = conn.execute("""
+            SELECT id, shop_name, username, approved_at
+            FROM retail_shops WHERE is_active=1 ORDER BY shop_name
+        """).fetchall()
+
+    # Neighbouring apps on the same VPS (wholesaler is a separate Flask
+    # process/DB; not this app's data, but relevant to "what is this
+    # server actually spending its disk on").
+    wholesaler_dir = "/var/www/wholesaler"
+    wholesaler_companies = []
+    wholesaler_total_bytes = 0
+    if os.path.isdir(wholesaler_dir):
+        tenants_dir = os.path.join(wholesaler_dir, "tenants")
+        platform_db = os.path.join(wholesaler_dir, "platform.db")
+        names = {}
+        if os.path.exists(platform_db):
+            try:
+                pconn = sqlite3.connect(platform_db)
+                pconn.row_factory = sqlite3.Row
+                for r in pconn.execute("SELECT slug, name FROM companies"):
+                    names[r["slug"]] = r["name"]
+                pconn.close()
+            except Exception:
+                pass
+        if os.path.isdir(tenants_dir):
+            for fn in sorted(os.listdir(tenants_dir)):
+                if fn.endswith(".db"):
+                    slug = fn[:-3]
+                    size = os.path.getsize(os.path.join(tenants_dir, fn))
+                    wholesaler_total_bytes += size
+                    wholesaler_companies.append({
+                        "slug": slug, "name": names.get(slug, slug), "bytes": size,
+                    })
+
+    return jsonify({
+        "vps": {
+            "disk_total": disk.total, "disk_used": disk.used, "disk_free": disk.free,
+            "disk_pct": round(disk.used / disk.total * 100, 1) if disk.total else 0,
+            "mem_total": mem["total"], "mem_used": mem["used"], "mem_available": mem["available"],
+            "mem_pct": round(mem["used"] / mem["total"] * 100, 1) if mem["total"] else 0,
+            "cpu_count": os.cpu_count(),
+        },
+        "medivision": {
+            "db_files": db_files,
+            "db_bytes_total": sum(f["bytes"] for f in db_files),
+            "backups_bytes": backups_bytes,
+            "row_counts": row_counts,
+            "per_shop": [dict(r) for r in per_shop],
+        },
+        "wholesaler": {
+            "companies": wholesaler_companies,
+            "total_bytes": wholesaler_total_bytes,
+        },
+    })
+
+
 @app.route("/api/admin/accounts", methods=["GET"])
 def admin_list_accounts():
     if not session.get("is_platform_admin"):
@@ -2811,6 +2936,26 @@ def _auto_detect_dbf_mapping(field_names):
     return mapping
 
 
+def _ensure_extra_json_columns():
+    """
+    Legacy DBF exports (ITEMDET.DBF, ITEMTRAN.DBF, etc from FoxPro/Winman/
+    Medeil) run 50+ columns wide and every pharmacy's software customized
+    its own field names over 16+ years - there is no fixed mapping that
+    covers all of them, and a shop switching to this software shouldn't
+    lose whatever fields the old system tracked just because this schema
+    doesn't have a matching column. Every raw field is now kept as JSON
+    alongside the handful this app actually understands (name/mrp/stock/
+    etc), so nothing from the source file is ever silently discarded -
+    a future column-customization UI reads from here.
+    """
+    with get_conn() as conn:
+        for table in ("medicines", "bills"):
+            cols = {r["name"] for r in conn.execute(f"PRAGMA table_info({table})").fetchall()}
+            if "extra_json" not in cols:
+                conn.execute(f"ALTER TABLE {table} ADD COLUMN extra_json TEXT DEFAULT '{{}}'")
+        conn.commit()
+
+
 def _detect_dbf_type(filename, field_names):
     fn = filename.upper()
     uf = {f.upper() for f in field_names}
@@ -2874,7 +3019,6 @@ def api_import_dbf_preview():
 
 @app.route("/api/import-dbf/run", methods=["POST"])
 def api_import_dbf_run():
-    import re as _re
     if not session.get("portal_user"):
         return json_error("Login required", 401)
     data = request.get_json(silent=True) or {}
@@ -2888,6 +3032,20 @@ def api_import_dbf_run():
         return json_error("Session expired — please re-upload the file", 400)
 
     _, records, _ = stored
+    result = _run_dbf_import(records, mapping, file_type, update_existing)
+    _dbf_temp_delete(token)
+    return jsonify(result)
+
+
+def _run_dbf_import(records, mapping, file_type, update_existing):
+    """
+    Shared by the single-file wizard (/api/import-dbf/run) and bulk folder
+    import (/api/import-dbf/bulk) - one code path for the actual DB writes,
+    so a fix here (like extra_json capture) applies to both instead of
+    needing to stay in sync across a duplicated copy.
+    """
+    import re as _re
+    _ensure_extra_json_columns()
 
     def _gv(row, key, default=""):
         fn = mapping.get(key, "")
@@ -2943,8 +3101,13 @@ def api_import_dbf_run():
                 expiry   = _norm_expiry(_gv(row, "expiry", "")) if _gv(row, "expiry") else ""
                 reorder  = max(_si(_gv(row, "reorder", 5)), 5)
                 sgst     = _sf(_gv(row, "sgst", 0))
+                # Raw row, unmapped fields and all - the "show as it is"
+                # fallback. row already has native Python values from
+                # _parse_dbf_bytes (_dec()); json.dumps handles str/int/
+                # float/bool/None directly.
+                raw_json = json.dumps(row, default=str)
                 try:
-                    existing = conn.execute("SELECT id FROM medicines WHERE n=?", (name,)).fetchone()
+                    existing = conn.execute("SELECT id, extra_json FROM medicines WHERE n=?", (name,)).fetchone()
                     if existing:
                         if update_existing:
                             conn.execute(
@@ -2954,12 +3117,13 @@ def api_import_dbf_run():
                                    p_rate=CASE WHEN ?>0 THEN ? ELSE p_rate END,
                                    s=?, batch=COALESCE(NULLIF(?,''),batch),
                                    expiry=COALESCE(NULLIF(?,''),expiry),
-                                   reorder=CASE WHEN ?>0 THEN ? ELSE reorder END
+                                   reorder=CASE WHEN ?>0 THEN ? ELSE reorder END,
+                                   extra_json=?
                                    WHERE id=?""",
                                 (generic, category,
                                  mrp, mrp, prate, prate,
                                  stock, batch, expiry,
-                                 reorder, reorder, existing["id"])
+                                 reorder, reorder, raw_json, existing["id"])
                             )
                             updated += 1
                         else:
@@ -2969,10 +3133,10 @@ def api_import_dbf_run():
                         conn.execute(
                             """INSERT OR IGNORE INTO medicines
                                (id,n,g,c,p,s,p_rate,batch,expiry,reorder,max_qty,
-                                p_packing,s_packing,p_gst,s_gst)
-                               VALUES (?,?,?,?,?,?,?,?,?,?,0,1,1,?,?)""",
+                                p_packing,s_packing,p_gst,s_gst,extra_json)
+                               VALUES (?,?,?,?,?,?,?,?,?,?,0,1,1,?,?,?)""",
                             (nid, name, generic, category, mrp, stock,
-                             prate, batch, expiry, reorder, sgst, sgst)
+                             prate, batch, expiry, reorder, sgst, sgst, raw_json)
                         )
                         created += 1
                 except Exception as e:
@@ -2993,10 +3157,11 @@ def api_import_dbf_run():
                 skipped += 1
                 continue
             if bno not in bill_map:
-                bill_map[bno] = {"date": date, "items": [], "total": 0.0}
+                bill_map[bno] = {"date": date, "items": [], "total": 0.0, "raw_rows": []}
             line_amt = qty * rate
             bill_map[bno]["items"].append({"name": name, "qty": qty, "rate": rate, "amount": round(line_amt, 2)})
             bill_map[bno]["total"] += line_amt
+            bill_map[bno]["raw_rows"].append(row)   # every field, mapped or not - "show as it is"
             if date:
                 bill_map[bno]["date"] = date
 
@@ -3010,9 +3175,10 @@ def api_import_dbf_run():
                 try:
                     if not conn.execute("SELECT id FROM bills WHERE id=?", (bno,)).fetchone():
                         conn.execute(
-                            "INSERT OR IGNORE INTO bills (id,items,amount,date,type,status) VALUES (?,?,?,?,?,?)",
+                            "INSERT OR IGNORE INTO bills (id,items,amount,date,type,status,extra_json) VALUES (?,?,?,?,?,?,?)",
                             (bno, json.dumps(bill["items"]),
-                             round(bill["total"], 2), bd, "retail", "saved")
+                             round(bill["total"], 2), bd, "retail", "saved",
+                             json.dumps(bill["raw_rows"], default=str))
                         )
                         created += 1
                     else:
@@ -3021,8 +3187,7 @@ def api_import_dbf_run():
                     errors.append(str(e)[:80])
                     skipped += 1
 
-    _dbf_temp_delete(token)
-    return jsonify({
+    return {
         "status": "ok",
         "file_type": file_type,
         "created": created,
@@ -3030,6 +3195,100 @@ def api_import_dbf_run():
         "skipped": skipped,
         "total": created + updated + skipped,
         "errors": errors[:10],
+    }
+
+
+@app.route("/api/import-dbf/bulk", methods=["POST"])
+def api_import_dbf_bulk():
+    """
+    A whole folder of legacy DBF files in one go - ITEMDET.DBF, ITEMTRAN.DBF,
+    a year's worth of monthly export files, whatever the old software
+    produced. No per-file mapping review: each file's type and field
+    mapping are auto-detected (_detect_dbf_type / _auto_detect_dbf_mapping,
+    the same guesses the single-file wizard suggests, just not requiring a
+    human to confirm each one) and run straight through _run_dbf_import.
+    Anything the auto-mapping misses is still preserved via extra_json, so
+    "trust the guess" doesn't mean "lose the data" if the guess is wrong.
+
+    update_existing defaults True for medicines: a later file overwriting
+    price/stock from an earlier one is normal for a bulk historical import
+    (each month's export just reflects that month's snapshot) and matches
+    the single-file wizard's own default.
+    """
+    if not session.get("portal_user"):
+        return json_error("Login required", 401)
+    files = request.files.getlist("files")
+    if not files:
+        return json_error("No files provided")
+    update_existing = request.form.get("update_existing", "1") == "1"
+
+    results = []
+    for f in files:
+        filename = f.filename or "upload.dbf"
+        try:
+            raw = f.read()
+            if len(raw) < 64:
+                results.append({"filename": filename, "status": "error", "message": "File is too small or empty"})
+                continue
+            fields, records = _parse_dbf_bytes(raw)
+            if not fields:
+                results.append({"filename": filename, "status": "error", "message": "No fields found — not a valid DBF file"})
+                continue
+            field_names = [fld["name"] for fld in fields]
+            mapping = _auto_detect_dbf_mapping(field_names)
+            file_type = _detect_dbf_type(filename, field_names)
+            outcome = _run_dbf_import(records, mapping, file_type, update_existing)
+            outcome["filename"] = filename
+            outcome["field_count"] = len(fields)
+            outcome["mapped_field_count"] = len(mapping)
+            outcome["unmapped_field_count"] = len(fields) - len(mapping)
+            results.append(outcome)
+        except Exception as e:
+            results.append({"filename": filename, "status": "error", "message": str(e)})
+
+    return jsonify({
+        "status": "ok",
+        "files_processed": len(results),
+        "results": results,
+        "totals": {
+            "created": sum(r.get("created", 0) for r in results),
+            "updated": sum(r.get("updated", 0) for r in results),
+            "skipped": sum(r.get("skipped", 0) for r in results),
+        },
+    })
+
+
+@app.route("/api/import-dbf/clear", methods=["POST"])
+def api_import_dbf_clear():
+    """
+    Wipe imported catalog/billing data so a shop can start clean on this
+    software - the button behind "clear previous data, now on we use this
+    for real billing". Deliberately narrow: only medicines and bills, the
+    two tables the DBF importer writes to. Does not touch staff, settings,
+    licensing, or anything the shop configured by hand.
+
+    Requires typing the confirmation phrase server-side (not just a JS
+    confirm()) since this is a real, irreversible data loss action -
+    matches how destructive actions elsewhere in this app (bill void,
+    etc.) are gated.
+    """
+    if not session.get("portal_user"):
+        return json_error("Login required", 401)
+    data = request.get_json(silent=True) or {}
+    if (data.get("confirm") or "").strip().upper() != "CLEAR":
+        return json_error('Type CLEAR to confirm - this deletes all medicines and bills.', 400)
+
+    with get_conn() as conn:
+        before_meds = conn.execute("SELECT COUNT(*) c FROM medicines").fetchone()["c"]
+        before_bills = conn.execute("SELECT COUNT(*) c FROM bills").fetchone()["c"]
+        conn.execute("DELETE FROM medicines")
+        conn.execute("DELETE FROM bills")
+        conn.commit()
+
+    return jsonify({
+        "status": "ok",
+        "medicines_deleted": before_meds,
+        "bills_deleted": before_bills,
     })
 
 
