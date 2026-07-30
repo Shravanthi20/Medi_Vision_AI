@@ -1987,8 +1987,12 @@ def register_retail():
 
 @app.route("/admin")
 def admin_panel():
-    if not session.get("is_platform_admin"):
-        return redirect(url_for("welcome"))
+    # admin_dashboard.html is self-gating: it shows a full-screen login
+    # overlay by default and only reveals the dashboard once
+    # /api/admin/login succeeds (see its own <script>, id="loginScreen").
+    # Redirecting away here when not yet logged in made the login form
+    # itself unreachable through normal navigation - there was no path
+    # that ever rendered it for a logged-out visitor.
     return render_template("admin_dashboard.html")
 
 @app.route("/portal")
