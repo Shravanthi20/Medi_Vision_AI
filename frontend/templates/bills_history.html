@@ -177,7 +177,7 @@ let searchDebounce = null;
 
 async function loadBills(){
   try {
-    const r = await fetch('/api/bills?limit=5000');
+    const r = await fetch('/api/bills?limit=20000');
     let bills = await r.json();
     if(!Array.isArray(bills)){ bills = bills.bills || bills.data || []; }
     allBills = bills.map(b => {
