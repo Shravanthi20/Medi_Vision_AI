@@ -96,6 +96,22 @@ h1{font-size:1.7rem;font-weight:800;color:var(--tx);}
 .toast.show{display:block;}
 .toast.err{background:#ef4444;}
 
+.kpi.locked{cursor:pointer;}
+.kpi.locked .val{filter:blur(7px);user-select:none;}
+.kpi .unlock-hint{font-size:.68rem;color:var(--mt);margin-top:4px;cursor:pointer;font-weight:600;}
+.kpi .unlock-hint:hover{color:var(--blu);}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:400;align-items:center;justify-content:center;}
+.modal-overlay.show{display:flex;}
+.modal-box{background:#fff;border-radius:14px;padding:22px 24px;width:290px;box-shadow:0 20px 50px rgba(0,0,0,.25);}
+.modal-box h3{font-size:1rem;margin-bottom:12px;}
+.modal-box input{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:1.1rem;letter-spacing:.15em;text-align:center;font-family:'JetBrains Mono',monospace;margin-bottom:10px;box-sizing:border-box;}
+.modal-box .err{color:#dc2626;font-size:.78rem;margin-bottom:8px;min-height:16px;}
+.modal-box .row{display:flex;gap:8px;}
+.modal-box .row button{flex:1;padding:9px;border-radius:8px;border:none;font-weight:700;cursor:pointer;font-size:.85rem;font-family:inherit;}
+.modal-box .btn-cancel{background:#f1f5f9;color:var(--tx);}
+.modal-box .btn-ok{background:var(--grn);color:#fff;}
+.modal-box .switch-link{font-size:.72rem;color:var(--blu);cursor:pointer;text-align:center;margin-top:12px;text-decoration:underline;}
+
 @media(max-width:768px){
   .wrap{padding:14px;}
   .kpi .val{font-size:1.3rem;}
@@ -168,12 +184,31 @@ h1{font-size:1.7rem;font-weight:800;color:var(--tx);}
 
 <div class="toast" id="toast"></div>
 
+<div class="modal-overlay" id="pinModal" onclick="if(event.target===this)closePinModal()">
+  <div class="modal-box">
+    <h3 id="pinModalTitle">🔒 Enter Owner PIN</h3>
+    <input type="password" inputmode="numeric" id="pinInput" maxlength="8" placeholder="••••••" autocomplete="off" onkeydown="if(event.key==='Enter')submitPinModal()"/>
+    <div id="pinChangeExtra" style="display:none">
+      <input type="password" inputmode="numeric" id="pinNewInput" maxlength="8" placeholder="New PIN (4-8 digits)" autocomplete="off" onkeydown="if(event.key==='Enter')submitPinModal()"/>
+    </div>
+    <div id="pinModalErr" class="err"></div>
+    <div class="row">
+      <button class="btn-cancel" onclick="closePinModal()">Cancel</button>
+      <button class="btn-ok" id="pinModalOk" onclick="submitPinModal()">Unlock</button>
+    </div>
+    <div class="switch-link" id="pinSwitchLink" onclick="togglePinChangeMode()">Change owner PIN</div>
+  </div>
+</div>
+
 <script>
 let allBills = [];
 let filtered = [];
 let currentPage = 1;
 const PER_PAGE = 25;
 let searchDebounce = null;
+let financeUnlocked = false;
+let financeUnlockTimer = null;
+let pinModalMode = 'reveal';
 
 async function loadBills(){
   try {
@@ -231,13 +266,89 @@ function renderKPIs(){
   const sumGst = filtered.reduce((s,b) => s + (b.tax||0), 0);
   const uniqueCust = new Set(filtered.map(b => (b.phone||'').replace(/\D/g,'')).filter(p => p && p.length === 10)).size;
   const avgBill = total > 0 ? sumRev/total : 0;
+  const revVal = financeUnlocked ? `₹${sumRev.toLocaleString('en-IN',{maximumFractionDigits:0})}` : '••••••';
+  const gstVal = financeUnlocked ? `₹${sumGst.toLocaleString('en-IN',{maximumFractionDigits:0})}` : '••••••';
+  const hint = financeUnlocked
+    ? `<div class="unlock-hint" onclick="event.stopPropagation();lockFinance()">🔓 hide now</div>`
+    : `<div class="unlock-hint" onclick="event.stopPropagation();openPinModal('reveal')">🔒 tap to view</div>`;
   document.getElementById('kpiRow').innerHTML = `
     <div class="kpi"><div class="lbl">Bills</div><div class="val">${total.toLocaleString('en-IN')}</div></div>
-    <div class="kpi green"><div class="lbl">Total Revenue</div><div class="val">₹${sumRev.toLocaleString('en-IN',{maximumFractionDigits:0})}</div></div>
-    <div class="kpi orange"><div class="lbl">Total GST</div><div class="val">₹${sumGst.toLocaleString('en-IN',{maximumFractionDigits:0})}</div></div>
+    <div class="kpi green ${financeUnlocked?'':'locked'}" ${financeUnlocked?'':`onclick="openPinModal('reveal')"`}>
+      <div class="lbl">Total Revenue</div><div class="val">${revVal}</div>${hint}
+    </div>
+    <div class="kpi orange ${financeUnlocked?'':'locked'}" ${financeUnlocked?'':`onclick="openPinModal('reveal')"`}>
+      <div class="lbl">Total GST</div><div class="val">${gstVal}</div>
+    </div>
     <div class="kpi blue"><div class="lbl">Avg Bill</div><div class="val">₹${avgBill.toLocaleString('en-IN',{maximumFractionDigits:0})}</div></div>
     <div class="kpi"><div class="lbl">Unique Customers</div><div class="val">${uniqueCust}</div></div>
   `;
+}
+
+function openPinModal(mode){
+  pinModalMode = mode;
+  document.getElementById('pinModal').classList.add('show');
+  document.getElementById('pinModalTitle').textContent = mode === 'change' ? '🔑 Change Owner PIN' : '🔒 Enter Owner PIN';
+  document.getElementById('pinChangeExtra').style.display = mode === 'change' ? '' : 'none';
+  document.getElementById('pinModalOk').textContent = mode === 'change' ? 'Save' : 'Unlock';
+  document.getElementById('pinSwitchLink').textContent = mode === 'change' ? '← Back to unlock' : 'Change owner PIN';
+  document.getElementById('pinInput').value = '';
+  document.getElementById('pinNewInput').value = '';
+  document.getElementById('pinModalErr').textContent = '';
+  setTimeout(() => document.getElementById('pinInput').focus(), 50);
+}
+
+function togglePinChangeMode(){
+  openPinModal(pinModalMode === 'change' ? 'reveal' : 'change');
+}
+
+function closePinModal(){
+  document.getElementById('pinModal').classList.remove('show');
+}
+
+async function submitPinModal(){
+  const pin = document.getElementById('pinInput').value.trim();
+  const errEl = document.getElementById('pinModalErr');
+  if(!pin){ errEl.textContent = 'Enter the PIN'; return; }
+
+  if(pinModalMode === 'change'){
+    const newPin = document.getElementById('pinNewInput').value.trim();
+    if(!/^\d{4,8}$/.test(newPin)){ errEl.textContent = 'New PIN must be 4-8 digits'; return; }
+    try {
+      const res = await fetch('/api/settings/finance-pin', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ current_pin: pin, new_pin: newPin })
+      });
+      const d = await res.json();
+      if(!res.ok || d.status !== 'success'){ errEl.textContent = d.message || 'Could not change PIN'; return; }
+      closePinModal();
+      showToast('✓ Owner PIN updated');
+    } catch(e){ errEl.textContent = 'Network error'; }
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/bills/reveal-financials', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ pin })
+    });
+    const d = await res.json();
+    if(!res.ok || d.status !== 'success'){ errEl.textContent = 'Incorrect PIN'; return; }
+    financeUnlocked = true;
+    closePinModal();
+    renderKPIs();
+    startUnlockTimer();
+  } catch(e){ errEl.textContent = 'Network error'; }
+}
+
+function startUnlockTimer(){
+  clearTimeout(financeUnlockTimer);
+  financeUnlockTimer = setTimeout(lockFinance, 45000);
+}
+
+function lockFinance(){
+  financeUnlocked = false;
+  clearTimeout(financeUnlockTimer);
+  renderKPIs();
 }
 
 function renderTable(){
@@ -278,7 +389,7 @@ function toggleDetail(id){
   const row = document.getElementById('row-' + id);
   const det = document.getElementById('detail-' + id);
   if(det.style.display === 'none'){
-    document.querySelectorAll('[id^="detail-"]').forEach(el => { if(el !== det) el.style.display = 'none'; });
+    document.querySelectorAll('tr[id^="detail-"]').forEach(el => { if(el !== det) el.style.display = 'none'; });
     document.querySelectorAll('[id^="row-"]').forEach(el => el.classList.remove('expanded'));
     det.style.display = '';
     row.classList.add('expanded');

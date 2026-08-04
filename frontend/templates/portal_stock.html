@@ -111,10 +111,10 @@
     <div class="sb-section">Stock &amp; AI</div>
     <a class="nav-item active" href="/portal/stock"><span class="icon">📊</span> Stock &amp; Import</a>
     <a class="nav-item" href="/portal/ai-reorder"><span class="icon">🤖</span> AI Reorder</a>
-    <div class="sb-section">Reports</div>
-    <a class="nav-item" href="/reports/daily_sales.html" target="_blank"><span class="icon">📈</span> Daily Sales</a>
-    <a class="nav-item" href="/reports/low_stock.html" target="_blank"><span class="icon">⚠️</span> Low Stock</a>
-    <a class="nav-item" href="/reports/expiry_stock.html" target="_blank"><span class="icon">📅</span> Expiry Report</a>
+    <div class="sb-section">Reports &amp; History</div>
+    <a class="nav-item" href="/reports"><span class="icon">📊</span> Reports Hub</a>
+    <a class="nav-item" href="/bills/history"><span class="icon">📋</span> Bills History</a>
+    <a class="nav-item" href="/cash-drawer"><span class="icon">💵</span> Cash Drawer</a>
   </nav>
   <div class="sb-footer">
     <button class="logout-btn" onclick="fetch('/api/portal/logout',{method:'POST'}).then(()=>location.href='/')">Sign Out</button>
@@ -156,12 +156,76 @@
             <thead>
               <tr>
                 <th>Medicine Name</th><th>Generic</th><th>Category</th>
-                <th>MRP (₹)</th><th>Stock</th><th>Min (Reorder)</th>
-                <th>Max</th><th>Batch</th><th>Expiry</th><th>Status</th>
+                <th>MRP (₹) ✏</th><th>Stock ✏</th><th>Min ✏</th>
+                <th>Max ✏</th><th>Batch ✏</th><th>Expiry ✏</th><th>Status</th>
               </tr>
             </thead>
             <tbody id="stockTbody"></tbody>
           </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- PURCHASE BILL EXCEL UPLOAD -->
+    <div class="card" id="purchaseImportSection">
+      <div class="card-header">
+        <h3>📦 Purchase Bill Import (Excel)</h3>
+        <span style="font-size:.78rem;color:var(--gray)">Upload a distributor's Excel file — works with most wholesalers</span>
+      </div>
+      <div class="card-body">
+        <div class="howto">
+          <h4>📋 How this works</h4>
+          <ol>
+            <li>Upload the <strong>.xls / .xlsx / .csv</strong> purchase bill your distributor sent (item, batch, expiry, qty, rate, MRP columns — column names are auto-detected, so it works across different wholesalers)</li>
+            <li>Confirm the <strong>Supplier</strong> name (auto-created if new) and bill no/date</li>
+            <li>Review the preview — includes <strong>PTR / margin %</strong> per item</li>
+            <li>Click <strong>Import</strong> — stock is <strong>added</strong> to existing quantities, and a purchase entry is posted straight to <a href="/portal/tally" target="_blank">Tally</a> automatically. No need to leave this page.</li>
+          </ol>
+        </div>
+
+        <div style="display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
+          <input type="file" id="purchaseFileInput" accept=".xls,.xlsx,.csv" style="font-size:.84rem" onchange="handlePurchaseFile(this.files[0])" />
+          <span id="purchaseFileStatus" style="font-size:.78rem;color:var(--gray)"></span>
+        </div>
+
+        <div id="purchaseFormSection" style="display:none">
+          <div class="col-mapping" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr))">
+            <div class="col-map-item">
+              <label>Supplier Name *</label>
+              <input type="text" id="pbSupplierName" list="supplierList" style="width:100%;padding:8px 10px;border:1.5px solid var(--gray-border);border-radius:8px;font-size:.84rem" placeholder="e.g. Sri Alagu Pharma" />
+              <datalist id="supplierList"></datalist>
+            </div>
+            <div class="col-map-item">
+              <label>Supplier GSTIN</label>
+              <input type="text" id="pbSupplierGst" style="width:100%;padding:8px 10px;border:1.5px solid var(--gray-border);border-radius:8px;font-size:.84rem" />
+            </div>
+            <div class="col-map-item">
+              <label>Bill No</label>
+              <input type="text" id="pbBillNo" style="width:100%;padding:8px 10px;border:1.5px solid var(--gray-border);border-radius:8px;font-size:.84rem" />
+            </div>
+            <div class="col-map-item">
+              <label>Bill Date</label>
+              <input type="date" id="pbBillDate" style="width:100%;padding:8px 10px;border:1.5px solid var(--gray-border);border-radius:8px;font-size:.84rem" />
+            </div>
+          </div>
+
+          <div style="display:flex;align-items:center;justify-content:space-between;margin:14px 0 10px">
+            <span id="pbParseCount" style="font-size:.84rem;font-weight:700;color:var(--green)"></span>
+            <span id="pbFormatBadge" style="font-size:.72rem;color:var(--gray)"></span>
+          </div>
+          <div class="preview-table-wrap" style="max-height:280px">
+            <table>
+              <thead><tr><th>#</th><th>Medicine Name</th><th>Batch</th><th>Expiry</th><th>Qty</th><th>Rate</th><th>MRP</th><th>PTR/Margin</th><th>Status</th></tr></thead>
+              <tbody id="pbPreviewTbody"></tbody>
+            </table>
+          </div>
+
+          <div id="purchaseImportResult" style="display:none;margin-top:14px"></div>
+
+          <div style="display:flex;gap:10px;margin-top:16px">
+            <button class="btn btn-green" id="pbImportBtn" onclick="doPurchaseImport()" disabled>📥 Import to Stock + Tally</button>
+            <button class="btn btn-outline" onclick="clearPurchaseImport()">Clear</button>
+          </div>
         </div>
       </div>
     </div>
@@ -253,6 +317,121 @@ let pendingEdits = {};
 document.getElementById('importDate').value = new Date().toISOString().slice(0,10);
 loadCurrentStock();
 loadImportHistory();
+loadSupplierList();
+
+// PURCHASE BILL EXCEL IMPORT
+let pbParsedItems = [];
+
+async function loadSupplierList() {
+  try {
+    const res = await fetch('/api/suppliers');
+    const suppliers = await res.json();
+    document.getElementById('supplierList').innerHTML =
+      suppliers.map(s => `<option value="${(s.name||'').replace(/"/g,'&quot;')}">`).join('');
+  } catch (e) { /* non-critical */ }
+}
+
+async function handlePurchaseFile(file) {
+  if (!file) return;
+  const statusEl = document.getElementById('purchaseFileStatus');
+  statusEl.textContent = 'Parsing...';
+  const fd = new FormData();
+  fd.append('file', file);
+  try {
+    const res = await fetch('/api/stock/parse-file', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (!res.ok) { statusEl.textContent = 'Error: ' + (data.error || 'parse failed'); return; }
+    pbParsedItems = data.items || [];
+    if (!pbParsedItems.length) {
+      statusEl.textContent = `No recognizable rows found (format: ${data.format}). Try a different file or use the paste box below.`;
+      document.getElementById('purchaseFormSection').style.display = 'none';
+      return;
+    }
+    statusEl.textContent = `✓ ${file.name}`;
+    document.getElementById('pbFormatBadge').textContent = `Format: ${data.format}`;
+    document.getElementById('pbBillNo').value = data.bill_no || '';
+    document.getElementById('pbBillDate').value = data.bill_date || new Date().toISOString().slice(0,10);
+    document.getElementById('pbSupplierGst').value = data.gstin || '';
+    renderPurchasePreview();
+    document.getElementById('purchaseFormSection').style.display = 'block';
+    document.getElementById('pbImportBtn').disabled = false;
+  } catch (e) {
+    statusEl.textContent = 'Network error while parsing file.';
+  }
+}
+
+function renderPurchasePreview() {
+  document.getElementById('pbParseCount').textContent = `✓ Detected ${pbParsedItems.length} item rows`;
+  document.getElementById('pbPreviewTbody').innerHTML = pbParsedItems.slice(0, 100).map((r, i) => {
+    const exists = allMeds.find(m => m.n?.toLowerCase() === r.name.toLowerCase());
+    const margin = r.margin_pct !== undefined ? r.margin_pct : (r.p_rate > 0 ? Math.round((r.mrp - r.p_rate) / r.p_rate * 1000) / 10 : '');
+    return `<tr>
+      <td style="color:var(--gray)">${i+1}</td>
+      <td><strong>${r.name}</strong></td>
+      <td style="font-size:.78rem">${r.batch||'—'}</td>
+      <td style="font-size:.78rem">${r.expiry||'—'}</td>
+      <td>${r.stock}</td>
+      <td>${r.p_rate ? '₹'+r.p_rate.toFixed(2) : '—'}</td>
+      <td>${r.mrp ? '₹'+r.mrp.toFixed(2) : '—'}</td>
+      <td>${margin !== '' ? margin+'%' : '—'}</td>
+      <td>${exists ? '<span class="pill pill-green">+Stock</span>' : '<span class="pill pill-blue">New</span>'}</td>
+    </tr>`;
+  }).join('');
+  if (pbParsedItems.length > 100) {
+    document.getElementById('pbPreviewTbody').innerHTML += `<tr><td colspan="9" style="text-align:center;color:var(--gray);font-size:.78rem">...and ${pbParsedItems.length-100} more rows</td></tr>`;
+  }
+}
+
+async function doPurchaseImport() {
+  const supplierName = document.getElementById('pbSupplierName').value.trim();
+  if (!supplierName) { showToast('Supplier name is required', 'red'); return; }
+  if (!pbParsedItems.length) return;
+  const btn = document.getElementById('pbImportBtn');
+  btn.disabled = true; btn.textContent = 'Importing...';
+  try {
+    const res = await fetch('/api/stock/import-purchase', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        items: pbParsedItems,
+        supplier_name: supplierName,
+        supplier_gst: document.getElementById('pbSupplierGst').value.trim(),
+        bill_no: document.getElementById('pbBillNo').value.trim(),
+        bill_date: document.getElementById('pbBillDate').value,
+      })
+    });
+    const data = await res.json();
+    const resultDiv = document.getElementById('purchaseImportResult');
+    resultDiv.style.display = 'block';
+    if (data.status === 'success') {
+      resultDiv.innerHTML = `<div class="result-banner success">
+        ✓ Import complete! <strong>${data.updated}</strong> items restocked, <strong>${data.created}</strong> new items added.
+        Bill total <strong>₹${data.grand_total.toFixed(2)}</strong> posted to
+        <a href="/portal/tally" target="_blank">Tally</a> as a purchase entry for <strong>${supplierName}</strong>.
+      </div>`;
+      showToast('Purchase bill imported ✓', 'green');
+      loadCurrentStock();
+      loadImportHistory();
+      loadSupplierList();
+    } else {
+      resultDiv.innerHTML = `<div class="result-banner error">✗ ${data.error || data.message || 'Import failed'}</div>`;
+      showToast('Import failed', 'red');
+    }
+  } catch (e) {
+    showToast('Network error. Please retry.', 'red');
+  }
+  btn.disabled = false; btn.textContent = '📥 Import to Stock + Tally';
+}
+
+function clearPurchaseImport() {
+  pbParsedItems = [];
+  document.getElementById('purchaseFileInput').value = '';
+  document.getElementById('purchaseFileStatus').textContent = '';
+  document.getElementById('purchaseFormSection').style.display = 'none';
+  document.getElementById('purchaseImportResult').style.display = 'none';
+  document.getElementById('pbSupplierName').value = '';
+  document.getElementById('pbSupplierGst').value = '';
+  document.getElementById('pbBillNo').value = '';
+}
 
 async function loadCurrentStock() {
   const res = await fetch('/api/medicines?limit=2000');
@@ -273,31 +452,42 @@ function renderStockTable(meds) {
     const stock = parseInt(m.s) || 0;
     const reorder = parseInt(m.reorder) || 10;
     const expiry = m.expiry || '';
+    // statusClass: modifier only — <span class="pill X"> already adds "pill"
+    // Colors: OUT=red (critical), LOW=orange (warning), EXPIRING=orange (warning)
     let status = 'ok', statusLabel = 'OK', statusClass = 'pill-green';
-    if (stock === 0) { status='out'; statusLabel='OUT'; statusClass='pill pill-orange'; }
-    else if (stock <= reorder) { status='low'; statusLabel='LOW'; statusClass='pill pill-red'; }
-    else if (expiry && expiry <= cutoff90 && expiry >= today) { status='expiring'; statusLabel='EXPIRING'; statusClass='pill pill-orange'; }
+    if (stock === 0)                                                 { status='out';      statusLabel='OUT';      statusClass='pill-red';    }
+    else if (stock <= reorder)                                       { status='low';      statusLabel='LOW';      statusClass='pill-orange'; }
+    else if (expiry && expiry <= cutoff90 && expiry >= today)        { status='expiring'; statusLabel='EXPIRING'; statusClass='pill-orange'; }
     const expColor = expiry && expiry < today ? 'color:var(--err);font-weight:700' : expiry && expiry <= cutoff90 ? 'color:var(--orange)' : '';
     return `<tr data-status="${status}" data-name="${m.n?.toLowerCase()}">
       <td><strong>${m.n}</strong></td>
       <td style="color:var(--gray);font-size:.78rem">${m.g||'—'}</td>
       <td style="font-size:.78rem">${m.c||'Tablet'}</td>
-      <td>₹${parseFloat(m.p||0).toFixed(2)}</td>
+      <td>
+        <input class="edit-input" type="number" min="0" step="0.01" value="${parseFloat(m.p||0).toFixed(2)}" style="width:80px"
+          onchange="markEdit('${m.id}',{p:parseFloat(this.value)||0})" />
+      </td>
       <td>
         <input class="edit-input" type="number" min="0" value="${stock}"
           style="border-color:${stock<=reorder?'var(--err)':'var(--gray-border)'}"
-          onchange="pendingEdits['${m.id}'] = {...(pendingEdits['${m.id}']||{id:'${m.id}',n:'${m.n}',p:${m.p},g:'${m.g||''}',c:'${m.c||'Tablet'}'}), s:parseInt(this.value)||0}" />
+          onchange="markEdit('${m.id}',{s:parseInt(this.value)||0})" />
       </td>
       <td>
         <input class="edit-input" type="number" min="0" value="${m.reorder||0}"
-          onchange="pendingEdits['${m.id}'] = {...(pendingEdits['${m.id}']||{id:'${m.id}',n:'${m.n}',p:${m.p},g:'${m.g||''}',c:'${m.c||'Tablet'}'}), reorder:parseInt(this.value)||0}" />
+          onchange="markEdit('${m.id}',{reorder:parseInt(this.value)||0})" />
       </td>
       <td>
         <input class="edit-input" type="number" min="0" value="${m.max_qty||0}"
-          onchange="pendingEdits['${m.id}'] = {...(pendingEdits['${m.id}']||{id:'${m.id}',n:'${m.n}',p:${m.p},g:'${m.g||''}',c:'${m.c||'Tablet'}'}), max_qty:parseInt(this.value)||0}" />
+          onchange="markEdit('${m.id}',{max_qty:parseInt(this.value)||0})" />
       </td>
-      <td style="font-size:.78rem">${m.batch||'—'}</td>
-      <td style="font-size:.78rem;${expColor}">${expiry||'—'}</td>
+      <td>
+        <input class="edit-input" type="text" value="${m.batch||''}" style="width:90px"
+          onchange="markEdit('${m.id}',{batch:this.value})" />
+      </td>
+      <td>
+        <input class="edit-input" type="date" value="${expiry||''}" style="width:120px;font-size:.75rem;${expColor}"
+          onchange="markEdit('${m.id}',{expiry:this.value})" />
+      </td>
       <td><span class="pill ${statusClass}">${statusLabel}</span></td>
     </tr>`;
   }).join('');
@@ -319,6 +509,12 @@ function filterStock(q) {
     const matchFilter = filter === 'all' || status === filter;
     row.style.display = matchQ && matchFilter ? '' : 'none';
   });
+}
+
+function markEdit(id, fields) {
+  // Merge changed fields onto existing edit record, seeding from allMeds if first change
+  const base = allMeds.find(m => m.id === id) || {};
+  pendingEdits[id] = { ...base, ...(pendingEdits[id] || {}), ...fields };
 }
 
 async function saveAllEdits() {

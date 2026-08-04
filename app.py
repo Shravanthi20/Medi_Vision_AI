@@ -6,7 +6,7 @@ import io
 import hashlib
 import time
 import uuid as _uuid_mod
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, date, timedelta, timezone
 from typing import Any
 
 from flask import Flask, jsonify, request, send_file, render_template, session, redirect, url_for, Response
@@ -1247,6 +1247,13 @@ def mfr_change_detail_page():
     return render_template("mfrchange2.html")
 
 
+@app.route("/medicine-locations")
+def page_medicine_locations():
+    """Bulk rack/location mapping — most of the catalog has no location
+    set yet; this page lets staff walk the shop and fill it in fast."""
+    return render_template("medicine_locations.html")
+
+
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # API ROUTES (JSON Data)
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1659,7 +1666,20 @@ def medicine_alerts():
 
 @app.route("/api/medicines", methods=["POST"])
 def update_med():
-    """Create or update medicine"""
+    """Create or update medicine.
+
+    Was INSERT OR REPLACE with a partial column list — same bug class
+    already fixed once for suppliers, worse here: REPLACE deletes and
+    re-inserts the row, so it silently reset location/item_code/hsn/
+    extra_json to defaults on every save (any of the 35k+ locations just
+    imported would be wiped the next time someone edited that medicine's
+    stock), AND portal_ai_reorder.html's "Accept AI" button sends a
+    minimal payload with p:0 — which this would have written literally,
+    zeroing that medicine's selling price on every click. Rewritten as
+    UPDATE-existing-fields-only (COALESCE for text, CASE WHEN >0 for
+    numerics that are never legitimately zero via this generic path) or
+    INSERT for a genuinely new row — matches the fix already applied to
+    POST /api/suppliers."""
     data = request.get_json(silent=True) or {}
     missing = required_fields(data, ["id", "n", "p", "s"])
     if missing:
@@ -1667,32 +1687,64 @@ def update_med():
 
     try:
         with get_conn() as conn:
-            conn.execute(
-                """
-                INSERT OR REPLACE INTO medicines
-                (id, n, g, c, p, s, batch, expiry, p_rate, p_packing, s_packing, p_gst, s_gst, disc, offer, reorder, max_qty)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-                """,
-                (
-                    data["id"],
-                    data["n"],
-                    data.get("g", "Generic"),
-                    data.get("c", "Tablet"),
-                    float(data["p"]),
-                    int(data["s"]),
-                    data.get("batch", ""),
-                    data.get("expiry", ""),
-                    float(data.get("p_rate", 0) or 0),
-                    data.get("p_packing", ""),
-                    data.get("s_packing", ""),
-                    float(data.get("p_gst", 0) or 0),
-                    float(data.get("s_gst", 0) or 0),
-                    float(data.get("disc", 0) or 0),
-                    data.get("offer", ""),
-                    int(data.get("reorder", 0) or 0),
-                    int(data.get("max_qty", 0) or 0),
-                ),
-            )
+            existing = conn.execute("SELECT id FROM medicines WHERE id=?", (data["id"],)).fetchone()
+            if existing:
+                p = float(data.get("p", 0) or 0)
+                p_rate = float(data.get("p_rate", 0) or 0)
+                p_gst = float(data.get("p_gst", 0) or 0)
+                s_gst = float(data.get("s_gst", 0) or 0)
+                disc = float(data.get("disc", 0) or 0)
+                reorder = int(data.get("reorder", 0) or 0)
+                max_qty = int(data.get("max_qty", 0) or 0)
+                conn.execute(
+                    """
+                    UPDATE medicines SET
+                        n=COALESCE(NULLIF(?,''), n),
+                        g=COALESCE(NULLIF(?,''), g),
+                        c=COALESCE(NULLIF(?,''), c),
+                        p=CASE WHEN ?>0 THEN ? ELSE p END,
+                        s=?,
+                        batch=COALESCE(NULLIF(?,''), batch),
+                        expiry=COALESCE(NULLIF(?,''), expiry),
+                        p_rate=CASE WHEN ?>0 THEN ? ELSE p_rate END,
+                        p_packing=COALESCE(NULLIF(?,''), p_packing),
+                        s_packing=COALESCE(NULLIF(?,''), s_packing),
+                        p_gst=CASE WHEN ?>0 THEN ? ELSE p_gst END,
+                        s_gst=CASE WHEN ?>0 THEN ? ELSE s_gst END,
+                        disc=CASE WHEN ?>0 THEN ? ELSE disc END,
+                        offer=COALESCE(NULLIF(?,''), offer),
+                        reorder=CASE WHEN ?>0 THEN ? ELSE reorder END,
+                        max_qty=CASE WHEN ?>0 THEN ? ELSE max_qty END
+                    WHERE id=?
+                    """,
+                    (
+                        data.get("n", ""), data.get("g", ""), data.get("c", ""),
+                        p, p, int(data["s"]),
+                        data.get("batch", ""), data.get("expiry", ""),
+                        p_rate, p_rate,
+                        data.get("p_packing", ""), data.get("s_packing", ""),
+                        p_gst, p_gst, s_gst, s_gst, disc, disc,
+                        data.get("offer", ""),
+                        reorder, reorder, max_qty, max_qty,
+                        data["id"],
+                    ),
+                )
+            else:
+                conn.execute(
+                    """
+                    INSERT INTO medicines
+                    (id, n, g, c, p, s, batch, expiry, p_rate, p_packing, s_packing, p_gst, s_gst, disc, offer, reorder, max_qty)
+                    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                    """,
+                    (
+                        data["id"], data["n"], data.get("g", "Generic"), data.get("c", "Tablet"),
+                        float(data["p"]), int(data["s"]), data.get("batch", ""), data.get("expiry", ""),
+                        float(data.get("p_rate", 0) or 0), data.get("p_packing", ""), data.get("s_packing", ""),
+                        float(data.get("p_gst", 0) or 0), float(data.get("s_gst", 0) or 0),
+                        float(data.get("disc", 0) or 0), data.get("offer", ""),
+                        int(data.get("reorder", 0) or 0), int(data.get("max_qty", 0) or 0),
+                    ),
+                )
         return jsonify({"status": "success"})
     except (ValueError, TypeError) as err:
         return json_error("Invalid medicine payload", 400, str(err))
@@ -1706,6 +1758,53 @@ def delete_med(id):
     with get_conn() as conn:
         conn.execute("DELETE FROM medicines WHERE id = ?", (id,))
     return jsonify({"status": "success"})
+
+
+@app.route("/api/medicines/<id>/location", methods=["PUT"])
+def update_medicine_location(id):
+    """Update just the rack/shelf location for one medicine — a narrow,
+    single-field update (not a full-record REPLACE) so it can't wipe
+    other columns the way the old suppliers endpoint used to."""
+    d = request.get_json(silent=True) or {}
+    location = (d.get("location") or "").strip()
+    with get_conn() as conn:
+        existing = conn.execute("SELECT id FROM medicines WHERE id=?", (id,)).fetchone()
+        if not existing:
+            return json_error("Medicine not found", 404)
+        conn.execute("UPDATE medicines SET location=? WHERE id=?", (location, id))
+    return jsonify({"status": "ok", "id": id, "location": location})
+
+
+@app.route("/api/medicines/missing-location", methods=["GET"])
+def medicines_missing_location():
+    """Medicines with no rack/location assigned yet — paginated, optional
+    name/generic search — used by the location-mapping bulk-edit page."""
+    limit = min(int(request.args.get("limit", 200)), 500)
+    offset = int(request.args.get("offset", 0))
+    q = request.args.get("q", "").strip()
+    with get_conn() as conn:
+        if q:
+            like = f"%{q}%"
+            rows = conn.execute(
+                "SELECT id, n, g, c, s, location FROM medicines "
+                "WHERE (location='' OR location IS NULL) AND (n LIKE ? OR g LIKE ?) "
+                "ORDER BY n LIMIT ? OFFSET ?",
+                (like, like, limit, offset),
+            ).fetchall()
+            total = conn.execute(
+                "SELECT COUNT(*) FROM medicines WHERE (location='' OR location IS NULL) AND (n LIKE ? OR g LIKE ?)",
+                (like, like),
+            ).fetchone()[0]
+        else:
+            rows = conn.execute(
+                "SELECT id, n, g, c, s, location FROM medicines "
+                "WHERE (location='' OR location IS NULL) ORDER BY n LIMIT ? OFFSET ?",
+                (limit, offset),
+            ).fetchall()
+            total = conn.execute(
+                "SELECT COUNT(*) FROM medicines WHERE (location='' OR location IS NULL)"
+            ).fetchone()[0]
+    return jsonify({"items": [dict(r) for r in rows], "total": total, "offset": offset, "limit": limit})
 
 
 # --- PURCHASES ---
@@ -2032,6 +2131,12 @@ def portal_billing():
     if not session.get("portal_user"):
         return redirect("/portal-login")
     return render_template("portal_billing.html")
+
+@app.route("/portal/billing/classic")
+def portal_billing_classic():
+    if not session.get("portal_user"):
+        return redirect("/portal-login")
+    return render_template("billing_classic.html")
 
 @app.route("/portal/stock")
 def portal_stock():
@@ -2433,6 +2538,39 @@ def admin_toggle_account(account_type, account_id):
     return jsonify({"status": "success", "is_active": bool(new_status)})
 
 
+@app.route("/api/medicines/sales-velocity", methods=["POST"])
+def api_sales_velocity():
+    """30/60/90-day units-sold per medicine id, for a caller-supplied list
+    of ids only (e.g. the current Full View page) — not the whole catalog.
+    Scoping to requested ids is what keeps this fast; the same "scan bills
+    once, need the id set to filter against" shape as the AI reorder fix."""
+    data = request.get_json(silent=True) or {}
+    ids = set(str(i) for i in data.get("ids", [])[:300])
+    if not ids:
+        return jsonify({})
+    now_ms = int(datetime.now().timestamp() * 1000)
+    cutoff30 = now_ms - 30 * 86400 * 1000
+    cutoff60 = now_ms - 60 * 86400 * 1000
+    cutoff90 = now_ms - 90 * 86400 * 1000
+    with get_conn() as conn:
+        bills = conn.execute("SELECT ts, items FROM bills WHERE ts >= ?", (cutoff90,)).fetchall()
+    result = {i: {"d30": 0, "d60": 0, "d90": 0} for i in ids}
+    for bill in bills:
+        ts = bill["ts"] or 0
+        items = safe_json_loads(bill["items"], [])
+        for itm in items:
+            mid = str(itm.get("id", ""))
+            if mid not in ids:
+                continue
+            qty = float(itm.get("qty", 0) or 0)
+            if ts >= cutoff30:
+                result[mid]["d30"] += qty
+            if ts >= cutoff60:
+                result[mid]["d60"] += qty
+            result[mid]["d90"] += qty
+    return jsonify(result)
+
+
 # ── AI Reorder suggestions ───────────────────────────────────────────
 
 @app.route("/api/ai/reorder", methods=["GET"])
@@ -2443,14 +2581,40 @@ def ai_reorder_suggestions():
         bills = conn.execute(
             "SELECT items FROM bills WHERE ts >= ?", (cutoff_ts,)
         ).fetchall()
-        medicines = conn.execute("SELECT id, n, s, reorder, max_qty FROM medicines").fetchall()
-    sales_map: dict[str, float] = {}
-    for bill in bills:
-        items = safe_json_loads(bill["items"], [])
-        for itm in items:
-            mid = str(itm.get("id", ""))
-            qty = float(itm.get("qty", 0) or 0)
-            sales_map[mid] = sales_map.get(mid, 0) + qty
+        sales_map: dict[str, float] = {}
+        for bill in bills:
+            items = safe_json_loads(bill["items"], [])
+            for itm in items:
+                mid = str(itm.get("id", ""))
+                if not mid:
+                    continue
+                qty = float(itm.get("qty", 0) or 0)
+                sales_map[mid] = sales_map.get(mid, 0) + qty
+
+        # Score medicines that sold in the window, plus a capped list of the
+        # most understocked catalog items. A plain "reorder > 0 AND s <=
+        # reorder" filter isn't selective here — most of the 36k-row catalog
+        # still carries the default reorder threshold with unreconciled
+        # stock, so it matched ~93% of rows and reproduced the same slow,
+        # multi-MB response. The LIMIT is what actually bounds the work.
+        medicines_by_id = {}
+        sold_ids = list(sales_map.keys())
+        if sold_ids:
+            placeholders = ",".join("?" * len(sold_ids))
+            for row in conn.execute(
+                f"SELECT id, n, s, reorder, max_qty FROM medicines WHERE id IN ({placeholders})",
+                sold_ids,
+            ):
+                medicines_by_id[row["id"]] = row
+        LOW_STOCK_FALLBACK_LIMIT = 300
+        for row in conn.execute(
+            "SELECT id, n, s, reorder, max_qty FROM medicines "
+            "WHERE reorder > 0 AND s <= reorder "
+            "ORDER BY (reorder - s) DESC LIMIT ?",
+            (LOW_STOCK_FALLBACK_LIMIT,),
+        ):
+            medicines_by_id.setdefault(row["id"], row)
+        medicines = list(medicines_by_id.values())
     suggestions = []
     for med in medicines:
         mid = med["id"]
@@ -2715,6 +2879,128 @@ def _map_generic_format(rows: list[list], header_row: int, col_map: dict) -> lis
     return items
 
 
+def _parse_purchase_date(s) -> str:
+    """Normalise DD/MM/YYYY, DD-MM-YYYY or YYYY-MM-DD (from Excel or text) to YYYY-MM-DD."""
+    if s is None:
+        return ""
+    if isinstance(s, (datetime, date)):
+        return s.strftime("%Y-%m-%d")
+    s = str(s).strip()
+    if not s:
+        return ""
+    for fmt in ("%d/%m/%Y", "%d-%m-%Y", "%Y-%m-%d", "%d.%m.%Y"):
+        try:
+            return datetime.strptime(s, fmt).strftime("%Y-%m-%d")
+        except ValueError:
+            continue
+    return ""
+
+
+# Column-name aliases used to auto-detect a wholesaler distributor's purchase-bill
+# Excel layout. Different distributors (Sri Alagu Pharma, SS & Co, etc.) label the
+# same fields differently, so we match on substring rather than exact header text —
+# this is what lets one importer handle "many different wholesalers" without a
+# hand-written mapper per distributor.
+_PURCHASE_COL_ALIASES = {
+    "name":    ["itemdescription", "item description", "item name", "description", "particulars", "product name", "item"],
+    "stock":   ["qnty", "qty", "quantity"],
+    "free":    ["free", "free qty", "freeqty", "bonus"],
+    "mrp":     ["mrp"],
+    "p_rate":  ["rate", "purchase rate", "net rate", "pur.rate", "netpur.rate", "cost"],
+    "batch":   ["batchno", "batch no", "batch"],
+    "expiry":  ["expdt", "exp date", "expiry", "exp.date", "expdate"],
+    "hsn":     ["hsncode", "hsn code", "hsn"],
+    "billno":  ["billno", "bill no", "invoice no", "invoiceno"],
+    "billdate": ["billdate", "bill date", "invoice date"],
+    "gstin":   ["gstin"],
+    "sgst":    ["sgstper", "sgst%", "sgst"],
+    "cgst":    ["cgstper", "cgst%", "cgst"],
+    "igst":    ["igstper", "igst%", "igst"],
+    "item_code":    ["itemcode", "item code"],
+    "packing":      ["packing", "pack", "unit"],
+    "manufacturer": ["manf", "companyname", "company name", "manufacturer", "company"],
+    "disc_pct":     ["disc", "discount%", "discount"],
+}
+
+
+def _find_purchase_col(headers_lower: list[str], aliases: list[str]):
+    """Match the FIRST alias (in priority order) against ALL columns before trying
+    the next alias — not the reverse. Aliases are listed most-specific-first (e.g.
+    "itemdescription" before the bare "item"), and matching column-first would let
+    a loose alias like "item" match an unrelated column ("itemcode") ahead of the
+    correct, more specific one ("itemdescription")."""
+    # exact header match wins outright, checked before any substring match
+    for a in aliases:
+        for i, h in enumerate(headers_lower):
+            if a == h:
+                return i
+    for a in aliases:
+        for i, h in enumerate(headers_lower):
+            if a in h:
+                return i
+    return None
+
+
+def _map_purchase_bill_format(rows: list[list], header_row: int) -> list[dict]:
+    """Map a GST purchase-bill export (billno/itemdescription/batchno/expdt/rate/mrp/
+    hsncode/gstin style columns, e.g. distributor billing-software exports) into the
+    common item shape. Also computes PTR/margin% per row (mrp vs purchase rate)."""
+    headers = [str(c or "").strip().lower() for c in rows[header_row]]
+    cols = {k: _find_purchase_col(headers, v) for k, v in _PURCHASE_COL_ALIASES.items()}
+    if cols["name"] is None:
+        return []
+
+    def val(row, key, cast, default):
+        idx = cols.get(key)
+        if idx is None or idx >= len(row) or row[idx] in (None, ""):
+            return default
+        try:
+            return cast(row[idx])
+        except (ValueError, TypeError):
+            return default
+
+    items = []
+    for row in rows[header_row + 1:]:
+        if not row or cols["name"] >= len(row):
+            continue
+        name = str(row[cols["name"]] or "").strip()
+        if not name or len(name) < 2:
+            continue
+        qty = max(0, int(val(row, "stock", float, 0)))
+        free_qty = max(0, int(val(row, "free", float, 0)))
+        mrp = round(val(row, "mrp", float, 0), 2)
+        p_rate = round(val(row, "p_rate", float, 0), 2)
+        margin_pct = round((mrp - p_rate) / p_rate * 100, 1) if p_rate > 0 else 0
+        sgst = val(row, "sgst", float, 0)
+        cgst = val(row, "cgst", float, 0)
+        igst = val(row, "igst", float, 0)
+        gst_pct = round(igst if igst else (sgst + cgst), 2)
+        items.append({
+            "name": name,
+            # Free/bonus units are physically received stock too - a bill that
+            # reads qty=10 free=2 puts 12 units on the shelf, not 10.
+            "stock": qty + free_qty,
+            "free_qty": free_qty,
+            "mrp": mrp,
+            "price": mrp,
+            "p_rate": p_rate,
+            "margin_pct": margin_pct,
+            "batch": val(row, "batch", str, ""),
+            "expiry": _parse_purchase_date(val(row, "expiry", str, "")),
+            "hsn": val(row, "hsn", str, ""),
+            "bill_no": val(row, "billno", str, ""),
+            "bill_date": _parse_purchase_date(val(row, "billdate", str, "")),
+            "gstin": val(row, "gstin", str, ""),
+            "gst_pct": gst_pct,
+            "category": _guess_category(name),
+            "item_code": val(row, "item_code", str, ""),
+            "manufacturer": val(row, "manufacturer", str, ""),
+            "packing": val(row, "packing", str, "") or "1",
+            "disc_pct": val(row, "disc_pct", float, 0),
+        })
+    return items
+
+
 @app.route("/api/stock/parse-file", methods=["POST"])
 def parse_stock_file():
     """Accept XLS/XLSX/CSV upload, return parsed preview + column headers."""
@@ -2741,17 +3027,32 @@ def parse_stock_file():
     header_row = _detect_header_row(rows)
     headers = [str(c) for c in (rows[header_row] if rows else [])]
 
-    # Auto-detect SS & Co format
+    # Auto-detect format: SS & Co stock report > GST purchase bill (any distributor,
+    # matched by alias) > generic fallback (try the same alias mapper anyway — most
+    # Indian pharma distributor exports share similar-enough column names).
     header_str = " ".join(headers).lower()
     is_ssco = "selprice" in header_str or "netpur" in header_str or "pur.rate" in header_str
+    is_purchase_bill = any(k in header_str for k in
+        ["itemdescription", "billno", "batchno", "hsncode", "expdt", "gstin"])
+
     if is_ssco:
         items = _map_ss_co_format(rows, header_row)
         format_detected = "SS & Co / Somasundaram & Co"
+    elif is_purchase_bill:
+        items = _map_purchase_bill_format(rows, header_row)
+        format_detected = "GST Purchase Bill"
     else:
-        items = []
-        format_detected = "generic"
+        items = _map_purchase_bill_format(rows, header_row)
+        format_detected = "Auto-detected (generic)" if items else "generic"
 
+    is_purchase_bill = is_purchase_bill or (format_detected == "Auto-detected (generic)")
     preview = items[:20]
+
+    # Suggested supplier/bill defaults for the confirm form (first row with data wins)
+    bill_no = next((it.get("bill_no") for it in items if it.get("bill_no")), "")
+    bill_date = next((it.get("bill_date") for it in items if it.get("bill_date")), "")
+    gstin = next((it.get("gstin") for it in items if it.get("gstin")), "")
+
     return jsonify({
         "format": format_detected,
         "header_row": header_row,
@@ -2760,6 +3061,10 @@ def parse_stock_file():
         "preview": preview,
         "items": items,
         "is_ssco": is_ssco,
+        "is_purchase_bill": is_purchase_bill,
+        "bill_no": bill_no,
+        "bill_date": bill_date,
+        "gstin": gstin,
     })
 
 
@@ -2814,6 +3119,158 @@ def import_stock_file():
 
     return jsonify({"status": "success", "created": created, "updated": updated,
                     "skipped": skipped, "total": len(items)})
+
+
+@app.route("/api/stock/import-purchase", methods=["POST"])
+def import_purchase_bill():
+    """Import a supplier purchase-bill Excel (parsed via /api/stock/parse-file) into
+    stock + supplier + the Tally ledger, in one step.
+
+    Deliberately separate from import_stock_file(): that endpoint OVERWRITES a
+    medicine's stock qty (it's meant for daily stock-report reconciliation, where
+    the file states the true current count). A purchase bill instead states goods
+    RECEIVED — those units land on top of whatever is already on the shelf, so this
+    ADDS qty rather than overwriting it. It also creates/matches a Supplier record
+    and writes one purchase + one tally_entries ledger row per bill, so the import
+    shows up on /portal/tally without the pharmacist re-entering anything there."""
+    if not session.get("portal_user") and not session.get("admin_user"):
+        return json_error("Forbidden", 403)
+    data = request.get_json(silent=True) or {}
+    items = data.get("items", [])
+    supplier_name = str(data.get("supplier_name", "")).strip()
+    supplier_gst = str(data.get("supplier_gst", "")).strip()
+    bill_no = str(data.get("bill_no", "")).strip()
+    bill_date = str(data.get("bill_date", "")).strip() or datetime.now().strftime("%Y-%m-%d")
+    if not items:
+        return json_error("No items provided", 400)
+    if not supplier_name:
+        return json_error("Supplier name is required", 400)
+
+    created = updated = 0
+    taxable_total = 0.0
+    gst_total = 0.0
+    bill_items_summary = []
+
+    try:
+        with get_conn() as conn:
+            # find-or-create supplier — matched by name, never a blind INSERT OR REPLACE
+            supplier_row = conn.execute(
+                "SELECT id, gst FROM suppliers WHERE name = ? COLLATE NOCASE", (supplier_name,)
+            ).fetchone()
+            if supplier_row:
+                supplier_id = supplier_row["id"]
+                if supplier_gst and not supplier_row["gst"]:
+                    conn.execute("UPDATE suppliers SET gst=? WHERE id=?", (supplier_gst, supplier_id))
+            else:
+                cur = conn.execute(
+                    "INSERT INTO suppliers (name, phone, gst, last_order, status) VALUES (?,?,?,?,?)",
+                    (supplier_name, "", supplier_gst, bill_date, "Active")
+                )
+                supplier_id = cur.lastrowid
+
+            for itm in items:
+                name = str(itm.get("name", "")).strip()
+                if not name:
+                    continue
+                qty = max(0, int(itm.get("stock", 0) or 0))
+                mrp = float(itm.get("mrp", itm.get("price", 0)) or 0)
+                p_rate = float(itm.get("p_rate", 0) or 0)
+                batch = str(itm.get("batch", "") or "")
+                expiry = str(itm.get("expiry", "") or "")
+                item_code = str(itm.get("item_code", "") or "")
+                hsn = str(itm.get("hsn", "") or "")
+                manufacturer = str(itm.get("manufacturer", "") or "")
+                packing = str(itm.get("packing", "") or "")
+                disc_pct = float(itm.get("disc_pct", 0) or 0)
+                line_value = round(qty * p_rate, 2)
+                taxable_total += line_value
+                gst_pct = float(itm.get("gst_pct", 0) or 0)
+                gst_total += round(line_value * gst_pct / 100, 2)
+
+                # item_code (the distributor's own SKU) matches more reliably across
+                # repeat imports from the same distributor than a name lookup does -
+                # names drift (extra spaces, abbreviations); codes don't.
+                existing = None
+                if item_code:
+                    existing = conn.execute(
+                        "SELECT id FROM medicines WHERE item_code = ? AND item_code != ''", (item_code,)
+                    ).fetchone()
+                if not existing:
+                    existing = conn.execute(
+                        "SELECT id FROM medicines WHERE n = ? COLLATE NOCASE", (name,)
+                    ).fetchone()
+                if existing:
+                    conn.execute(
+                        """UPDATE medicines SET
+                            s = s + ?,
+                            p = CASE WHEN ?>0 THEN ? ELSE p END,
+                            p_rate = CASE WHEN ?>0 THEN ? ELSE p_rate END,
+                            batch = COALESCE(NULLIF(?,''), batch),
+                            expiry = COALESCE(NULLIF(?,''), expiry),
+                            item_code = COALESCE(NULLIF(?,''), item_code),
+                            hsn = COALESCE(NULLIF(?,''), hsn),
+                            manufacturer = COALESCE(NULLIF(?,''), manufacturer),
+                            p_packing = COALESCE(NULLIF(?,''), p_packing),
+                            disc = CASE WHEN ?>0 THEN ? ELSE disc END
+                           WHERE id=?""",
+                        (qty, mrp, mrp, p_rate, p_rate, batch, expiry, item_code, hsn,
+                         manufacturer, packing, disc_pct, disc_pct, existing["id"])
+                    )
+                    updated += 1
+                else:
+                    new_id = "pb_" + hashlib.md5(f"{name}{bill_no}{supplier_name}".encode()).hexdigest()[:8]
+                    conn.execute(
+                        """INSERT OR IGNORE INTO medicines
+                           (id, n, g, c, p, s, batch, expiry, p_rate, reorder, max_qty,
+                            item_code, hsn, manufacturer, p_packing, disc)
+                           VALUES (?,?,?,?,?,?,?,?,?,0,0,?,?,?,?,?)""",
+                        (new_id, name, "", itm.get("category") or _guess_category(name),
+                         mrp, qty, batch, expiry, p_rate, item_code, hsn, manufacturer, packing, disc_pct)
+                    )
+                    created += 1
+                bill_items_summary.append({"name": name, "qty": qty, "rate": p_rate, "mrp": mrp, "batch": batch,
+                                            "item_code": item_code, "hsn": hsn, "manufacturer": manufacturer})
+
+            grand_total = round(taxable_total + gst_total, 2)
+
+            purchase_id = "PB" + hashlib.md5(
+                f"{supplier_name}{bill_no}{bill_date}{datetime.now().isoformat()}".encode()
+            ).hexdigest()[:10]
+            conn.execute(
+                """INSERT INTO purchases (id, supplier, items, amount, date, status, batch, expiry, photo)
+                   VALUES (?,?,?,?,?,?,?,?,?)""",
+                (purchase_id, supplier_name, json.dumps(bill_items_summary), grand_total,
+                 bill_date, "received", "", "", "")
+            )
+
+            user_raw = session.get("portal_user") or session.get("admin_user") or "system"
+            created_by = user_raw.get("name", "system") if isinstance(user_raw, dict) else str(user_raw)
+            now = datetime.now(timezone.utc).isoformat()
+            cur = conn.execute("""
+                INSERT INTO tally_entries (company_id, entry_type, party_name, party_type,
+                amount, gst_amount, total_amount, description, reference_no, invoice_no,
+                date, due_date, payment_mode, status, created_at, updated_at, created_by)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            """, (None, "purchase", supplier_name, "supplier",
+                  round(taxable_total, 2), round(gst_total, 2), grand_total,
+                  f"Stock import — {len(items)} items ({bill_no or 'no bill no'})",
+                  bill_no, bill_no, bill_date, "", "credit", "pending", now, now, created_by))
+            tally_entry_id = cur.lastrowid
+
+            conn.execute(
+                """INSERT INTO stock_imports (shop_id, shop_type, import_date, item_count, imported_at, imported_by)
+                   VALUES (0,'purchase_bill',?,?,?,?)""",
+                (bill_date, len(items), now, f"{supplier_name} (bill {bill_no})" if bill_no else supplier_name)
+            )
+    except Exception as e:
+        return json_error(f"Import failed: {e}", 500)
+
+    _audit("purchase_bill_import", "purchases", purchase_id, new=f"{supplier_name} ₹{grand_total} ({len(items)} items)")
+    return jsonify({
+        "status": "success", "created": created, "updated": updated, "total": len(items),
+        "supplier_id": supplier_id, "purchase_id": purchase_id, "tally_entry_id": tally_entry_id,
+        "taxable_total": round(taxable_total, 2), "gst_total": round(gst_total, 2), "grand_total": grand_total,
+    })
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -3005,6 +3462,8 @@ def _ensure_extra_json_columns():
             conn.execute("CREATE INDEX IF NOT EXISTS idx_medicines_item_code ON medicines(item_code)")
         if "hsn" not in mcols:
             conn.execute("ALTER TABLE medicines ADD COLUMN hsn TEXT DEFAULT ''")
+        if "manufacturer" not in mcols:
+            conn.execute("ALTER TABLE medicines ADD COLUMN manufacturer TEXT DEFAULT ''")
         conn.commit()
 
 
@@ -3087,6 +3546,117 @@ def api_import_dbf_run():
     result = _run_dbf_import(records, mapping, file_type, update_existing)
     _dbf_temp_delete(token)
     return jsonify(result)
+
+
+@app.route("/api/import-dbf/preview-location", methods=["POST"])
+def api_import_dbf_preview_location():
+    """Like /api/import-dbf/preview, but also joins against the live
+    catalog by item_code so the location-import page can show a real
+    match-rate preview (not just raw DBF columns) before committing."""
+    if not session.get("portal_user"):
+        return json_error("Login required", 401)
+    if "file" not in request.files:
+        return json_error("No file provided")
+    f = request.files["file"]
+    filename = f.filename or "upload.dbf"
+    raw = f.read()
+    if len(raw) < 64:
+        return json_error("File is too small or empty")
+    try:
+        fields, records = _parse_dbf_bytes(raw)
+    except Exception as e:
+        return json_error(f"Cannot read DBF: {e}")
+    if not fields:
+        return json_error("No fields found — may not be a valid DBF file")
+
+    token = hashlib.md5(raw).hexdigest()[:16]
+    _dbf_temp_put(token, fields, records, filename)
+    _dbf_temp_gc()
+
+    field_names = [f["name"] for f in fields]
+    # Best-guess the code/location columns so the page can preselect them
+    guess_code = next((n for n in field_names if n in ("I_CODE", "ITEM_CODE", "ICODE", "ITEMCODE")), "")
+    guess_loc  = next((n for n in field_names if n in ("LOCN", "LOCATION", "LOC", "RACK")), "")
+
+    sample_preview = []
+    matched = unmatched = with_loc = 0
+    if guess_code and guess_loc:
+        with get_conn() as conn:
+            for row in records:
+                code = str(row.get(guess_code) or "").strip()
+                loc  = str(row.get(guess_loc) or "").strip()
+                if not loc:
+                    continue
+                with_loc += 1
+                med = conn.execute("SELECT n, location FROM medicines WHERE item_code=?", (code,)).fetchone() if code else None
+                if med:
+                    matched += 1
+                    if len(sample_preview) < 20:
+                        sample_preview.append({
+                            "code": code, "name": med["n"], "locn": loc,
+                            "current_location": med["location"] or "",
+                            "will_change": (med["location"] or "") != loc,
+                        })
+                else:
+                    unmatched += 1
+
+    return jsonify({
+        "status": "ok",
+        "token": token,
+        "filename": filename,
+        "field_count": len(fields),
+        "record_count": len(records),
+        "fields": field_names,
+        "guess_code_field": guess_code,
+        "guess_location_field": guess_loc,
+        "with_location": with_loc,
+        "matched": matched,
+        "unmatched": unmatched,
+        "sample": sample_preview,
+    })
+
+
+@app.route("/api/import-dbf/commit-location", methods=["POST"])
+def api_import_dbf_commit_location():
+    """Bulk-write medicines.location from an uploaded DBF's location
+    column, matched by item_code. Deliberately narrow: only touches the
+    location column, only for rows with both a matched item_code and a
+    non-empty location value — never blanks an existing location out."""
+    if not session.get("portal_user"):
+        return json_error("Login required", 401)
+    data = request.get_json(silent=True) or {}
+    token          = data.get("token", "")
+    code_field     = data.get("code_field", "")
+    location_field = data.get("location_field", "")
+    if not code_field or not location_field:
+        return json_error("code_field and location_field are required")
+
+    stored = _dbf_temp_get(token)
+    if stored is None:
+        return json_error("Session expired — please re-upload the file", 400)
+    _, records, _ = stored
+
+    updated = unchanged = unmatched = skipped_empty = 0
+    with get_conn() as conn:
+        for row in records:
+            code = str(row.get(code_field) or "").strip()
+            loc  = str(row.get(location_field) or "").strip()
+            if not code or not loc:
+                skipped_empty += 1
+                continue
+            existing = conn.execute("SELECT id, location FROM medicines WHERE item_code=?", (code,)).fetchone()
+            if not existing:
+                unmatched += 1
+                continue
+            if (existing["location"] or "") == loc:
+                unchanged += 1
+                continue
+            conn.execute("UPDATE medicines SET location=? WHERE id=?", (loc, existing["id"]))
+            updated += 1
+    _dbf_temp_delete(token)
+    _audit("import", "medicines.location", token, new=f"{updated} locations updated from DBF import", severity="info")
+    return jsonify({"status": "ok", "updated": updated, "unchanged": unchanged,
+                     "unmatched": unmatched, "skipped_empty": skipped_empty})
 
 
 def _run_dbf_import(records, mapping, file_type, update_existing):
@@ -9314,7 +9884,7 @@ def api_symptom_suggest():
 
     with get_conn() as conn:
         sql = (
-            f"SELECT id, n as name, g as generic, c as category, p as mrp, s as stock "
+            f"SELECT id, n as name, g as generic, c as category, p as mrp, s as stock, location "
             f"FROM medicines WHERE ({like_clauses}) "
             f"ORDER BY n LIMIT 500"
         )
@@ -9346,6 +9916,7 @@ def api_symptom_suggest():
             "category": med.get("category") or "",
             "mrp": round(float(med.get("mrp") or 0), 2),
             "stock": int(med.get("stock") or 0),
+            "location": med.get("location") or "",
             "confidence": conf,
             "matched_symptoms": matched_syms,
             "reason": f"Matches: {', '.join(sym_labels)}" if sym_labels else "Keyword match",
@@ -9423,7 +9994,7 @@ def api_medicines_by_purpose():
     """Return all stock medicines tagged by purpose category."""
     with get_conn() as conn:
         rows = conn.execute(
-            "SELECT id, n as name, g as generic, c as category, p as mrp, s as stock "
+            "SELECT id, n as name, g as generic, c as category, p as mrp, s as stock, location "
             "FROM medicines ORDER BY n LIMIT 3000"
         ).fetchall()
 
@@ -9447,6 +10018,7 @@ def api_medicines_by_purpose():
                     "mrp":      float(m["mrp"] or 0),
                     "stock":    int(m["stock"] or 0),
                     "in_stock": int(m["stock"] or 0) > 0,
+                    "location": m.get("location") or "",
                 })
         result[pkey] = {
             "label":    meta["label"],
@@ -9465,6 +10037,7 @@ def api_medicines_by_purpose():
         "mrp":      float(m["mrp"] or 0),
         "stock":    int(m["stock"] or 0),
         "in_stock": int(m["stock"] or 0) > 0,
+        "location": m.get("location") or "",
     } for m in all_meds]
     result["all"] = {
         "label":    "All Medicines",
@@ -9508,14 +10081,21 @@ def api_save_protocol():
                 created_by  TEXT DEFAULT ''
             )
         """)
+        # problem: free-text diagnosis/condition, separate from the fixed
+        # purpose categories — lets a pharmacist name a real case (e.g.
+        # "Post-extraction pain") rather than being limited to bp/otc/etc.
+        cols = table_columns(conn, "symptom_protocols")
+        if "problem" not in cols:
+            conn.execute("ALTER TABLE symptom_protocols ADD COLUMN problem TEXT DEFAULT ''")
         now = datetime.now(timezone.utc).isoformat()
         conn.execute("""
             INSERT INTO symptom_protocols
-            (name,purpose,symptoms,medicines,age_group,notes,created_at,created_by)
-            VALUES (?,?,?,?,?,?,?,?)
+            (name,purpose,problem,symptoms,medicines,age_group,notes,created_at,created_by)
+            VALUES (?,?,?,?,?,?,?,?,?)
         """, (
             data.get("name","Unnamed"),
             data.get("purpose","otc"),
+            data.get("problem",""),
             json.dumps(data.get("symptoms",[])),
             json.dumps(data.get("medicines",[])),
             data.get("age_group","all"),
@@ -10218,6 +10798,46 @@ def get_my_profile():
         return jsonify({"user_type":"staff","id":session["staff_id"],
                         "name":session.get("staff_name",""),"role":session.get("staff_role","")})
     return json_error("Not authenticated",401)
+
+
+_DEFAULT_FINANCE_PIN = "955900"
+
+@app.route("/api/bills/reveal-financials", methods=["POST"])
+def reveal_bill_financials():
+    """Check a PIN before the Bills History page shows Total Revenue / Total GST.
+    Those figures stay computed client-side either way (the bill list already
+    carries them) - this endpoint is a glance-guard against a customer or
+    passerby reading the screen, not a data-access control."""
+    data = request.get_json(silent=True) or {}
+    pin = str(data.get("pin", "")).strip()
+    with get_conn() as conn:
+        row = conn.execute("SELECT value FROM app_settings WHERE key='finance_reveal_pin'").fetchone()
+    stored_pin = row["value"] if row and row["value"] else _DEFAULT_FINANCE_PIN
+    if pin != stored_pin:
+        return json_error("Incorrect PIN", 403)
+    return jsonify({"status": "success"})
+
+
+@app.route("/api/settings/finance-pin", methods=["POST"])
+def set_finance_pin():
+    if not session.get("admin_user") and not session.get("portal_user"):
+        return json_error("Forbidden", 403)
+    data = request.get_json(silent=True) or {}
+    current_pin = str(data.get("current_pin", "")).strip()
+    new_pin = str(data.get("new_pin", "")).strip()
+    if not new_pin.isdigit() or not (4 <= len(new_pin) <= 8):
+        return json_error("New PIN must be 4-8 digits", 400)
+    with get_conn() as conn:
+        row = conn.execute("SELECT value FROM app_settings WHERE key='finance_reveal_pin'").fetchone()
+        stored_pin = row["value"] if row and row["value"] else _DEFAULT_FINANCE_PIN
+        if current_pin != stored_pin:
+            return json_error("Current PIN is incorrect", 403)
+        conn.execute(
+            """INSERT INTO app_settings(key,value) VALUES('finance_reveal_pin',?)
+               ON CONFLICT(key) DO UPDATE SET value=excluded.value""",
+            (new_pin,)
+        )
+    return jsonify({"status": "success"})
 
 
 @app.route("/api/settings/company", methods=["GET"])
@@ -12189,32 +12809,80 @@ def init_stage17_db():
 
 
 # ── DOSAGE LOOKUP API ──────────────────────────────────────────────
+
+# Age groups match the ones already used by the Symptom Advisor's age
+# picker (symptom_advisor.html SYMPTOMS/CONDITIONS use the same ids).
+DOSAGE_AGE_GROUPS = ["all", "infant", "child", "teen", "adult", "middle", "senior"]
+
+def _ensure_dosage_kb_age_migration(conn):
+    """One-time rebuild: dosage_kb's UNIQUE(medicine_pattern) can't hold a
+    separate row per age group for the same medicine. ALTER TABLE can add
+    a column but not change a UNIQUE constraint, so this rebuilds the
+    table with UNIQUE(medicine_pattern, age_group) the first time it's
+    needed, carrying every existing row over as the 'all' (general) entry
+    so nothing already saved is lost."""
+    if "age_group" in table_columns(conn, "dosage_kb"):
+        return
+    conn.execute("ALTER TABLE dosage_kb RENAME TO dosage_kb_old")
+    conn.execute("""
+        CREATE TABLE dosage_kb (
+            id            INTEGER PRIMARY KEY AUTOINCREMENT,
+            medicine_pattern TEXT NOT NULL,
+            age_group     TEXT NOT NULL DEFAULT 'all',
+            dosage_en     TEXT,
+            dosage_ta     TEXT,
+            timing        TEXT,
+            kind          TEXT,
+            UNIQUE(medicine_pattern, age_group)
+        )
+    """)
+    conn.execute("""
+        INSERT INTO dosage_kb (medicine_pattern, age_group, dosage_en, dosage_ta, timing, kind)
+        SELECT medicine_pattern, 'all', dosage_en, dosage_ta, timing, kind FROM dosage_kb_old
+    """)
+    conn.execute("DROP TABLE dosage_kb_old")
+
+
 @app.route("/api/dosage/lookup", methods=["GET"])
 def api_dosage_lookup():
-    """Look up dosage instructions for a medicine name."""
+    """Look up dosage instructions for a medicine name. Optional
+    ?age_group= prefers an age-specific entry, falling back to the
+    general ('all') entry for the same pattern if no age-specific one
+    is saved."""
     name = (request.args.get("name") or "").upper()
+    age_group = (request.args.get("age_group") or "all").lower()
     if not name:
         return jsonify({"dosage_en": "", "dosage_ta": "", "match": ""})
     with get_conn() as conn:
-        rows = conn.execute("SELECT medicine_pattern, dosage_en, dosage_ta, timing, kind FROM dosage_kb").fetchall()
-    # Find best match
+        _ensure_dosage_kb_age_migration(conn)
+        rows = conn.execute("SELECT medicine_pattern, age_group, dosage_en, dosage_ta, timing, kind FROM dosage_kb").fetchall()
+    general_match = None
     for r in rows:
-        if r["medicine_pattern"] in name:
+        if r["medicine_pattern"] not in name:
+            continue
+        if age_group != "all" and r["age_group"] == age_group:
             return jsonify({
-                "match": r["medicine_pattern"],
-                "dosage_en": r["dosage_en"],
-                "dosage_ta": r["dosage_ta"],
-                "timing": r["timing"],
-                "kind": r["kind"]
+                "match": r["medicine_pattern"], "age_group": r["age_group"],
+                "dosage_en": r["dosage_en"], "dosage_ta": r["dosage_ta"],
+                "timing": r["timing"], "kind": r["kind"]
             })
+        if r["age_group"] == "all" and general_match is None:
+            general_match = r
+    if general_match:
+        return jsonify({
+            "match": general_match["medicine_pattern"], "age_group": "all",
+            "dosage_en": general_match["dosage_en"], "dosage_ta": general_match["dosage_ta"],
+            "timing": general_match["timing"], "kind": general_match["kind"]
+        })
     return jsonify({"match": "", "dosage_en": "", "dosage_ta": ""})
 
 
 @app.route("/api/dosage/all", methods=["GET"])
 def api_dosage_all():
     with get_conn() as conn:
-        rows = conn.execute("SELECT * FROM dosage_kb ORDER BY medicine_pattern").fetchall()
-    return jsonify({"items": [dict(r) for r in rows]})
+        _ensure_dosage_kb_age_migration(conn)
+        rows = conn.execute("SELECT * FROM dosage_kb ORDER BY medicine_pattern, age_group").fetchall()
+    return jsonify({"items": [dict(r) for r in rows], "age_groups": DOSAGE_AGE_GROUPS})
 
 
 @app.route("/api/dosage", methods=["POST"])
@@ -12222,11 +12890,15 @@ def api_dosage_add():
     d = request.json or {}
     if not d.get("medicine_pattern"):
         return jsonify({"error": "medicine_pattern required"}), 400
+    age_group = (d.get("age_group") or "all").lower()
+    if age_group not in DOSAGE_AGE_GROUPS:
+        age_group = "all"
     with get_conn() as conn:
+        _ensure_dosage_kb_age_migration(conn)
         conn.execute("""INSERT OR REPLACE INTO dosage_kb
-            (medicine_pattern, dosage_en, dosage_ta, timing, kind)
-            VALUES (?,?,?,?,?)""",
-            (d.get("medicine_pattern", "").upper(), d.get("dosage_en", ""),
+            (medicine_pattern, age_group, dosage_en, dosage_ta, timing, kind)
+            VALUES (?,?,?,?,?,?)""",
+            (d.get("medicine_pattern", "").upper(), age_group, d.get("dosage_en", ""),
              d.get("dosage_ta", ""), d.get("timing", ""), d.get("kind", "")))
     return jsonify({"status": "ok"})
 
